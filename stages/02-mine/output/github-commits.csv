@@ -1,0 +1,124 @@
+hash,date,author,email,message
+cf69da2a66d7ebec48303898879becf303680f35,2026-04-27 21:54:46 -0700,Simon,simon@puenteworks.com,update local inference report with execution-tested results
+f228add86c03639a7de361fd713341ecf228f1dc,2026-04-27 21:25:47 -0700,Simon,simon@puenteworks.com,"fix: wire LOCAL_INFERENCE_TIMEOUT_MS, document model compatibility"
+03bf3a6d11b9090f6c5e1f733d0cf25ce88f0e35,2026-04-27 20:39:03 -0700,Simon,simon@puenteworks.com,test: add local inference provider resolution tests (19 tests)
+ce49cf9ecfa4d38f094595f9e56a6b609e41515b,2026-04-27 20:27:24 -0700,Simon,simon@puenteworks.com,feat: add local inference support via Tailscale
+5a7398768e31c61a9367002502158689542fd500,2026-04-27 19:12:35 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,upgrade landing page design and copy for May 2026 launch (#100)
+a9424efacc41ec176c7d816669bf4971e7bd7464,2026-04-27 18:30:01 -0700,Simon,simon@puenteworks.com,Align docs with paid launch state
+50e59b773bc21da46e3c23377430fba56497263b,2026-04-27 17:33:06 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,Keep viability smoke aligned with receipt contract
+f84efda01a63a56a0a558a8c8a7a57d6700a44e3,2026-04-27 17:09:43 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,Prepare Achiote for paid viability launch
+c619c030e30b8d1874972bffa1e6b8d1807fcb19,2026-04-27 11:10:48 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,Make public pages fit mobile viewports
+54f3e34e482becb081719ba7bddb6f7a9cd90bfc,2026-04-27 10:17:17 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,Fix preview smoke review findings (#95)
+173fde7fc22e212d9fbfc2561710ff748f1fccae,2026-04-27 09:15:56 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,Harden the preview user demo loop
+f968f1e7f38baa948b92b4ccbe1f4547c7549389,2026-04-26 21:21:44 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,Make corrected spellings explicit in ask answers
+71b5b557689b1cfb7f7facfce93a8e2bf2750431,2026-04-26 21:07:28 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,Prefer validated tool results over partial model echoes
+d2409e502b1f58042db0e2226555958624c7c658,2026-04-26 20:24:59 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,Normalize verification bite wording once (#91)
+83ffe51ee066b17034e5599cf5c11d899fd0cc86,2026-04-26 20:12:13 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,Keep composed cue bites intact (#90)
+1ba1021b1525e69590e0f1d2b993d5e9844074fb,2026-04-26 19:50:58 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,Make preview cues taste less generic (#89)
+b8b2753c4368398af6e70e09bd49419c3bb42a8e,2026-04-26 18:17:46 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,Keep live cue tests research-bounded (#88)
+d44168041ddab3e2468966d9fe9099d7688f1827,2026-04-26 18:05:17 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,Treat empty cue dossiers as missing
+728077476533339a64d3abc31cc3037f71b04153,2026-04-26 17:55:53 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,Normalize raw sources before research records
+2b027d591bc6132c2c69575c2644b3c90e4334d2,2026-04-26 17:45:52 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,Build missing dossier before direct cue calls
+48beab0423862c36135dc324253bd8126efea8fa,2026-04-26 17:36:46 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,Let preview demos raise anonymous ask quota
+2c5d1793348341ea881d10efecf7a95850d4e742,2026-04-26 17:23:18 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,Keep minimum cues local when models omit location
+96395612e7d9f0d0cee18c65d5a836b5c093dd59,2026-04-26 17:02:39 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,Correct typo-first research planning
+c6733d8906f4516e6c385c6e53e082050b783c7b,2026-04-26 11:34:11 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,Deploy preview user fixes (#81)
+ed7408f85cfd31df130e97a26aeb37ec27f27dbe,2026-04-25 12:37:01 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,Add local OSS voice input and read-aloud
+cefd80d38e3f7ee6a2fe0baf35b0907443298e56,2026-04-24 19:26:35 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,Make non-Stripe launch loops observable
+babf9c12762a4711443fa45d52b3d72dc6f05c38,2026-04-24 18:31:31 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,Align paid plans with guided-memory value
+664bcf0c4d7ed3e330766235e6cfe1ccbeb6aef0,2026-04-24 17:36:59 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,Add AI search visibility and BSL license truth
+4abb7fbb39043817fd6be0f71109ba25ffe936fc,2026-04-24 16:29:11 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,Add launch trust and observability hardening (#76)
+f0eecf1a75f7c3f01326aec6bce37072d24b11f7,2026-04-24 13:18:57 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,Block premature concrete cues from ask responses
+c3feee5f02623fae1c6fbf8f83dd1e895b19680f,2026-04-24 13:03:34 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,Keep concrete food cues behind the Achiote cue tool
+ceb08aae340776fac4ed42292bbaeb3bf22b1f47,2026-04-24 12:38:31 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,Align ask image payload cap with advertised limits
+16846888eeaa2930275ab709d280efebabc299f3,2026-04-24 12:20:16 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,Restore product chat to the research-first Achiote workflow
+108888db82f948bad99de04261474c2e745707d0,2026-04-22 22:52:00 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,fix: force memory-probe cue when input is too sparse; remove family assumptions
+e94f36bf92cac4425bdd9f35ce055f8effa8be74,2026-04-22 22:10:18 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,feat: GLM model-aware endpoint routing + inference engine enhancement
+239994634bd455dd43ccef3f84335b18df22bff0,2026-04-22 22:03:27 -0700,Simon,simon@puenteworks.com,fix: add 'confectionery' to cueComponentSchema role enum
+5c56b55fa50b8a8b652c17f33a56ceced8c05083,2026-04-22 20:59:03 -0700,Simon,simon@puenteworks.com,feat: Stripe billing integration + about page fix
+f31e601c15f774a8e7a5ed0cedad8a4b3e105e75,2026-04-22 19:42:49 -0700,Simon,simon@puenteworks.com,feat: GLM model-aware endpoint routing + inference engine enhancement
+bcd9c4acdf8564f5e28c0f8e9ba545aaf2276110,2026-04-21 21:52:25 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,Support OpenAI-compatible ask providers
+43e3ed37e61cc2026d0ab029e53d29b9dda49d06,2026-04-21 21:25:29 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,Recover from partial local-model tool inputs
+f0bfaa7aac306428f0f438ecc0817a140dd05a3a,2026-04-21 19:46:21 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,Recover from malformed model research plans
+2c3fc8da66481b98990de8ea3266f00123324887,2026-04-21 19:00:41 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,Support Anthropic-compatible live ask providers
+80fabc23171319adeba4e0c5218853e077c7feec,2026-04-21 16:50:24 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,Align release docs with hardened launch gates
+e26ac03ce280daf4e3a06bd66222cb35d360ed51,2026-04-21 16:45:03 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,Harden Docker runtime launch checks
+953c86a36bfe06ee59837704a7c15adbdb7b910f,2026-04-21 16:36:12 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,Move memory hint data behind validation
+9beb67bf3de5b8084e5231ab3967300499b255c3,2026-04-21 15:55:30 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,Respect dietary constraints in minimum nostalgia cues
+55cfa817c6c55ba95929f0d4b33438bb0e0fecd4,2026-04-21 15:21:11 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,Support hashed API keys for hosted HTTP auth
+6383c62996f56474868075e7ff989544035bcdf2,2026-04-21 14:42:48 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,Make persistent rate limits authoritative across instances
+ff25752687253bb9f3fe8247d90e9851cf19d7fb,2026-04-21 13:50:49 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,Harden anonymous ask and proxy identity boundaries
+31dad15be8aa8ff1c8f0353a75707158d5468405,2026-04-21 13:15:03 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,Add opt-in live ask smoke test
+9ea49c46de17db71b985bbcc4b889a031688ea5b,2026-04-21 12:59:54 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,Consolidate tool definitions behind a shared registry
+6a38edaf762452dc657ec1caa37207d866f7a50e,2026-04-21 12:23:39 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,Document launch remediation path
+9a0ace9d8a559bb0bb2f8d52a9d0a8c4d93b1410,2026-04-21 11:49:52 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,Ship helper scripts referenced by package metadata
+2865756f05e823ccc38ba88363122b5400fff6ef,2026-04-21 11:17:49 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,Keep release hygiene failures from reappearing
+ba34f5879ceaabe61cf79c3d61ed7a8dfe3e477c,2026-04-21 11:05:53 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,Add trust checks for constrained recipe handoffs
+68b50566f89a6d83cb4fae62c0e98795263ae175,2026-04-21 10:56:37 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,Harden launch gates that hid HTTP failures
+4e5addfe0e15ac3cf999bd9df9d4837b974e1968,2026-04-21 10:53:23 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,Make launch-blocking HTTP readiness failures visible
+8bc26f017c9b167add41fbdfb2ec0e18ed855995,2026-04-21 10:31:50 -0700,Simon,simon@puenteworks.com,Make launch-blocking HTTP readiness failures visible
+1798e802af3970f042604d6dd45b0749dc4b3e01,2026-04-21 09:06:34 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,fix: rate limit persistence bug and add edge case tests (#50)
+7347600193344c52579d2aed8e0fee382539ec32,2026-04-21 08:41:55 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,fix: improve web UI mobile and tablet responsiveness (#49)
+349ddf8adcdf58c944d381b177c838fd0e42eb94,2026-04-21 08:12:23 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,docs: update roadmap and fix landing page accessibility (#48)
+d6ca68dce26229c5ace7cb9cc8a2b0f91b7b206b,2026-04-21 07:54:40 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,feat: production HTTP hardening (#47)
+33a21a310d146e080fe0468b6e45ccda6f3fd8e2,2026-04-20 21:31:12 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,docs: update documentation for HTTP server and remove stale plans (#46)
+8db54635df224e092e17dc5c32ca203eabfc73e8,2026-04-20 21:17:12 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,"Production hardening: clean prompts, health metrics, /ask tests, load script (#45)"
+f0c84ce9aee1fc8743000aadcb00e9ac0166e53b,2026-04-20 20:01:38 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,"Final polish: regional matcher fix, structured recipe inputs, HTTP tests (#44)"
+92a718ba67daf0f7572055c2aa1c7a78336b4d1a,2026-04-20 18:31:23 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,chore: clean integration debt (#43)
+58a9a8380509134a397b928738f21ec7398a9081,2026-04-20 16:15:48 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,"fix: data quality, runtime validation, CSP, and pipeline guard (#41)"
+7c77ac6d40ba5a0449926865cb31f6ab9f825f25,2026-04-20 15:24:38 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,fix: handle NaN in maxEffortMinutes fallback (#40)
+330c30efa56b964d657aafa8452c5d8945c63e31,2026-04-20 14:42:14 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,fix: remediate 59 failure modes across 5 ROI tiers (#39)
+e162cf817b503996a0ae8deca1d22a21fc1fa9bd,2026-04-20 12:08:57 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,"[repo-pipeline] Fix CRITICAL/HIGH security issues: CSP, inline handlers, CORS (#37)"
+ae79314501cdee95a774247100589d1600b3180c,2026-04-20 12:06:33 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,"Enrich data quality: ingredient aliases, new dish families, expanded regions (#38)"
+170a29bc29e0571543d4d72472ce8059fada7325,2026-04-20 10:34:59 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,Add API key input to web chat app (#35)
+372e3a1774b018fcd65429bc4ab2b3988d457d07,2026-04-20 10:26:19 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,"[repo-pipeline] Fix CRITICAL/HIGH security issues: XSS, CSP, input validation (#36)"
+adc4f115fdb56c5db744a8c2a0e5bcdd72d01f72,2026-04-19 22:30:58 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,"Rename to Achiote, expand data: 40 families, 82 ingredients, 15 regions (#34)"
+8ec4ec3478900aa28b9d8bc8f88108dddd225b79,2026-04-19 19:51:47 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,"fix: harden production server against crashes, injection, and path disclosure (#33)"
+89d117e8f96c0a6765e2d6bef3b038646af4a711,2026-04-19 19:31:13 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,Add live chat UI with full 14-tool pipeline (#32)
+97886ff6809b372601eac0a63ff227fbe6d6aec1,2026-04-19 12:42:33 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,Add per-component cue decomposition with location-aware sourcing (#29)
+170a88278cd7e4693a50cda5239b5dc018c70ff0,2026-04-19 12:05:22 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,ci(citations): add automated DOI validation script (#31)
+852bea9d45fbc5f50034bf31daed0538080893e6,2026-04-19 11:44:36 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,fix(landing): correct two research reference citations (#30)
+db8f3a5a4a988a9aecbde3b2d7ac194018afd318,2026-04-19 11:33:38 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,design(audit): full landing page remediation (#28)
+7ad885f9d79e73591845e4f42f7da4223a4bd924,2026-04-19 10:55:04 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,"Refresh landing page: consistent tone, sourcing workflow, accessibility (#27)"
+061f45055ac9d4b18ca749f05d1b9e2b4b13c33b,2026-04-19 10:36:58 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,Replace hardcoded Puerto Rican hypotheses with data-driven dish-family matching (#26)
+8fef23a81f91aa2d328745dd018177eb77faaaf2,2026-04-19 10:04:27 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,"Broaden elicitation: geography-first question, 90+ region patterns, expanded sensory/occasion extraction (#25)"
+386f48851722cf73cd99a4c918a6e10f1b0afca5,2026-04-19 09:45:04 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,Replace 'sour smell' with appetizing memory card example (#24)
+ff3e5c5d41a252131811f0000468c2686f0671e2,2026-04-19 09:40:19 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,Rewrite landing copy and embed research-backed food-science references (#23)
+9dcc93bc4a1dfe3f812e686766b786a9bcedf440,2026-04-19 07:42:54 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,Harden future agent changes
+8f18591bb457a8bba689f94bba1a2dd0aff9b3e5,2026-04-19 06:55:17 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,Refresh landing page examples
+8239a6db0653f9b24d4e7933f6f38f17d98f15da,2026-04-19 06:38:35 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,Add a static landing page
+9fee4854caee900d52cb263b8653abca6d46fb3a,2026-04-18 22:05:31 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,Make minimum cues use food-science proxies
+2e1cd572724b1f37cc6336d877c829a344e112d5,2026-04-18 21:37:35 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,Make memory intake readable and clue-aware
+0bc8dd8758bf7c34f04a33ca45c63ba542fc0944,2026-04-18 20:52:06 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,Generalize minimum viable cues and commit Claude MCP config (#17)
+d10151a26f49b4acf0d4ebc459212742b7a25d4b,2026-04-18 20:44:04 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,Start reconstructions with the smallest viable cue (#16)
+116310995c82957f51b21518aa5670cd9d3fb53e,2026-04-18 20:07:01 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,Add quick start and fix skill frontmatter
+dac2edb3b8298e620f538f2dc868623c5a7844b2,2026-04-18 19:45:07 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,Add minimum viable nostalgia cue tool
+1e9e96ffe41ea02ae601ca392d6e63ea494c5729,2026-04-18 19:10:00 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,Keep business framing out of MCP docs
+e9493647b027ef9f641a383f6ffec798bb4de78e,2026-04-18 18:58:29 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,Avoid connector words in memory name extraction
+c2f28fb96af8adca1784ebbbee54a4ef73798e13,2026-04-18 18:49:57 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,Remove confusing local wording from docs
+819f410238cfa713d6f196a6f481c3317fd61bf3,2026-04-18 18:17:46 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,Clarify current product status in docs
+6329b12346779e695be51ef7b6fa0b23dd988eb5,2026-04-18 18:00:20 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,Refresh documentation for current provenance workflow
+45d8c9e4c0a722229e838fd35af8e3789fed3f8e,2026-04-18 17:51:08 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,Add typed research provenance records (#8)
+37ee85668fc3e25f4108260d4a472dfba0ec1943,2026-04-18 17:06:44 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,Verify and document full reconstruction workflow
+a0c015546ac3a9bb8f81f77faba767c29c3c9e6f,2026-04-18 16:49:18 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,Add research-first food memory workflow tools (#6)
+d2b106e2693dc5068db8e18d6270e95e2c7b0b5f,2026-04-18 15:28:33 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,Add ambiguity-aware dish resolution
+c3987a6dfb25d5dc436959869b4d91dd626bc98f,2026-04-18 15:00:54 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,Update GitHub Actions to Node 24 runtime releases
+9562204b9fc26566dfdeaec5e4dedde32cd770f6,2026-04-18 14:55:17 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,Split MCP entrypoint into focused modules
+59f2daa1d32b35baf6b70bd48f9333388a856c7d,2026-04-18 14:27:23 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,Merge pull request #2 from Pastorsimon1798/next-foundation-20260418
+8a2e14c9de1b3f920242aa2c373ebb45ff029805,2026-04-18 14:21:54 -0700,Simon,simon@puenteworks.com,Address package smoke and prompt-coverage review
+521bdbf8e1d6fe676da6a3581516ece70b39b52c,2026-04-18 14:01:57 -0700,Simon,simon@puenteworks.com,Avoid setup-node cache hangs on self-hosted CI
+9f1c81f7731383973ddb56a63e9074e530e5a98d,2026-04-18 13:49:59 -0700,Simon,simon@puenteworks.com,Close release-readiness gaps after the MCP baseline
+a93c6287ac537d89e1c7bad04f766c439de702d5,2026-04-18 13:24:15 -0700,Simon Gonzalez De Cruz,simon@puenteworks.com,Harden Member Berries into a releasable MCP base
+470c5fdc3478253856ca8f627fc92924d6275733,2026-04-18 12:33:33 -0700,Simon,simon@puenteworks.com,test: add integration tests for all 6 MCP tools
+60de822e319ff584ba48c1b93c53da8c9097e91c,2026-04-18 12:29:43 -0700,Simon,simon@puenteworks.com,"feat: wire ResearchCache, SubstitutionEngine, and data files into MCP tools"
+b3d54a1e871c46ce8905f6db21a7fcdeae097d89,2026-04-18 12:12:39 -0700,Simon,simon@puenteworks.com,docs: add README and MIT license
+cdd2526422e089bf636c9b9f3bc50f94d29e9d1c,2026-04-18 12:08:06 -0700,Simon,simon@puenteworks.com,feat: add US regional ingredient availability data
+47fa7cf10fc4f50bf6fd18e7f0128dcd92364369,2026-04-18 12:05:55 -0700,Simon,simon@puenteworks.com,feat: add Claude Code skill definition
+02d6b2b407f6aa79378a0aa75b209cdeb77a07d3,2026-04-18 12:04:03 -0700,Simon,simon@puenteworks.com,feat: add chemistry-aware substitution engine
+12a644edbdce52321b304af9f0f0f161554f54ea,2026-04-18 12:00:44 -0700,Simon,simon@puenteworks.com,feat: add MCP server with 6 tools
+2a8119572c408566384bc63f094bc1be116c18e7,2026-04-18 11:56:25 -0700,Simon,simon@puenteworks.com,feat: add SQLite research cache for storing looked-up dish data
+1e5bc93043c966cd89ab75fecdaeed60c7770859,2026-04-18 11:53:22 -0700,Simon,simon@puenteworks.com,feat: add name resolver with fuzzy matching and transliteration support
+32cbabc1cc4596e3841dd915ec231415f0ed182a,2026-04-18 11:50:36 -0700,Simon,simon@puenteworks.com,feat: add dish families with aliases and transliteration mappings
+d2ba098cddd30195f4159ddf0f2e75c38d79f03e,2026-04-18 11:48:19 -0700,Simon,simon@puenteworks.com,feat: add ingredient compound and sensory profile data
+d198703a4372456c4ed9b8034bb9954cd7e5eebb,2026-04-18 11:45:22 -0700,Simon,simon@puenteworks.com,feat: add shared type definitions
+4d0b5099e906b85bfce10402154a1f37db9eca0d,2026-04-18 11:41:13 -0700,Simon,simon@puenteworks.com,chore: scaffold member-berries project

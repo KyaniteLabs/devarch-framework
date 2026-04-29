@@ -1,0 +1,38 @@
+{
+  "vector_name": "Source Archaeologist",
+  "findings": [
+    {
+      "type": "Bug Fix Pattern",
+      "description": "Moderate bug fix activity: 7.3% fix commits",
+      "evidence": [
+        "fix: harden production server against crashes, injection, and path disclosure (#33)",
+        "fix: remediate 59 failure modes across 5 ROI tiers (#39)",
+        "fix: handle NaN in maxEffortMinutes fallback (#40)"
+      ],
+      "confidence": "high"
+    },
+    {
+      "type": "Testing Present",
+      "description": "Testing present but limited: 1.6% test commits",
+      "evidence": [
+        "test: add integration tests for all 6 MCP tools",
+        "test: add local inference provider resolution tests (19 tests)"
+      ],
+      "confidence": "medium"
+    },
+    {
+      "type": "Development Velocity",
+      "description": "High velocity: 12.3 commits/day over 10 days",
+      "evidence": [],
+      "confidence": "high"
+    }
+  ],
+  "summary": {
+    "total_findings": 3,
+    "by_type": {
+      "Bug Fix Pattern": 1,
+      "Testing Present": 1,
+      "Development Velocity": 1
+    }
+  }
+}

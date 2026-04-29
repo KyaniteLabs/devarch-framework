@@ -1,0 +1,1289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Achiote Project Archaeology Report</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #12121a;
+            --bg-card: #1a1a24;
+            --text-primary: #f4f4f5;
+            --text-secondary: #a1a1aa;
+            --accent-warm: #e85d3a;
+            --accent-gold: #f4a261;
+            --accent-teal: #2a9d8f;
+            --accent-deep: #264653;
+            --accent-green: #2a9d8f;
+            --border-color: #2a2a3a;
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Header */
+        header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(10, 10, 15, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border-color);
+            z-index: 1000;
+            padding: 15px 0;
+        }
+
+        .nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-brand {
+            font-size: 1.2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-warm), var(--accent-gold));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 20px;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.3s;
+        }
+
+        .nav-links a:hover {
+            color: var(--accent-gold);
+        }
+
+        /* Hero Section */
+        .hero {
+            min-height: 90vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+            background: linear-gradient(135deg, #0a0a0f 0%, #1a1a24 50%, #0a0a0f 100%);
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 30% 30%, rgba(232, 93, 58, 0.1) 0%, transparent 50%),
+                        radial-gradient(circle at 70% 70%, rgba(42, 157, 143, 0.1) 0%, transparent 50%);
+            animation: pulse 15s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .hero-content {
+            text-align: center;
+            z-index: 1;
+            padding: 40px;
+        }
+
+        .hero-title {
+            font-size: 4rem;
+            font-weight: 800;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, var(--accent-warm), var(--accent-gold), var(--accent-teal));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: fadeInUp 1s ease-out;
+        }
+
+        .hero-tagline {
+            font-size: 1.5rem;
+            color: var(--text-secondary);
+            margin-bottom: 40px;
+            animation: fadeInUp 1s ease-out 0.2s both;
+        }
+
+        .hero-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 30px;
+            max-width: 800px;
+            margin: 0 auto;
+            animation: fadeInUp 1s ease-out 0.4s both;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 30px rgba(232, 93, 58, 0.2);
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--accent-gold);
+            margin-bottom: 5px;
+            counter-reset: stat;
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Section Styles */
+        section {
+            padding: 80px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .section-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .section-subtitle {
+            text-align: center;
+            color: var(--text-secondary);
+            margin-bottom: 50px;
+            font-size: 1.1rem;
+        }
+
+        /* Card Styles */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: var(--shadow);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .card-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: var(--accent-gold);
+        }
+
+        /* Grid Layouts */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 30px;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+        }
+
+        .grid-4 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        /* Charts */
+        .chart-container {
+            position: relative;
+            height: 350px;
+            margin-bottom: 20px;
+        }
+
+        .chart-container.lg {
+            height: 450px;
+        }
+
+        /* Metrics Grid */
+        .metric-card {
+            background: linear-gradient(135deg, var(--bg-card), var(--bg-secondary));
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 25px;
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .metric-card:hover {
+            border-color: var(--accent-warm);
+            transform: scale(1.02);
+        }
+
+        .metric-value {
+            font-size: 3rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-warm), var(--accent-gold));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+
+        .metric-label {
+            font-size: 1rem;
+            color: var(--text-secondary);
+        }
+
+        /* Architecture Map */
+        .arch-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .arch-box {
+            background: var(--bg-secondary);
+            border: 2px solid var(--accent-teal);
+            border-radius: 10px;
+            padding: 15px 25px;
+            font-weight: 600;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .arch-box.core {
+            background: linear-gradient(135deg, rgba(232, 93, 58, 0.2), rgba(244, 162, 97, 0.1));
+            border-color: var(--accent-warm);
+            font-size: 1.1rem;
+        }
+
+        .arch-box:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 20px rgba(42, 157, 143, 0.3);
+        }
+
+        /* Phase Timeline */
+        .phase-timeline {
+            position: relative;
+            padding-left: 40px;
+        }
+
+        .phase-timeline::before {
+            content: '';
+            position: absolute;
+            left: 10px;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: linear-gradient(to bottom, var(--accent-warm), var(--accent-teal));
+        }
+
+        .phase-item {
+            position: relative;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            transition: transform 0.3s;
+        }
+
+        .phase-item:hover {
+            transform: translateX(5px);
+            border-color: var(--accent-gold);
+        }
+
+        .phase-item::before {
+            content: '';
+            position: absolute;
+            left: -34px;
+            top: 25px;
+            width: 12px;
+            height: 12px;
+            background: var(--accent-warm);
+            border-radius: 50%;
+            border: 3px solid var(--bg-primary);
+        }
+
+        .phase-date {
+            font-size: 0.9rem;
+            color: var(--accent-gold);
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .phase-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .phase-desc {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        .phase-stats {
+            display: flex;
+            gap: 15px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+
+        .phase-badge {
+            background: rgba(42, 157, 143, 0.2);
+            color: var(--accent-teal);
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        /* Agent Evidence */
+        .agent-list {
+            list-style: none;
+        }
+
+        .agent-item {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            transition: all 0.3s;
+        }
+
+        .agent-item:hover {
+            border-color: var(--accent-teal);
+            transform: translateX(5px);
+        }
+
+        .agent-icon {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, var(--accent-warm), var(--accent-gold));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+
+        .agent-info h4 {
+            margin-bottom: 5px;
+            color: var(--accent-gold);
+        }
+
+        .agent-info p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        /* Domain Deep Dive */
+        .domain-item {
+            background: var(--bg-secondary);
+            border-left: 4px solid var(--accent-warm);
+            padding: 20px;
+            margin-bottom: 15px;
+            border-radius: 0 10px 10px 0;
+            transition: all 0.3s;
+        }
+
+        .domain-item:hover {
+            border-left-color: var(--accent-gold);
+            transform: translateX(5px);
+        }
+
+        .domain-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: var(--accent-gold);
+        }
+
+        .domain-text {
+            color: var(--text-secondary);
+            line-height: 1.7;
+        }
+
+        .domain-tags {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .domain-tag {
+            background: rgba(232, 93, 58, 0.2);
+            color: var(--accent-warm);
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        /* Working Hours Chart */
+        .hours-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .hour-bar {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .hour-label {
+            width: 50px;
+            text-align: right;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .hour-track {
+            flex: 1;
+            height: 30px;
+            background: var(--bg-secondary);
+            border-radius: 15px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .hour-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-warm), var(--accent-gold));
+            border-radius: 15px;
+            transition: width 1s ease-out;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 10px;
+            color: var(--bg-primary);
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+
+        .hour-fill.peak {
+            background: linear-gradient(90deg, var(--accent-teal), var(--accent-gold));
+        }
+
+        /* Footer */
+        footer {
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border-color);
+            padding: 40px 0;
+            text-align: center;
+        }
+
+        .footer-content {
+            color: var(--text-secondary);
+        }
+
+        .footer-logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+            background: linear-gradient(135deg, var(--accent-warm), var(--accent-gold));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero-title {
+                font-size: 2.5rem;
+            }
+
+            .hero-tagline {
+                font-size: 1.2rem;
+            }
+
+            .grid-2, .grid-3, .grid-4 {
+                grid-template-columns: 1fr;
+            }
+
+            .nav-links {
+                display: none;
+            }
+
+            .section-title {
+                font-size: 2rem;
+            }
+
+            .chart-container {
+                height: 300px;
+            }
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-primary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--accent-warm);
+            border-radius: 5px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--accent-gold);
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="container">
+            <nav class="nav">
+                <div class="nav-brand">ACHIOTE</div>
+                <ul class="nav-links">
+                    <li><a href="#timeline">Timeline</a></li>
+                    <li><a href="#patterns">Patterns</a></li>
+                    <li><a href="#architecture">Architecture</a></li>
+                    <li><a href="#phases">Phases</a></li>
+                    <li><a href="#metrics">Metrics</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1 class="hero-title">Achiote Project</h1>
+            <p class="hero-tagline">Culinary Reverse Engineering System — Recreating the sensory triggers of nostalgic dishes using locally available ingredients</p>
+            <div class="hero-stats">
+                <div class="stat-card">
+                    <div class="stat-value" id="stat-commits">0</div>
+                    <div class="stat-label">Total Commits</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="stat-days">0</div>
+                    <div class="stat-label">Active Days</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="stat-authors">0</div>
+                    <div class="stat-label">Authors</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="stat-prs">0</div>
+                    <div class="stat-label">PRs Merged</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Timeline Section -->
+    <section id="timeline">
+        <div class="container">
+            <h2 class="section-title">Development Timeline</h2>
+            <p class="section-subtitle">10-day sprint from April 18–27, 2026</p>
+            <div class="card">
+                <div class="chart-container lg">
+                    <canvas id="timelineChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Velocity Section -->
+    <section id="velocity">
+        <div class="container">
+            <h2 class="section-title">Development Velocity</h2>
+            <p class="section-subtitle">Cumulative commits over time with daily rate</p>
+            <div class="card">
+                <div class="chart-container lg">
+                    <canvas id="velocityChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Patterns Section -->
+    <section id="patterns">
+        <div class="container">
+            <h2 class="section-title">Commit Patterns</h2>
+            <p class="section-subtitle">Understanding development workflow and collaboration</p>
+            <div class="grid-2">
+                <div class="card">
+                    <h3 class="card-title">Commit Types</h3>
+                    <div class="chart-container">
+                        <canvas id="commitTypesChart"></canvas>
+                    </div>
+                    <p style="color: var(--text-secondary); text-align: center; margin-top: 15px;">
+                        <strong style="color: var(--accent-gold);">8.1% fix rate</strong> — Healthy balance of features and stability
+                    </p>
+                </div>
+                <div class="card">
+                    <h3 class="card-title">PR vs Direct Commits</h3>
+                    <div class="chart-container">
+                        <canvas id="prDistributionChart"></canvas>
+                    </div>
+                    <p style="color: var(--text-secondary); text-align: center; margin-top: 15px;">
+                        <strong style="color: var(--accent-gold);">40 PRs merged</strong> — Averaging 3.1 commits per PR
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Working Hours Section -->
+    <section id="hours">
+        <div class="container">
+            <h2 class="section-title">Working Hours Distribution</h2>
+            <p class="section-subtitle">Peak productivity at midday (11-12) with evening push (17-21)</p>
+            <div class="card">
+                <div class="hours-grid">
+                    <div class="hour-bar">
+                        <div class="hour-label">12:00</div>
+                        <div class="hour-track">
+                            <div class="hour-fill peak" style="width: 100%;">16 commits</div>
+                        </div>
+                    </div>
+                    <div class="hour-bar">
+                        <div class="hour-label">11:00</div>
+                        <div class="hour-track">
+                            <div class="hour-fill peak" style="width: 81%;">13 commits</div>
+                        </div>
+                    </div>
+                    <div class="hour-bar">
+                        <div class="hour-label">17:00</div>
+                        <div class="hour-track">
+                            <div class="hour-fill" style="width: 62%;">10 commits</div>
+                        </div>
+                    </div>
+                    <div class="hour-bar">
+                        <div class="hour-label">19:00</div>
+                        <div class="hour-track">
+                            <div class="hour-fill" style="width: 62%;">10 commits</div>
+                        </div>
+                    </div>
+                    <div class="hour-bar">
+                        <div class="hour-label">20:00</div>
+                        <div class="hour-track">
+                            <div class="hour-fill" style="width: 56%;">9 commits</div>
+                        </div>
+                    </div>
+                    <div class="hour-bar">
+                        <div class="hour-label">21:00</div>
+                        <div class="hour-track">
+                            <div class="hour-fill" style="width: 56%;">9 commits</div>
+                        </div>
+                    </div>
+                    <div class="hour-bar">
+                        <div class="hour-label">18:00</div>
+                        <div class="hour-track">
+                            <div class="hour-fill" style="width: 56%;">9 commits</div>
+                        </div>
+                    </div>
+                    <div class="hour-bar">
+                        <div class="hour-label">10:00</div>
+                        <div class="hour-track">
+                            <div class="hour-fill" style="width: 56%;">9 commits</div>
+                        </div>
+                    </div>
+                </div>
+                <p style="color: var(--text-secondary); text-align: center; margin-top: 20px;">
+                    <strong style="color: var(--accent-teal);">Pattern:</strong> Midday primary burst (11-12), secondary evening push (17-21). No late-night work (after 22:00) or early morning (before 06:00).
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Architecture Section -->
+    <section id="architecture">
+        <div class="container">
+            <h2 class="section-title">Architecture Map</h2>
+            <p class="section-subtitle">Core modules and their relationships</p>
+            <div class="card">
+                <div class="arch-container">
+                    <div class="arch-box core">recipe-generator</div>
+                    <div class="arch-box core">substitution-engine</div>
+                    <div class="arch-box core">name-resolver</div>
+                    <div class="arch-box core">regional-matcher</div>
+                    <div class="arch-box">memory-workflow</div>
+                    <div class="arch-box">research-provenance</div>
+                    <div class="arch-box">billing-stripe</div>
+                    <div class="arch-box">local-speech</div>
+                    <div class="arch-box">rate-limit</div>
+                    <div class="arch-box">auth</div>
+                    <div class="arch-box">MCP Tools</div>
+                    <div class="arch-box">HTTP Server</div>
+                </div>
+                <div style="margin-top: 30px; padding: 20px; background: var(--bg-secondary); border-radius: 10px;">
+                    <h4 style="color: var(--accent-gold); margin-bottom: 15px;">Source Structure</h4>
+                    <div style="color: var(--text-secondary); font-family: monospace; line-height: 1.8;">
+                        <div>src/</div>
+                        <div style="padding-left: 20px;">├── tools/ (MCP tool registry, results)</div>
+                        <div style="padding-left: 20px;">├── lib/ (10 core modules)</div>
+                        <div style="padding-left: 20px;">├── data/ (6 JSON datasets)</div>
+                        <div style="padding-left: 20px;">├── schemas/ (Tool schemas)</div>
+                        <div style="padding-left: 20px;">└── cli.ts, server.ts, http-server.ts, index.ts</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Domain Deep Dive -->
+    <section id="domain">
+        <div class="container">
+            <h2 class="section-title">Domain Deep Dive</h2>
+            <p class="section-subtitle">Achiote-specific capabilities and development focus</p>
+            <div class="grid-2">
+                <div class="domain-item">
+                    <div class="domain-title">🍳 Culinary AI Core</div>
+                    <div class="domain-text">
+                        Recipe generation engine with intelligent ingredient substitution based on sensory profiles and regional availability.
+                        Includes dish family classification, food science references, and memory hint systems.
+                    </div>
+                    <div class="domain-tags">
+                        <span class="domain-tag">recipe-generator</span>
+                        <span class="domain-tag">substitution-engine</span>
+                        <span class="domain-tag">sensory-profiles</span>
+                        <span class="domain-tag">regional-matcher</span>
+                    </div>
+                </div>
+                <div class="domain-item">
+                    <div class="domain-title">🔌 MCP Server</div>
+                    <div class="domain-text">
+                        Full Model Context Protocol server implementation with tool registry, HTTP server, and results processing.
+                        8 commits dedicated to MCP infrastructure and tool schemas.
+                    </div>
+                    <div class="domain-tags">
+                        <span class="domain-tag">MCP tools</span>
+                        <span class="domain-tag">HTTP server</span>
+                        <span class="domain-tag">tool registry</span>
+                    </div>
+                </div>
+                <div class="domain-item">
+                    <div class="domain-title">🤖 Multi-Model Support</div>
+                    <div class="domain-text">
+                        Evidence of Claude, GLM, and local inference support. Tailscale integration for secure local model access.
+                        Flexible model routing architecture for different use cases.
+                    </div>
+                    <div class="domain-tags">
+                        <span class="domain-tag">Claude</span>
+                        <span class="domain-tag">GLM</span>
+                        <span class="domain-tag">local inference</span>
+                        <span class="domain-tag">Tailscale</span>
+                    </div>
+                </div>
+                <div class="domain-item">
+                    <div class="domain-title">🚀 Launch Trajectory</div>
+                    <div class="domain-text">
+                        11 commits focused on launch preparation, viability smoke tests, and paid billing integration via Stripe.
+                        Clear progression from development to production readiness.
+                    </div>
+                    <div class="domain-tags">
+                        <span class="domain-tag">11 launch commits</span>
+                        <span class="domain-tag">viability tests</span>
+                        <span class="domain-tag">Stripe billing</span>
+                        <span class="domain-tag">production ready</span>
+                    </div>
+                </div>
+                <div class="domain-item">
+                    <div class="domain-title">🔒 Security Focus</div>
+                    <div class="domain-text">
+                        2 automated security fixes via repo-pipeline addressing CRITICAL/HIGH severity issues including XSS,
+                        CSP, CORS, and input validation vulnerabilities.
+                    </div>
+                    <div class="domain-tags">
+                        <span class="domain-tag">XSS prevention</span>
+                        <span class="domain-tag">CSP headers</span>
+                        <span class="domain-tag">CORS config</span>
+                        <span class="domain-tag">input validation</span>
+                    </div>
+                </div>
+                <div class="domain-item">
+                    <div class="domain-title">📚 Rich Data Layer</div>
+                    <div class="domain-text">
+                        6 JSON datasets powering the culinary engine: dish families, ingredients database, sensory profiles,
+                        food science references, regional availability maps, and memory hints.
+                    </div>
+                    <div class="domain-tags">
+                        <span class="domain-tag">dish-families</span>
+                        <span class="domain-tag">ingredients</span>
+                        <span class="domain-tag">sensory-profiles</span>
+                        <span class="domain-tag">food-science</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Development Phases -->
+    <section id="phases">
+        <div class="container">
+            <h2 class="section-title">Development Phases</h2>
+            <p class="section-subtitle">Five distinct phases from scaffolding to launch</p>
+            <div class="phase-timeline">
+                <div class="phase-item">
+                    <div class="phase-date">April 18, 2026 (Day 1)</div>
+                    <div class="phase-title">Phase 1: Scaffolding Sprint</div>
+                    <div class="phase-desc">
+                        Massive initial burst establishing the entire project skeleton. Core architecture, MCP server foundation,
+                        and all major systems initialized in a single day.
+                    </div>
+                    <div class="phase-stats">
+                        <span class="phase-badge">35 commits</span>
+                        <span class="phase-badge">Project skeleton</span>
+                        <span class="phase-badge">MCP setup</span>
+                    </div>
+                </div>
+                <div class="phase-item">
+                    <div class="phase-date">April 19-20, 2026 (Days 2-3)</div>
+                    <div class="phase-title">Phase 2: Core Features</div>
+                    <div class="phase-desc">
+                        Recipe generation engine and substitution engine implementation. Regional matcher and sensory profiling
+                        capabilities added.
+                    </div>
+                    <div class="phase-stats">
+                        <span class="phase-badge">26 commits</span>
+                        <span class="phase-badge">recipe engine</span>
+                        <span class="phase-badge">substitution</span>
+                        <span class="phase-badge">sensory profiles</span>
+                    </div>
+                </div>
+                <div class="phase-item">
+                    <div class="phase-date">April 21, 2026 (Day 4)</div>
+                    <div class="phase-title">Phase 3: Feature Burst</div>
+                    <div class="phase-desc">
+                        MCP tools expansion, provider system implementation, and enhanced capabilities. Memory workflow and
+                        research provenance systems integrated.
+                    </div>
+                    <div class="phase-stats">
+                        <span class="phase-badge">24 commits</span>
+                        <span class="phase-badge">MCP tools</span>
+                        <span class="phase-badge">providers</span>
+                        <span class="phase-badge">memory workflow</span>
+                    </div>
+                </div>
+                <div class="phase-item">
+                    <div class="phase-date">April 22-25, 2026 (Days 5-8)</div>
+                    <div class="phase-title">Phase 4: Polish & Hardening</div>
+                    <div class="phase-desc">
+                        Security fixes, landing page, documentation, and smoke tests. Infrastructure hardening and launch
+                        preparation. Includes automated security pipeline fixes.
+                    </div>
+                    <div class="phase-stats">
+                        <span class="phase-badge">14 commits</span>
+                        <span class="phase-badge">security fixes</span>
+                        <span class="phase-badge">landing page</span>
+                        <span class="phase-badge">smoke tests</span>
+                    </div>
+                </div>
+                <div class="phase-item">
+                    <div class="phase-date">April 26-27, 2026 (Days 9-10)</div>
+                    <div class="phase-title">Phase 5: Launch Preparation</div>
+                    <div class="phase-desc">
+                        Final viability checks, paid launch configuration, local inference via Tailscale, and production
+                        readiness. GLM model routing and multi-provider support finalized.
+                    </div>
+                    <div class="phase-stats">
+                        <span class="phase-badge">24 commits</span>
+                        <span class="phase-badge">viability tests</span>
+                        <span class="phase-badge">paid launch</span>
+                        <span class="phase-badge">local inference</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Key Metrics -->
+    <section id="metrics">
+        <div class="container">
+            <h2 class="section-title">Key Metrics</h2>
+            <p class="section-subtitle">Project scale and development intensity</p>
+            <div class="grid-4">
+                <div class="metric-card">
+                    <div class="metric-value">14,839</div>
+                    <div class="metric-label">Lines of TypeScript</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value">70</div>
+                    <div class="metric-label">TypeScript Files</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value">40</div>
+                    <div class="metric-label">PRs Merged</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value">3.1</div>
+                    <div class="metric-label">Avg Commits per PR</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value">12.3</div>
+                    <div class="metric-label">Commits per Active Day</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value">8.1%</div>
+                    <div class="metric-label">Fix Rate</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value">35</div>
+                    <div class="metric-label">Peak Commits (Day 1)</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value">11</div>
+                    <div class="metric-label">Launch Commits</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Agent Evidence -->
+    <section id="agents">
+        <div class="container">
+            <h2 class="section-title">Agent Evidence</h2>
+            <p class="section-subtitle">Branches and commits indicating AI agent collaboration</p>
+            <div class="card">
+                <ul class="agent-list">
+                    <li class="agent-item">
+                        <div class="agent-icon">K</div>
+                        <div class="agent-info">
+                            <h4>agent/kilocode/local-inference-tailscale</h4>
+                            <p>Local model integration via Tailscale VPN for secure inference</p>
+                        </div>
+                    </li>
+                    <li class="agent-item">
+                        <div class="agent-icon">C</div>
+                        <div class="agent-info">
+                            <h4>codex/p0-launch-blockers</h4>
+                            <p>OpenAI Codex agent addressing launch-critical issues</p>
+                        </div>
+                    </li>
+                    <li class="agent-item">
+                        <div class="agent-icon">G</div>
+                        <div class="agent-info">
+                            <h4>glm-model-routing-and-inference</h4>
+                            <p>GLM model integration and routing logic implementation</p>
+                        </div>
+                    </li>
+                    <li class="agent-item">
+                        <div class="agent-icon">P</div>
+                        <div class="agent-info">
+                            <h4>repo-pipeline security fixes</h4>
+                            <p>Automated pipeline addressing XSS, CSP, CORS vulnerabilities</p>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-logo">DevArch Framework</div>
+                <p>Generated on April 27, 2026</p>
+                <p style="margin-top: 10px; font-size: 0.9rem;">
+                    Methodology: Git repository archaeology analyzing commit patterns, author attribution,
+                    temporal distribution, and code structure. All data sourced from git history.
+                </p>
+                <p style="margin-top: 15px; color: var(--accent-teal);">
+                    Achiote v0.2.0 — Culinary Reverse Engineering System
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Animate stat counters
+        function animateCounter(elementId, target, duration = 2000) {
+            const element = document.getElementById(elementId);
+            const start = 0;
+            const increment = target / (duration / 16);
+            let current = start;
+
+            const timer = setInterval(() => {
+                current += increment;
+                if (current >= target) {
+                    element.textContent = target;
+                    clearInterval(timer);
+                } else {
+                    element.textContent = Math.floor(current);
+                }
+            }, 16);
+        }
+
+        // Start animations when page loads
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                animateCounter('stat-commits', 123);
+                animateCounter('stat-days', 9);
+                animateCounter('stat-authors', 2);
+                animateCounter('stat-prs', 40);
+            }, 500);
+        });
+
+        // Chart.js default config
+        Chart.defaults.color = '#a1a1aa';
+        Chart.defaults.borderColor = '#2a2a3a';
+
+        // Timeline Chart
+        const timelineCtx = document.getElementById('timelineChart').getContext('2d');
+        new Chart(timelineCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Apr 18', 'Apr 19', 'Apr 20', 'Apr 21', 'Apr 22', 'Apr 23', 'Apr 24', 'Apr 25', 'Apr 26', 'Apr 27'],
+                datasets: [{
+                    label: 'Commits',
+                    data: [35, 15, 11, 24, 5, 0, 8, 1, 13, 11],
+                    backgroundColor: (context) => {
+                        const value = context.raw;
+                        if (value === 0) return 'rgba(161, 161, 170, 0.2)';
+                        const intensity = value / 35;
+                        return `rgba(232, 93, 58, ${0.4 + intensity * 0.6})`;
+                    },
+                    borderColor: '#e85d3a',
+                    borderWidth: 2,
+                    borderRadius: 8,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    title: {
+                        display: true,
+                        text: 'Daily Commit Volume',
+                        color: '#f4a261',
+                        font: { size: 16, weight: 'bold' }
+                    },
+                    annotation: {
+                        annotations: {
+                            quietDay: {
+                                type: 'box',
+                                xMin: 5,
+                                xMax: 5,
+                                backgroundColor: 'rgba(161, 161, 170, 0.1)',
+                                borderColor: 'rgba(161, 161, 170, 0.3)',
+                                borderWidth: 1,
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: 'rgba(42, 42, 58, 0.5)' },
+                        ticks: { color: '#a1a1aa' }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { color: '#a1a1aa' }
+                    }
+                }
+            }
+        });
+
+        // Velocity Chart
+        const velocityCtx = document.getElementById('velocityChart').getContext('2d');
+        new Chart(velocityCtx, {
+            type: 'line',
+            data: {
+                labels: ['Apr 18', 'Apr 19', 'Apr 20', 'Apr 21', 'Apr 22', 'Apr 23', 'Apr 24', 'Apr 25', 'Apr 26', 'Apr 27'],
+                datasets: [{
+                    label: 'Cumulative Commits',
+                    data: [35, 50, 61, 85, 90, 90, 98, 99, 112, 123],
+                    borderColor: '#f4a261',
+                    backgroundColor: 'rgba(244, 162, 97, 0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    yAxisID: 'y',
+                }, {
+                    label: 'Daily Rate',
+                    data: [35, 15, 11, 24, 5, 0, 8, 1, 13, 11],
+                    borderColor: '#2a9d8f',
+                    backgroundColor: 'rgba(42, 157, 143, 0.1)',
+                    fill: false,
+                    tension: 0.4,
+                    yAxisID: 'y1',
+                    borderDash: [5, 5],
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Cumulative Progress & Daily Velocity',
+                        color: '#f4a261',
+                        font: { size: 16, weight: 'bold' }
+                    },
+                    legend: {
+                        position: 'top',
+                        labels: { color: '#a1a1aa' }
+                    }
+                },
+                scales: {
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        title: { display: true, text: 'Cumulative', color: '#f4a261' },
+                        grid: { color: 'rgba(42, 42, 58, 0.5)' }
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        title: { display: true, text: 'Daily Rate', color: '#2a9d8f' },
+                        grid: { drawOnChartArea: false }
+                    },
+                    x: {
+                        grid: { display: false }
+                    }
+                }
+            }
+        });
+
+        // Commit Types Chart
+        const commitTypesCtx = document.getElementById('commitTypesChart').getContext('2d');
+        new Chart(commitTypesCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Feature', 'Fix', 'Other', 'Docs', 'Test', 'Chore', 'CI'],
+                datasets: [{
+                    data: [15, 10, 90, 3, 2, 2, 1],
+                    backgroundColor: [
+                        '#e85d3a',
+                        '#f4a261',
+                        'rgba(161, 161, 170, 0.3)',
+                        '#2a9d8f',
+                        '#264653',
+                        'rgba(244, 162, 97, 0.5)',
+                        'rgba(42, 157, 143, 0.5)'
+                    ],
+                    borderColor: '#1a1a24',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: { color: '#a1a1aa', padding: 15 }
+                    }
+                }
+            }
+        });
+
+        // PR Distribution Chart
+        const prDistCtx = document.getElementById('prDistributionChart').getContext('2d');
+        new Chart(prDistCtx, {
+            type: 'pie',
+            data: {
+                labels: ['Direct Commits', 'PR Merges'],
+                datasets: [{
+                    data: [83, 40],
+                    backgroundColor: ['#2a9d8f', '#e85d3a'],
+                    borderColor: '#1a1a24',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: { color: '#a1a1aa', padding: 15 }
+                    }
+                }
+            }
+        });
+
+        // Smooth scroll
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>

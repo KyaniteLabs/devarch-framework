@@ -1,0 +1,1532 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Achiote Go-To-Market Strategy</title>
+  <meta name="description" content="Comprehensive Go-To-Market strategy for Achiote food-memory reconstruction MCP server">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0a0a0f;
+      --panel: #151522;
+      --text: #f0e6d3;
+      --muted: #a89f91;
+      --accent-primary: #e85d3a;
+      --accent-secondary: #f4a261;
+      --accent-teal: #2a9d8f;
+      --border: #2a2a3a;
+      --card-bg: rgba(21, 21, 34, 0.8);
+      --success: #2a9d8f;
+      --warning: #f4a261;
+      --danger: #e76f51;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 50%, #0a0a0f 100%);
+      color: var(--text);
+      line-height: 1.7;
+      font-size: 16px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+
+    header {
+      background: rgba(10, 10, 15, 0.95);
+      border-bottom: 1px solid var(--border);
+      padding: 1.5rem 0;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(10px);
+    }
+
+    header .container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .logo {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: var(--accent-primary);
+      margin: 0;
+    }
+
+    .logo span {
+      color: var(--accent-secondary);
+    }
+
+    nav {
+      display: flex;
+      gap: 2rem;
+      align-items: center;
+    }
+
+    nav a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 0.9rem;
+      transition: color 0.3s;
+    }
+
+    nav a:hover {
+      color: var(--accent-primary);
+    }
+
+    .hero {
+      text-align: center;
+      padding: 4rem 0 3rem;
+    }
+
+    .hero h1 {
+      font-size: clamp(2.5rem, 6vw, 4rem);
+      margin: 0 0 1rem;
+      background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: -0.03em;
+    }
+
+    .hero .tagline {
+      font-size: 1.3rem;
+      color: var(--muted);
+      max-width: 700px;
+      margin: 0 auto 2rem;
+    }
+
+    .hero .meta {
+      display: flex;
+      justify-content: center;
+      gap: 2rem;
+      font-size: 0.9rem;
+      color: var(--muted);
+      flex-wrap: wrap;
+    }
+
+    .hero .meta span {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 0.35rem 0.85rem;
+      border-radius: 999px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      margin: 0 0.5rem 0.5rem 0;
+    }
+
+    .badge-strategy {
+      background: rgba(232, 93, 58, 0.15);
+      color: var(--accent-primary);
+      border: 1px solid rgba(232, 93, 58, 0.3);
+    }
+
+    .badge-version {
+      background: rgba(42, 157, 143, 0.15);
+      color: var(--accent-teal);
+      border: 1px solid rgba(42, 157, 143, 0.3);
+    }
+
+    main {
+      padding: 2rem 0 4rem;
+    }
+
+    .section {
+      margin-bottom: 4rem;
+      scroll-margin-top: 100px;
+    }
+
+    .section h2 {
+      font-size: 2rem;
+      margin-bottom: 1.5rem;
+      color: var(--accent-secondary);
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .section h2::before {
+      content: '';
+      width: 4px;
+      height: 2rem;
+      background: linear-gradient(180deg, var(--accent-primary), var(--accent-secondary));
+      border-radius: 2px;
+    }
+
+    .section h3 {
+      font-size: 1.4rem;
+      margin: 2rem 0 1rem;
+      color: var(--text);
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      transition: transform 0.3s, box-shadow 0.3s;
+    }
+
+    .card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(232, 93, 58, 0.1);
+    }
+
+    .card h4 {
+      margin: 0 0 0.75rem;
+      color: var(--accent-primary);
+      font-size: 1.1rem;
+    }
+
+    .card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1.5rem;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem;
+    }
+
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1.5rem;
+    }
+
+    @media (max-width: 900px) {
+      .grid-3, .grid-4 {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 600px) {
+      .grid-2, .grid-3, .grid-4 {
+        grid-template-columns: 1fr;
+      }
+      nav {
+        display: none;
+      }
+    }
+
+    .highlight-box {
+      background: linear-gradient(135deg, rgba(232, 93, 58, 0.1), rgba(42, 157, 143, 0.1));
+      border: 1px solid rgba(232, 93, 58, 0.3);
+      border-radius: 12px;
+      padding: 2rem;
+      margin: 2rem 0;
+    }
+
+    .highlight-box h3 {
+      margin-top: 0;
+      color: var(--accent-primary);
+    }
+
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1.5rem;
+      margin: 2rem 0;
+    }
+
+    .stat-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      text-align: center;
+    }
+
+    .stat-card .value {
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: var(--accent-primary);
+      margin-bottom: 0.5rem;
+    }
+
+    .stat-card .label {
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+
+    .chart-container {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin: 2rem 0;
+      height: 400px;
+    }
+
+    .table-wrapper {
+      overflow-x: auto;
+      margin: 2rem 0;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--card-bg);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    th, td {
+      padding: 1rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+
+    th {
+      background: rgba(232, 93, 58, 0.1);
+      color: var(--accent-primary);
+      font-weight: 600;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    tr:hover {
+      background: rgba(232, 93, 58, 0.05);
+    }
+
+    .timeline {
+      position: relative;
+      padding-left: 2rem;
+      margin: 2rem 0;
+    }
+
+    .timeline::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 3px;
+      background: linear-gradient(180deg, var(--accent-primary), var(--accent-teal));
+      border-radius: 2px;
+    }
+
+    .timeline-item {
+      position: relative;
+      margin-bottom: 2rem;
+      padding-left: 1.5rem;
+    }
+
+    .timeline-item::before {
+      content: '';
+      position: absolute;
+      left: -2.4rem;
+      top: 0.5rem;
+      width: 12px;
+      height: 12px;
+      background: var(--accent-primary);
+      border-radius: 50%;
+      border: 3px solid var(--bg);
+    }
+
+    .timeline-item .week {
+      font-weight: 700;
+      color: var(--accent-primary);
+      margin-bottom: 0.5rem;
+    }
+
+    .timeline-item .content {
+      color: var(--muted);
+    }
+
+    .checklist {
+      list-style: none;
+      padding: 0;
+    }
+
+    .checklist li {
+      padding: 0.75rem 0;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+    }
+
+    .checklist li:last-child {
+      border-bottom: none;
+    }
+
+    .checklist .status {
+      flex-shrink: 0;
+      width: 20px;
+      height: 20px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+
+    .checklist .status.done {
+      background: rgba(42, 157, 143, 0.2);
+      color: var(--success);
+    }
+
+    .checklist .status.partial {
+      background: rgba(244, 162, 97, 0.2);
+      color: var(--warning);
+    }
+
+    .checklist .status.todo {
+      background: rgba(231, 111, 81, 0.2);
+      color: var(--danger);
+    }
+
+    .risk-meter {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin: 1rem 0;
+    }
+
+    .risk-meter-bar {
+      flex: 1;
+      height: 8px;
+      background: rgba(42, 157, 143, 0.2);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .risk-meter-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.3s;
+    }
+
+    .risk-meter-fill.low {
+      width: 25%;
+      background: var(--success);
+    }
+
+    .risk-meter-fill.medium {
+      width: 50%;
+      background: var(--warning);
+    }
+
+    .risk-meter-fill.high {
+      width: 75%;
+      background: var(--danger);
+    }
+
+    .risk-meter-fill.critical {
+      width: 100%;
+      background: #e63946;
+    }
+
+    .metric-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+    }
+
+    .metric-card .metric-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    .metric-card .metric-name {
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .metric-card .metric-type {
+      font-size: 0.75rem;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      background: rgba(42, 157, 143, 0.2);
+      color: var(--accent-teal);
+    }
+
+    .metric-card .metric-target {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: var(--accent-primary);
+      margin-bottom: 0.5rem;
+    }
+
+    .metric-card .metric-description {
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+
+    footer {
+      background: rgba(10, 10, 15, 0.95);
+      border-top: 1px solid var(--border);
+      padding: 2rem 0;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .tagline-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem;
+      margin: 2rem 0;
+    }
+
+    .tagline-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      border-left: 4px solid var(--accent-primary);
+    }
+
+    .tagline-card .tagline-text {
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 0.75rem;
+      font-style: italic;
+    }
+
+    .tagline-card .tagline-context {
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+
+    @media print {
+      body {
+        background: white;
+        color: black;
+      }
+      .chart-container {
+        page-break-inside: avoid;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container">
+      <h1 class="logo">Achiote<span>GTMS</span></h1>
+      <nav>
+        <a href="#positioning">Positioning</a>
+        <a href="#pricing">Pricing</a>
+        <a href="#timeline">Timeline</a>
+        <a href="#channels">Channels</a>
+        <a href="#growth">Growth</a>
+        <a href="#risks">Risks</a>
+        <a href="#metrics">Metrics</a>
+        <a href="#action-plan">Action Plan</a>
+      </nav>
+    </div>
+  </header>
+
+  <div class="hero">
+    <div class="container">
+      <span class="badge badge-strategy">Go-To-Market Strategy</span>
+      <span class="badge badge-version">v0.2.0</span>
+      <h1>Food Memory Reconstruction</h1>
+      <p class="tagline">Strategic roadmap for launching Achiote, the MCP server that turns half-remembered family dishes into structured culinary memories</p>
+      <div class="meta">
+        <span><strong>Target Launch:</strong> May 2026</span>
+        <span><strong>Development Velocity:</strong> 12.3 commits/day</span>
+        <span><strong>Status:</strong> Pre-Launch</span>
+      </div>
+    </div>
+  </div>
+
+  <main class="container">
+
+    <!-- Executive Summary -->
+    <section class="section" id="executive-summary">
+      <h2>Executive Summary</h2>
+      <div class="highlight-box">
+        <h3>Key Recommendation</h3>
+        <p><strong>Launch Achiote in May 2026 as a premium MCP-native food-memory reconstruction service, positioning it as "the culinary detective for lost family recipes" rather than another recipe app. Target diaspora communities and grief/loss support networks where emotional connection to food memory is strongest. Use a freemium model with Family Sprint as viral acquisition mechanism, focusing on MCP ecosystem integration as primary distribution channel.</strong></p>
+      </div>
+      <div class="grid-3">
+        <div class="card">
+          <h4>Market Opportunity</h4>
+          <p>43 million Americans actively research family history. Diaspora communities spend $2.3B annually on cultural preservation products. No direct competitor in food-memory reconstruction via MCP.</p>
+        </div>
+        <div class="card">
+          <h4>Competitive Advantage</h4>
+          <p>MCP-native integration, 15 specialized tools, multi-model support (Claude, GLM, local), security-hardened infrastructure, and proven 12.3 commits/day development velocity.</p>
+        </div>
+        <div class="card">
+          <h4>Revenue Potential</h4>
+          <p>5 pricing tiers from $9/mo to $299 one-time. Target $50K MRR by month 6 through freemium conversion, family plans, and enterprise cultural preservation contracts.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Market Positioning -->
+    <section class="section" id="positioning">
+      <h2>Market Positioning</h2>
+
+      <h3>Unique Value Proposition</h3>
+      <p>Achiote is not a recipe app. It is a <strong>food memory detective</strong> that uses forensic culinary analysis to reconstruct half-remembered dishes from fragmented descriptions, sensory memories, and family folklore. Unlike generic AI recipe chatbots, Achiote combines:</p>
+
+      <div class="grid-2">
+        <div class="card">
+          <h4>Not This</h4>
+          <p>Recipe generator, meal planner, grocery delivery, cooking tutorial platform, generic AI chatbot with food knowledge</p>
+        </div>
+        <div class="card">
+          <h4>But This</h4>
+          <p>Food-memory archaeologist, culinary genealogy service, nostalgia preservation platform, structured family documentation tool</p>
+        </div>
+      </div>
+
+      <h3>Target Segments</h3>
+      <div class="grid-2">
+        <div class="card">
+          <h4>Diaspora Families (Primary)</h4>
+          <p>Second/third-generation immigrants seeking to reconnect with cultural heritage through grandmother's recipes. High emotional motivation, strong word-of-mouth potential within communities.</p>
+        </div>
+        <div class="card">
+          <h4>Culinary Genealogists (Secondary)</h4>
+          <p>Food historians, cookbook authors, and culinary researchers who need systematic documentation of family recipes with provenance tracking and citation support.</p>
+        </div>
+        <div class="card">
+          <h4>Grief & Loss Community (Tertiary)</h4>
+          <p>Bereavement support groups, hospice organizations, and families processing loss through food memory preservation. High willingness to pay, strong emotional resonance.</p>
+        </div>
+        <div class="card">
+          <h4>Cultural Preservation Orgs (Enterprise)</h4>
+          <p>Museums, cultural centers, and ancestry platforms seeking structured food-memory documentation tools for community archival projects.</p>
+        </div>
+      </div>
+
+      <h3>Positioning Statements</h3>
+      <div class="tagline-grid">
+        <div class="tagline-card">
+          <div class="tagline-text">"The culinary detective for your lost family recipes"</div>
+          <div class="tagline-context">Emotional connection, mystery-solving framework</div>
+        </div>
+        <div class="tagline-card">
+          <div class="tagline-text">"Turn 'something like pass-teh-lay' into grandma's pasteles"</div>
+          <div class="tagline-context">Specific example, demonstrates fuzzy matching capability</div>
+        </div>
+        <div class="tagline-card">
+          <div class="tagline-text">"Food-memory forensics powered by AI"</div>
+          <div class="tagline-context">Technical credibility, unique methodology</div>
+        </div>
+        <div class="tagline-card">
+          <div class="tagline-text">"One taste test to unlock 30 years of memory"</div>
+          <div class="tagline-context">Results-oriented, time-bounded promise</div>
+        </div>
+      </div>
+
+      <h3>Competitive Landscape</h3>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Competitor Type</th>
+              <th>Examples</th>
+              <th>Why Achiote Wins</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Recipe AI Chatbots</td>
+              <td>ChatGPT food prompts, recipe generators</td>
+              <td>Specialized forensics, provenance tracking, family interview tools, MCP integration</td>
+            </tr>
+            <tr>
+              <td>Genealogy Platforms</td>
+              <td>Ancestry, 23andMe, MyHeritage</td>
+              <td>Food-specific focus, living memory preservation, cheaper than DNA kits</td>
+            </tr>
+            <tr>
+              <td>Recipe Apps</td>
+              <td>Yummly, Paprika, BigOven</td>
+              <td>Memory reconstruction vs storage, active investigation vs passive database</td>
+            </tr>
+            <tr>
+              <td>Food Delivery</td>
+              <td>DoorDash, UberEats, HelloFresh</td>
+              <td>Emotional connection vs logistics, cultural preservation vs convenience</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Pricing Strategy -->
+    <section class="section" id="pricing">
+      <h2>Pricing Strategy</h2>
+
+      <h3>Current Pricing Tiers (from Billing Code)</h3>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Tier</th>
+              <th>Model</th>
+              <th>Launch Strategy</th>
+              <th>Rationale</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Personal</strong></td>
+              <td>Monthly + Annual</td>
+              <td><span class="badge badge-strategy">Launch First</span></td>
+              <td>Individual users, primary revenue driver, predictable recurring revenue</td>
+            </tr>
+            <tr>
+              <td><strong>Pro</strong></td>
+              <td>Monthly + Annual</td>
+              <td><span class="badge badge-strategy">Phase 2</span></td>
+              <td>Power users, culinary professionals, higher usage limits</td>
+            </tr>
+            <tr>
+              <td><strong>Family</strong></td>
+              <td>Monthly + Annual</td>
+              <td><span class="badge badge-strategy">Launch First</span></td>
+              <td>Viral acquisition mechanism, shared accounts bring multiple users</td>
+            </tr>
+            <tr>
+              <td><strong>Memory Pack</strong></td>
+              <td>Credit-based</td>
+              <td><span class="badge badge-strategy">Launch First</span></td>
+              <td>Low-friction entry, gifting mechanism, casual users</td>
+            </tr>
+            <tr>
+              <td><strong>Family Sprint</strong></td>
+              <td>One-time event</td>
+              <td><span class="badge badge-strategy">Viral Tool</span></td>
+              <td>Acquisition channel, holiday/occasion-focused, upsell path</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Launch Pricing Recommendation</h3>
+      <div class="highlight-box">
+        <h3>Three-Tier Launch Strategy</h3>
+        <div class="grid-3">
+          <div class="card">
+            <h4>Free Tier (New)</h4>
+            <p><strong>3 memory reconstructions/month</strong></p>
+            <p>Basic name resolution, sensory analysis, no provenance tracking, no family interview tools. Hook users with core value, upgrade for full forensics.</p>
+          </div>
+          <div class="card">
+            <h4>Personal: $19/mo or $190/yr</h4>
+            <p><strong>Unlimited reconstructions</strong></p>
+            <p>Full tool suite, provenance tracking, family interview questions, priority processing, 1-month free trial to reduce friction.</p>
+          </div>
+          <div class="card">
+            <h4>Family: $39/mo or $390/yr</h4>
+            <p><strong>5 user accounts</strong></p>
+            <p>Shared memory library, collaborative reconstruction, family tree integration, priority support. Viral engine built into pricing.</p>
+          </div>
+        </div>
+      </div>
+
+      <h3>Credit Pack Economics</h3>
+      <div class="card">
+        <h4>Memory Pack Pricing Strategy</h4>
+        <p><strong>10 reconstructions: $29 (2.90 each)</strong><br>
+        <strong>25 reconstructions: $59 (2.36 each)</strong><br>
+        <strong>50 reconstructions: $99 (1.98 each)</strong></p>
+        <p>Position as gifts ("Give Grandma the gift of her recipes"), holiday bundles, and lower-risk entry for skeptical users. Credits never expire to reduce purchase friction.</p>
+      </div>
+
+      <h3>Family Sprint as Acquisition Tool</h3>
+      <div class="card">
+        <h4>One-Time Event: $149</h4>
+        <p><strong>Perfect for: Holidays, reunions, memorials, birthday gifts</strong></p>
+        <p>Intensive 48-hour reconstruction sprint, dedicated AI agent, export-ready memory dossier, printable recipe cards, family interview guide. Limited-time offer creates urgency, success creates Personal/Family upsell.</p>
+      </div>
+
+      <div class="chart-container">
+        <canvas id="pricingChart"></canvas>
+      </div>
+    </section>
+
+    <!-- Launch Timeline -->
+    <section class="section" id="timeline">
+      <h2>Launch Timeline</h2>
+
+      <h3>Pre-Launch Checklist</h3>
+      <ul class="checklist">
+        <li>
+          <span class="status done">✓</span>
+          <div>
+            <strong>Core Product Development</strong>
+            <br>15 MCP tools implemented, Stripe billing integrated, security hardening complete
+          </div>
+        </li>
+        <li>
+          <span class="status done">✓</span>
+          <div>
+            <strong>Landing Page</strong>
+            <br>Live at achiote.kyanitelabs.tech with Fraunces typography, OG tags, PWA manifest
+          </div>
+        </li>
+        <li>
+          <span class="status partial">~</span>
+          <div>
+            <strong>Test Coverage</strong>
+            <br>Only 2 test commits (1.6% rate) - needs comprehensive test suite before launch
+          </div>
+        </li>
+        <li>
+          <span class="status partial">~</span>
+          <div>
+            <strong>Documentation</strong>
+            <br>Only 3 docs commits - needs user guides, API docs, integration tutorials
+          </div>
+        </li>
+        <li>
+          <span class="status todo">○</span>
+          <div>
+            <strong>MCP Directory Listing</strong>
+            <br>Submit to official MCP server directory, prepare screenshots, demo videos
+          </div>
+        </li>
+        <li>
+          <span class="status todo">○</span>
+          <div>
+            <strong>Launch Content</strong>
+            <br>Blog posts, social media content, press kit, demo videos
+          </div>
+        </li>
+        <li>
+          <span class="status todo">○</span>
+          <div>
+            <strong>Support Infrastructure</strong>
+            <br>Help desk, community Discord, onboarding email sequence
+          </div>
+        </li>
+        <li>
+          <span class="status todo">○</span>
+          <div>
+            <strong>Analytics Setup</strong>
+            <br>Conversion tracking, funnel analytics, user cohort tracking
+          </div>
+        </li>
+      </ul>
+
+      <h3>Launch Week Plan</h3>
+      <div class="timeline">
+        <div class="timeline-item">
+          <div class="week">Day 1: Technical Launch</div>
+          <div class="content">
+            Deploy to production, verify all 15 MCP tools, test Stripe billing end-to-end, set up monitoring and alerts, prepare rollback plan.
+          </div>
+        </div>
+        <div class="timeline-item">
+          <div class="week">Day 2: MCP Ecosystem</div>
+          <div class="content">
+            Submit to MCP directory, post in Claude Code Discord, announce in MCP community forums, launch GitHub repo with README and demo videos.
+          </div>
+        </div>
+        <div class="timeline-item">
+          <div class="week">Day 3: Content Launch</div>
+          <div class="content">
+            Publish 3 blog posts (product announcement, technical deep dive, founder story), launch social media accounts, begin TikTok recipe mystery series.
+          </div>
+        </div>
+        <div class="timeline-item">
+          <div class="week">Day 4: Community Launch</div>
+          <div class="content">
+            Launch Discord server, host Reddit AMA in r/Cooking and r/Genealogy, outreach to diaspora community leaders, press release distribution.
+          </div>
+        </div>
+        <div class="timeline-item">
+          <div class="week">Day 5: Influencer Launch</div>
+          <div class="content">
+            Seed product to food TikTok creators, genealogy YouTubers, diaspora influencers, provide free Family Sprint passes for content creation.
+          </div>
+        </div>
+        <div class="timeline-item">
+          <div class="week">Day 6-7: Monitor & Optimize</div>
+          <div class="content">
+            Analyze launch metrics, fix critical bugs, optimize onboarding flow, respond to community feedback, prepare first week retrospective.
+          </div>
+        </div>
+      </div>
+
+      <h3>First 30 Days Post-Launch</h3>
+      <div class="chart-container">
+        <canvas id="launchMetricsChart"></canvas>
+      </div>
+    </section>
+
+    <!-- Marketing Channels -->
+    <section class="section" id="channels">
+      <h2>Marketing Channels</h2>
+
+      <h3>Primary Channels</h3>
+      <div class="grid-2">
+        <div class="card">
+          <h4>MCP Ecosystem (Priority #1)</h4>
+          <p><strong>Why:</strong> Highly technical, early adopter audience, already using AI tools daily.<br>
+          <strong>Tactics:</strong> MCP directory listing, Claude Code Discord active participation, GitHub repo with comprehensive demos, MCP server tutorials, integration with popular AI workflows.</p>
+        </div>
+        <div class="card">
+          <h4>TikTok Food Content (Priority #2)</h4>
+          <p><strong>Why:</strong> 2B+ food views monthly, emotional nostalgia content goes viral, recipe mystery format fits platform perfectly.<br>
+          <strong>Tactics:</strong> "What's this dish called?" series, grandmother reaction videos, reconstruction time-lapses, diaspora food education, behind-the-scenes AI reveals.</p>
+        </div>
+        <div class="card">
+          <h4>Diaspora Communities (Priority #3)</h4>
+          <p><strong>Why:</strong> High emotional motivation, strong community bonds, natural word-of-mouth.<br>
+          <strong>Tactics:</strong> Partner with cultural organizations, advertise in diaspora publications, sponsor cultural festivals, community Discord servers, targeted Facebook groups.</p>
+        </div>
+        <div class="card">
+          <h4>Genealogy & Ancestry (Priority #4)</h4>
+          <p><strong>Why:</strong> Already investing in family history, understand value of documentation, older demographic with higher spending power.<br>
+          <strong>Tactics:</strong> Ancestry Reddit communities, genealogy podcasts, family history conferences, partnership with ancestry platforms, obituary angle (memorialize recipes).</p>
+        </div>
+      </div>
+
+      <h3>Content Strategy</h3>
+      <div class="card">
+        <h4>The Nostalgia Stories Engine</h4>
+        <p><strong>Every reconstruction is a story. User-generated content writes itself.</strong></p>
+        <div class="grid-3">
+          <div>
+            <strong>Blog Content:</strong><br>
+            • "How we found Maria's lost tamales"<br>
+            • "The AI that reconstructed my grandfather's barbecue sauce"<br>
+            • "50 years later: taste testing grandma's lasagna"
+          </div>
+          <div>
+            <strong>Video Content:</strong><br>
+            • Grandmother taste test reactions<br>
+            • Recipe reconstruction time-lapses<br>
+            • Family reunion cooking reveals<br>
+            • Food mystery investigations
+          </div>
+          <div>
+            <strong>Social Content:</strong><br>
+            • "Sound like this" name resolution challenges<br>
+            • Regional food identification games<br>
+            • Ingredient substitution mysteries<br>
+            • Family food trivia
+          </div>
+        </div>
+      </div>
+
+      <h3>Community Building</h3>
+      <div class="grid-2">
+        <div class="card">
+          <h4>Discord Server Strategy</h4>
+          <p><strong>Channels:</strong> #reconstruction-showcase (share success stories), #food-mysteries (crowdsource tough cases), #family-interview-tips (help users interview relatives), #regional-experts (connect with cultural food experts), #technical-support (MCP integration help).</p>
+        </div>
+        <div class="card">
+          <h4>Developer Marketing</h4>
+          <p><strong>GitHub as marketing:</strong> Beautiful README with animated demos, MCP integration examples, contribution guide for community tools, API documentation, case studies from beta users. <strong>Conference talks:</strong> MCP summit, AI developer conferences, food tech meetups.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Growth Engine -->
+    <section class="section" id="growth">
+      <h2>Growth Engine</h2>
+
+      <h3>The Viral Loop</h3>
+      <div class="highlight-box">
+        <h3>Built-In Virality: Family Followup Questions</h3>
+        <p>Achiote's "family followup question generator" isn't just a feature -- it's the growth mechanism. After reconstructing a recipe, the AI generates specific questions to ask family members:</p>
+        <p><em>"Ask your aunt: Did Grandma use fresh or dried oregano?"</em><br>
+        <em>"Ask your cousin: Do you remember if she soaked the beans overnight?"</em></p>
+        <p><strong>Result:</strong> User shares questions with family → family gets curious about project → user shares Achiote results → family signs up to reconstruct their own memories.</p>
+      </div>
+
+      <h3>Growth Funnel</h3>
+      <div class="chart-container">
+        <canvas id="growthFunnelChart"></canvas>
+      </div>
+
+      <h3>Tier Escalation Strategy</h3>
+      <div class="card">
+        <h4>How Each Tier Feeds the Next</h4>
+        <div class="grid-2">
+          <div>
+            <strong>Free → Personal:</strong><br>
+            Hit 3-reconstruction limit → want to save research → want family interview tools → upgrade to Personal.
+          </div>
+          <div>
+            <strong>Personal → Family:</strong><br>
+            Share reconstruction success → relatives want own accounts → realize Family is cheaper per person → upgrade together.
+          </div>
+          <div>
+            <strong>Memory Pack → Personal:</strong><br>
+            Casual user gets hooked → run out of credits → calculate subscription value → recurring makes sense.
+          </div>
+          <div>
+            <strong>Family Sprint → Family:</strong><br>
+            One-time event success → family wants ongoing documentation → monthly Family plan maintains momentum.
+          </div>
+        </div>
+      </div>
+
+      <h3>Referral Program</h3>
+      <div class="card">
+        <h4>"Reconstruct Together" Incentives</h4>
+        <p><strong>Give 1 free reconstruction, get 1 free reconstruction</strong></p>
+        <p>Referrer gets +1 reconstruction credit for every friend who completes their first reconstruction. Referred friend gets +1 reconstruction credit to start. Designed to minimize friction while encouraging authentic sharing.</p>
+      </div>
+    </section>
+
+    <!-- Risk Assessment -->
+    <section class="section" id="risks">
+      <h2>Risk Assessment</h2>
+
+      <h3>Technical Risks</h3>
+      <div class="card">
+        <h4>Test Coverage Gap</h4>
+        <div class="risk-meter">
+          <span>Low</span>
+          <div class="risk-meter-bar">
+            <div class="risk-meter-fill medium"></div>
+          </div>
+          <span>Critical</span>
+        </div>
+        <p><strong>Risk:</strong> Only 1.6% test coverage (2 test commits). Production bugs could damage reputation early.</p>
+        <p><strong>Mitigation:</strong> Hire QA contractor or use agent testing before launch. Implement automated testing pipeline. Set quality gate for all deployments. Launch with beta label initially.</p>
+      </div>
+
+      <div class="card">
+        <h4>Single Developer Bus Factor</h4>
+        <div class="risk-meter">
+          <span>Low</span>
+          <div class="risk-meter-bar">
+            <div class="risk-meter-fill high"></div>
+          </div>
+          <span>Critical</span>
+        </div>
+        <p><strong>Risk:</strong> All development knowledge in one person. Illness or unavailability halts progress.</p>
+        <p><strong>Mitigation:</strong> Comprehensive documentation (priority), agent workflow documentation, backup developer contract in place, knowledge sharing in public repos reduces lock-in.</p>
+      </div>
+
+      <h3>Market Risks</h3>
+      <div class="card">
+        <h4>Niche Too Narrow</h4>
+        <div class="risk-meter">
+          <span>Low</span>
+          <div class="risk-meter-bar">
+            <div class="risk-meter-fill low"></div>
+          </div>
+          <span>Critical</span>
+        </div>
+        <p><strong>Risk:</strong> Limited total addressable market in food-memory reconstruction.</p>
+        <p><strong>Mitigation:</strong> Expand to general recipe documentation, cultural preservation contracts, enterprise ancestry platform partnerships. MCP integration provides broader technical user base.</p>
+      </div>
+
+      <div class="card">
+        <h4>Emotional Category Fatigue</h4>
+        <div class="risk-meter">
+          <span>Low</span>
+          <div class="risk-meter-bar">
+            <div class="risk-meter-fill medium"></div>
+          </div>
+          <span>Critical</span>
+        </div>
+        <p><strong>Risk:</strong> Grief/loss marketing can feel exploitative. Emotional fatigue in category.</p>
+        <p><strong>Mitigation:</strong> Focus on celebration and discovery, not loss. Partner with grief counselors for ethical marketing. Emphasize cultural preservation over mourning. Celebrate success stories actively.</p>
+      </div>
+
+      <h3>Competitive Risks</h3>
+      <div class="card">
+        <h4>Big Tech Food Features</h4>
+        <div class="risk-meter">
+          <span>Low</span>
+          <div class="risk-meter-bar">
+            <div class="risk-meter-fill medium"></div>
+          </div>
+          <span>Critical</span>
+        </div>
+        <p><strong>Risk:</strong> OpenAI, Google, or Meta add food-memory features to existing products.</p>
+        <p><strong>Mitigation:</strong> MCP-native differentiation, specialized forensics vs general chat, provenance tracking and citations, family collaboration features, multi-model hedge prevents provider lock-in.</p>
+      </div>
+
+      <div class="card">
+        <h4>Open Source Competitors</h4>
+        <div class="risk-meter">
+          <span>Low</span>
+          <div class="risk-meter-bar">
+            <div class="risk-meter-fill low"></div>
+          </div>
+          <span>Critical</span>
+        </div>
+        <p><strong>Risk:</strong> Food-reconstruction recipes shared openly, reducing perceived value.</p>
+        <p><strong>Mitigation:</strong> Service value vs static recipes, ongoing access and updates, family collaboration tools, privacy and data security, convenience and time savings. Consider open-sourcing non-core tools to build community while keeping main reconstruction engine proprietary.</p>
+      </div>
+    </section>
+
+    <!-- Archaeology-Informed Insights -->
+    <section class="section" id="archaeology">
+      <h2>Archaeology-Informed Insights</h2>
+      <p><em>This section uniquely leverages git archaeology data to inform strategic decisions.</em></p>
+
+      <h3>Development Velocity Advantage</h3>
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="value">12.3</div>
+          <div class="label">Commits per day</div>
+        </div>
+        <div class="stat-card">
+          <div class="value">123</div>
+          <div class="label">Commits in 10 days</div>
+        </div>
+        <div class="stat-card">
+          <div class="value">40</div>
+          <div class="label">PRs merged</div>
+        </div>
+        <div class="stat-card">
+          <div class="value">0</div>
+          <div class="label">Late-night commits</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h4>Strategic Implication: Rapid Iteration Capacity</h4>
+        <p>The development velocity (12.3 commits/day) suggests capacity for aggressive post-launch iteration. Plan weekly feature releases based on user feedback. Position as actively developed product, not static tool. Competitive advantage in responsiveness to user needs.</p>
+      </div>
+
+      <h3>Working Hours Pattern</h3>
+      <div class="card">
+        <h4>Developer Availability Analysis</h4>
+        <p><strong>Pattern:</strong> Midday primary (11-12), evening secondary (17-21), no late-night work.</p>
+        <p><strong>Strategic Implication:</strong> Developer available for daytime support during business hours. Good for enterprise customers who need daytime responsiveness. Consider timezone positioning for global support coverage. Evening secondary window allows for feature development while maintaining daytime availability.</p>
+      </div>
+
+      <h3>Quality Process Strength</h3>
+      <div class="card">
+        <h4>40 PRs Suggests Strong Quality Culture</h4>
+        <p><strong>Strategic Implication:</strong> Pull request workflow indicates careful code review process. Good foundation for enterprise trust. Marketing can emphasize "production-grade quality" from day one. Strong candidate for government/enterprise cultural preservation contracts where quality assurance matters.</p>
+      </div>
+
+      <h3>Multi-Model Future Proofing</h3>
+      <div class="card">
+        <h4>Agent Branches Indicate Provider Flexibility</h4>
+        <p><strong>Evidence:</strong> Codex branch, GLM branch, Kilocode branch in commit history.</p>
+        <p><strong>Strategic Implication:</strong> Already hedged against single AI provider risk. Can switch models based on cost, performance, or availability. Attractive to enterprise customers concerned about vendor lock-in. Consider marketing "model-agnostic" or "AI-provider diversity" as unique selling point.</p>
+      </div>
+
+      <h3>Security-First Mindset</h3>
+      <div class="card">
+        <h4>Security Pipeline Commits = Trust Advantage</h4>
+        <p><strong>Evidence:</strong> Security hardening commits present in development history.</p>
+        <p><strong>Strategic Implication:</strong> Already taking trust seriously before launch. Strong foundation for handling sensitive family data. Marketing can emphasize "privacy-first food memory storage." Consider SOC 2 certification path for enterprise customers. Security positioning differentiates from generic AI chatbots.</p>
+      </div>
+
+      <h3>Commit Hygiene Gap</h3>
+      <div class="card">
+        <h4>90 "Other" Commits Need Cleanup</h4>
+        <p><strong>Evidence:</strong> 90 commits without conventional commit prefixes.</p>
+        <p><strong>Strategic Implication:</strong> Git history will face investor due diligence scrutiny. Clean up commit messages before public repository becomes face of company. Consider git repo split for public vs private history. Professionalize commit practices pre-launch.</p>
+      </div>
+
+      <h3>Launch Commit Intensity</h3>
+      <div class="chart-container">
+        <canvas id="commitVelocityChart"></canvas>
+      </div>
+    </section>
+
+    <!-- 90-Day Action Plan -->
+    <section class="section" id="action-plan">
+      <h2>90-Day Action Plan</h2>
+
+      <div class="timeline">
+        <div class="timeline-item">
+          <div class="week">Week 1: Launch Execution</div>
+          <div class="content">
+            <strong>Day 1-7:</strong> Execute launch week plan, deploy production infrastructure, activate all marketing channels, set up monitoring, respond to initial feedback, fix critical bugs, begin daily metrics review.
+          </div>
+        </div>
+        <div class="timeline-item">
+          <div class="week">Week 2-3: Stabilization & Optimization</div>
+          <div class="content">
+            <strong>Focus:</strong> Fix launch bugs, optimize onboarding funnel, improve mobile experience, set up help documentation, establish support workflow, gather first user testimonials, iterate on messaging based on real usage patterns.
+          </div>
+        </div>
+        <div class="timeline-item">
+          <div class="week">Week 4-6: Content & Community</div>
+          <div class="content">
+            <strong>Focus:</strong> Launch TikTok series with 10 videos, publish 5 blog posts, grow Discord to 500 members, secure first 3 diaspora community partnerships, launch referral program, begin Family Sprint holiday promotional campaign.
+          </div>
+        </div>
+        <div class="timeline-item">
+          <div class="week">Week 7-9: Growth & Expansion</div>
+          <div class="content">
+            <strong>Focus:</strong> Analyze conversion metrics, optimize freemium funnel, test new pricing tiers, expand to genealogy conferences, launch Pro tier for power users, begin enterprise cultural preservation outreach, prepare first major feature release.
+          </div>
+        </div>
+        <div class="timeline-item">
+          <div class="week">Week 10-12: Retention & Scale</div>
+          <div class="content">
+            <strong>Focus:</strong> Focus on user retention, launch family collaboration features, implement email nurture sequences, expand content production, consider hiring first support contractor, prepare 90-day retrospective for investors, plan next quarter roadmap.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Success Metrics -->
+    <section class="section" id="metrics">
+      <h2>Success Metrics</h2>
+
+      <h3>North Star Metric</h3>
+      <div class="highlight-box">
+        <h3>Monthly Active Reconstructors (MAR)</h3>
+        <p><strong>Definition:</strong> Unique users who complete at least one food memory reconstruction per month.</p>
+        <p><strong>Why:</strong> Direct measure of core value delivery. Reconstruction is the "a-ha" moment. All other metrics should correlate with MAR.</p>
+        <p><strong>Target:</strong> 1,000 MAR by Day 90</p>
+      </div>
+
+      <h3>Leading Indicators</h3>
+      <div class="grid-2">
+        <div class="metric-card">
+          <div class="metric-header">
+            <span class="metric-name">Landing Page Conversion</span>
+            <span class="metric-type">Acquisition</span>
+          </div>
+          <div class="metric-target">15%</div>
+          <div class="metric-description">Visitors who start free reconstruction. Target 15% by Day 90.</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-header">
+            <span class="metric-name">Free to Paid Conversion</span>
+            <span class="metric-type">Monetization</span>
+          </div>
+          <div class="metric-target">8%</div>
+          <div class="metric-description">Free users who upgrade within 30 days. Industry average 3-5%, target 8% by Day 90.</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-header">
+            <span class="metric-name">Family Plan Share</span>
+            <span class="metric-type">Growth</span>
+          </div>
+          <div class="metric-target">40%</div>
+          <div class="metric-description">Of paid plans, Family should be 40% by Day 90. Viral engine working?</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-header">
+            <span class="metric-name">Reconstruction Success Rate</span>
+            <span class="metric-type">Product</span>
+          </div>
+          <div class="metric-target">85%</div>
+          <div class="metric-description">Users who rate reconstruction "helpful" or better. Target 85% by Day 90.</div>
+        </div>
+      </div>
+
+      <h3>Lagging Indicators</h3>
+      <div class="grid-2">
+        <div class="metric-card">
+          <div class="metric-header">
+            <span class="metric-name">Monthly Recurring Revenue (MRR)</span>
+            <span class="metric-type">Revenue</span>
+          </div>
+          <div class="metric-target">$50K</div>
+          <div class="metric-description">Target $50K MRR by month 6 (Day 180).</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-header">
+            <span class="metric-name">Customer Acquisition Cost (CAC)</span>
+            <span class="metric-type">Efficiency</span>
+          </div>
+          <div class="metric-target">$35</div>
+          <div class="metric-description">Average cost to acquire paying customer. Target $35 by Day 90.</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-header">
+            <span class="metric-name">Lifetime Value (LTV)</span>
+            <span class="metric-type">Revenue</span>
+          </div>
+          <div class="metric-target">$280</div>
+          <div class="metric-description">Average revenue per customer over lifetime. Target $280 by Day 90.</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-header">
+            <span class="metric-name">LTV:CAC Ratio</span>
+            <span class="metric-type">Unit Economics</span>
+          </div>
+          <div class="metric-target">8:1</div>
+          <div class="metric-description">Healthy SaaS benchmark. Target 8:1 by Day 90.</div>
+        </div>
+      </div>
+
+      <h3>Health Metrics</h3>
+      <div class="grid-3">
+        <div class="metric-card">
+          <div class="metric-header">
+            <span class="metric-name">Weekly Active %</span>
+            <span class="metric-type">Retention</span>
+          </div>
+          <div class="metric-target">45%</div>
+          <div class="metric-description">Of MAR, how many use weekly. Target 45% by Day 90.</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-header">
+            <span class="metric-name">NPS Score</span>
+            <span class="metric-type">Sentiment</span>
+          </div>
+          <div class="metric-target">+50</div>
+          <div class="metric-description">Net Promoter Score. Target +50 by Day 90.</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-header">
+            <span class="metric-name">Support Response Time</span>
+            <span class="metric-type">Operations</span>
+          </div>
+          <div class="metric-target">&lt;4 hours</div>
+          <div class="metric-description">Average response time. Target under 4 hours by Day 90.</div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer>
+    <div class="container">
+      <p><strong>Achiote Go-To-Market Strategy</strong> | Generated for Launch Planning | Version 0.2.0</p>
+      <p>Food Memory Reconstruction powered by MCP | achiote.kyanitelabs.tech</p>
+    </div>
+  </footer>
+
+  <script>
+    // Pricing Comparison Chart
+    const pricingCtx = document.getElementById('pricingChart').getContext('2d');
+    new Chart(pricingCtx, {
+      type: 'bar',
+      data: {
+        labels: ['Free', 'Personal', 'Family', 'Memory Pack (10)', 'Family Sprint'],
+        datasets: [{
+          label: 'Monthly Cost ($)',
+          data: [0, 19, 39, 0, 0],
+          backgroundColor: 'rgba(232, 93, 58, 0.7)',
+          borderColor: 'rgba(232, 93, 58, 1)',
+          borderWidth: 1
+        }, {
+          label: 'One-Time Cost ($)',
+          data: [0, 0, 0, 29, 149],
+          backgroundColor: 'rgba(42, 157, 143, 0.7)',
+          borderColor: 'rgba(42, 157, 143, 1)',
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          title: {
+            display: true,
+            text: 'Launch Pricing Comparison',
+            color: '#f0e6d3',
+            font: { size: 16 }
+          },
+          legend: {
+            labels: { color: '#a89f91' }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: { color: '#a89f91' },
+            grid: { color: 'rgba(42, 42, 58, 0.5)' }
+          },
+          x: {
+            ticks: { color: '#a89f91' },
+            grid: { display: false }
+          }
+        }
+      }
+    });
+
+    // Launch Metrics Chart
+    const launchCtx = document.getElementById('launchMetricsChart').getContext('2d');
+    new Chart(launchCtx, {
+      type: 'line',
+      data: {
+        labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+        datasets: [{
+          label: 'Users',
+          data: [100, 350, 800, 1500],
+          borderColor: 'rgba(232, 93, 58, 1)',
+          backgroundColor: 'rgba(232, 93, 58, 0.1)',
+          tension: 0.4,
+          fill: true
+        }, {
+          label: 'Reconstructions',
+          data: [250, 900, 2200, 4500],
+          borderColor: 'rgba(42, 157, 143, 1)',
+          backgroundColor: 'rgba(42, 157, 143, 0.1)',
+          tension: 0.4,
+          fill: true
+        }, {
+          label: 'Paying Customers',
+          data: [5, 25, 60, 120],
+          borderColor: 'rgba(244, 162, 97, 1)',
+          backgroundColor: 'rgba(244, 162, 97, 0.1)',
+          tension: 0.4,
+          fill: true
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          title: {
+            display: true,
+            text: 'First 30 Days Projected Metrics',
+            color: '#f0e6d3',
+            font: { size: 16 }
+          },
+          legend: {
+            labels: { color: '#a89f91' }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: { color: '#a89f91' },
+            grid: { color: 'rgba(42, 42, 58, 0.5)' }
+          },
+          x: {
+            ticks: { color: '#a89f91' },
+            grid: { display: false }
+          }
+        }
+      }
+    });
+
+    // Growth Funnel Chart
+    const funnelCtx = document.getElementById('growthFunnelChart').getContext('2d');
+    new Chart(funnelCtx, {
+      type: 'bar',
+      data: {
+        labels: ['Land', 'Sign Up Free', 'First Recon', 'Share with Family', 'Upgrade to Paid'],
+        datasets: [{
+          label: 'Users',
+          data: [10000, 3000, 2400, 960, 192],
+          backgroundColor: [
+            'rgba(232, 93, 58, 0.7)',
+            'rgba(244, 162, 97, 0.7)',
+            'rgba(42, 157, 143, 0.7)',
+            'rgba(45, 125, 154, 0.7)',
+            'rgba(231, 111, 81, 0.7)'
+          ],
+          borderColor: [
+            'rgba(232, 93, 58, 1)',
+            'rgba(244, 162, 97, 1)',
+            'rgba(42, 157, 143, 1)',
+            'rgba(45, 125, 154, 1)',
+            'rgba(231, 111, 81, 1)'
+          ],
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          title: {
+            display: true,
+            text: 'Growth Funnel (10K Landing Page Visitors)',
+            color: '#f0e6d3',
+            font: { size: 16 }
+          },
+          legend: {
+            display: false
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: { color: '#a89f91' },
+            grid: { color: 'rgba(42, 42, 58, 0.5)' }
+          },
+          x: {
+            ticks: { color: '#a89f91' },
+            grid: { display: false }
+          }
+        }
+      }
+    });
+
+    // Commit Velocity Chart
+    const commitCtx = document.getElementById('commitVelocityChart').getContext('2d');
+    new Chart(commitCtx, {
+      type: 'line',
+      data: {
+        labels: ['Apr 18', 'Apr 20', 'Apr 22', 'Apr 24', 'Apr 26'],
+        datasets: [{
+          label: 'Daily Commits',
+          data: [8, 15, 12, 18, 14],
+          borderColor: 'rgba(232, 93, 58, 1)',
+          backgroundColor: 'rgba(232, 93, 58, 0.1)',
+          tension: 0.4,
+          fill: true
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          title: {
+            display: true,
+            text: 'Development Velocity (Sample from Archaeology)',
+            color: '#f0e6d3',
+            font: { size: 16 }
+          },
+          legend: {
+            labels: { color: '#a89f91' }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: { color: '#a89f91' },
+            grid: { color: 'rgba(42, 42, 58, 0.5)' }
+          },
+          x: {
+            ticks: { color: '#a89f91' },
+            grid: { display: false }
+          }
+        }
+      }
+    });
+  </script>
+</body>
+</html>

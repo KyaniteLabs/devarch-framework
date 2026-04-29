@@ -1,0 +1,168 @@
+{
+  "vector_name": "Formal Terms Mapper",
+  "findings": [
+    {
+      "type": "Terminology Mapping",
+      "description": "\"recipe\" maps to formal term: \"structured data model\"",
+      "evidence": [
+        "Final polish: regional matcher fix, structured recipe inputs, HTTP tests (#44)",
+        "Add trust checks for constrained recipe handoffs"
+      ],
+      "confidence": "high",
+      "mapping": {
+        "informal": "recipe",
+        "formal": "structured data model",
+        "occurrences": 2
+      }
+    },
+    {
+      "type": "Terminology Mapping",
+      "description": "\"ingredient\" maps to formal term: \"data entity\"",
+      "evidence": [
+        "feat: add ingredient compound and sensory profile data",
+        "feat: add US regional ingredient availability data",
+        "Rename to Achiote, expand data: 40 families, 82 ingredients, 15 regions (#34)"
+      ],
+      "confidence": "high",
+      "mapping": {
+        "informal": "ingredient",
+        "formal": "data entity",
+        "occurrences": 4
+      }
+    },
+    {
+      "type": "Terminology Mapping",
+      "description": "\"dish\" maps to formal term: \"domain entity\"",
+      "evidence": [
+        "feat: add dish families with aliases and transliteration mappings",
+        "feat: add SQLite research cache for storing looked-up dish data",
+        "Add ambiguity-aware dish resolution"
+      ],
+      "confidence": "high",
+      "mapping": {
+        "informal": "dish",
+        "formal": "domain entity",
+        "occurrences": 5
+      }
+    },
+    {
+      "type": "Terminology Mapping",
+      "description": "\"substitution\" maps to formal term: \"algorithmic transformation\"",
+      "evidence": [
+        "feat: add chemistry-aware substitution engine",
+        "feat: wire ResearchCache, SubstitutionEngine, and data files into MCP tools"
+      ],
+      "confidence": "high",
+      "mapping": {
+        "informal": "substitution",
+        "formal": "algorithmic transformation",
+        "occurrences": 2
+      }
+    },
+    {
+      "type": "Terminology Mapping",
+      "description": "\"research cache\" maps to formal term: \"data persistence layer\"",
+      "evidence": [
+        "feat: add SQLite research cache for storing looked-up dish data"
+      ],
+      "confidence": "high",
+      "mapping": {
+        "informal": "research cache",
+        "formal": "data persistence layer",
+        "occurrences": 1
+      }
+    },
+    {
+      "type": "Terminology Mapping",
+      "description": "\"MCP\" maps to formal term: \"Model Context Protocol server\"",
+      "evidence": [
+        "feat: add MCP server with 6 tools",
+        "feat: wire ResearchCache, SubstitutionEngine, and data files into MCP tools",
+        "test: add integration tests for all 6 MCP tools"
+      ],
+      "confidence": "high",
+      "mapping": {
+        "informal": "MCP",
+        "formal": "Model Context Protocol server",
+        "occurrences": 8
+      }
+    },
+    {
+      "type": "Terminology Mapping",
+      "description": "\"fuzzy matching\" maps to formal term: \"approximate string matching algorithm\"",
+      "evidence": [
+        "feat: add name resolver with fuzzy matching and transliteration support"
+      ],
+      "confidence": "high",
+      "mapping": {
+        "informal": "fuzzy matching",
+        "formal": "approximate string matching algorithm",
+        "occurrences": 1
+      }
+    },
+    {
+      "type": "Terminology Mapping",
+      "description": "\"transliteration\" maps to formal term: \"text normalization\"",
+      "evidence": [
+        "feat: add dish families with aliases and transliteration mappings",
+        "feat: add name resolver with fuzzy matching and transliteration support"
+      ],
+      "confidence": "high",
+      "mapping": {
+        "informal": "transliteration",
+        "formal": "text normalization",
+        "occurrences": 2
+      }
+    },
+    {
+      "type": "Terminology Mapping",
+      "description": "\"chemistry-aware\" maps to formal term: \"domain-specific logic\"",
+      "evidence": [
+        "feat: add chemistry-aware substitution engine"
+      ],
+      "confidence": "high",
+      "mapping": {
+        "informal": "chemistry-aware",
+        "formal": "domain-specific logic",
+        "occurrences": 1
+      }
+    },
+    {
+      "type": "Formal Convention",
+      "description": "Project uses Conventional Commits specification",
+      "evidence": [
+        "chore: scaffold member-berries project",
+        "feat: add shared type definitions",
+        "feat: add ingredient compound and sensory profile data"
+      ],
+      "confidence": "high",
+      "mapping": {
+        "informal": "various commit message styles",
+        "formal": "Conventional Commits (ConCommits)",
+        "occurrences": 31
+      }
+    },
+    {
+      "type": "Formal Convention",
+      "description": "Project implements MCP (Model Context Protocol) architecture",
+      "evidence": [
+        "feat: add MCP server with 6 tools",
+        "feat: wire ResearchCache, SubstitutionEngine, and data files into MCP tools",
+        "test: add integration tests for all 6 MCP tools"
+      ],
+      "confidence": "high",
+      "mapping": {
+        "informal": "server/tool integration",
+        "formal": "Model Context Protocol (MCP) server",
+        "occurrences": 8
+      }
+    }
+  ],
+  "summary": {
+    "total_findings": 11,
+    "by_type": {
+      "Terminology Mapping": 1,
+      "Formal Convention": 1
+    }
+  }
+}

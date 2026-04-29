@@ -1,0 +1,76 @@
+{
+  "vector_name": "SDLC Gap Finder",
+  "findings": [
+    {
+      "type": "CI/CD Present",
+      "description": "Found 21 commits related to CI/CD infrastructure",
+      "evidence": [
+        "Avoid setup-node cache hangs on self-hosted CI",
+        "Update GitHub Actions to Node 24 runtime releases",
+        "Add research-first food memory workflow tools (#6)"
+      ],
+      "confidence": "high"
+    },
+    {
+      "type": "Testing Limited",
+      "description": "Only 3 test-related commits found",
+      "evidence": [
+        "test: add integration tests for all 6 MCP tools",
+        "Respect dietary constraints in minimum nostalgia cues",
+        "test: add local inference provider resolution tests (19 tests)"
+      ],
+      "confidence": "medium"
+    },
+    {
+      "type": "Code Review Present",
+      "description": "Found 7 commits indicating code review/PR activity",
+      "evidence": [
+        "Address package smoke and prompt-coverage review",
+        "Merge pull request #2 from Pastorsimon1798/next-foundation-20260418",
+        "Deploy preview user fixes (#81)"
+      ],
+      "confidence": "high"
+    },
+    {
+      "type": "Documentation Present",
+      "description": "Found 4 documentation-related commits",
+      "evidence": [
+        "docs: add README and MIT license",
+        "Refresh documentation for current provenance workflow",
+        "docs: update documentation for HTTP server and remove stale plans (#46)"
+      ],
+      "confidence": "high"
+    },
+    {
+      "type": "Security Considered",
+      "description": "Found 4 security-related commits",
+      "evidence": [
+        "[repo-pipeline] Fix CRITICAL/HIGH security issues: XSS, CSP, input validation (#36)",
+        "[repo-pipeline] Fix CRITICAL/HIGH security issues: CSP, inline handlers, CORS (#37)",
+        "Make persistent rate limits authoritative across instances"
+      ],
+      "confidence": "high"
+    },
+    {
+      "type": "Commit Hygiene Fair",
+      "description": "Only 26.0% of commits follow conventional commit format",
+      "evidence": [
+        "chore: scaffold member-berries project",
+        "feat: add shared type definitions",
+        "feat: add ingredient compound and sensory profile data"
+      ],
+      "confidence": "medium"
+    }
+  ],
+  "summary": {
+    "total_findings": 6,
+    "by_type": {
+      "CI/CD Present": 1,
+      "Testing Limited": 1,
+      "Code Review Present": 1,
+      "Documentation Present": 1,
+      "Security Considered": 1,
+      "Commit Hygiene Fair": 1
+    }
+  }
+}

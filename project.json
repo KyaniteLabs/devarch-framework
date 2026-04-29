@@ -1,0 +1,11 @@
+{
+  "developer_name": "Simon Gonzalez de Cruz",
+  "github_username": "Pastorsimon1798",
+  "repo_path": "/Users/simongonzalezdecruz/workspaces/Achiote",
+  "project_name": "Achiote",
+  "project_description": "Culinary reverse engineering system that recreates the sensory triggers of nostalgic dishes using locally available ingredients",
+  "signal_gap_threshold": 2,
+  "session_logs_available": false,
+  "areas_of_interest": ["testing", "velocity", "agents", "learning"],
+  "supplementary_sources": []
+}

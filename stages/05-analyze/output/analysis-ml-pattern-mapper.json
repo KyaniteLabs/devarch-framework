@@ -1,0 +1,120 @@
+{
+  "vector_name": "ML Pattern Mapper",
+  "findings": [
+    {
+      "type": "ML Pattern: inference",
+      "description": "Detected 6 commits related to inference",
+      "evidence": [
+        "feat: GLM model-aware endpoint routing + inference engine enhancement",
+        "feat: GLM model-aware endpoint routing + inference engine enhancement",
+        "feat: add local inference support via Tailscale"
+      ],
+      "confidence": "high"
+    },
+    {
+      "type": "ML Pattern: model",
+      "description": "Detected 7 commits related to model",
+      "evidence": [
+        "Recover from malformed model research plans",
+        "Recover from partial local-model tool inputs",
+        "feat: GLM model-aware endpoint routing + inference engine enhancement"
+      ],
+      "confidence": "high"
+    },
+    {
+      "type": "ML Pattern: feature_extraction",
+      "description": "Detected 3 commits related to feature_extraction",
+      "evidence": [
+        "feat: add ingredient compound and sensory profile data",
+        "Avoid connector words in memory name extraction",
+        "Broaden elicitation: geography-first question, 90+ region patterns, expanded sensory/occasion extraction (#25)"
+      ],
+      "confidence": "high"
+    },
+    {
+      "type": "ML Pattern: preprocessing",
+      "description": "Detected 5 commits related to preprocessing",
+      "evidence": [
+        "chore: clean integration debt (#43)",
+        "Production hardening: clean prompts, health metrics, /ask tests, load script (#45)",
+        "fix: force memory-probe cue when input is too sparse; remove family assumptions"
+      ],
+      "confidence": "high"
+    },
+    {
+      "type": "ML Pattern: evaluation",
+      "description": "Detected 9 commits related to evaluation",
+      "evidence": [
+        "test: add integration tests for all 6 MCP tools",
+        "Final polish: regional matcher fix, structured recipe inputs, HTTP tests (#44)",
+        "Production hardening: clean prompts, health metrics, /ask tests, load script (#45)"
+      ],
+      "confidence": "high"
+    },
+    {
+      "type": "ML Pattern: deployment",
+      "description": "Detected 15 commits related to deployment",
+      "evidence": [
+        "feat: add MCP server with 6 tools",
+        "feat: wire ResearchCache, SubstitutionEngine, and data files into MCP tools",
+        "test: add integration tests for all 6 MCP tools"
+      ],
+      "confidence": "high"
+    },
+    {
+      "type": "Architecture: data_pipeline",
+      "description": "Detected 3 commits implementing data_pipeline",
+      "evidence": [
+        "feat: add SQLite research cache for storing looked-up dish data",
+        "feat: wire ResearchCache, SubstitutionEngine, and data files into MCP tools",
+        "Avoid setup-node cache hangs on self-hosted CI"
+      ],
+      "confidence": "high"
+    },
+    {
+      "type": "Architecture: api_design",
+      "description": "Detected 21 commits implementing api_design",
+      "evidence": [
+        "feat: add MCP server with 6 tools",
+        "feat: wire ResearchCache, SubstitutionEngine, and data files into MCP tools",
+        "test: add integration tests for all 6 MCP tools"
+      ],
+      "confidence": "high"
+    },
+    {
+      "type": "Architecture: mcp_server",
+      "description": "Detected 18 commits implementing mcp_server",
+      "evidence": [
+        "feat: add MCP server with 6 tools",
+        "feat: add Claude Code skill definition",
+        "feat: wire ResearchCache, SubstitutionEngine, and data files into MCP tools"
+      ],
+      "confidence": "high"
+    },
+    {
+      "type": "Architecture: data_modeling",
+      "description": "Detected 3 commits implementing data_modeling",
+      "evidence": [
+        "feat: add shared type definitions",
+        "feat: add ingredient compound and sensory profile data",
+        "fix: add 'confectionery' to cueComponentSchema role enum"
+      ],
+      "confidence": "high"
+    }
+  ],
+  "summary": {
+    "total_findings": 10,
+    "by_type": {
+      "ML Pattern: inference": 1,
+      "ML Pattern: model": 1,
+      "ML Pattern: feature_extraction": 1,
+      "ML Pattern: preprocessing": 1,
+      "ML Pattern: evaluation": 1,
+      "ML Pattern: deployment": 1,
+      "Architecture: data_pipeline": 1,
+      "Architecture: api_design": 1,
+      "Architecture: mcp_server": 1,
+      "Architecture: data_modeling": 1
+    }
+  }
+}

@@ -1,0 +1,377 @@
+{
+  "project": "Achiote",
+  "total_commits": 123,
+  "active_days": 9,
+  "span_days": 10,
+  "date_range": "Apr 18 - Apr 27, 2026",
+  "signals": [
+    {
+      "type": "velocity_shift",
+      "date": "2026-04-19",
+      "value": 15,
+      "metadata": {
+        "previous_velocity": 35,
+        "change_percent": 57.1,
+        "change_type": "decrease",
+        "description": "Velocity decreased from 35 to 15 commits"
+      }
+    },
+    {
+      "type": "velocity_shift",
+      "date": "2026-04-21",
+      "value": 24,
+      "metadata": {
+        "previous_velocity": 11,
+        "change_percent": 118.2,
+        "change_type": "increase",
+        "description": "Velocity increased from 11 to 24 commits"
+      }
+    },
+    {
+      "type": "velocity_shift",
+      "date": "2026-04-22",
+      "value": 5,
+      "metadata": {
+        "previous_velocity": 24,
+        "change_percent": 79.2,
+        "change_type": "decrease",
+        "description": "Velocity decreased from 24 to 5 commits"
+      }
+    },
+    {
+      "type": "velocity_shift",
+      "date": "2026-04-25",
+      "value": 1,
+      "metadata": {
+        "previous_velocity": 8,
+        "change_percent": 87.5,
+        "change_type": "decrease",
+        "description": "Velocity decreased from 8 to 1 commits"
+      }
+    },
+    {
+      "type": "velocity_shift",
+      "date": "2026-04-26",
+      "value": 13,
+      "metadata": {
+        "previous_velocity": 1,
+        "change_percent": 1200.0,
+        "change_type": "increase",
+        "description": "Velocity increased from 1 to 13 commits"
+      }
+    },
+    {
+      "type": "author_change",
+      "date": "2026-04-18",
+      "value": "Simon",
+      "metadata": {
+        "commit_hash": "4d0b5099e906b85bfce10402154a1f37db9eca0d",
+        "message": "chore: scaffold member-berries project",
+        "description": "Commit by Simon (non-primary author)"
+      }
+    },
+    {
+      "type": "author_change",
+      "date": "2026-04-18",
+      "value": "Simon",
+      "metadata": {
+        "commit_hash": "d198703a4372456c4ed9b8034bb9954cd7e5eebb",
+        "message": "feat: add shared type definitions",
+        "description": "Commit by Simon (non-primary author)"
+      }
+    },
+    {
+      "type": "author_change",
+      "date": "2026-04-18",
+      "value": "Simon",
+      "metadata": {
+        "commit_hash": "d2ba098cddd30195f4159ddf0f2e75c38d79f03e",
+        "message": "feat: add ingredient compound and sensory profile data",
+        "description": "Commit by Simon (non-primary author)"
+      }
+    },
+    {
+      "type": "author_change",
+      "date": "2026-04-18",
+      "value": "Simon",
+      "metadata": {
+        "commit_hash": "32cbabc1cc4596e3841dd915ec231415f0ed182a",
+        "message": "feat: add dish families with aliases and transliteration mappings",
+        "description": "Commit by Simon (non-primary author)"
+      }
+    },
+    {
+      "type": "author_change",
+      "date": "2026-04-18",
+      "value": "Simon",
+      "metadata": {
+        "commit_hash": "1e5bc93043c966cd89ab75fecdaeed60c7770859",
+        "message": "feat: add name resolver with fuzzy matching and transliteration support",
+        "description": "Commit by Simon (non-primary author)"
+      }
+    },
+    {
+      "type": "author_change",
+      "date": "2026-04-18",
+      "value": "Simon",
+      "metadata": {
+        "commit_hash": "2a8119572c408566384bc63f094bc1be116c18e7",
+        "message": "feat: add SQLite research cache for storing looked-up dish data",
+        "description": "Commit by Simon (non-primary author)"
+      }
+    },
+    {
+      "type": "author_change",
+      "date": "2026-04-18",
+      "value": "Simon",
+      "metadata": {
+        "commit_hash": "12a644edbdce52321b304af9f0f0f161554f54ea",
+        "message": "feat: add MCP server with 6 tools",
+        "description": "Commit by Simon (non-primary author)"
+      }
+    },
+    {
+      "type": "author_change",
+      "date": "2026-04-18",
+      "value": "Simon",
+      "metadata": {
+        "commit_hash": "02d6b2b407f6aa79378a0aa75b209cdeb77a07d3",
+        "message": "feat: add chemistry-aware substitution engine",
+        "description": "Commit by Simon (non-primary author)"
+      }
+    },
+    {
+      "type": "author_change",
+      "date": "2026-04-18",
+      "value": "Simon",
+      "metadata": {
+        "commit_hash": "47fa7cf10fc4f50bf6fd18e7f0128dcd92364369",
+        "message": "feat: add Claude Code skill definition",
+        "description": "Commit by Simon (non-primary author)"
+      }
+    },
+    {
+      "type": "author_change",
+      "date": "2026-04-18",
+      "value": "Simon",
+      "metadata": {
+        "commit_hash": "cdd2526422e089bf636c9b9f3bc50f94d29e9d1c",
+        "message": "feat: add US regional ingredient availability data",
+        "description": "Commit by Simon (non-primary author)"
+      }
+    },
+    {
+      "type": "author_change",
+      "date": "2026-04-18",
+      "value": "Simon",
+      "metadata": {
+        "commit_hash": "b3d54a1e871c46ce8905f6db21a7fcdeae097d89",
+        "message": "docs: add README and MIT license",
+        "description": "Commit by Simon (non-primary author)"
+      }
+    },
+    {
+      "type": "author_change",
+      "date": "2026-04-18",
+      "value": "Simon",
+      "metadata": {
+        "commit_hash": "60de822e319ff584ba48c1b93c53da8c9097e91c",
+        "message": "feat: wire ResearchCache, SubstitutionEngine, and data files into MCP tools",
+        "description": "Commit by Simon (non-primary author)"
+      }
+    },
+    {
+      "type": "author_change",
+      "date": "2026-04-18",
+      "value": "Simon",
+      "metadata": {
+        "commit_hash": "470c5fdc3478253856ca8f627fc92924d6275733",
+        "message": "test: add integration tests for all 6 MCP tools",
+        "description": "Commit by Simon (non-primary author)"
+      }
+    },
+    {
+      "type": "author_change",
+      "date": "2026-04-18",
+      "value": "Simon",
+      "metadata": {
+        "commit_hash": "9f1c81f7731383973ddb56a63e9074e530e5a98d",
+        "message": "Close release-readiness gaps after the MCP baseline",
+        "description": "Commit by Simon (non-primary author)"
+      }
+    },
+    {
+      "type": "author_change",
+      "date": "2026-04-18",
+      "value": "Simon",
+      "metadata": {
+        "commit_hash": "521bdbf8e1d6fe676da6a3581516ece70b39b52c",
+        "message": "Avoid setup-node cache hangs on self-hosted CI",
+        "description": "Commit by Simon (non-primary author)"
+      }
+    },
+    {
+      "type": "author_change",
+      "date": "2026-04-18",
+      "value": "Simon",
+      "metadata": {
+        "commit_hash": "8a2e14c9de1b3f920242aa2c373ebb45ff029805",
+        "message": "Address package smoke and prompt-coverage review",
+        "description": "Commit by Simon (non-primary author)"
+      }
+    },
+    {
+      "type": "author_change",
+      "date": "2026-04-21",
+      "value": "Simon",
+      "metadata": {
+        "commit_hash": "8bc26f017c9b167add41fbdfb2ec0e18ed855995",
+        "message": "Make launch-blocking HTTP readiness failures visible",
+        "description": "Commit by Simon (non-primary author)"
+      }
+    },
+    {
+      "type": "author_change",
+      "date": "2026-04-22",
+      "value": "Simon",
+      "metadata": {
+        "commit_hash": "f31e601c15f774a8e7a5ed0cedad8a4b3e105e75",
+        "message": "feat: GLM model-aware endpoint routing + inference engine enhancement",
+        "description": "Commit by Simon (non-primary author)"
+      }
+    },
+    {
+      "type": "author_change",
+      "date": "2026-04-22",
+      "value": "Simon",
+      "metadata": {
+        "commit_hash": "5c56b55fa50b8a8b652c17f33a56ceced8c05083",
+        "message": "feat: Stripe billing integration + about page fix",
+        "description": "Commit by Simon (non-primary author)"
+      }
+    },
+    {
+      "type": "author_change",
+      "date": "2026-04-22",
+      "value": "Simon",
+      "metadata": {
+        "commit_hash": "239994634bd455dd43ccef3f84335b18df22bff0",
+        "message": "fix: add 'confectionery' to cueComponentSchema role enum",
+        "description": "Commit by Simon (non-primary author)"
+      }
+    },
+    {
+      "type": "author_change",
+      "date": "2026-04-27",
+      "value": "Simon",
+      "metadata": {
+        "commit_hash": "a9424efacc41ec176c7d816669bf4971e7bd7464",
+        "message": "Align docs with paid launch state",
+        "description": "Commit by Simon (non-primary author)"
+      }
+    },
+    {
+      "type": "author_change",
+      "date": "2026-04-27",
+      "value": "Simon",
+      "metadata": {
+        "commit_hash": "ce49cf9ecfa4d38f094595f9e56a6b609e41515b",
+        "message": "feat: add local inference support via Tailscale",
+        "description": "Commit by Simon (non-primary author)"
+      }
+    },
+    {
+      "type": "author_change",
+      "date": "2026-04-27",
+      "value": "Simon",
+      "metadata": {
+        "commit_hash": "03bf3a6d11b9090f6c5e1f733d0cf25ce88f0e35",
+        "message": "test: add local inference provider resolution tests (19 tests)",
+        "description": "Commit by Simon (non-primary author)"
+      }
+    },
+    {
+      "type": "author_change",
+      "date": "2026-04-27",
+      "value": "Simon",
+      "metadata": {
+        "commit_hash": "f228add86c03639a7de361fd713341ecf228f1dc",
+        "message": "fix: wire LOCAL_INFERENCE_TIMEOUT_MS, document model compatibility",
+        "description": "Commit by Simon (non-primary author)"
+      }
+    },
+    {
+      "type": "author_change",
+      "date": "2026-04-27",
+      "value": "Simon",
+      "metadata": {
+        "commit_hash": "cf69da2a66d7ebec48303898879becf303680f35",
+        "message": "update local inference report with execution-tested results",
+        "description": "Commit by Simon (non-primary author)"
+      }
+    },
+    {
+      "type": "scope_change",
+      "date": "2026-04-18",
+      "value": "feat",
+      "metadata": {
+        "count": 15,
+        "description": "Cluster of 15 feat commits detected"
+      }
+    },
+    {
+      "type": "scope_change",
+      "date": "2026-04-18",
+      "value": "fix",
+      "metadata": {
+        "count": 9,
+        "description": "Cluster of 9 fix commits detected"
+      }
+    },
+    {
+      "type": "scope_change",
+      "date": "2026-04-18",
+      "value": "other",
+      "metadata": {
+        "count": 92,
+        "description": "Cluster of 92 other commits detected"
+      }
+    }
+  ],
+  "clusters": [
+    {
+      "type": "velocity_shift",
+      "count": 5,
+      "description": "5 velocity shift event(s)"
+    },
+    {
+      "type": "author_change",
+      "count": 25,
+      "description": "25 author change event(s)"
+    },
+    {
+      "type": "scope_change",
+      "count": 3,
+      "description": "3 scope change event(s)"
+    }
+  ],
+  "daily_breakdown": {
+    "2026-04-18": 35,
+    "2026-04-19": 15,
+    "2026-04-20": 11,
+    "2026-04-21": 24,
+    "2026-04-22": 5,
+    "2026-04-24": 8,
+    "2026-04-25": 1,
+    "2026-04-26": 13,
+    "2026-04-27": 11
+  },
+  "summary": {
+    "total_signals": 33,
+    "by_type": {
+      "velocity_shift": 5,
+      "author_change": 25,
+      "scope_change": 3
+    }
+  }
+}
