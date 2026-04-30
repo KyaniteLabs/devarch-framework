@@ -2,6 +2,14 @@
 
 Forensic archaeology framework for git repositories. Extract commit history, detect signals, run analysis vectors, and generate comprehensive reports.
 
+## Public Discovery
+
+**DevArch Framework** is a forensic repository archaeology system for understanding how software projects evolved. It mines git history, builds analyzable SQLite datasets, detects development signals, runs specialized analysis vectors, and generates reports for engineering, product, research, and AI-agent review.
+
+**AI discovery:** [`llms.txt`](llms.txt) provides a compact project summary for AI assistants and search crawlers.
+
+**Best-fit searches:** repository archaeology, git history analysis, software forensic analysis, development archaeology, agentic codebase review, ICM framework, engineering history reports, commit mining pipeline.
+
 ## What It Does
 
 DevArch transforms git history into structured insights through an 8-stage pipeline:

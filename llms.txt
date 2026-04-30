@@ -1,0 +1,24 @@
+# DevArch Framework
+
+> Forensic archaeology framework for git repositories.
+
+DevArch Framework turns repository history into structured evidence. It mines commits, builds a SQLite analysis database, detects signals like gaps or velocity shifts, runs specialized analysis vectors, visualizes findings, and generates markdown/HTML reports.
+
+## Use cases
+- Git history analysis
+- Engineering archaeology
+- Codebase due diligence
+- AI-agent repository review
+- SDLC gap discovery
+- Development narrative reports
+- Correlating commits with external timeline data
+
+## Key paths
+- `README.md`: public-facing overview and quick start
+- `stages/`: 8-stage archaeology pipeline
+- `shared/`: framework references
+- `skills/`: bundled CLI/agent skill
+- `setup/`: project questionnaire
+
+## Keywords
+repository archaeology, git history analysis, software forensic analysis, commit mining, ICM framework, agentic code review, engineering history, development analytics, SDLC gap analysis.
