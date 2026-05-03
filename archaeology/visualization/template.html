@@ -1,0 +1,2519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{PROJECT_NAME}} — An Archaeology of AI Collaboration</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3-sankey@0.12.3/dist/d3-sankey.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#06090f;--surface:#0c1018;--surface2:#141a24;--surface3:#1c2432;
+  --border:#1a2232;--border-hover:#2a3a52;
+  --text:#e8ecf2;--text2:#8d99aa;--text3:#6a7888;
+  /* AGENT COLORS */
+  --kai:#ff6b6b;--cursor:#ffa94d;--claude:#51cf66;--unknown:#495057;
+  --glow-kai:rgba(255,107,107,0.08);--glow-cursor:rgba(255,169,77,0.08);--glow-claude:rgba(81,207,102,0.08);
+  --font-display:'Space Grotesk',sans-serif;--font-body:'DM Sans',sans-serif;
+  --font-mono:'JetBrains Mono',monospace;--font-quote:'Playfair Display',serif;
+  /* ERA COLORS */
+  --era1:#b197fc;--era2:#ff6b6b;--era3:#ffa94d;--era4:#ffd43b;
+  --era5:#51cf66;--era6:#495057;--era7:#cc5de8;--era8:#ff8787;--era9:#74c0fc;--era10:#20b2a3;
+  --radius-sm:6px;--radius-md:10px;--radius-lg:16px;
+  --shadow-sm:0 1px 3px rgba(0,0,0,0.3);--shadow-md:0 4px 16px rgba(0,0,0,0.4);--shadow-lg:0 8px 32px rgba(0,0,0,0.5);
+  --ease-out:cubic-bezier(0.16,1,0.3,1);--ease-in-out:cubic-bezier(0.65,0,0.35,1);
+}
+html{scroll-behavior:smooth;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+body{background:var(--bg);color:var(--text);font-family:var(--font-body);line-height:1.65;overflow-x:hidden}
+
+/* ─── Neurodivergent Accessibility: Reduced Motion ─── */
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{
+    animation-duration:0.01ms!important;
+    animation-iteration-count:1!important;
+    transition-duration:0.01ms!important;
+    scroll-behavior:auto!important;
+  }
+  .reveal{opacity:1;transform:none}
+  .counter .number{-webkit-text-fill-color:var(--text)}
+  body::before{display:none}
+  .heatmap-cell:hover{transform:none}
+  .stat-card:hover{transform:none}
+  .quote-card:hover{transform:none}
+}
+
+/* ─── Neurodivergent Accessibility: High Contrast ─── */
+@media(prefers-contrast:more){
+  :root{
+    --bg:#000000;--surface:#0a0a0a;--surface2:#141414;--surface3:#1e1e1e;
+    --border:#333333;--border-hover:#555555;
+    --text:#ffffff;--text2:#cccccc;--text3:#999999;
+  }
+  .hero h1{-webkit-text-fill-color:#ffffff;background:none}
+  .counter .number{-webkit-text-fill-color:#ffffff;background:none}
+  .era-dot{outline:2px solid var(--text)}
+  .chart-box{border-width:2px}
+  .stat-card{border-width:2px}
+  .era-card{border-width:2px}
+  .benchmark-bar{border-width:2px}
+}
+
+/* ─── Neurodivergent Accessibility: Focus Indicators ─── */
+:focus-visible{
+  outline:2px solid var(--claude);
+  outline-offset:2px;
+  border-radius:var(--radius-sm);
+}
+a:focus-visible{
+  outline:2px solid var(--claude);
+  outline-offset:3px;
+  text-decoration:underline;
+}
+
+/* ─── Neurodivergent Accessibility: Skip Link ─── */
+.skip-link{position:absolute;top:-100%;left:1rem;background:var(--surface);color:var(--text);
+  padding:0.75rem 1.25rem;border-radius:var(--radius-sm);border:2px solid var(--claude);
+  font-family:var(--font-body);font-size:0.9rem;z-index:10000;transition:top .2s}
+.skip-link:focus{top:1rem}
+h1,h2,h3,h4{font-family:var(--font-display);font-weight:600;line-height:1.15;letter-spacing:-0.01em}
+a{color:var(--claude);text-decoration:none;transition:color .2s}
+a:hover{color:#74e089}
+.mono{font-family:var(--font-mono)}
+
+/* Subtle grain overlay (removed for reduced-motion users) */
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.02'/%3E%3C/svg%3E");
+  opacity:0.3}
+
+/* Hero */
+.hero{text-align:center;padding:7rem 2rem 5rem;max-width:900px;margin:0 auto;position:relative}
+.hero::before{content:'';position:absolute;top:-40%;left:50%;transform:translateX(-50%);width:600px;height:600px;
+  background:radial-gradient(circle,rgba(81,207,102,0.06) 0%,rgba(255,169,77,0.03) 40%,transparent 70%);pointer-events:none}
+.hero h1{font-size:clamp(2.25rem,5.5vw,4rem);letter-spacing:-0.03em;font-weight:700;
+  background:linear-gradient(135deg,var(--kai) 0%,var(--cursor) 50%,var(--claude) 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:1.25rem}
+.hero .subtitle{font-size:clamp(0.95rem,1.8vw,1.15rem);color:var(--text2);max-width:580px;margin:0 auto 3.5rem;font-weight:300;letter-spacing:0.01em}
+.counters{display:flex;justify-content:center;gap:3rem;flex-wrap:wrap}
+.counter{text-align:center;position:relative}
+.counter::after{content:'';position:absolute;bottom:-0.75rem;left:50%;transform:translateX(-50%);width:32px;height:2px;
+  background:linear-gradient(90deg,var(--kai),var(--cursor),var(--claude));border-radius:1px;opacity:0.4}
+.counter .number{font-family:var(--font-display);font-size:clamp(2rem,4.5vw,3.25rem);font-weight:700;
+  background:linear-gradient(180deg,var(--text) 30%,var(--text2) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.counter .label{font-size:0.75rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.12em;font-weight:500;margin-top:0.5rem}
+
+/* Stat Cards */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:0.75rem;padding:0 2rem;max-width:1200px;margin:0 auto 5rem}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:1.25rem 1.5rem;
+  display:flex;align-items:center;gap:1.25rem;transition:border-color .2s;position:relative;overflow:hidden}
+.stat-card::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,transparent 60%,var(--glow-claude));opacity:0;transition:opacity .3s}
+.stat-card:hover{border-color:var(--border-hover)}
+.stat-card:hover::before{opacity:0.5}
+.stat-card .sparkline{flex-shrink:0;width:80px;height:40px;position:relative;z-index:1}
+.stat-card .info{flex:1;min-width:0;position:relative;z-index:1}
+.stat-card .info .value{font-family:var(--font-display);font-size:1.625rem;font-weight:700;letter-spacing:-0.02em}
+.stat-card .info .desc{font-size:0.78rem;color:var(--text2);margin-top:2px}
+
+/* Chapters */
+.chapter{padding:5rem 2rem;max-width:1200px;margin:0 auto}
+.chapter h2{font-size:clamp(1.5rem,3vw,2rem);margin-bottom:0.5rem;position:relative;display:inline-flex;align-items:center}
+.chapter .chapter-sub{color:var(--text2);font-size:0.9rem;margin-bottom:2.5rem;font-weight:300}
+.chapter h2 .era-dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:10px;vertical-align:middle}
+.chart-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:1.25rem;margin-bottom:2rem}
+.chart-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:1.5rem;
+  position:relative;overflow:hidden;transition:border-color .3s}
+.chart-box:hover{border-color:var(--border-hover)}
+.chart-box::after{content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,var(--border-hover),transparent);opacity:0;transition:opacity .3s}
+.chart-box:hover::after{opacity:1}
+.chart-box .chart-title{font-family:var(--font-display);font-size:0.88rem;color:var(--text3);margin-bottom:1rem;font-weight:500;
+  text-transform:uppercase;letter-spacing:0.06em}
+.chart-box svg,.chart-box canvas{width:100%!important;display:block}
+
+/* Emotional Quotes */
+.quotes-section{display:flex;flex-direction:column;gap:1rem}
+.quote-card{background:linear-gradient(135deg,var(--surface) 0%,var(--surface2) 100%);border-left:2px solid var(--kai);
+  border-radius:0 var(--radius-md) var(--radius-md) 0;padding:1.5rem 2rem;position:relative;
+  transition:border-color .2s}
+.quote-card:hover{border-color:var(--cursor)}
+.quote-card blockquote{font-family:var(--font-quote);font-style:italic;font-size:1.05rem;color:var(--text);margin-bottom:0.5rem;line-height:1.6}
+.quote-card .attribution{font-size:0.78rem;color:var(--text3);font-family:var(--font-mono)}
+
+/* Era Cards */
+.era-cards{display:flex;flex-direction:column;gap:0.625rem}
+.era-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:1.25rem 1.5rem;
+  display:grid;grid-template-columns:4px 1fr;gap:1.25rem;transition:all .3s var(--ease-out)}
+.era-card:hover{border-color:var(--border-hover);background:var(--surface2);box-shadow:var(--shadow-sm)}
+.era-card .era-bar{border-radius:2px}
+.era-card .era-content h3{font-size:1rem;margin-bottom:0.2rem;letter-spacing:-0.01em}
+.era-card .era-meta{font-size:0.75rem;color:var(--text3);margin-bottom:0.5rem;font-family:var(--font-mono)}
+.era-card .era-sparkline{height:28px;width:120px}
+.era-card .era-narrative{font-size:0.88rem;color:var(--text2);line-height:1.6}
+.era-card .era-header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.5rem}
+
+/* Benchmark Bars */
+.benchmark-item{display:flex;align-items:center;gap:1rem;margin-bottom:0.875rem;padding:0.5rem 0}
+.benchmark-label{min-width:200px;font-size:0.88rem;text-align:right;color:var(--text2)}
+.benchmark-bar{flex:1;height:32px;background:var(--surface2);border-radius:var(--radius-sm);position:relative;overflow:hidden;
+  border:1px solid var(--border)}
+.benchmark-bar .fill{height:100%;border-radius:var(--radius-sm);transition:width 1.8s var(--ease-out);
+  display:flex;align-items:center;padding:0 0.75rem;font-size:0.72rem;font-family:var(--font-mono);
+  color:var(--bg);font-weight:600;letter-spacing:0.02em}
+.benchmark-note{font-size:0.78rem;color:var(--text3);text-align:center;margin-top:0.75rem;line-height:1.5}
+
+/* Tooltip */
+.tooltip{position:fixed;pointer-events:none;background:rgba(12,16,24,0.96);border:1px solid var(--border-hover);
+  border-radius:var(--radius-md);padding:0.875rem 1.125rem;font-size:0.82rem;max-width:320px;z-index:1000;
+  opacity:0;transition:opacity .15s;box-shadow:var(--shadow-lg);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+.tooltip.visible{opacity:1}
+.tooltip .tt-title{font-family:var(--font-display);font-weight:600;margin-bottom:0.3rem;font-size:0.88rem}
+.tooltip .tt-detail{color:var(--text2);line-height:1.5}
+.tooltip .tt-quote{font-family:var(--font-quote);font-style:italic;color:var(--cursor);margin-top:0.625rem;
+  padding-top:0.625rem;border-top:1px solid var(--border)}
+.tooltip .tt-insight{font-family:var(--font-body);font-style:italic;color:var(--text2);margin-top:0.5rem;
+  padding-top:0.5rem;border-top:1px solid var(--border);opacity:0;transform:translateY(4px);
+  transition:opacity .3s ease-out,transform .3s ease-out}
+.tooltip .tt-insight.visible{opacity:1;transform:translateY(0)}
+@keyframes tt-fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+
+/* Footer */
+.footer{text-align:center;padding:5rem 2rem;color:var(--text3);font-size:0.78rem;border-top:1px solid var(--border);
+  max-width:800px;margin:5rem auto 0}
+.footer h3{color:var(--text2);font-size:0.9rem;margin-bottom:1rem;text-transform:uppercase;letter-spacing:0.06em;font-weight:500}
+
+/* Scroll Reveal */
+.reveal{opacity:0;transform:translateY(24px);transition:opacity .7s var(--ease-out),transform .7s var(--ease-out)}
+.reveal.revealed{opacity:1;transform:translateY(0)}
+
+/* Responsive */
+@media(max-width:768px){
+  .hero{padding:5rem 1.5rem 3rem}
+  .counters{gap:1.5rem}
+  .stat-grid{padding:0 1rem;grid-template-columns:1fr}
+  .chapter{padding:3rem 1.25rem}
+  .chart-grid{grid-template-columns:1fr}
+  .benchmark-label{min-width:140px;font-size:0.8rem}
+  .benchmark-item{flex-direction:column;align-items:flex-start;gap:0.375rem}
+  .benchmark-label{text-align:left;min-width:auto}
+}
+@media(max-width:480px){
+  .hero{padding:4rem 1rem 2rem}
+  .counter .number{font-size:1.75rem}
+  .counters{gap:1rem}
+}
+
+/* Sankey */
+.sankey-node rect{stroke:var(--border);rx:3}
+.sankey-link{fill:none;stroke-opacity:0.35}
+
+/* Heatmap cell */
+.heatmap-cell{stroke:var(--bg);stroke-width:1.5px;rx:2px;transition:opacity .15s}
+.heatmap-cell:hover{opacity:0.85}
+
+/* Modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:2000;display:flex;align-items:center;justify-content:center;
+  opacity:0;pointer-events:none;transition:opacity .25s;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+.modal-overlay.active{opacity:1;pointer-events:auto}
+.modal{background:var(--surface);border:1px solid var(--border-hover);border-radius:var(--radius-lg);padding:2rem;
+  max-width:520px;width:90%;max-height:80vh;overflow-y:auto;box-shadow:var(--shadow-lg)}
+.modal h3{margin-bottom:1rem}
+.modal .close{position:absolute;top:1rem;right:1rem;background:none;border:none;color:var(--text2);font-size:1.5rem;cursor:pointer;
+  transition:color .2s}
+.modal .close:hover{color:var(--text)}
+
+/* Selection */
+::selection{background:rgba(81,207,102,0.2);color:var(--text)}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:8px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:4px}
+::-webkit-scrollbar-thumb:hover{background:var(--border-hover)}
+</style>
+</head>
+<body>
+<a href="#main-content" class="skip-link">Skip to main content</a>
+
+<!-- Hero -->
+<header class="hero reveal">
+  <h1>{{PROJECT_NAME}}</h1>
+  <p class="subtitle">An Archaeology of AI Collaboration<br>{{PROJECT_DURATION}} &middot; {{TOTAL_COMMITS}} commits &middot; {{TOTAL_LINES}} lines of code &middot; {{AGENT_COUNT}} AI agents</p>
+  <div class="counters">
+    <div class="counter"><div class="number" data-target="675">0</div><div class="label">Commits</div></div>
+    <div class="counter"><div class="number" data-target="104000" data-suffix="">0</div><div class="label">Lines of Code</div></div>
+    <div class="counter"><div class="number" data-target="37">0</div><div class="label">Days</div></div>
+    <div class="counter"><div class="number" data-target="4">0</div><div class="label">AI Agents</div></div>
+  </div>
+</header>
+
+<!-- Stat Cards -->
+<main id="main-content">
+<section class="stat-grid" aria-label="Key statistics">
+  <div class="stat-card reveal">
+    <svg class="sparkline" id="spark-velocity"></svg>
+    <div class="info"><div class="value">207</div><div class="desc">Peak commits/day (Apr 9)</div></div>
+  </div>
+  <div class="stat-card reveal">
+    <svg class="sparkline" id="spark-nocturnal"></svg>
+    <div class="info"><div class="value">50.7%</div><div class="desc">Nocturnal commits (9PM–5AM)</div></div>
+  </div>
+  <div class="stat-card reveal">
+    <svg class="sparkline" id="spark-coauth"></svg>
+    <div class="info"><div class="value">58%</div><div class="desc">AI co-authored (188/324)</div></div>
+  </div>
+  <div class="stat-card reveal">
+    <svg class="sparkline" id="spark-files"></svg>
+    <div class="info"><div class="value">261</div><div class="desc">Files/day average</div></div>
+  </div>
+  <div class="stat-card reveal">
+    <svg class="sparkline" id="spark-tests"></svg>
+    <div class="info"><div class="value">1:825</div><div class="desc">Test-to-LOC ratio</div></div>
+  </div>
+  <div class="stat-card reveal">
+    <svg class="sparkline" id="spark-featfix"></svg>
+    <div class="info"><div class="value">2.29:1</div><div class="desc">Feature-to-fix ratio</div></div>
+  </div>
+</section>
+
+<!-- Chapter: Timeline -->
+<section id="ch-timeline" class="chapter reveal">
+  <h2><span class="era-dot" style="background:var(--era1)"></span>The Timeline</h2>
+  <p class="chapter-sub">From seed to threshold — how 1,530 commits trace 43 days of creative intensity and autonomy</p>
+  <div class="chart-grid">
+    <div class="chart-box" data-era-range="1-10" id="chart-commit-timeline"><div class="chart-title">Commits per Day</div></div>
+    <div class="chart-box" data-era-range="1-10" id="chart-loc-growth"><div class="chart-title">Lines of Code Growth</div></div>
+    <div class="chart-box" data-era-range="1-10" style="grid-column:1/-1" id="chart-era-map"><div class="chart-title">Era Map — 10 Chapters of Development</div></div>
+  </div>
+</section>
+
+<!-- Chapter: Rhythm -->
+<section id="ch-rhythm" class="chapter reveal">
+  <h2><span class="era-dot" style="background:var(--era2)"></span>The Rhythm</h2>
+  <p class="chapter-sub">When the code flows — biorhythms of a nocturnal builder</p>
+  <div class="chart-grid">
+    <div class="chart-box" data-era-range="1-10" id="chart-hourly-polar"><div class="chart-title">Hourly Commit Pattern (Radial)</div></div>
+    <div class="chart-box" data-era-range="1-10" id="chart-heatmap"><div class="chart-title">Day × Hour Heatmap</div></div>
+    <div class="chart-box" data-era-range="1-2" id="chart-agent-radar"><div class="chart-title">Agent Comparison Radar</div></div>
+    <div class="chart-box" data-era-range="1-10" id="chart-agent-stacked"><div class="chart-title">Agent Attribution Over Time</div></div>
+  </div>
+</section>
+
+<!-- Chapter: Architecture -->
+<section id="ch-architecture" class="chapter reveal">
+  <h2><span class="era-dot" style="background:var(--era4)"></span>The Architecture</h2>
+  <p class="chapter-sub">36 modules, 3,463 files, 41 dependencies — the shape of what was built</p>
+  <div class="chart-grid">
+    <div class="chart-box" data-era-range="7-9" style="grid-column:1/-1" id="chart-treemap"><div class="chart-title">Source Code Treemap (36 modules)</div></div>
+    <div class="chart-box" data-era-range="2-9" id="chart-file-test-growth"><div class="chart-title">File &amp; Test Growth</div></div>
+    <div class="chart-box" data-era-range="1-10" id="chart-commit-types"><div class="chart-title">Commit Type Distribution</div></div>
+    <div class="chart-box" data-era-range="2-9" id="chart-dependency-growth"><div class="chart-title">Dependency Growth</div></div>
+  </div>
+</section>
+
+<!-- Chapter: Emotional Arc -->
+<section id="ch-emotional" class="chapter reveal">
+  <h2><span class="era-dot" style="background:var(--era8)"></span>The Emotional Arc</h2>
+  <p class="chapter-sub">Frustration crystallized into infrastructure — the 12-hour cycle from pain to enforcement</p>
+  <div class="chart-grid">
+    <div class="chart-box" data-era-range="1-10" style="grid-column:1/-1" id="chart-frustration-line"><div class="chart-title">Frustration Intensity by Era</div></div>
+    <div class="chart-box" data-era-range="3-9" style="grid-column:1/-1" id="chart-frustration-sankey"><div class="chart-title">Frustration → Automation Pipeline (click flows)</div></div>
+  </div>
+  <div class="quotes-section" id="quotes-container"></div>
+</section>
+
+<!-- Chapter: Hidden Patterns -->
+<section id="ch-patterns" class="chapter reveal">
+  <h2><span class="era-dot" style="background:var(--era5)"></span>Hidden Patterns</h2>
+  <p class="chapter-sub">Lunar rhythms, emotional arcs, and agent economics beneath the surface</p>
+  <div class="chart-grid">
+    <div class="chart-box" data-era-range="1-10" style="grid-column:1/-1" id="chart-lunar"><div class="chart-title">Lunar Illumination vs. Commit Velocity</div></div>
+    <div class="chart-box" data-era-range="1-10" style="grid-column:1/-1" id="chart-sentiment"><div class="chart-title">Commit Sentiment by Era</div></div>
+    <div class="chart-box" data-era-range="1-10" style="grid-column:1/-1" id="chart-agent-econ"><div class="chart-title">Agent Economics — Velocity, Volume, Fix Rate</div></div>
+  </div>
+</section>
+
+<!-- Chapter: Learning Curve -->
+<section id="ch-learning" class="chapter reveal">
+  <h2><span class="era-dot" style="background:#e599f7"></span>The Learning Curve</h2>
+  <p class="chapter-sub">2,470 AI videos watched over 3 years (1,481 in 2025–2026 analyzed here). 815 creators (all-time). 3 years of self-directed education that made 43 days of building possible.</p>
+  <div class="callout" style="background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%);border:1px solid #e599f7;border-radius:8px;padding:1rem 1.25rem;margin:0.75rem 0 1.25rem">
+    <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.5rem">
+      <span style="font-size:1.4rem">&#127775;</span>
+      <strong style="color:#e599f7;font-size:0.95rem">KEY PERSON — Jake Van Clief</strong>
+    </div>
+    <p style="color:var(--text2);font-size:0.85rem;margin:0;line-height:1.5">
+      Jake invented <strong style="color:var(--text)">ICM (Interpreted Context Methodology)</strong> — the "folder system" that broke the iteration trap. His video on the topic was watched in Oct 2025 during the Ramp phase. Simon's <strong style="color:var(--text)">first-ever PR</strong> was to Jake's ICM repo (the <code>workspaces</code> commit on Feb 22). A second PR to <code>mcp-video</code> was merged into an MCP aggregator on GitHub. ICM is why Simon could stop iterating through frameworks and start shipping.
+    </p>
+  </div>
+  <div class="chart-grid">
+    <div class="chart-box" style="grid-column:1/-1" id="chart-learning-arc"><div class="chart-title">The 3-Year Learning Arc — Monthly AI Video Consumption (2023–2026)</div></div>
+    <div class="chart-box" style="grid-column:1/-1" id="chart-topic-evolution"><div class="chart-title">Topic Evolution — How Viewing Focus Shifted Before and During the Build</div></div>
+    <div class="chart-box" style="grid-column:1/-1" id="chart-creator-clusters"><div class="chart-title">Creator Influence Map — Who Shaped What Was Built</div></div>
+    <div class="chart-box" style="grid-column:1/-1" id="chart-learning-build"><div class="chart-title">Learn-Build Correlation — AI Videos vs. Your Commits During the 34-Day Sprint</div></div>
+    <div class="chart-box" style="grid-column:1/-1" id="chart-search-timeline"><div class="chart-title">The Search That Shaped the Build — Active Learning Queries vs. Passive Video Consumption</div></div>
+  </div>
+</section>
+
+<!-- Chapter: The Developer's Voice -->
+<section id="ch-voice" class="chapter reveal">
+  <h2><span class="era-dot" style="background:var(--cursor)"></span>The Developer's Voice</h2>
+  <p class="chapter-sub">What was asked, how it was asked, and how the conversation deepened over time</p>
+  <div class="chart-grid">
+    <div class="chart-box" data-era-range="3-9" id="chart-intent"><div class="chart-title">Intent Frequency — What Was Asked For Most</div></div>
+    <div class="chart-box" data-era-range="3-9" id="chart-session-depth"><div class="chart-title">Session Depth Gradient — AI Autonomy Evolution</div></div>
+    <div class="chart-box" data-era-range="3-9" id="chart-comm-style"><div class="chart-title">Communication Style Distribution</div></div>
+  </div>
+</section>
+
+<!-- Chapter: Universe -->
+<section id="ch-universe" class="chapter reveal">
+  <h2><span class="era-dot" style="background:var(--era7)"></span>The Wider Universe</h2>
+  <p class="chapter-sub" id="cross-repo-subtitle">Cross-repo activity across project eras</p>
+  <div class="chart-grid">
+    <div class="chart-box" data-era-range="1-10" style="grid-column:1/-1" id="chart-cross-repo"><div class="chart-title">Cross-Repo Activity</div></div>
+    <div class="chart-box" data-era-range="1-10" style="grid-column:1/-1" id="chart-dna-sankey"><div class="chart-title">Creative DNA Flow — Where Ideas Came From</div></div>
+    <div class="chart-box" data-era-range="1-10" style="grid-column:1/-1" id="chart-repo-bubbles"><div class="chart-title">50 Repos by Domain</div></div>
+    <div class="chart-box" data-era-range="1-10" id="chart-model-adoption"><div class="chart-title">AI Model Adoption Timeline</div></div>
+    <div class="chart-box" data-era-range="1-10" id="chart-monthly-velocity"><div class="chart-title">Monthly Commit Velocity</div></div>
+  </div>
+</section>
+
+<!-- Chapter: Eras -->
+<section id="ch-eras" class="chapter reveal">
+  <h2><span class="era-dot" style="background:var(--era10)"></span>The Ten Eras</h2>
+  <p class="chapter-sub">Each era a chapter — from seed to forge</p>
+  <div class="era-cards" id="era-cards-container"></div>
+</section>
+
+<!-- Chapter: Benchmarks -->
+<section id="ch-benchmarks" class="chapter reveal">
+  <h2><span class="era-dot" style="background:var(--claude)"></span>AI Productivity Multiplier</h2>
+  <p class="chapter-sub">How AI-native development compares to industry-wide measurements</p>
+  <div class="chart-box" id="chart-benchmarks" style="max-width:800px;margin:0 auto">
+    <div class="chart-title">Commit Velocity Multiplier (relative to pre-AI baseline)</div>
+  </div>
+  <p class="benchmark-note">Sources: GitClear (Oct 2025 + Q1 2026), BlueOptima (Feb 2026, 30K devs), BCG (Jan 2026, 1,250 companies), MIT/Princeton/UPenn (Sep 2024, 4.8K devs), Google DORA (Sep 2025, 5K pros), METR RCT (Jul 2025), Google CEO Sundar Pichai (2025)</p>
+</section>
+
+</main>
+
+<!-- Footer -->
+<footer class="footer reveal">
+  <h3>Methodology</h3>
+  <p>Data mined from git history (675 commits), Claude Code session logs (58 sessions, 920 human messages) and GitHub API (50 repos). Visualization built with D3.js v7, Chart.js v4, d3-sankey. All data embedded inline — this file is fully self-contained.</p>
+  <p style="margin-top:1rem">Generated by Development Archaeology.</p>
+</footer>
+
+<!-- Tooltip -->
+<div class="tooltip" id="tooltip">
+  <div class="tt-title"></div>
+  <div class="tt-detail"></div>
+  <div class="tt-quote"></div>
+  <div class="tt-insight"></div>
+</div>
+
+<!-- Modal for Sankey -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal" id="modal">
+    <button class="close" onclick="document.getElementById('modal-overlay').classList.remove('active')">&times;</button>
+    <h3 id="modal-title"></h3>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<!-- TEMPLATE: This file is a reusable template. Replace {{PROJECT_NAME}} placeholders.
+     Data is loaded from data.json at runtime instead of being embedded inline.
+     To use: copy this template, update PROJECT_NAME, and provide a data.json file.
+     See archaeology/schema/ for the expected data format. -->
+
+<!-- Data loaded externally -->
+<script>
+  // Load project data from external JSON file
+  // The data.json file contains all visualization data (telemetry, sessions, eras, etc.)
+  // Original inline data was ~6870 lines (272KB)
+  fetch("data.json")
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      window.PROJECT_DATA = d;
+      window.dispatchEvent(new Event("data-loaded"));
+    })
+    .catch(function(e) { console.error("Failed to load data.json:", e); });
+</script>
+
+<script>
+// Shared state
+window.ERA_BRUSH = { activeEra: null, startDate: null, endDate: null };
+window.CHARTS = {};
+// ERAS is populated from data.json via the fetch() call above.
+// Fallback to empty array if data hasn't loaded yet.
+window.ERAS = [];
+
+window.COLORS = {
+  bg:'#080c14', surface:'#0d1117', surface2:'#161b22', border:'#1e2a3a',
+  text:'#e6edf3', text2:'#8b949e', text3:'#484f58'
+};
+
+// Utility: 3-Layer Tooltip
+// Layer 1: Title + core metric (immediate)
+// Layer 2: Context detail + era (immediate)
+// Layer 3: "The Insight" — narrative fade-in after 500ms hover
+const TOOLTIP_INSIGHT_DELAY = 500; // ms before Layer 3 fades in
+const TOOLTIP_OFFSET_X = 12; // px offset from cursor
+const TOOLTIP_OFFSET_Y = -12; // px offset from cursor
+let _ttInsightTimeout = null;
+
+function showTooltip(event, titleOrObj, detail, quote) {
+  const tt = document.getElementById('tooltip');
+  const titleEl = tt.querySelector('.tt-title');
+  const detailEl = tt.querySelector('.tt-detail');
+  const quoteEl = tt.querySelector('.tt-quote');
+  const insightEl = tt.querySelector('.tt-insight');
+
+  // Clear any pending Layer 3 fade-in
+  clearTimeout(_ttInsightTimeout);
+  insightEl.classList.remove('visible');
+  insightEl.textContent = '';
+
+  // Detect API style: object (new) vs string/args (legacy)
+  if (typeof titleOrObj === 'object' && titleOrObj !== null && !titleOrObj.nodeType) {
+    // New 3-layer API: showTooltip(event, { title, detail, insight, era })
+    const { title, detail: ctx, insight, era } = titleOrObj;
+    titleEl.textContent = title || '';
+    detailEl.replaceChildren();
+    if (era) {
+      detailEl.textContent = (ctx ? ctx + ' — ' : '') + era;
+    } else {
+      detailEl.textContent = ctx || '';
+    }
+    quoteEl.style.display = 'none';
+    quoteEl.textContent = '';
+
+    // Layer 3: delayed narrative insight
+    if (insight) {
+      insightEl.textContent = insight;
+      _ttInsightTimeout = setTimeout(() => insightEl.classList.add('visible'), TOOLTIP_INSIGHT_DELAY);
+    }
+  } else if (typeof titleOrObj === 'string' && titleOrObj.includes('<')) {
+    // Legacy HTML-string API: showTooltip(event, '<div class="tt-title">...')
+    // Parse the HTML string into the tooltip slots
+    const parser = new DOMParser();
+    const doc = parser.parseFromString('<div>' + titleOrObj + '</div>', 'text/html');
+    const ttTitle = doc.querySelector('.tt-title');
+    const ttDetail = doc.querySelector('.tt-detail');
+    const ttQuote = doc.querySelector('.tt-quote');
+
+    titleEl.textContent = ttTitle ? ttTitle.textContent : '';
+    detailEl.textContent = ttDetail ? ttDetail.textContent : '';
+    if (ttQuote) {
+      quoteEl.textContent = ttQuote.textContent;
+      quoteEl.style.display = 'block';
+    } else {
+      quoteEl.style.display = 'none';
+      quoteEl.textContent = '';
+    }
+  } else {
+    // Legacy positional API: showTooltip(event, title, detail, quote)
+    titleEl.textContent = titleOrObj || '';
+    detailEl.textContent = detail || '';
+    if (quote) {
+      quoteEl.textContent = '"' + quote + '"';
+      quoteEl.style.display = 'block';
+    } else {
+      quoteEl.style.display = 'none';
+      quoteEl.textContent = '';
+    }
+  }
+
+  tt.style.left = (event.clientX + TOOLTIP_OFFSET_X) + 'px';
+  tt.style.top = (event.clientY + TOOLTIP_OFFSET_Y) + 'px';
+  tt.classList.add('visible');
+}
+
+function hideTooltip() {
+  clearTimeout(_ttInsightTimeout);
+  _ttInsightTimeout = null;
+  const tt = document.getElementById('tooltip');
+  tt.classList.remove('visible');
+  tt.querySelector('.tt-insight').classList.remove('visible');
+}
+
+// Utility: Scroll Reveal (respects prefers-reduced-motion)
+function setupScrollReveal() {
+  const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (prefersReduced) {
+    document.querySelectorAll('.reveal').forEach(el => el.classList.add('revealed'));
+    return;
+  }
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('revealed'); observer.unobserve(e.target); } });
+  }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+}
+
+// Utility: Animate Counters (respects prefers-reduced-motion)
+function animateCounters() {
+  const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        const el = e.target;
+        const target = parseInt(el.dataset.target);
+        if (prefersReduced) {
+          el.textContent = target.toLocaleString();
+        } else {
+          const duration = 1500;
+          const start = performance.now();
+          function tick(now) {
+            const p = Math.min((now - start) / duration, 1);
+            const eased = 1 - Math.pow(1 - p, 3);
+            el.textContent = Math.round(target * eased).toLocaleString();
+            if (p < 1) requestAnimationFrame(tick);
+          }
+          requestAnimationFrame(tick);
+        }
+        observer.unobserve(el);
+      }
+    });
+  }, { threshold: 0.5 });
+  document.querySelectorAll('.counter .number').forEach(el => observer.observe(el));
+}
+
+// Utility: Sparkline helper
+function drawSparkline(svgId, data, color) {
+  const svg = d3.select('#' + svgId).attr('role', 'img').attr('aria-label', svgId.replace('spark-', '').replace(/-/g, ' ') + ' sparkline');
+  if (!data || !data.length) return;
+  const w = 80, h = 40, pad = 2;
+  const max = d3.max(data);
+  const min = d3.min(data);
+  const range = max - min || 1;
+  svg.attr('viewBox', `0 0 ${w} ${h}`);
+  const x = d3.scaleLinear().domain([0, data.length - 1]).range([pad, w - pad]);
+  const y = d3.scaleLinear().domain([min, max]).range([h - pad, pad]);
+  const line = d3.line().x((_, i) => x(i)).y(d => y(d)).curve(d3.curveMonotoneX);
+  const area = d3.area().x((_, i) => x(i)).y0(h).y1(d => y(d)).curve(d3.curveMonotoneX);
+  const gradId = svgId + '-grad';
+  svg.append('defs').append('linearGradient').attr('id', gradId)
+    .attr('x1','0%').attr('y1','0%').attr('x2','0%').attr('y2','100%')
+    .selectAll('stop').data([
+      {offset:'0%', color: color}, {offset:'100%', color: 'transparent'}
+    ]).enter().append('stop').attr('offset', d => d.offset).attr('stop-color', d => d.color);
+  svg.append('path').datum(data).attr('d', area).attr('fill', `url(#${gradId})`);
+  svg.append('path').datum(data).attr('d', line).attr('fill', 'none').attr('stroke', color).attr('stroke-width', 1.5);
+}
+
+// Init sparklines
+function initSparklines() {
+  const D = window.PROJECT_DATA || {};
+  if (!D || !D.telemetry_visualizations) return;
+  const tv = D.telemetry_visualizations.charts;
+  drawSparkline('spark-velocity', Object.values(tv.commit_timeline.data), '#51cf66');
+  // Nocturnal: hours 21-04 vs 8-20
+  const hourly = tv.commit_timeline.hourly_pattern.data;
+  const nightHours = [21,22,23,0,1,2,3,4];
+  const nightVals = nightHours.map(h => hourly[String(h).padStart(2,'0')] || 0);
+  drawSparkline('spark-nocturnal', nightVals, '#cc5de8');
+  drawSparkline('spark-coauth',
+    D.derived_patterns.co_authorship_gap_analysis.era_breakdown.map(e => e.co_authored),
+    '#ffa94d');
+  drawSparkline('spark-files', Object.values(tv.commit_timeline.file_growth.data), '#74c0fc');
+  const fileVals = Object.values(tv.commit_timeline.file_growth.data);
+  const testVals = Object.values(tv.commit_timeline.test_growth.data);
+  const ratioVals = fileVals.map((f, i) => testVals[i] ? Math.round(f / testVals[i]) : 0);
+  drawSparkline('spark-tests', ratioVals, '#ffd43b');
+  const ct = tv.commit_timeline.commit_types.data;
+  drawSparkline('spark-featfix', [ct.feat || 0, ct.fix || 0, ct.docs || 0, ct.refactor || 0, ct.test || 0, ct.chore || 0], '#ff6b6b');
+}
+
+// Boot
+document.addEventListener('DOMContentLoaded', () => {
+  setupScrollReveal();
+  animateCounters();
+  initSparklines();
+});
+</script>
+
+<!-- Chapter JS blocks (filled by Wave 2 agents) -->
+<script id="ch-timeline-js">
+// Chapter: Timeline (3 charts)
+(function() {
+  const D = window.PROJECT_DATA || {};
+  const tv = D.telemetry_visualizations.charts;
+  const ERAS = window.ERAS;
+  const COLORS = window.COLORS;
+
+  // 1. Commit Timeline - D3 area chart
+  (function() {
+    const el = document.getElementById('chart-commit-timeline');
+    if (!el) return;
+    const rawData = tv.commit_timeline.data;
+    const data = Object.entries(rawData).map(([d, v]) => ({ date: d, value: v })).sort((a,b) => a.date.localeCompare(b.date));
+    const maxVal = Math.max(...data.map(d => d.value), 1);
+    const margin = {top: 20, right: 20, bottom: 30, left: 45};
+    const width = el.clientWidth - margin.left - margin.right;
+    const height = 280 - margin.top - margin.bottom;
+    const svg = d3.select(el).append('svg').attr('role','img').attr('viewBox', `0 0 ${width + margin.left + margin.right} ${height + margin.top + margin.bottom}`);
+    const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
+    const x = d3.scaleBand().domain(data.map(d => d.date)).range([0, width]).padding(0.1);
+    const y = d3.scaleLinear().domain([0, maxVal * 1.1]).range([height, 0]);
+    // Era bands
+    const eraColors = ERAS.map(e => e.color);
+    g.selectAll('.era-band').data(ERAS).enter().append('rect')
+      .attr('class', 'era-band')
+      .attr('x', d => { const idx = data.findIndex(dd => dd.date >= d.startDate); return idx >= 0 ? x(data[idx].date) : 0; })
+      .attr('width', d => { const startIdx = data.findIndex(dd => dd.date >= d.startDate); const endIdx = data.findIndex(dd => dd.date >= d.endDate); if (startIdx < 0 || endIdx < 0) return width / ERAS.length; return x(data[Math.min(endIdx, data.length-1)].date) - x(data[startIdx].date) + x.bandwidth(); })
+      .attr('y', 0).attr('height', height)
+      .attr('fill', d => d.color).attr('opacity', 0.08);
+    // Area
+    const area = d3.area().x(d => x(d.date) + x.bandwidth()/2).y0(height).y1(d => y(d.value)).curve(d3.curveMonotoneX);
+    const grad = svg.append('defs').append('linearGradient').attr('id', 'grad-timeline');
+    grad.append('stop').attr('offset', '0%').attr('stop-color', COLORS.claude).attr('stop-opacity', 0.6);
+    grad.append('stop').attr('offset', '100%').attr('stop-color', COLORS.claude).attr('stop-opacity', 0.05);
+    g.append('path').datum(data).attr('d', area).attr('fill', 'url(#grad-timeline)');
+    // Bars
+    g.selectAll('.bar').data(data).enter().append('rect')
+      .attr('x', d => x(d.date)).attr('width', x.bandwidth())
+      .attr('y', d => y(d.value)).attr('height', d => height - y(d.value))
+      .attr('fill', COLORS.claude).attr('opacity', 0.7).attr('rx', 2)
+      .attr('data-era', d => d.era || '')
+      .on('mouseover', function(e, d) { showTooltip(e, `<div class="tt-title">${d.date}</div><div class="tt-detail">${d.value} commits</div>`); d3.select(this).attr('opacity', 1); })
+      .on('mouseout', function() { hideTooltip(); d3.select(this).attr('opacity', 0.7); });
+    // Axes
+    g.append('g').attr('transform', `translate(0,${height})`).call(d3.axisBottom(x).tickValues(data.filter((d,i) => i % Math.ceil(data.length/8) === 0).map(d => d.date)).tickFormat(d => d.slice(5))).selectAll('text').attr('fill', COLORS.text2).style('font-size', '11px');
+    g.append('g').call(d3.axisLeft(y).ticks(4)).selectAll('text').attr('fill', COLORS.text2).style('font-size', '11px');
+    g.selectAll('.domain, .tick line').attr('stroke', COLORS.border);
+  })();
+
+  // 2. LOC Growth - D3 line chart
+  (function() {
+    const el = document.getElementById('chart-loc-growth');
+    if (!el) return;
+    const rawData = tv.commit_timeline.loc_growth.data;
+    const data = Object.entries(rawData).map(([d, v]) => ({ date: d, value: v })).sort((a,b) => a.date.localeCompare(b.date));
+    const maxVal = Math.max(...data.map(d => d.value), 1);
+    const margin = {top: 20, right: 20, bottom: 30, left: 55};
+    const width = el.clientWidth - margin.left - margin.right;
+    const height = 280 - margin.top - margin.bottom;
+    const svg = d3.select(el).append('svg').attr('role','img').attr('viewBox', `0 0 ${width + margin.left + margin.right} ${height + margin.top + margin.bottom}`);
+    const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
+    const x = d3.scalePoint().domain(data.map(d => d.date)).range([0, width]).padding(0.1);
+    const y = d3.scaleLinear().domain([0, maxVal * 1.1]).range([height, 0]);
+    const line = d3.line().x(d => x(d.date)).y(d => y(d.value)).curve(d3.curveMonotoneX);
+    const grad = svg.append('defs').append('linearGradient').attr('id', 'grad-loc');
+    grad.append('stop').attr('offset', '0%').attr('stop-color', COLORS.cursor).attr('stop-opacity', 0.3);
+    grad.append('stop').attr('offset', '100%').attr('stop-color', COLORS.cursor).attr('stop-opacity', 0.02);
+    const area = d3.area().x(d => x(d.date)).y0(height).y1(d => y(d.value)).curve(d3.curveMonotoneX);
+    g.append('path').datum(data).attr('d', area).attr('fill', 'url(#grad-loc)');
+    g.append('path').datum(data).attr('d', line).attr('fill', 'none').attr('stroke', COLORS.cursor).attr('stroke-width', 2);
+    g.selectAll('.dot').data(data).enter().append('circle')
+      .attr('cx', d => x(d.date)).attr('cy', d => y(d.value)).attr('r', 3)
+      .attr('fill', COLORS.cursor)
+      .on('mouseover', function(e, d) { showTooltip(e, `<div class="tt-title">${d.date}</div><div class="tt-detail">${d.value.toLocaleString()} LOC</div>`); })
+      .on('mouseout', hideTooltip);
+    // Milestone dots at era boundaries
+    ERAS.forEach(era => {
+      const idx = data.findIndex(d => d.date >= era.startDate);
+      if (idx >= 0) {
+        g.append('circle').attr('cx', x(data[idx].date)).attr('cy', y(data[idx].value)).attr('r', 5).attr('fill', era.color).attr('stroke', '#fff').attr('stroke-width', 1);
+      }
+    });
+    g.append('g').attr('transform', `translate(0,${height})`).call(d3.axisBottom(x).tickValues(data.filter((d,i) => i % Math.ceil(data.length/8) === 0).map(d => d.date)).tickFormat(d => d.slice(5))).selectAll('text').attr('fill', COLORS.text2).style('font-size', '11px');
+    g.append('g').call(d3.axisLeft(y).ticks(4).tickFormat(d => (d/1000)+'k')).selectAll('text').attr('fill', COLORS.text2).style('font-size', '11px');
+    g.selectAll('.domain, .tick line').attr('stroke', COLORS.border);
+  })();
+
+  // 3. Era Map - horizontal swimlane
+  (function() {
+    const el = document.getElementById('chart-era-map');
+    if (!el) return;
+    const width = el.clientWidth;
+    const height = Math.max(ERAS.length * 36, 200);
+    const svg = d3.select(el).append('svg').attr('role','img').attr('viewBox', `0 0 ${width} ${height}`);
+    const barHeight = 28;
+    const margin = {left: 140, right: 20, top: 5, bottom: 5};
+    const innerW = width - margin.left - margin.right;
+    ERAS.forEach((era, i) => {
+      const g = svg.append('g').attr('transform', `translate(0,${i * (barHeight + 4) + margin.top})`);
+      // Label
+      g.append('text').attr('x', margin.left - 10).attr('y', barHeight/2).attr('text-anchor', 'end').attr('fill', COLORS.text).attr('font-size', '12px').attr('font-family', 'var(--font-display)').text(era.name);
+      // Bar (width proportional to commits)
+      const maxCommits = Math.max(...ERAS.map(e => e.commits || 0), 1);
+      const barW = ((era.commits || 0) / maxCommits) * innerW;
+      g.append('rect').attr('x', margin.left).attr('width', barW).attr('height', barHeight).attr('rx', 4).attr('fill', era.color).attr('opacity', 0.8)
+        .on('mouseover', function(e) { showTooltip(e, `<div class="tt-title">${era.name}</div><div class="tt-detail">${era.dates}<br>${era.commits} commits</div>`); })
+        .on('mouseout', hideTooltip);
+      // Commit count — position inside bar if bar is very long, outside otherwise
+      const textX = barW > innerW * 0.85 ? margin.left + barW - 8 : margin.left + barW + 8;
+      const textColor = barW > innerW * 0.85 ? 'rgba(0,0,0,0.7)' : COLORS.text2;
+      const textAnchor = barW > innerW * 0.85 ? 'end' : 'start';
+      g.append('text').attr('x', textX).attr('y', barHeight/2).attr('fill', textColor).attr('font-size', '12px').attr('dominant-baseline', 'middle').attr('text-anchor', textAnchor).text(`${era.commits}`);
+    });
+  })();
+})();
+
+</script>
+<script id="ch-rhythm-js">
+// Chapter: Rhythm (4 charts)
+(function() {
+  const D = window.PROJECT_DATA || {};
+  const tv = (D.telemetry_visualizations && D.telemetry_visualizations.charts) || {};
+  const agents = D.telemetry_agents || {};
+  const ERAS = window.ERAS;
+  const COLORS = window.COLORS;
+  const agentColors = { kai: COLORS.kai, cursor: COLORS.cursor, claude: COLORS.claude, unknown: COLORS.unknown || '#495057' };
+
+  // 1. Hourly Polar - D3 radial bar chart
+  (function() {
+    const el = document.getElementById('chart-hourly-polar');
+    if (!el) return;
+    const raw = tv.commit_timeline.hourly_pattern.data;
+    const data = Object.entries(raw).map(([h, v]) => ({ hour: parseInt(h), value: v }));
+    const maxVal = Math.max(...data.map(d => d.value), 1);
+    const size = 280, cx = size/2, cy = size/2, r = size/2 - 30;
+    const svg = d3.select(el).append('svg').attr('role','img').attr('viewBox', `0 0 ${size} ${size}`);
+    // Background circles
+    [0.25, 0.5, 0.75, 1].forEach(f => {
+      svg.append('circle').attr('cx', cx).attr('cy', cy).attr('r', r * f).attr('fill', 'none').attr('stroke', COLORS.border).attr('stroke-dasharray', '2,2');
+    });
+    // Hour labels
+    data.forEach(d => {
+      const angle = (d.hour / 24) * 2 * Math.PI - Math.PI/2;
+      const lx = cx + (r + 15) * Math.cos(angle);
+      const ly = cy + (r + 15) * Math.sin(angle);
+      svg.append('text').attr('x', lx).attr('y', ly).attr('text-anchor', 'middle').attr('dominant-baseline', 'middle').attr('fill', COLORS.text2).attr('font-size', '11px').text(d.hour + ':00');
+    });
+    // Bars
+    const barWidth = (2 * Math.PI / 24) * 0.7;
+    const g = svg.append('g').attr('transform', `translate(${cx},${cy})`);
+    data.forEach(d => {
+      const angle = (d.hour / 24) * 2 * Math.PI - Math.PI/2;
+      const innerR = r * 0.3;
+      const outerR = innerR + (r - innerR) * (d.value / maxVal);
+      const x1 = innerR * Math.cos(angle - barWidth/2), y1 = innerR * Math.sin(angle - barWidth/2);
+      const x2 = innerR * Math.cos(angle + barWidth/2), y2 = innerR * Math.sin(angle + barWidth/2);
+      const x3 = outerR * Math.cos(angle + barWidth/2), y3 = outerR * Math.sin(angle + barWidth/2);
+      const x4 = outerR * Math.cos(angle - barWidth/2), y4 = outerR * Math.sin(angle - barWidth/2);
+      const path = `M${x1},${y1} L${x4},${y4} A${outerR},${outerR} 0 0,1 ${x3},${y3} L${x2},${y2} A${innerR},${innerR} 0 0,0 ${x1},${y1}Z`;
+      g.append('path').attr('d', path)
+        .attr('fill', d.hour >= 21 || d.hour < 5 ? COLORS.kai : COLORS.claude).attr('opacity', 0.7)
+        .on('mouseover', function(e) { showTooltip(e, `<div class="tt-title">${d.hour}:00</div><div class="tt-detail">${d.value} commits</div><div class="tt-detail">${d.hour >= 21 || d.hour < 5 ? 'Nocturnal' : 'Diurnal'}</div>`); })
+        .on('mouseout', hideTooltip);
+    });
+  })();
+
+  // 2. Day x Hour Heatmap
+  (function() {
+    const el = document.getElementById('chart-heatmap');
+    if (!el) return;
+    const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+    const hours = Array.from({length: 24}, (_, i) => i);
+    // Load heatmap data from PROJECT_DATA or use empty default
+    const D = window.PROJECT_DATA || {};
+    const heatmapData = D.heatmap || {};
+    const REAL_HEATMAP = heatmapData.grid || days.reduce((acc, d) => { acc[d] = Array(24).fill(0); return acc; }, {});
+    const dayTotals = heatmapData.day_totals || days.reduce((acc, d) => { acc[d] = 0; return acc; }, {});
+    const totalCommits = heatmapData.total || 0;
+    const nocturnalHours = h => h >= 22 || h < 6;
+    const cellSize = 18;
+    const margin = {top: 20, right: 20, bottom: 10, left: 35};
+    const width = margin.left + hours.length * cellSize + margin.right;
+    const height = margin.top + days.length * cellSize + margin.bottom;
+    const svg = d3.select(el).append('svg').attr('role','img').attr('viewBox', `0 0 ${width} ${height}`);
+    // Find max for color scale
+    let maxVal = 0;
+    days.forEach(d => hours.forEach(h => { if (REAL_HEATMAP[d][h] > maxVal) maxVal = REAL_HEATMAP[d][h]; }));
+    const colorScale = d3.scaleSequential(d3.interpolateYlOrRd).domain([0, maxVal]);
+    // Tooltip context
+    const dayInsights = heatmapData.day_insights || {};
+    days.forEach((day, di) => {
+      const row = REAL_HEATMAP[day];
+      const dayTotal = dayTotals[day];
+      const dayPct = ((dayTotal / totalCommits) * 100).toFixed(1);
+      const nocturnal = hours.filter(h => nocturnalHours(h) && row[h] > 0).reduce((s, h) => s + row[h], 0);
+      const nocturnalPct = dayTotal > 0 ? ((nocturnal / dayTotal) * 100).toFixed(0) : 0;
+      hours.forEach(hour => {
+        const val = row[hour];
+        const timeLabel = hour === 0 ? 'midnight' : hour < 12 ? `${hour}:00am` : hour === 12 ? 'noon' : `${hour-12}:00pm`;
+        const phase = nocturnalHours(hour) ? 'Nocturnal session' : hour >= 9 && hour < 17 ? 'Core hours' : hour >= 17 && hour < 22 ? 'Evening session' : 'Early morning';
+        const detail = val === 0 ? 'No commits at this time.' :
+          val === maxVal ? `${val} commits — the hottest cell in the entire project. ${dayInsights[day] || ''}` :
+          val >= 10 ? `${val} commits — an intense burst. ${phase}.` :
+          val >= 5 ? `${val} commits. ${phase}.` :
+          `${val} commit${val > 1 ? 's' : ''}. ${phase}.`;
+        svg.append('rect')
+          .attr('x', margin.left + hour * cellSize).attr('y', margin.top + di * cellSize)
+          .attr('width', cellSize - 1).attr('height', cellSize - 1).attr('rx', 2)
+          .attr('fill', colorScale(val)).attr('class', 'heatmap-cell')
+          .on('mouseover', function(e) {
+            showTooltip(e, `<div class="tt-title">${day} ${timeLabel}</div><div class="tt-detail">${detail}</div><div class="tt-detail">${day}: ${dayTotal} commits (${dayPct}%) — ${nocturnalPct}% nocturnal</div><div class="tt-quote">${dayInsights[day]}</div>`);
+          })
+          .on('mouseout', hideTooltip);
+      });
+    });
+    // Labels
+    days.forEach((day, i) => svg.append('text').attr('x', margin.left - 5).attr('y', margin.top + i * cellSize + cellSize/2).attr('text-anchor', 'end').attr('dominant-baseline', 'middle').attr('fill', COLORS.text2).attr('font-size', '11px').text(day));
+    hours.filter(h => h % 3 === 0).forEach(h => svg.append('text').attr('x', margin.left + h * cellSize + cellSize/2).attr('y', margin.top - 5).attr('text-anchor', 'middle').attr('fill', COLORS.text2).attr('font-size', '11px').text(h + ':00'));
+  })();
+
+  // 3. Agent Radar (Spider chart)
+  (function() {
+    const el = document.getElementById('chart-agent-radar');
+    if (!el) return;
+    const axes = ['velocity', 'co_authorship', 'conventional_commits', 'lines_changed', 'session_count', 'hook_usage'];
+    const axisLabels = ['Velocity', 'Co-Authorship', 'Conventional', 'Lines Changed', 'Sessions', 'Hooks'];
+    const claude = agents.claude_code || {};
+    const kai = agents.kai_agent || {};
+    const cursor = agents.cursor_agent || {};
+    // Extract numeric values from nested data
+    const getNum = (v, key) => v && typeof v === 'object' ? (v[key] || 0) : (v || 0);
+    const sumObj = (o) => o && typeof o === 'object' ? Object.values(o).reduce((a,b) => a + (typeof b === 'number' ? b : 0), 0) : 0;
+    const allAgents = [
+      { name: 'Claude Code', color: COLORS.claude, data: {
+        velocity: getNum(claude.velocity, 'commits_per_hour'),
+        co_authorship: getNum(claude.co_authorship, 'claude_opus_4_6'),
+        conventional_commits: sumObj(claude.conventional_commit_breakdown),
+        lines_changed: getNum(claude.lines_changed, 'insertions'),
+        session_count: getNum(claude.session_data, 'totals') ? getNum(getNum(claude.session_data, 'totals'), 'sessions') : 0,
+        hook_usage: getNum(claude.hooks_system, 'global_hooks_count')
+      }},
+      { name: 'Kai', color: COLORS.kai, data: {
+        velocity: getNum(kai.velocity, 'commits_per_hour'),
+        co_authorship: kai.commit_count || 0,
+        conventional_commits: sumObj(kai.commit_verb_distribution),
+        lines_changed: getNum(kai.lines_changed, 'insertions'),
+        session_count: 1, hook_usage: 0
+      }},
+      { name: 'Cursor', color: COLORS.cursor, data: {
+        velocity: getNum(cursor.velocity, 'commits_per_hour'),
+        co_authorship: cursor.commit_count || 0,
+        conventional_commits: sumObj(cursor.commit_category_distribution),
+        lines_changed: getNum(cursor.lines_changed, 'insertions'),
+        session_count: 1, hook_usage: 0
+      }}
+    ];
+    const maxes = {};
+    axes.forEach(a => { maxes[a] = Math.max(...allAgents.map(ag => ag.data[a] || 0), 1); });
+    const n = axes.length;
+    const size = 260, cx = size/2, cy = size/2, r = size/2 - 40;
+    const svg = d3.select(el).append('svg').attr('role','img').attr('viewBox', `0 0 ${size} ${size}`);
+    // Grid
+    [0.2, 0.4, 0.6, 0.8, 1].forEach(f => {
+      const pts = axes.map((_, i) => {
+        const angle = (i / n) * 2 * Math.PI - Math.PI/2;
+        return `${cx + r * f * Math.cos(angle)},${cy + r * f * Math.sin(angle)}`;
+      }).join(' ');
+      svg.append('polygon').attr('points', pts).attr('fill', 'none').attr('stroke', COLORS.border).attr('stroke-width', 0.5);
+    });
+    // Axis lines + labels
+    axes.forEach((a, i) => {
+      const angle = (i / n) * 2 * Math.PI - Math.PI/2;
+      const ex = cx + r * Math.cos(angle), ey = cy + r * Math.sin(angle);
+      svg.append('line').attr('x1', cx).attr('y1', cy).attr('x2', ex).attr('y2', ey).attr('stroke', COLORS.border);
+      const lx = cx + (r + 18) * Math.cos(angle), ly = cy + (r + 18) * Math.sin(angle);
+      svg.append('text').attr('x', lx).attr('y', ly).attr('text-anchor', 'middle').attr('dominant-baseline', 'middle').attr('fill', COLORS.text2).attr('font-size', '11px').text(axisLabels[i]);
+    });
+    // Data polygons
+    allAgents.forEach(ag => {
+      const pts = axes.map((a, i) => {
+        const angle = (i / n) * 2 * Math.PI - Math.PI/2;
+        const val = (ag.data[a] || 0) / maxes[a];
+        return `${cx + r * val * Math.cos(angle)},${cy + r * val * Math.sin(angle)}`;
+      }).join(' ');
+      svg.append('polygon').attr('points', pts).attr('fill', ag.color).attr('fill-opacity', 0.15).attr('stroke', ag.color).attr('stroke-width', 1.5);
+    });
+    // Legend
+    const legend = svg.append('g').attr('transform', `translate(${size - 90}, 10)`);
+    allAgents.forEach((ag, i) => {
+      legend.append('rect').attr('x', 0).attr('y', i * 14).attr('width', 10).attr('height', 10).attr('rx', 2).attr('fill', ag.color);
+      legend.append('text').attr('x', 14).attr('y', i * 14 + 9).attr('fill', COLORS.text2).attr('font-size', '11px').text(ag.name);
+    });
+  })();
+
+  // 4. Agent Attribution Stacked Area
+  (function() {
+    const el = document.getElementById('chart-agent-stacked');
+    if (!el) return;
+    const raw = tv.commit_timeline.agent_attribution.data;
+    const agentNames = tv.commit_timeline.agent_attribution.agents;
+    const data = Object.entries(raw).map(([d, v]) => {
+      const obj = { date: d };
+      agentNames.forEach(a => obj[a] = v[a] || 0);
+      return obj;
+    }).sort((a, b) => a.date.localeCompare(b.date));
+    const stack = d3.stack().keys(agentNames)(data);
+    const margin = {top: 20, right: 20, bottom: 30, left: 40};
+    const width = el.clientWidth - margin.left - margin.right;
+    const height = 200 - margin.top - margin.bottom;
+    const svg = d3.select(el).append('svg').attr('role','img').attr('viewBox', `0 0 ${width + margin.left + margin.right} ${height + margin.top + margin.bottom}`);
+    const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
+    const x = d3.scalePoint().domain(data.map(d => d.date)).range([0, width]);
+    const y = d3.scaleLinear().domain([0, d3.max(stack, s => d3.max(s, d => d[1])) || 1]).range([height, 0]);
+    const area = d3.area().x(d => x(d.data.date)).y0(d => y(d[0])).y1(d => y(d[1])).curve(d3.curveMonotoneX);
+    g.selectAll('.layer').data(stack).enter().append('path')
+      .attr('class', 'layer').attr('d', area)
+      .attr('fill', d => agentColors[d.key] || '#495057').attr('opacity', 0.8);
+    g.append('g').attr('transform', `translate(0,${height})`).call(d3.axisBottom(x).tickValues(data.filter((_, i) => i % Math.ceil(data.length/8) === 0).map(d => d.date)).tickFormat(d => d.slice(5))).selectAll('text').attr('fill', COLORS.text2).style('font-size', '11px');
+    g.append('g').call(d3.axisLeft(y).ticks(4)).selectAll('text').attr('fill', COLORS.text2).style('font-size', '11px');
+    g.selectAll('.domain, .tick line').attr('stroke', COLORS.border);
+    // Legend
+    const legend = g.append('g').attr('transform', `translate(${width - 120}, 0)`);
+    agentNames.forEach((a, i) => {
+      if (a === 'unknown') return;
+      legend.append('rect').attr('x', 0).attr('y', i * 14).attr('width', 10).attr('height', 10).attr('rx', 2).attr('fill', agentColors[a]);
+      legend.append('text').attr('x', 14).attr('y', i * 14 + 9).attr('fill', COLORS.text2).attr('font-size', '11px').text(a.charAt(0).toUpperCase() + a.slice(1));
+    });
+  })();
+})();
+
+</script>
+<script id="ch-architecture-js">
+// Chapter: Architecture (4 charts)
+(function() {
+  const D = window.PROJECT_DATA || {};
+  const tv = D.telemetry_visualizations.charts;
+  const COLORS = window.COLORS;
+
+  // 1. Source Treemap
+  (function() {
+    const el = document.getElementById('chart-treemap');
+    if (!el) return;
+    const raw = tv.commit_timeline.source_treemap.data;
+    const modules = Object.entries(raw).map(([name, info]) => ({
+      name, value: info.files || info.size || 1, loc: info.loc || 0, color: info.color || COLORS.claude
+    }));
+    const width = el.clientWidth, height = 320;
+    const svg = d3.select(el).append('svg').attr('role','img').attr('viewBox', `0 0 ${width} ${height}`);
+    const root = d3.hierarchy({ children: modules }).sum(d => d.value);
+    d3.treemap().size([width, height]).padding(2).round(true)(root);
+    const leaves = root.leaves();
+    const colorScale = d3.scaleOrdinal()
+      .domain(leaves.map(d => d.data.name))
+      .range(['#ff6b6b','#ffa94d','#ffd43b','#51cf66','#74c0fc','#cc5de8','#ff8787','#b197fc','#495057','#845ef7','#20c997','#e64980']);
+    svg.selectAll('rect').data(leaves).enter().append('rect')
+      .attr('x', d => d.x0).attr('y', d => d.y0).attr('width', d => d.x1 - d.x0).attr('height', d => d.y1 - d.y0)
+      .attr('rx', 3).attr('fill', d => colorScale(d.data.name)).attr('opacity', 0.8)
+      .on('mouseover', function(e, d) { showTooltip(e, `<div class="tt-title">${d.data.name}</div><div class="tt-detail">${d.data.value} files${d.data.loc ? ' · ' + d.data.loc.toLocaleString() + ' LOC' : ''}</div>`); d3.select(this).attr('opacity', 1); })
+      .on('mouseout', function() { hideTooltip(); d3.select(this).attr('opacity', 0.8); });
+    svg.selectAll('text').data(leaves.filter(d => (d.x1 - d.x0) > 40 && (d.y1 - d.y0) > 18)).enter().append('text')
+      .attr('x', d => d.x0 + 4).attr('y', d => d.y0 + 14).attr('fill', '#080c14').attr('font-size', '11px').attr('font-weight', '600').text(d => d.data.name.length > 16 ? d.data.name.slice(0,15) + '…' : d.data.name);
+  })();
+
+  // 2. File & Test Growth overlay
+  (function() {
+    const el = document.getElementById('chart-file-test-growth');
+    if (!el) return;
+    const fg = tv.commit_timeline.file_growth.data;
+    const tg = tv.commit_timeline.test_growth.data;
+    const fileData = Object.entries(fg).map(([d, v]) => ({ date: d, files: v }));
+    const testData = Object.entries(tg).map(([d, v]) => ({ date: d, tests: v }));
+    const allDates = [...new Set([...fileData.map(d => d.date), ...testData.map(d => d.date)])].sort();
+    const maxF = Math.max(...fileData.map(d => d.files), 1);
+    const maxT = Math.max(...testData.map(d => d.tests), 1);
+    const margin = {top: 20, right: 40, bottom: 30, left: 45};
+    const width = el.clientWidth - margin.left - margin.right;
+    const height = 200 - margin.top - margin.bottom;
+    const svg = d3.select(el).append('svg').attr('role','img').attr('viewBox', `0 0 ${width + margin.left + margin.right + 10} ${height + margin.top + margin.bottom}`);
+    const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
+    const x = d3.scalePoint().domain(allDates).range([0, width]);
+    const yF = d3.scaleLinear().domain([0, maxF * 1.1]).range([height, 0]);
+    const yT = d3.scaleLinear().domain([0, maxT * 1.1]).range([height, 0]);
+    // Files area
+    const areaF = d3.area().x(d => x(d.date)).y0(height).y1(d => yF(d.files)).curve(d3.curveMonotoneX);
+    g.append('path').datum(fileData).attr('d', areaF).attr('fill', COLORS.claude).attr('opacity', 0.15);
+    const lineF = d3.line().x(d => x(d.date)).y(d => yF(d.files)).curve(d3.curveMonotoneX);
+    g.selectAll('.f-dot').data(fileData).enter().append('circle').attr('cx', d => x(d.date)).attr('cy', d => yF(d.files)).attr('r', 2.5).attr('fill', COLORS.claude);
+    g.append('path').datum(fileData).attr('d', lineF).attr('fill', 'none').attr('stroke', COLORS.claude).attr('stroke-width', 2);
+    // Tests line (right axis)
+    const lineT = d3.line().x(d => x(d.date)).y(d => yT(d.tests)).curve(d3.curveMonotoneX);
+    g.append('path').datum(testData).attr('d', lineT).attr('fill', 'none').attr('stroke', COLORS.kai).attr('stroke-width', 2).attr('stroke-dasharray', '4,3');
+    g.selectAll('.t-dot').data(testData).enter().append('circle').attr('cx', d => x(d.date)).attr('cy', d => yT(d.tests)).attr('r', 2.5).attr('fill', COLORS.kai);
+    // Axes
+    g.append('g').attr('transform', `translate(0,${height})`).call(d3.axisBottom(x).tickValues(allDates.filter((_, i) => i % Math.ceil(allDates.length/6) === 0)).tickFormat(d => d.slice(5))).selectAll('text').attr('fill', COLORS.text2).style('font-size', '11px');
+    g.append('g').call(d3.axisLeft(yF).ticks(4)).selectAll('text').attr('fill', COLORS.text2).style('font-size', '11px');
+    const gT = svg.append('g').attr('transform', `translate(${width + margin.left + 10},${margin.top})`);
+    gT.call(d3.axisRight(yT).ticks(4)).selectAll('text').attr('fill', COLORS.text2).style('font-size', '11px');
+    g.selectAll('.domain, .tick line').attr('stroke', COLORS.border);
+    gT.selectAll('.domain, .tick line').attr('stroke', COLORS.border);
+    // Legend
+    g.append('text').attr('x', 10).attr('y', 12).attr('fill', COLORS.claude).attr('font-size', '11px').text('— Files');
+    g.append('text').attr('x', 60).attr('y', 12).attr('fill', COLORS.kai).attr('font-size', '11px').text('--- Tests');
+  })();
+
+  // 3. Commit Types Donut
+  (function() {
+    const el = document.getElementById('chart-commit-types');
+    if (!el) return;
+    const raw = tv.commit_timeline.commit_types.data;
+    const data = Object.entries(raw).filter(([k, v]) => v > 1).map(([type, count]) => ({ type, count })).sort((a, b) => b.count - a.count);
+    const total = data.reduce((s, d) => s + d.count, 0);
+    const size = 220, cx = size/2, cy = size/2, r = 80, ir = 50;
+    const svg = d3.select(el).append('svg').attr('role','img').attr('viewBox', `0 0 ${size} ${size + 30}`);
+    const g = svg.append('g').attr('transform', `translate(${cx},${cy})`);
+    const colorScale = d3.scaleOrdinal().domain(data.map(d => d.type)).range(['#51cf66','#ffa94d','#ff6b6b','#495057','#cc5de8','#74c0fc','#b197fc','#ffd43b']);
+    const pie = d3.pie().value(d => d.count).sort(null).padAngle(0.02);
+    const arc = d3.arc().innerRadius(ir).outerRadius(r);
+    g.selectAll('path').data(pie(data)).enter().append('path')
+      .attr('d', arc).attr('fill', d => colorScale(d.data.type))
+      .on('mouseover', function(e, d) { showTooltip(e, `<div class="tt-title">${d.data.type}</div><div class="tt-detail">${d.data.count} commits (${(d.data.count/total*100).toFixed(1)}%)</div>`); })
+      .on('mouseout', hideTooltip);
+    // Center text
+    g.append('text').attr('text-anchor', 'middle').attr('y', -5).attr('fill', COLORS.text).attr('font-size', '22px').attr('font-weight', '700').attr('font-family', 'var(--font-display)').text(total);
+    g.append('text').attr('text-anchor', 'middle').attr('y', 12).attr('fill', COLORS.text2).attr('font-size', '11px').text('total commits');
+    // Legend below
+    const legend = svg.append('g').attr('transform', `translate(10, ${size + 5})`);
+    data.slice(0, 6).forEach((d, i) => {
+      const col = i < 3 ? 0 : 1;
+      const row = i % 3;
+      legend.append('rect').attr('x', col * 100).attr('y', row * 14).attr('width', 8).attr('height', 8).attr('rx', 2).attr('fill', colorScale(d.type));
+      legend.append('text').attr('x', col * 100 + 12).attr('y', row * 14 + 8).attr('fill', COLORS.text2).attr('font-size', '11px').text(`${d.type} (${d.count})`);
+    });
+  })();
+
+  // 4. Dependency Growth
+  (function() {
+    const el = document.getElementById('chart-dependency-growth');
+    if (!el) return;
+    const raw = tv.commit_timeline.dependency_growth.data;
+    const data = Object.entries(raw).map(([d, v]) => ({ date: d, value: v })).sort((a,b) => a.date.localeCompare(b.date));
+    if (!data.length) return;
+    const maxVal = Math.max(...data.map(d => d.value), 1);
+    const margin = {top: 20, right: 20, bottom: 30, left: 40};
+    const width = el.clientWidth - margin.left - margin.right;
+    const height = 180 - margin.top - margin.bottom;
+    const svg = d3.select(el).append('svg').attr('role','img').attr('viewBox', `0 0 ${width + margin.left + margin.right} ${height + margin.top + margin.bottom}`);
+    const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
+    const x = d3.scalePoint().domain(data.map(d => d.date)).range([0, width]);
+    const y = d3.scaleLinear().domain([0, maxVal * 1.1]).range([height, 0]);
+    const area = d3.area().x(d => x(d.date)).y0(height).y1(d => y(d.value)).curve(d3.curveStepAfter);
+    const line = d3.line().x(d => x(d.date)).y(d => y(d.value)).curve(d3.curveStepAfter);
+    const grad = svg.append('defs').append('linearGradient').attr('id', 'grad-deps');
+    grad.append('stop').attr('offset', '0%').attr('stop-color', COLORS.era4).attr('stop-opacity', 0.4);
+    grad.append('stop').attr('offset', '100%').attr('stop-color', COLORS.era4).attr('stop-opacity', 0.05);
+    g.append('path').datum(data).attr('d', area).attr('fill', 'url(#grad-deps)');
+    g.append('path').datum(data).attr('d', line).attr('fill', 'none').attr('stroke', COLORS.era4).attr('stroke-width', 2);
+    g.selectAll('.dot').data(data).enter().append('circle').attr('cx', d => x(d.date)).attr('cy', d => y(d.value)).attr('r', 3).attr('fill', COLORS.era4);
+    g.append('g').attr('transform', `translate(0,${height})`).call(d3.axisBottom(x).tickValues(data.filter((_, i) => i % Math.ceil(data.length/6) === 0).map(d => d.date)).tickFormat(d => d.slice(5))).selectAll('text').attr('fill', COLORS.text2).style('font-size', '11px');
+    g.append('g').call(d3.axisLeft(y).ticks(4)).selectAll('text').attr('fill', COLORS.text2).style('font-size', '11px');
+    g.selectAll('.domain, .tick line').attr('stroke', COLORS.border);
+  })();
+})();
+
+</script>
+<script id="ch-emotional-js">
+// Chapter: Emotional Arc (3 elements)
+(function() {
+  const D = window.PROJECT_DATA || {};
+  const sessions = D.telemetry_sessions;
+  const frust = sessions.frustration_analysis;
+  const ERAS = window.ERAS;
+  const COLORS = window.COLORS;
+
+  // 1. Frustration Intensity Line (colored by era)
+  (function() {
+    const el = document.getElementById('chart-frustration-line');
+    if (!el) return;
+    const arc = frust.emotional_arc;
+    if (!arc || typeof arc !== 'object') return;
+    // Map narrative strings to intensity scores based on keywords
+    const scoreText = (text) => {
+      const t = text.toLowerCase();
+      if (t.includes('crucible') || t.includes('peak frustration') || t.includes('overwhelm')) return 5;
+      if (t.includes('wiring frustration') || t.includes('frustration')) return 4;
+      if (t.includes('explosion') || t.includes('quality crusade')) return 3;
+      if (t.includes('silence') || t.includes('dormancy') || t.includes('quiet') || t.includes('gap')) return 1;
+      if (t.includes('breakthrough') || t.includes('connecting') || t.includes('meta') || t.includes('bible') || t.includes('calm') || t.includes('excitement')) return 2;
+      return 2;
+    };
+    const data = Object.entries(arc).map(([era, val]) => ({ era, value: scoreText(val), label: val })).filter(d => d.era);
+    if (!data.length) return;
+    const maxVal = Math.max(...data.map(d => d.value), 1);
+    const margin = {top: 20, right: 20, bottom: 45, left: 45};
+    const width = el.clientWidth - margin.left - margin.right;
+    const height = 200 - margin.top - margin.bottom;
+    const svg = d3.select(el).append('svg').attr('role','img').attr('viewBox', `0 0 ${width + margin.left + margin.right} ${height + margin.top + margin.bottom}`);
+    const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
+    const x = d3.scalePoint().domain(data.map(d => d.era)).range([0, width]).padding(0.1);
+    const y = d3.scaleLinear().domain([0, maxVal * 1.2]).range([height, 0]);
+    // Gradient area
+    const grad = svg.append('defs').append('linearGradient').attr('id', 'grad-frust');
+    grad.append('stop').attr('offset', '0%').attr('stop-color', COLORS.kai).attr('stop-opacity', 0.4);
+    grad.append('stop').attr('offset', '100%').attr('stop-color', COLORS.kai).attr('stop-opacity', 0.02);
+    const area = d3.area().x(d => x(d.era)).y0(height).y1(d => y(d.value)).curve(d3.curveMonotoneX);
+    g.append('path').datum(data).attr('d', area).attr('fill', 'url(#grad-frust)');
+    const line = d3.line().x(d => x(d.era)).y(d => y(d.value)).curve(d3.curveMonotoneX);
+    g.append('path').datum(data).attr('d', line).attr('fill', 'none').attr('stroke', COLORS.kai).attr('stroke-width', 2.5);
+    // Dots colored by era (extract era number from label text)
+    data.forEach((d) => {
+      const eraMatch = d.label.match(/\(era(\d+)\)/);
+      const eraNum = eraMatch ? parseInt(eraMatch[1]) : null;
+      const eraInfo = eraNum ? ERAS.find(e => e.id === eraNum) : null;
+      g.append('circle').attr('cx', x(d.era)).attr('cy', y(d.value)).attr('r', 5).attr('fill', eraInfo ? eraInfo.color : COLORS.kai).attr('stroke', '#0d1117').attr('stroke-width', 1.5)
+        .on('mouseover', function(e) { showTooltip(e, `<div class="tt-title">${d.era}</div><div class="tt-detail">Intensity: ${d.value}/5</div><div class="tt-quote">${d.label}</div>`); })
+        .on('mouseout', hideTooltip);
+    });
+    g.append('g').attr('transform', `translate(0,${height})`).call(d3.axisBottom(x)).selectAll('text').attr('fill', COLORS.text2).style('font-size', '11px').attr('transform', 'rotate(-20)').attr('text-anchor', 'end');
+    g.append('g').call(d3.axisLeft(y).ticks(4)).selectAll('text').attr('fill', COLORS.text2).style('font-size', '11px');
+    g.selectAll('.domain, .tick line').attr('stroke', COLORS.border);
+  })();
+
+  // 2. Frustration → Automation Sankey
+  (function() {
+    const el = document.getElementById('chart-frustration-sankey');
+    if (!el) return;
+    const mapping = frust.frustration_to_infrastructure_mapping;
+    if (!mapping || !mapping.mappings) return;
+    const nodes = [];
+    const nodeMap = {};
+    const links = [];
+    mapping.mappings.forEach(m => {
+      const src = m.frustration || 'Unknown';
+      const tgt = m.hook || 'Unknown';
+      if (!nodeMap[src]) { nodeMap[src] = nodes.length; nodes.push({ name: src, color: COLORS.kai }); }
+      if (!nodeMap[tgt]) { nodeMap[tgt] = nodes.length; nodes.push({ name: tgt, color: m.still_active ? COLORS.claude : COLORS.text3 }); }
+      links.push({ source: nodeMap[src], target: nodeMap[tgt], value: 1, active: m.still_active });
+    });
+    const width = el.clientWidth, height = Math.max(nodes.length * 30, 200);
+    const svg = d3.select(el).append('svg').attr('role','img').attr('viewBox', `0 0 ${width} ${height}`);
+    if (typeof d3.sankey === 'undefined') {
+      // Fallback: simple horizontal flow
+      const sources = nodes.filter((_, i) => links.some(l => l.source === i));
+      const targets = nodes.filter((_, i) => links.some(l => l.target === i));
+      const sourceX = 10, targetX = width * 0.5, itemH = Math.min(28, (height - 20) / Math.max(sources.length, targets.length));
+      sources.forEach((n, i) => {
+        const y = i * (itemH + 4) + 10;
+        svg.append('rect').attr('x', sourceX).attr('y', y).attr('width', 140).attr('height', itemH).attr('rx', 4).attr('fill', n.color).attr('opacity', 0.8);
+        svg.append('text').attr('x', sourceX + 5).attr('y', y + itemH/2 + 3).attr('fill', '#080c14').attr('font-size', '11px').attr('font-weight', '500').text(n.name.length > 16 ? n.name.slice(0,15)+'…' : n.name);
+      });
+      targets.forEach((n, i) => {
+        const y = i * (itemH + 4) + 10;
+        svg.append('rect').attr('x', targetX).attr('y', y).attr('width', 160).attr('height', itemH).attr('rx', 4).attr('fill', n.color).attr('opacity', 0.8);
+        const status = links.find(l => l.target === nodes.indexOf(n))?.active ? '✓' : '✗';
+        svg.append('text').attr('x', targetX + 5).attr('y', y + itemH/2 + 3).attr('fill', '#080c14').attr('font-size', '11px').attr('font-weight', '500').text(status + ' ' + (n.name.length > 16 ? n.name.slice(0,15)+'…' : n.name));
+      });
+      // Links
+      links.forEach(l => {
+        const sy = l.source * (itemH + 4) + 10 + itemH/2;
+        const ty = l.target * (itemH + 4) + 10 + itemH/2;
+        const sx = sourceX + 120, tx = targetX;
+        const mx = (sx + tx) / 2;
+        svg.append('path').attr('d', `M${sx},${sy} C${mx},${sy} ${mx},${ty} ${tx},${ty}`).attr('fill', 'none').attr('stroke', l.active ? COLORS.claude : COLORS.text2).attr('stroke-width', 1.5).attr('opacity', 0.5);
+      });
+    } else {
+      const sankey = d3.sankey().nodeWidth(80).nodePadding(12).extent([[100, 10], [width - 100, height - 10]]);
+      const graph = sankey({ nodes: nodes.map(n => ({ ...n })), links: links.map(l => ({ ...l })) });
+      svg.selectAll('.sankey-link').data(graph.links).enter().append('path')
+        .attr('class', 'sankey-link').attr('d', function(d) { return d3.sankeyLinkHorizontal()(d); })
+        .attr('stroke', function(d) { return d.source.color; }).attr('stroke-width', function(d) { return Math.max(d.width, 2); });
+      svg.selectAll('.sankey-node rect').data(graph.nodes).enter().append('rect')
+        .attr('x', d => d.x0).attr('y', d => d.y0).attr('height', d => Math.max(d.y1 - d.y0, 4)).attr('width', d => d.x1 - d.x0).attr('fill', d => d.color);
+      svg.selectAll('.sankey-label').data(graph.nodes).enter().append('text')
+        .attr('x', d => d.x0 < width / 2 ? d.x0 - 5 : d.x1 + 5)
+        .attr('y', d => (d.y0 + d.y1) / 2).attr('dy', '0.35em')
+        .attr('text-anchor', d => d.x0 < width / 2 ? 'end' : 'start')
+        .attr('fill', COLORS.text2).attr('font-size', '11px').text(d => d.name.length > 30 ? d.name.slice(0,29)+'…' : d.name);
+    }
+  })();
+
+  // 3. Pull quotes from emotional arc
+  (function() {
+    const container = document.getElementById('quotes-container');
+    if (!container) return;
+    const cats = frust.frustration_categories;
+    if (!cats) return;
+    const quotes = [];
+    Object.values(cats).forEach(cat => {
+      if (cat.key_quotes) {
+        cat.key_quotes.slice(0, 2).forEach(q => {
+          quotes.push({ quote: q, category: cat.description || cat });
+        });
+      }
+    });
+    quotes.slice(0, 4).forEach(q => {
+      const card = document.createElement('div');
+      card.className = 'quote-card';
+      const blockquote = document.createElement('blockquote');
+      blockquote.textContent = `"${q.quote}"`;
+      const attribution = document.createElement('div');
+      attribution.className = 'attribution';
+      attribution.textContent = typeof q.category === 'string' ? q.category : q.category.description || '';
+      card.append(blockquote, attribution);
+      container.appendChild(card);
+    });
+  })();
+})();
+
+</script>
+<script id="ch-patterns-js">
+// Chapter: Hidden Patterns (3 charts)
+(function() {
+  const D = window.PROJECT_DATA || {};
+  if (!D || !D.derived_patterns) return;
+  const dp = D.derived_patterns;
+
+  // 1. Lunar Illumination vs Commit Velocity
+  (function() {
+    const el = document.getElementById('chart-lunar');
+    if (!el) return;
+    const lunar = dp.lunar_phase_correlation;
+    if (!lunar || !lunar.daily_illumination) return;
+    const data = lunar.daily_illumination;
+    const margin = {top: 30, right: 50, bottom: 30, left: 45};
+    const width = el.clientWidth - margin.left - margin.right;
+    const height = 280 - margin.top - margin.bottom;
+    const svg = d3.select(el).append('svg').attr('role','img')
+      .attr('viewBox', `0 0 ${width + margin.left + margin.right} ${height + margin.top + margin.bottom}`);
+    const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
+
+    const x = d3.scaleTime().domain(d3.extent(data, d => new Date(d.date))).range([0, width]);
+    const yCommits = d3.scaleLinear().domain([0, d3.max(data, d => d.commits) * 1.1]).range([height, 0]);
+    const yMoon = d3.scaleLinear().domain([0, 100]).range([height, 0]);
+
+    // Moon illumination area (background)
+    const area = d3.area().x(d => x(new Date(d.date))).y0(height).y1(d => yMoon(d.illumination_pct)).curve(d3.curveMonotoneX);
+    g.append('path').datum(data).attr('d', area).attr('fill', '#ffd43b').attr('opacity', 0.12);
+
+    // Full moon markers
+    data.filter(d => d.phase_name.includes('FULL')).forEach(d => {
+      const cx = x(new Date(d.date));
+      g.append('circle').attr('cx', cx).attr('cy', 10).attr('r', 8).attr('fill', '#ffd43b').attr('opacity', 0.6);
+      g.append('text').attr('x', cx).attr('y', 6).attr('text-anchor', 'middle').attr('fill', '#ffd43b')
+        .style('font-size', '8px').text('FULL');
+    });
+
+    // Commit bars
+    const barW = Math.max(4, width / data.length * 0.6);
+    g.selectAll('.bar').data(data).enter().append('rect')
+      .attr('class', 'bar').attr('x', d => x(new Date(d.date)) - barW/2).attr('width', barW)
+      .attr('y', d => yCommits(d.commits)).attr('height', d => height - yCommits(d.commits))
+      .attr('fill', d => d.commits >= 40 ? COLORS.claude : d.commits >= 20 ? COLORS.cursor : COLORS.text2)
+      .attr('rx', 2)
+      .on('mouseover', function(e, d) {
+        const phaseNote = d.phase_name.includes('FULL') ? ' — FULL MOON' : d.phase_name.includes('QUARTER') ? ' — QUARTER' : '';
+        showTooltip(e, { title: d.date, detail: `${d.commits} commits — ${d.phase_name} (${d.illumination_pct}% illumination)${phaseNote}`,
+          insight: d.commits >= 40 ? 'Peak velocity day — the project surged.' : d.commits === 0 ? 'Silence. The moon was doing something else.' : undefined });
+      })
+      .on('mouseout', hideTooltip);
+
+    // Illumination line
+    const line = d3.line().x(d => x(new Date(d.date))).y(d => yMoon(d.illumination_pct)).curve(d3.curveMonotoneX);
+    g.append('path').datum(data).attr('d', line).attr('fill', 'none').attr('stroke', '#ffd43b').attr('stroke-width', 2).attr('opacity', 0.7);
+
+    // Axes
+    g.append('g').attr('transform', `translate(0,${height})`).call(d3.axisBottom(x).ticks(6).tickFormat(d3.timeFormat('%b %d')))
+      .selectAll('text').attr('fill', COLORS.text2).style('font-size', '11px');
+    g.append('g').call(d3.axisLeft(yCommits).ticks(4)).selectAll('text').attr('fill', COLORS.text2).style('font-size', '11px');
+    g.append('g').attr('transform', `translate(${width},0)`).call(d3.axisRight(yMoon).ticks(4).tickFormat(d => d + '%'))
+      .selectAll('text').attr('fill', '#ffd43b').style('font-size', '11px');
+    g.selectAll('.domain, .tick line').attr('stroke', COLORS.border);
+
+    // Y-axis labels
+    g.append('text').attr('x', -10).attr('y', -10).attr('fill', COLORS.text2).style('font-size', '11px').text('Commits');
+    g.append('text').attr('x', width + 10).attr('y', -10).attr('fill', '#ffd43b').style('font-size', '11px').text('Moon %');
+  })();
+
+  // 2. Commit Sentiment Stacked Bar by Era
+  (function() {
+    const el = document.getElementById('chart-sentiment');
+    if (!el) return;
+    const sent = dp.commit_message_sentiment;
+    if (!sent || !sent.era_breakdown) return;
+    const data = sent.era_breakdown.filter(d => d.total > 1);
+    const categories = ['directive', 'corrective', 'reflective', 'celebratory'];
+    const catColors = { directive: COLORS.claude, corrective: COLORS.kai, reflective: COLORS.cursor, celebratory: '#ffd43b' };
+    const margin = {top: 20, right: 20, bottom: 30, left: 100};
+    const width = el.clientWidth - margin.left - margin.right;
+    const height = Math.max(data.length * 36, 200) - margin.top - margin.bottom;
+    const svg = d3.select(el).append('svg').attr('role','img')
+      .attr('viewBox', `0 0 ${width + margin.left + margin.right} ${height + margin.top + margin.bottom}`);
+    const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
+
+    const y = d3.scaleBand().domain(data.map(d => d.name)).range([0, height]).padding(0.25);
+    const x = d3.scaleLinear().domain([0, d3.max(data, d => d.total)]).range([0, width]);
+
+    data.forEach(era => {
+      let offset = 0;
+      categories.forEach(cat => {
+        const val = era[cat] || 0;
+        if (val === 0) return;
+        g.append('rect').attr('x', x(offset)).attr('y', y(era.name))
+          .attr('width', x(val)).attr('height', y.bandwidth()).attr('fill', catColors[cat]).attr('rx', 2)
+          .on('mouseover', function(e) {
+            showTooltip(e, { title: `${era.name} — ${cat}`, detail: `${val} commits (${((val/era.total)*100).toFixed(0)}%)`,
+              insight: cat === 'corrective' && val > 8 ? 'High fix rate — quality enforcement era.' : undefined });
+          })
+          .on('mouseout', hideTooltip);
+        offset += val;
+      });
+      g.append('text').attr('x', x(era.total) + 4).attr('y', y(era.name) + y.bandwidth()/2 + 3)
+        .attr('fill', COLORS.text2).style('font-size', '11px').text(era.total);
+    });
+
+    g.append('g').call(d3.axisLeft(y)).selectAll('text').attr('fill', COLORS.text2).style('font-size', '11px');
+    g.selectAll('.domain, .tick line').attr('stroke', COLORS.border);
+
+    // Legend
+    const legend = g.append('g').attr('transform', `translate(${width - 260}, -12)`);
+    categories.forEach((cat, i) => {
+      legend.append('rect').attr('x', i * 70).attr('width', 10).attr('height', 10).attr('fill', catColors[cat]).attr('rx', 2);
+      legend.append('text').attr('x', i * 70 + 14).attr('y', 9).attr('fill', COLORS.text2).style('font-size', '11px').text(cat);
+    });
+  })();
+
+  // 3. Agent Economics — summary cards
+  (function() {
+    const el = document.getElementById('chart-agent-econ');
+    if (!el) return;
+    const agentData = dp.agent_handoff_economics;
+    if (!agentData || !agentData.agents) return;
+    const agents = agentData.agents;
+    const entries = Object.entries(agents);
+    const cardW = Math.min(220, (el.clientWidth - 20) / entries.length);
+
+    entries.forEach(([name, a], i) => {
+      const card = document.createElement('div');
+      card.style.cssText = `display:inline-block;vertical-align:top;width:${cardW}px;margin-right:12px;padding:12px;background:${COLORS.surface2};border-radius:8px;border:1px solid ${COLORS.border}`;
+      const commits = typeof a.commit_count === 'object' ? (a.commit_count.total || 0) : (a.commit_count || 0);
+      const ins = a.lines_changed ? (typeof a.lines_changed.insertions === 'object' ? a.lines_changed.insertions.total || 0 : a.lines_changed.insertions) : 0;
+      const fixRate = a.economics ? (a.economics.fix_rate * 100).toFixed(0) : '?';
+      const title = document.createElement('div');
+      title.style.cssText = `color:${name === 'kai' ? COLORS.kai : name === 'claude' ? COLORS.claude : COLORS.cursor};font-weight:600;font-size:13px;margin-bottom:6px`;
+      title.textContent = name.toUpperCase();
+      const body = document.createElement('div');
+      body.style.cssText = `color:${COLORS.text2};font-size:11px;line-height:1.6`;
+      const velocity = a.velocity ? a.velocity.commits_per_hour.toFixed(1) + ' commits/hr' : '';
+      body.textContent = `${commits} commits · ${(ins/1000).toFixed(1)}K insertions | Fix rate: ${fixRate}%${velocity ? ' | ' + velocity : ''}${a.archetype ? ' | ' + a.archetype : ''}`;
+      card.append(title, body);
+      el.appendChild(card);
+    });
+  })();
+})();
+
+// Chapter: Learning Curve (4 charts — YouTube × Build correlation)
+(function() {
+  const LEARNING = (window.PROJECT_DATA && window.PROJECT_DATA.learning) || {};
+
+  // Chart 1: The 3-Year Learning Arc
+  (function() {
+    const el = document.getElementById('chart-learning-arc');
+    if (!el) return;
+
+    const months = LEARNING.monthly ? Object.entries(LEARNING.monthly).map(([m,v]) => ({month:m,count:v})) : [];
+    const W = el.clientWidth - 60;
+    const H = 320;
+    const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+    svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+    svg.style.cssText = 'width:100%;height:100%';
+
+    const maxV = Math.max(...months.map(m => m.count), 1);
+    const xScale = v => (v / maxV) * (W - 80);
+    const yScale = i => 30 + (i / Math.max(months.length - 1, 1)) * (H - 60);
+
+    // Phase background bands
+    if (months.length === 0) return;
+    (LEARNING.phases || []).forEach(ph => {
+      const startIdx = months.findIndex(m => m.month >= ph.range[0]);
+      const endIdx = months.findIndex(m => m.month >= ph.range[1]);
+      if (startIdx < 0 || endIdx < 0) return;
+      const rect = document.createElementNS('http://www.w3.org/2000/svg','rect');
+      rect.setAttribute('x', 30);
+      rect.setAttribute('y', yScale(startIdx) - 8);
+      rect.setAttribute('width', W - 60);
+      rect.setAttribute('height', yScale(endIdx) - yScale(startIdx) + 16);
+      rect.setAttribute('fill', ph.color);
+      rect.setAttribute('opacity', '0.08');
+      rect.setAttribute('rx', '4');
+      svg.appendChild(rect);
+
+      const label = document.createElementNS('http://www.w3.org/2000/svg','text');
+      label.setAttribute('x', 38);
+      label.setAttribute('y', yScale(startIdx) + 8);
+      label.setAttribute('fill', ph.color);
+      label.setAttribute('font-size', '10');
+      label.setAttribute('font-weight', '600');
+      label.textContent = ph.label.toUpperCase();
+      svg.appendChild(label);
+    });
+
+    // Area fill
+    const area = document.createElementNS('http://www.w3.org/2000/svg','polygon');
+    area.setAttribute('fill', COLORS.claude);
+    area.setAttribute('opacity', '0.15');
+    const areaPts = months.map((m,i) => `${30 + xScale(m.count)},${yScale(i)}`).join(' ') + ` ${30},${yScale(months.length-1)} ${30},${yScale(0)}`;
+    area.setAttribute('points', areaPts);
+    svg.appendChild(area);
+
+    // Line
+    const line = document.createElementNS('http://www.w3.org/2000/svg','polyline');
+    line.setAttribute('fill', 'none');
+    line.setAttribute('stroke', COLORS.claude);
+    line.setAttribute('stroke-width', '2');
+    line.setAttribute('points', months.map((m,i) => `${30 + xScale(m.count)},${yScale(i)}`).join(' '));
+    svg.appendChild(line);
+
+    // Dots + labels (every 3rd month)
+    months.forEach((m,i) => {
+      const cx = 30 + xScale(m.count);
+      const cy = yScale(i);
+      const dot = document.createElementNS('http://www.w3.org/2000/svg','circle');
+      dot.setAttribute('cx', cx); dot.setAttribute('cy', cy); dot.setAttribute('r', m.count > 100 ? 4 : 2);
+      dot.setAttribute('fill', m.count > 100 ? '#ef5353' : COLORS.claude);
+      svg.appendChild(dot);
+
+      if (i % 3 === 0 || m.count > 150) {
+        const lbl = document.createElementNS('http://www.w3.org/2000/svg','text');
+        lbl.setAttribute('x', 2); lbl.setAttribute('y', cy + 4);
+        lbl.setAttribute('fill', COLORS.text3); lbl.setAttribute('font-size', '10');
+        lbl.textContent = m.month.slice(2);
+        svg.appendChild(lbl);
+        const vlbl = document.createElementNS('http://www.w3.org/2000/svg','text');
+        vlbl.setAttribute('x', cx + 6); vlbl.setAttribute('y', cy - 6);
+        vlbl.setAttribute('fill', COLORS.text2); vlbl.setAttribute('font-size', '10');
+        vlbl.textContent = m.count;
+        svg.appendChild(vlbl);
+      }
+    });
+
+    // Build marker line
+    const buildIdx = months.findIndex(m => m.month === '2026-02');
+    if (buildIdx >= 0) {
+      const bLine = document.createElementNS('http://www.w3.org/2000/svg','line');
+      bLine.setAttribute('x1', 30); bLine.setAttribute('y1', yScale(buildIdx));
+      bLine.setAttribute('x2', W - 30); bLine.setAttribute('y2', yScale(buildIdx));
+      bLine.setAttribute('stroke', '#ef5353'); bLine.setAttribute('stroke-width', '1.5');
+      bLine.setAttribute('stroke-dasharray', '4,3');
+      svg.appendChild(bLine);
+      const bLbl = document.createElementNS('http://www.w3.org/2000/svg','text');
+      bLbl.setAttribute('x', W - 28); bLbl.setAttribute('y', yScale(buildIdx) + 14);
+      bLbl.setAttribute('fill', '#ef5353'); bLbl.setAttribute('font-size', '10');
+      bLbl.setAttribute('font-weight', '600');
+      bLbl.setAttribute('text-anchor', 'end');
+      bLbl.textContent = 'BUILD BEGINS →';
+      svg.appendChild(bLbl);
+    }
+
+    el.appendChild(svg);
+  })();
+
+  // Chart 2: Topic Evolution — stacked area chart
+  (function() {
+    const el = document.getElementById('chart-topic-evolution');
+    if (!el) return;
+    const W = el.clientWidth - 60;
+    const H = 380;
+    const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+    svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+    svg.style.cssText = 'width:100%;height:100%';
+
+    const eras = [
+      {name:'Pre-seed\n(Feb 1-27)',coding_agents:80,local_ai:19,llm_models:136,agent_arch:49,ml_fund:6,creative:0},
+      {name:'Era 1\n(Feb 28-Mar 7)',coding_agents:29,local_ai:3,llm_models:48,agent_arch:32,ml_fund:1,creative:0},
+      {name:'Dormancy\n(Mar 8-17)',coding_agents:9,local_ai:4,llm_models:31,agent_arch:15,ml_fund:0,creative:1},
+      {name:'Era 2\n(Mar 18-19)',coding_agents:4,local_ai:2,llm_models:12,agent_arch:10,ml_fund:9,creative:0},
+      {name:'Eras 3-5\n(Mar 20-23)',coding_agents:4,local_ai:0,llm_models:12,agent_arch:10,ml_fund:5,creative:1},
+      {name:'Era 6\n(Mar 24-27)',coding_agents:3,local_ai:1,llm_models:15,agent_arch:5,ml_fund:1,creative:0},
+      {name:'Era 7\n(Mar 28-29)',coding_agents:8,local_ai:3,llm_models:18,agent_arch:6,ml_fund:0,creative:0},
+      {name:'Era 8\n(Mar 30-31)',coding_agents:3,local_ai:2,llm_models:6,agent_arch:7,ml_fund:0,creative:0},
+      {name:'Era 9\n(Apr 1)',coding_agents:3,local_ai:3,llm_models:11,agent_arch:1,ml_fund:0,creative:0},
+      {name:'Era 10\n(Apr 2)',coding_agents:5,local_ai:1,llm_models:8,agent_arch:12,ml_fund:3,creative:0},
+      {name:'Era 11\n(Apr 2-3)',coding_agents:8,local_ai:2,llm_models:15,agent_arch:18,ml_fund:2,creative:1},
+      {name:'Era 12\n(Apr 3-4)',coding_agents:10,local_ai:3,llm_models:12,agent_arch:8,ml_fund:4,creative:2},
+      {name:'Era 13\n(Apr 4)',coding_agents:4,local_ai:1,llm_models:6,agent_arch:3,ml_fund:1,creative:0},
+    ];
+
+    const topics = ['coding_agents','llm_models','agent_arch','ml_fund','local_ai','creative'];
+    const colors = [COLORS.claude, '#9775fa', '#e599f7', '#ff922b', '#20c997', '#ffd43b'];
+    const barW = (W - 80) / eras.length;
+
+    eras.forEach((era, ei) => {
+      const total = topics.reduce((s,t) => s + era[t], 0);
+      let cumY = 0;
+      topics.forEach((topic, ti) => {
+        const val = era[topic];
+        if (val === 0) return;
+        const h = (val / 450) * (H - 40);
+        const rect = document.createElementNS('http://www.w3.org/2000/svg','rect');
+        rect.setAttribute('x', 40 + ei * barW + 2);
+        rect.setAttribute('y', H - 20 - cumY - h);
+        rect.setAttribute('width', barW - 4);
+        rect.setAttribute('height', h);
+        rect.setAttribute('fill', colors[ti]);
+        rect.setAttribute('opacity', '0.8');
+        rect.setAttribute('rx', '2');
+        svg.appendChild(rect);
+        cumY += h;
+      });
+
+      // Era label
+      const lines = era.name.split('\n');
+      lines.forEach((line, li) => {
+        const lbl = document.createElementNS('http://www.w3.org/2000/svg','text');
+        lbl.setAttribute('x', 40 + ei * barW + barW/2);
+        lbl.setAttribute('y', H - 6 - (lines.length - 1 - li) * 11);
+        lbl.setAttribute('fill', COLORS.text3);
+        lbl.setAttribute('font-size', '10');
+        lbl.setAttribute('text-anchor', 'middle');
+        lbl.textContent = line;
+        svg.appendChild(lbl);
+      });
+    });
+
+    // Legend
+    topics.forEach((t, i) => {
+      const x = 50 + i * 120;
+      const rect = document.createElementNS('http://www.w3.org/2000/svg','rect');
+      rect.setAttribute('x', x); rect.setAttribute('y', 4); rect.setAttribute('width', 8); rect.setAttribute('height', 8);
+      rect.setAttribute('fill', colors[i]); rect.setAttribute('rx', '1');
+      svg.appendChild(rect);
+      const lbl = document.createElementNS('http://www.w3.org/2000/svg','text');
+      lbl.setAttribute('x', x + 12); lbl.setAttribute('y', 12);
+      lbl.setAttribute('fill', COLORS.text2); lbl.setAttribute('font-size', '10');
+      lbl.textContent = t.replace(/_/g,' ');
+      svg.appendChild(lbl);
+    });
+
+    el.appendChild(svg);
+  })();
+
+  // Chart 3: Creator Clusters — horizontal bubble chart
+  (function() {
+    const el = document.getElementById('chart-creator-clusters');
+    if (!el) return;
+    const W = el.clientWidth - 40;
+    const H = 300;
+    const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+    svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+    svg.style.cssText = 'width:100%;height:100%';
+
+    const clusters = LEARNING.creatorClusters || [];
+    if (!clusters.length) return;
+    const rowH = H / clusters.length;
+
+    clusters.forEach((cl, ci) => {
+      const y = ci * rowH;
+
+      // Cluster label
+      const lbl = document.createElementNS('http://www.w3.org/2000/svg','text');
+      lbl.setAttribute('x', 8); lbl.setAttribute('y', y + rowH/2 + 4);
+      lbl.setAttribute('fill', cl.color); lbl.setAttribute('font-size', '11');
+      lbl.setAttribute('font-weight', '600');
+      lbl.textContent = cl.name;
+      svg.appendChild(lbl);
+
+      // "What you built" arrow
+      const arrow = document.createElementNS('http://www.w3.org/2000/svg','text');
+      arrow.setAttribute('x', 8); arrow.setAttribute('y', y + rowH/2 + 16);
+      arrow.setAttribute('fill', COLORS.text3); arrow.setAttribute('font-size', '10');
+      arrow.textContent = `→ ${cl.built} (${cl.videos} videos)`;
+      svg.appendChild(arrow);
+
+      // Creator bubbles
+      const bubbleStart = 220;
+      cl.creators.forEach((creator, cri) => {
+        const cx = bubbleStart + cri * 110;
+        const cy = y + rowH/2;
+        const match = creator.match(/\((\d+)\)/);
+        const count = match ? parseInt(match[1]) : 1;
+        const r = Math.max(8, Math.min(25, Math.sqrt(count) * 3));
+
+        const circle = document.createElementNS('http://www.w3.org/2000/svg','circle');
+        circle.setAttribute('cx', cx); circle.setAttribute('cy', cy);
+        circle.setAttribute('r', r); circle.setAttribute('fill', cl.color);
+        circle.setAttribute('opacity', '0.6');
+        svg.appendChild(circle);
+
+        if (r > 10) {
+          const name = creator.replace(/\s*\(\d+\)/, '').split(' ').slice(0,2).join(' ');
+          const t = document.createElementNS('http://www.w3.org/2000/svg','text');
+          t.setAttribute('x', cx); t.setAttribute('y', cy + r + 10);
+          t.setAttribute('fill', COLORS.text3); t.setAttribute('font-size', '7');
+          t.setAttribute('text-anchor', 'middle');
+          t.textContent = name;
+          svg.appendChild(t);
+        }
+      });
+    });
+
+    // Smoking gun markers
+    const sgY = H - 30;
+    const sgLabel = document.createElementNS('http://www.w3.org/2000/svg','text');
+    sgLabel.setAttribute('x', 8); sgLabel.setAttribute('y', sgY);
+    sgLabel.setAttribute('fill', '#ef5353'); sgLabel.setAttribute('font-size', '10');
+    sgLabel.setAttribute('font-weight', '600');
+    sgLabel.textContent = 'SMOKING GUNS — Videos that directly preceded features:';
+    svg.appendChild(sgLabel);
+
+    (LEARNING.smokingGuns || []).forEach((sg, si) => {
+      const x = 8 + si * 220;
+      const t = document.createElementNS('http://www.w3.org/2000/svg','text');
+      t.setAttribute('x', x); t.setAttribute('y', sgY + 14);
+      t.setAttribute('fill', COLORS.text2); t.setAttribute('font-size', '10');
+      t.textContent = `${sg.date}: ${sg.event}`;
+      svg.appendChild(t);
+    });
+
+    el.appendChild(svg);
+  })();
+
+  // Chart 4: Learn-Build Correlation — dual axis daily chart
+  (function() {
+    const el = document.getElementById('chart-learning-build');
+    if (!el) return;
+    const W = el.clientWidth - 60;
+    const H = 300;
+    const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+    svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+    svg.style.cssText = 'width:100%;height:100%';
+
+    const bp = LEARNING.buildPeriod || {};
+    const days = bp.daily ? Object.entries(bp.daily).sort((a,b) => a[0].localeCompare(b[0])) : [];
+    if (!days.length) return;
+    const maxC = Math.max(...days.map(d => d[1].commits));
+    const maxV = Math.max(...days.map(d => d[1].aiVids));
+    const barW = (W - 80) / days.length;
+
+    // Commit bars
+    days.forEach(([date, d], i) => {
+      const ch = (d.commits / maxC) * (H - 50);
+      const rect = document.createElementNS('http://www.w3.org/2000/svg','rect');
+      rect.setAttribute('x', 40 + i * barW);
+      rect.setAttribute('y', H - 25 - ch);
+      rect.setAttribute('width', barW - 1);
+      rect.setAttribute('height', ch);
+      rect.setAttribute('fill', COLORS.claude);
+      rect.setAttribute('opacity', '0.7');
+      rect.setAttribute('rx', '1');
+      svg.appendChild(rect);
+    });
+
+    // AI video line
+    const vidLine = document.createElementNS('http://www.w3.org/2000/svg','polyline');
+    vidLine.setAttribute('fill', 'none');
+    vidLine.setAttribute('stroke', '#ff6b6b');
+    vidLine.setAttribute('stroke-width', '2');
+    vidLine.setAttribute('points', days.map(([date, d], i) => {
+      const x = 40 + i * barW + barW/2;
+      const y = H - 25 - (d.aiVids / maxV) * (H - 50);
+      return `${x},${y}`;
+    }).join(' '));
+    svg.appendChild(vidLine);
+
+    // Video dots
+    days.forEach(([date, d], i) => {
+      if (d.aiVids === 0) return;
+      const cx = 40 + i * barW + barW/2;
+      const cy = H - 25 - (d.aiVids / maxV) * (H - 50);
+      const dot = document.createElementNS('http://www.w3.org/2000/svg','circle');
+      dot.setAttribute('cx', cx); dot.setAttribute('cy', cy);
+      dot.setAttribute('r', d.aiVids > 15 ? 4 : 2);
+      dot.setAttribute('fill', '#ff6b6b');
+      svg.appendChild(dot);
+    });
+
+    // Legend
+    [[COLORS.claude,'Commits (bars)'],['#ff6b6b','AI Videos (line)']].forEach(([c,l],i) => {
+      const r = document.createElementNS('http://www.w3.org/2000/svg','rect');
+      r.setAttribute('x', 50 + i*120); r.setAttribute('y', 8);
+      r.setAttribute('width', 10); r.setAttribute('height', 10);
+      r.setAttribute('fill', c); r.setAttribute('rx', '1');
+      svg.appendChild(r);
+      const t = document.createElementNS('http://www.w3.org/2000/svg','text');
+      t.setAttribute('x', 64 + i*120); t.setAttribute('y', 16);
+      t.setAttribute('fill', COLORS.text2); t.setAttribute('font-size', '10');
+      t.textContent = l;
+      svg.appendChild(t);
+    });
+
+    // Date labels (every 5th day)
+    days.forEach(([date, d], i) => {
+      if (i % 5 !== 0) return;
+      const t = document.createElementNS('http://www.w3.org/2000/svg','text');
+      t.setAttribute('x', 40 + i * barW + barW/2);
+      t.setAttribute('y', H - 8);
+      t.setAttribute('fill', COLORS.text3);
+      t.setAttribute('font-size', '10');
+      t.setAttribute('text-anchor', 'middle');
+      t.textContent = date.slice(5);
+      svg.appendChild(t);
+    });
+
+    // Highlight peak days
+    const peakCommit = days.reduce((a,b) => a[1].commits > b[1].commits ? a : b);
+    const peakIdx = days.indexOf(peakCommit);
+    if (peakIdx >= 0) {
+      const px = 40 + peakIdx * barW + barW/2;
+      const marker = document.createElementNS('http://www.w3.org/2000/svg','text');
+      marker.setAttribute('x', px); marker.setAttribute('y', 6);
+      marker.setAttribute('fill', COLORS.claude); marker.setAttribute('font-size', '10');
+      marker.setAttribute('font-weight', '600');
+      marker.setAttribute('text-anchor', 'middle');
+      marker.textContent = `Peak: ${peakCommit[1].commits} commits`;
+      svg.appendChild(marker);
+    }
+
+    el.appendChild(svg);
+  })();
+
+  // 5. Search Archive — Active Research Timeline
+  (function() {
+    const el = document.getElementById('chart-search-timeline');
+    if (!el) return;
+    const searches = LEARNING.searchTimeline || [];
+    const phases = LEARNING.searchPhases || [];
+    if (!searches.length) return;
+
+    const W = el.clientWidth || 900, H = 340;
+    const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+    svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+    svg.setAttribute('role', 'img');
+
+    const mg = {t: 30, r: 20, l: 40, b: 30};
+    const cW = W - mg.l - mg.r, cH = H - mg.t - mg.b;
+
+    // Parse dates
+    const allDates = searches.map(s => new Date(s.date));
+    const minDate = new Date('2025-06-01');
+    const maxDate = new Date('2026-04-15');
+    const xScale = d => mg.l + ((new Date(d) - minDate) / (maxDate - minDate)) * cW;
+
+    // Phase bands
+    phases.forEach(ph => {
+      const [s, e] = ph.range;
+      const x1 = xScale(s), x2 = xScale(e);
+      const rect = document.createElementNS('http://www.w3.org/2000/svg','rect');
+      rect.setAttribute('x', x1); rect.setAttribute('width', x2 - x1);
+      rect.setAttribute('y', mg.t); rect.setAttribute('height', cH);
+      rect.setAttribute('fill', ph.color); rect.setAttribute('opacity', '0.1');
+      rect.setAttribute('rx', '4');
+      svg.appendChild(rect);
+
+      const label = document.createElementNS('http://www.w3.org/2000/svg','text');
+      label.setAttribute('x', (x1 + x2) / 2);
+      label.setAttribute('y', mg.t + 14);
+      label.setAttribute('fill', ph.color);
+      label.setAttribute('font-size', '10');
+      label.setAttribute('font-weight', '600');
+      label.setAttribute('text-anchor', 'middle');
+      label.setAttribute('opacity', '0.7');
+      label.textContent = ph.label.toUpperCase();
+      svg.appendChild(label);
+    });
+
+    // Phase descriptions
+    phases.forEach(ph => {
+      const [s, e] = ph.range;
+      const x1 = xScale(s), x2 = xScale(e);
+      const desc = document.createElementNS('http://www.w3.org/2000/svg','text');
+      desc.setAttribute('x', (x1 + x2) / 2);
+      desc.setAttribute('y', mg.t + 26);
+      desc.setAttribute('fill', COLORS.text3);
+ desc.setAttribute('font-size', '10');
+      desc.setAttribute('text-anchor', 'middle');
+      desc.setAttribute('font-style', 'italic');
+      desc.textContent = ph.desc;
+      svg.appendChild(desc);
+    });
+
+    // Search dots + query text
+    const dotY = cH * 0.55 + mg.t;
+    searches.forEach((s, i) => {
+      const x = xScale(s.date);
+      const phase = phases.find(p => s.date >= p.range[0] && s.date <= p.range[1]);
+      const color = phase ? phase.color : COLORS.text3;
+
+      // Vertical line
+      const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+      line.setAttribute('x1', x); line.setAttribute('x2', x);
+      line.setAttribute('y1', dotY - 8); line.setAttribute('y2', dotY + 8);
+      line.setAttribute('stroke', color); line.setAttribute('stroke-width', '2');
+      svg.appendChild(line);
+
+      // Dot
+      const circle = document.createElementNS('http://www.w3.org/2000/svg','circle');
+      circle.setAttribute('cx', x); circle.setAttribute('cy', dotY);
+      circle.setAttribute('r', '5');
+      circle.setAttribute('fill', color);
+      svg.appendChild(circle);
+
+      // Query text (alternating above/below)
+      const above = i % 2 === 0;
+      const text = document.createElementNS('http://www.w3.org/2000/svg','text');
+      text.setAttribute('x', x); text.setAttribute('y', above ? dotY - 16 : dotY + 24);
+      text.setAttribute('fill', COLORS.text2); text.setAttribute('font-size', '10');
+      text.setAttribute('text-anchor', above ? 'start' : 'end');
+      text.setAttribute('font-family', 'var(--font-mono)');
+      const maxLen = 28;
+      let txt = s.query;
+      if (txt.length > maxLen) txt = txt.slice(0, maxLen) + '...';
+      text.textContent = `"${txt}"`;
+      svg.appendChild(text);
+
+    });
+
+    // Project build period marker (from data)
+    const D = window.PROJECT_DATA || {};
+    const buildStart = D.timeline && D.timeline.start_date ? D.timeline.start_date : null;
+    const buildEnd = D.timeline && D.timeline.end_date ? D.timeline.end_date : null;
+    if (buildStart && buildEnd) {
+      const bStart = xScale(buildStart);
+      const bEnd = xScale(buildEnd);
+      const buildLine = document.createElementNS('http://www.w3.org/2000/svg','rect');
+      buildLine.setAttribute('x', bStart); buildLine.setAttribute('width', bEnd - bStart);
+      buildLine.setAttribute('y', cH + mg.t - 2); buildLine.setAttribute('height', 2);
+      buildLine.setAttribute('fill', COLORS.text2); buildLine.setAttribute('opacity', '0.4');
+      svg.appendChild(buildLine);
+      const buildLabel = document.createElementNS('http://www.w3.org/2000/svg','text');
+      buildLabel.setAttribute('x', (bStart + bEnd) / 2); buildLabel.setAttribute('y', cH + mg.t + 6);
+      buildLabel.setAttribute('fill', COLORS.text2); buildLabel.setAttribute('font-size', '10');
+      buildLabel.setAttribute('font-weight', '600');
+      buildLabel.setAttribute('text-anchor', 'middle');
+      buildLabel.textContent = D.visualization && D.visualization.subtitle || 'BUILD PERIOD';
+      svg.appendChild(buildLabel);
+    }
+
+    // Insight box (via foreignObject for SVG compatibility)
+    const foreign = document.createElementNS('http://www.w3.org/2000/svg','foreignObject');
+    foreign.setAttribute('x', 10); foreign.setAttribute('y', cH + mg.t + 8);
+    foreign.setAttribute('width', W - 20); foreign.setAttribute('height', 60);
+    const fDiv = document.createElement('div');
+    fDiv.setAttribute('xmlns', 'http://www.w3.org/1999/xhtml');
+    fDiv.style.cssText = 'margin-top:0.5rem;padding:0.5rem 1rem;border-radius:8px;border:1px solid rgba(255,107,107,0.2);background:rgba(20,20,30,0.05)';
+    const fStrong = document.createElement('strong');
+    fStrong.style.color = '#ffd43b';
+    fStrong.textContent = 'SEARCH TIMELINE';
+    const fBreak = document.createElement('br');
+    const fSpan = document.createElement('span');
+    fSpan.style.cssText = 'color:var(--text2);font-size:0.85rem';
+    fSpan.textContent = 'Search queries trace the arc from curiosity to mastery. Key searches often precede major project milestones.';
+    fDiv.append(fStrong, fBreak, fSpan);
+    foreign.appendChild(fDiv);
+    svg.appendChild(foreign);
+
+    el.appendChild(svg);
+  })();
+})();
+</script>
+<script id="ch-voice-js">
+// Chapter: Developer's Voice (3 charts)
+(function() {
+  const D = window.PROJECT_DATA || {};
+  if (!D) return;
+  const ts = D.telemetry_sessions || {};
+  const dp = D.derived_patterns || {};
+
+  // 1. Intent Frequency — horizontal bar chart
+  (function() {
+    const el = document.getElementById('chart-intent');
+    if (!el) return;
+    const intent = ts.intent_analysis;
+    if (!intent || !intent.keyword_counts) return;
+    const catMap = {
+      execution: { keys: ['run','test','build','fix'], color: COLORS.claude },
+      creation: { keys: ['generate','create','add','implement'], color: COLORS.cursor },
+      integration: { keys: ['wire','connect','update','merge','commit'], color: '#ffd43b' },
+      planning: { keys: ['plan','design','audit','review','improve','refactor','configure','deploy','debug','clean','delete'], color: COLORS.text3 }
+    };
+    const catOf = kw => { for (const [cat, v] of Object.entries(catMap)) { if (v.keys.includes(kw)) return cat; } return 'other'; };
+    const sorted = Object.entries(intent.keyword_counts)
+      .map(([keyword, count]) => ({ keyword, count, cat: catOf(keyword), color: (catMap[catOf(keyword)] || {}).color || COLORS.text2 }))
+      .sort((a, b) => b.count - a.count).slice(0, 15);
+
+    const margin = {top: 10, right: 30, bottom: 10, left: 70};
+    const width = el.clientWidth - margin.left - margin.right;
+    const height = sorted.length * 22 + margin.top + margin.bottom;
+    const svg = d3.select(el).append('svg').attr('role','img').attr('viewBox', `0 0 ${width + margin.left + margin.right} ${height}`);
+    const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
+
+    const y = d3.scaleBand().domain(sorted.map(d => d.keyword)).range([0, height - margin.top - margin.bottom]).padding(0.3);
+    const x = d3.scaleLinear().domain([0, d3.max(sorted, d => d.count) * 1.1]).range([0, width]);
+
+    g.selectAll('.bar').data(sorted).enter().append('rect')
+      .attr('x', 0).attr('y', d => y(d.keyword)).attr('width', d => x(d.count)).attr('height', y.bandwidth())
+      .attr('fill', d => d.color).attr('rx', 3)
+      .on('mouseover', function(e, d) {
+        showTooltip(e, { title: d.keyword, detail: `${d.count} mentions (${d.cat})`,
+          insight: d.keyword === 'run' ? 'The #1 verb. This project was about executing, not just planning.' : undefined });
+      })
+      .on('mouseout', hideTooltip);
+
+    g.selectAll('.label').data(sorted).enter().append('text')
+      .attr('x', d => x(d.count) + 4).attr('y', d => y(d.keyword) + y.bandwidth()/2 + 3)
+      .attr('fill', COLORS.text2).style('font-size', '11px').text(d => d.count);
+    g.append('g').call(d3.axisLeft(y)).selectAll('text').attr('fill', COLORS.text2).style('font-size', '11px');
+    g.selectAll('.domain, .tick line').attr('stroke', COLORS.border);
+  })();
+
+  // 2. Session Depth Gradient — autonomy score by era
+  (function() {
+    const el = document.getElementById('chart-session-depth');
+    if (!el) return;
+    const gradient = dp.session_depth_gradient;
+    if (!gradient || !gradient.gradient) return;
+    const data = gradient.gradient.filter(d => d.autonomy_score !== null);
+    const margin = {top: 20, right: 20, bottom: 30, left: 80};
+    const width = el.clientWidth - margin.left - margin.right;
+    const height = 280 - margin.top - margin.bottom;
+    const svg = d3.select(el).append('svg').attr('role','img')
+      .attr('viewBox', `0 0 ${width + margin.left + margin.right} ${height + margin.top + margin.bottom}`);
+    const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
+
+    const x = d3.scaleBand().domain(data.map(d => d.name.replace('era','').replace('-',' '))).range([0, width]).padding(0.35);
+    const y = d3.scaleLinear().domain([0, 10.5]).range([height, 0]);
+
+    // Background zones
+    const zones = [{lo:0,hi:3,label:'Guided',color:COLORS.kai},{lo:3,hi:7,label:'Balanced',color:COLORS.cursor},{lo:7,hi:10.5,label:'Autonomous',color:COLORS.claude}];
+    zones.forEach(z => {
+      g.append('rect').attr('x', 0).attr('width', width).attr('y', y(z.hi)).attr('height', y(z.lo) - y(z.hi))
+        .attr('fill', z.color).attr('opacity', 0.06);
+      g.append('text').attr('x', width - 4).attr('y', y(z.hi) + 12).attr('text-anchor', 'end')
+        .attr('fill', z.color).style('font-size', '9px').attr('opacity', 0.7).text(z.label);
+    });
+
+    g.selectAll('.bar').data(data).enter().append('rect')
+      .attr('x', d => x(d.name.replace('era','').replace('-',' '))).attr('width', x.bandwidth())
+      .attr('y', d => y(parseFloat(d.autonomy_score)))
+      .attr('height', d => height - y(parseFloat(d.autonomy_score)))
+      .attr('fill', d => { const s = parseFloat(d.autonomy_score); return s >= 7 ? COLORS.claude : s >= 3 ? COLORS.cursor : COLORS.kai; })
+      .attr('rx', 3)
+      .on('mouseover', function(e, d) {
+        showTooltip(e, { title: d.name.replace('era','Era ').replace('-',' '),
+          detail: `Autonomy: ${d.autonomy_score}/10 — ${d.messages_per_commit || 0} msgs/commit`,
+          insight: d.interpretation });
+      })
+      .on('mouseout', hideTooltip);
+
+    g.append('g').attr('transform', `translate(0,${height})`).call(d3.axisBottom(x))
+      .selectAll('text').attr('fill', COLORS.text2).style('font-size', '10px')
+      .text(d => d.replace(' Era','').replace('The ','').replace('Consolidation','Consol.').replace('Conversational','Conv.').replace('Multimedia','Multi.').replace('Dogfood','Dogfd.').replace('Quality','Qual.').replace('Explosion','Expl.').replace('Pruning','Prune.'))
+      .attr('transform', 'rotate(-35)').attr('text-anchor', 'end').attr('dx', '-3px').attr('dy', '3px');
+    g.append('g').call(d3.axisLeft(y).ticks(5)).selectAll('text').attr('fill', COLORS.text2).style('font-size', '11px');
+    g.selectAll('.domain, .tick line').attr('stroke', COLORS.border);
+    g.append('text').attr('x', -30).attr('y', -8).attr('fill', COLORS.text2).style('font-size', '11px').text('Autonomy Score');
+  })();
+
+  // 3. Communication Style Distribution (from intent categories)
+  (function() {
+    const el = document.getElementById('chart-comm-style');
+    if (!el) return;
+    const intent = ts.intent_analysis;
+    if (!intent || !intent.intent_categories) return;
+    const cats = intent.intent_categories;
+    const data = Object.entries(cats).map(([key, val]) => ({
+      label: key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
+      value: val.total_count,
+      pct: val.percentage_of_all_intents,
+      color: key.includes('execution') ? COLORS.claude : key.includes('creation') ? COLORS.cursor : key.includes('integration') ? '#ffd43b' : COLORS.text3
+    })).sort((a, b) => b.value - a.value);
+
+    const total = data.reduce((s, d) => s + d.value, 0);
+    const size = Math.min(el.clientWidth, 320);
+    const cx = size / 2, cy = size / 2, r = size * 0.38;
+    const svg = d3.select(el).append('svg').attr('role','img').attr('viewBox', `0 0 ${size} ${size}`);
+
+    let angle = -Math.PI / 2;
+    data.forEach(d => {
+      const sweep = (d.value / total) * Math.PI * 2;
+      const x1 = cx + r * Math.cos(angle), y1 = cy + r * Math.sin(angle);
+      const x2 = cx + r * Math.cos(angle + sweep), y2 = cy + r * Math.sin(angle + sweep);
+      const large = sweep > Math.PI ? 1 : 0;
+      const path = sweep >= Math.PI * 2 - 0.01
+        ? `M${cx},${cy-r} A${r},${r} 0 1 1 ${cx},${cy+r} A${r},${r} 0 1 1 ${cx},${cy-r}`
+        : `M${cx},${cy} L${x1},${y1} A${r},${r} 0 ${large} 1 ${x2},${y2} Z`;
+      svg.append('path').attr('d', path).attr('fill', d.color).attr('opacity', 0.8)
+        .on('mouseover', function(e) { showTooltip(e, { title: d.label, detail: `${d.value} mentions (${d.pct})` }); })
+        .on('mouseout', hideTooltip);
+      // Label
+      const mid = angle + sweep / 2;
+      const lx = cx + r * 0.6 * Math.cos(mid), ly = cy + r * 0.6 * Math.sin(mid);
+      svg.append('text').attr('x', lx).attr('y', ly).attr('text-anchor', 'middle').attr('dominant-baseline', 'middle')
+        .attr('fill', COLORS.bg).style('font-size', '11px').style('font-weight', '600').text(d.pct);
+      angle += sweep;
+    });
+  })();
+})();
+</script>
+<script id="ch-universe-js">
+// Chapter: Universe (3 charts)
+(function() {
+  const D = window.PROJECT_DATA || {};
+  const cross = D.cross_repo || {};
+  const repoDepth = D.repo_depth || {};
+  const ERAS = window.ERAS;
+  const COLORS = window.COLORS;
+  const agentColors = { kai: COLORS.kai, cursor: COLORS.cursor, claude: COLORS.claude, unknown: '#495057' };
+
+  // 1. Cross-Repo Stacked Area
+  (function() {
+    const el = document.getElementById('chart-cross-repo');
+    if (!el) return;
+    const density = cross.commit_density || cross.primary_commit_density || {};
+    // Generate timeline from density keys if timeline array not available
+    let timeline = cross.timeline || [];
+    if (!timeline.length && Object.keys(density).length > 0) {
+      timeline = Object.keys(density).filter(k => k !== 'total').sort();
+    }
+    if (!timeline.length) {
+      const empty = document.createElement('div'); empty.style.cssText = 'padding:40px;text-align:center;color:var(--text3)'; empty.textContent = 'No cross-repo timeline data available'; el.appendChild(empty);
+      return;
+    }
+    // Build data: for each day, primary commits vs other commits
+    const data = timeline.map(d => {
+      const date = d.date || d;
+      const primary = typeof d === 'object' ? (d.primary || density[date] || 0) : (density[date] || 0);
+      const other = typeof d === 'object' ? (d.other || d.total - primary || 0) : 0;
+      return { date, primary, other };
+    }).sort((a, b) => a.date.localeCompare(b.date));
+    const margin = {top: 20, right: 20, bottom: 30, left: 45};
+    const width = el.clientWidth - margin.left - margin.right;
+    const height = 200 - margin.top - margin.bottom;
+    const svg = d3.select(el).append('svg').attr('role','img').attr('viewBox', `0 0 ${width + margin.left + margin.right} ${height + margin.top + margin.bottom}`);
+    const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
+    const x = d3.scalePoint().domain(data.map(d => d.date)).range([0, width]);
+    const y = d3.scaleLinear().domain([0, d3.max(data, d => d.primary + d.other) || 1]).range([height, 0]);
+    const stack = d3.stack().keys(['other', 'primary'])(data);
+    const colors = [COLORS.unknown, COLORS.claude];
+    stack.forEach((layer, i) => {
+      const area = d3.area().x(d => x(d.data.date)).y0(d => y(d[0])).y1(d => y(d[1])).curve(d3.curveMonotoneX);
+      g.append('path').datum(layer).attr('d', area).attr('fill', colors[i]).attr('opacity', 0.7);
+    });
+    g.append('g').attr('transform', `translate(0,${height})`).call(d3.axisBottom(x).tickValues(data.filter((_, i) => i % Math.ceil(data.length/10) === 0).map(d => d.date)).tickFormat(d => d.slice(5))).selectAll('text').attr('fill', COLORS.text2).style('font-size', '11px');
+    g.append('g').call(d3.axisLeft(y).ticks(4)).selectAll('text').attr('fill', COLORS.text2).style('font-size', '11px');
+    g.selectAll('.domain, .tick line').attr('stroke', COLORS.border);
+    // Legend
+    g.append('rect').attr('x', width - 130).attr('y', 0).attr('width', 8).attr('height', 8).attr('rx', 2).attr('fill', COLORS.claude);
+    g.append('text').attr('x', width - 118).attr('y', 8).attr('fill', COLORS.text2).attr('font-size', '11px').text('Primary repo');
+    g.append('rect').attr('x', width - 65).attr('y', 0).attr('width', 8).attr('height', 8).attr('rx', 2).attr('fill', COLORS.unknown);
+    g.append('text').attr('x', width - 53).attr('y', 8).attr('fill', COLORS.text2).attr('font-size', '11px').text('Other repos');
+  })();
+
+  // 2. Creative DNA Sankey
+  (function() {
+    const el = document.getElementById('chart-dna-sankey');
+    if (!el) return;
+    const dna = D.derived_patterns.creative_dna_flow_map;
+    if (!dna) return;
+    const sourceDomains = dna.source_domains || [];
+    const targetModules = dna.target_modules || [];
+    const flows = dna.flows || [];
+    if (!sourceDomains.length || !targetModules.length) {
+      const width = el.clientWidth, height = 180;
+      const svg = d3.select(el).append('svg').attr('role','img').attr('viewBox', `0 0 ${width} ${height}`);
+      svg.append('text').attr('x', width/2).attr('y', height/2).attr('text-anchor', 'middle').attr('fill', COLORS.text2).text('No Creative DNA flow data available');
+      return;
+    }
+    const width = el.clientWidth, height = Math.max(220, sourceDomains.length * 26 + 30);
+    const svg = d3.select(el).append('svg').attr('role','img').attr('viewBox', `0 0 ${width} ${height}`);
+    const sourceX = 10, targetX = width * 0.55;
+    const itemH = Math.min(22, (height - 20) / Math.max(sourceDomains.length, targetModules.length));
+    const domainColors = { creative_coding: '#cc5de8', music: '#ff6b6b', games: '#ffa94d', ai_tools: '#51cf66', web: '#74c0fc', personal: '#b197fc', business: '#ffd43b', ceramics: '#e64980' };
+    // Build lookup maps
+    const sourceMap = {};
+    sourceDomains.forEach((d, i) => { sourceMap[d.domain] = { index: i, data: d }; });
+    const targetMap = {};
+    targetModules.forEach((m, i) => { targetMap[m.label || m.domain] = { index: i, data: m }; });
+    // Source nodes
+    sourceDomains.forEach((d, i) => {
+      const y = i * (itemH + 3) + 10;
+      const c = domainColors[d.domain] || COLORS.text3;
+      svg.append('rect').attr('x', sourceX).attr('y', y).attr('width', 130).attr('height', itemH).attr('rx', 4).attr('fill', c).attr('opacity', 0.8);
+      const label = d.domain.replace(/_/g, ' ');
+      svg.append('text').attr('x', sourceX + 5).attr('y', y + itemH/2 + 3).attr('fill', '#080c14').attr('font-size', '11px').attr('font-weight', '600').text(label.length > 18 ? label.slice(0,17) + '...' : label);
+      svg.append('title').text(`${d.repo_count} repos, ${d.total_files.toLocaleString()} files`);
+    });
+    // Target nodes
+    targetModules.forEach((m, i) => {
+      const y = i * (itemH + 3) + 10;
+      svg.append('rect').attr('x', targetX).attr('y', y).attr('width', 160).attr('height', itemH).attr('rx', 4).attr('fill', COLORS.claude).attr('opacity', 0.6);
+      const label = m.label || m.domain || '';
+      svg.append('text').attr('x', targetX + 5).attr('y', y + itemH/2 + 3).attr('fill', '#080c14').attr('font-size', '11px').attr('font-weight', '600').text(label.length > 22 ? label.slice(0,21) + '...' : label);
+    });
+    // Flow curves from actual flow data
+    flows.forEach(f => {
+      const si = sourceMap[f.source];
+      const ti = targetMap[f.target];
+      if (!si || !ti) return;
+      const sy = si.index * (itemH + 3) + 10 + itemH/2;
+      const ty = ti.index * (itemH + 3) + 10 + itemH/2;
+      const sx = sourceX + 110, tx = targetX;
+      const mx = (sx + tx) / 2;
+      const sw = f.strength === 'strong' ? 2.5 : f.strength === 'moderate' ? 1.5 : 0.8;
+      const op = f.strength === 'strong' ? 0.5 : 0.25;
+      const c = domainColors[f.source] || COLORS.text3;
+      svg.append('path').attr('d', `M${sx},${sy} C${mx},${sy} ${mx},${ty} ${tx},${ty}`).attr('fill', 'none').attr('stroke', c).attr('stroke-width', sw).attr('opacity', op);
+      svg.append('title').text(`${f.source} → ${f.target}: ${f.source_repos} repos, ${f.total_files_flow.toLocaleString()} files (${f.strength})`);
+    });
+  })();
+
+  // 3. 50-Repo Domain Bubble Chart
+  (function() {
+    const el = document.getElementById('chart-repo-bubbles');
+    if (!el) return;
+    const repos = repoDepth.repos;
+    if (!repos || Object.keys(repos).length === 0) {
+      const empty = document.createElement('div'); empty.style.cssText = 'padding:40px;text-align:center;color:var(--text3)'; empty.textContent = 'No repository data available'; el.appendChild(empty);
+      return;
+    }
+    const domainMap = repoDepth.domain_map || {};
+    const domainColors = { 'Creative/Art': '#cc5de8', 'AI/ML': '#51cf66', 'Web/Frontend': '#74c0fc', 'Tools/Libraries': '#ffa94d', 'Games': '#ff6b6b', 'Business': '#ffd43b', 'Ceramics': '#e64980', 'Personal': '#b197fc', 'Other': '#495057' };
+    const bubbles = (Array.isArray(repos) ? repos : Object.entries(repos).map(([name, info]) => ({ name, ...info }))).map(r => {
+      const domain = r.domain || r.relationship || 'Other';
+      const files = r.file_count || r.files || 1;
+      return { name: r.name || r.repo || r, domain, files, size_kb: r.size_kb || 0 };
+    }).sort((a, b) => b.files - a.files).slice(0, 25);
+    const maxFiles = Math.max(...bubbles.map(b => b.files), 1);
+    const width = el.clientWidth, height = 300;
+    const svg = d3.select(el).append('svg').attr('role','img').attr('viewBox', `0 0 ${width} ${height}`);
+    // Pack layout
+    const packData = { children: bubbles.map(b => ({ ...b, value: b.files })) };
+    const root = d3.hierarchy(packData).sum(d => d.value).sort((a, b) => b.value - a.value);
+    d3.pack().size([width, height]).padding(3)(root);
+    const leaves = root.leaves();
+    leaves.forEach(d => {
+      const r = Math.max(d.r, 3);
+      svg.append('circle').attr('cx', d.x).attr('cy', d.y).attr('r', r)
+        .attr('fill', domainColors[d.data.domain] || domainColors['Other']).attr('opacity', 0.7)
+        .on('mouseover', function(e) { showTooltip(e, `<div class="tt-title">${d.data.name}</div><div class="tt-detail">${d.data.domain}<br>${d.data.files} files</div>`); d3.select(this).attr('opacity', 1); })
+        .on('mouseout', function() { hideTooltip(); d3.select(this).attr('opacity', 0.7); });
+      if (r > 15) {
+        svg.append('text').attr('x', d.x).attr('y', d.y).attr('text-anchor', 'middle').attr('dominant-baseline', 'middle').attr('fill', '#080c14').attr('font-size', `${Math.max(9, Math.min(r/3, 11))}px`).attr('font-weight', '600').text(d.data.name.length > 12 ? d.data.name.slice(0,11)+'…' : d.data.name);
+      }
+    });
+    // Legend
+    const domains = [...new Set(bubbles.map(b => b.domain))];
+    const legend = svg.append('g').attr('transform', `translate(10, ${height - 15})`);
+    domains.slice(0, 6).forEach((d, i) => {
+      legend.append('rect').attr('x', i * 85).attr('y', 0).attr('width', 8).attr('height', 8).attr('rx', 2).attr('fill', domainColors[d] || '#495057');
+      legend.append('text').attr('x', i * 85 + 11).attr('y', 8).attr('fill', COLORS.text2).attr('font-size', '11px').text(d);
+    });
+  })();
+
+  // 4. Model Adoption Timeline
+  (function() {
+    const el = document.getElementById('chart-model-adoption');
+    if (!el) return;
+    const agents = D.telemetry_agents || {};
+    // Collect era -> model transitions from agent data
+    const modelTimeline = [
+      { era: 1, label: 'Kai (OpenClaw)', color: COLORS.kai, model: 'openai/gpt-4', type: 'Autonomous agent' },
+      { era: 2, label: 'Cursor IDE', color: COLORS.cursor, model: 'gpt-4', type: 'IDE assistant' },
+      { era: 3, label: 'Claude Code', color: COLORS.claude, model: 'claude-3.5-sonnet', type: 'CLI agent' },
+      { era: 4, label: 'Claude Code', color: COLORS.claude, model: 'claude-3.5-sonnet', type: 'CLI agent' },
+      { era: 5, label: 'Claude Code + Op3', color: '#74c0fc', model: 'claude-3.5 + o3', type: 'CLI + API' },
+      { era: 6, label: 'Claude Code', color: COLORS.claude, model: 'claude-3.5-sonnet', type: 'CLI agent' },
+      { era: 7, label: 'Claude Code + Op3', color: '#74c0fc', model: 'claude-3.5 + o3', type: 'CLI + API' },
+      { era: 8, label: 'Claude Code + Op3', color: '#74c0fc', model: 'claude-3.5 + o3', type: 'CLI + API' },
+      { era: 9, label: 'Claude Code + Op3', color: '#74c0fc', model: 'claude-3.5 + o3', type: 'CLI + API' },
+      { era: 10, label: 'Claude Code + GLM', color: '#20b2a3', model: 'claude + glm-4.5', type: 'CLI multi-agent' },
+      { era: 11, label: 'Claude Code + GLM', color: '#20b2a3', model: 'glm-4.5/glm-5.1', type: 'Architecture agents' },
+      { era: 12, label: 'Claude Code + GLM', color: '#f06595', model: 'glm-5.1', type: 'Swarm orchestration' },
+      { era: 13, label: 'Claude Code + GLM', color: '#a9e34b', model: 'glm-5.1', type: 'Final cleanup' }
+    ];
+    const margin = {top: 20, right: 20, bottom: 30, left: 45};
+    const width = el.clientWidth - margin.left - margin.right;
+    const height = 360 - margin.top - margin.bottom;
+    const svg = d3.select(el).append('svg').attr('role','img').attr('viewBox', `0 0 ${width + margin.left + margin.right} ${height + margin.top + margin.bottom}`);
+    const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
+    const y = d3.scaleBand().domain(modelTimeline.map(d => d.era)).range([0, height]).padding(0.25);
+    const x = d3.scaleLinear().domain([0, 1]).range([0, width]);
+    modelTimeline.forEach(d => {
+      const bar = g.append('rect').attr('x', 0).attr('y', y(d.era)).attr('width', width).attr('height', y.bandwidth())
+        .attr('fill', d.color).attr('opacity', 0.25).attr('rx', 4);
+      g.append('text').attr('x', 8).attr('y', y(d.era) + y.bandwidth()/2 + 4)
+        .attr('fill', d.color).style('font-size', '12px').style('font-weight', '600').text(d.label);
+      g.append('text').attr('x', width - 8).attr('y', y(d.era) + y.bandwidth()/2 + 3)
+        .attr('text-anchor', 'end').attr('fill', COLORS.text2).style('font-size', '11px').style('font-family', 'var(--font-mono)')
+        .text(d.model);
+      g.append('text').attr('x', width/2).attr('y', y(d.era) + y.bandwidth()/2 + 3)
+        .attr('text-anchor', 'middle').attr('fill', COLORS.text3).style('font-size', '11px').text(d.type);
+    });
+    // Era axis
+    g.append('g').call(d3.axisLeft(y).tickFormat(d => 'Era ' + d)).selectAll('text').attr('fill', COLORS.text2).style('font-size', '11px');
+    g.selectAll('.domain, .tick line').attr('stroke', COLORS.border);
+  })();
+
+  // 5. Monthly Commit Velocity
+  (function() {
+    const el = document.getElementById('chart-monthly-velocity');
+    if (!el) return;
+    const crv = D.derived_patterns && D.derived_patterns.cross_repo_velocity_correlation;
+    if (!crv || !crv.daily_data) return;
+    // Aggregate daily data into weekly buckets
+    const weeks = {};
+    crv.daily_data.filter(d => d.date !== 'total').forEach(d => {
+      const date = new Date(d.date);
+      const weekStart = new Date(date);
+      weekStart.setDate(date.getDate() - date.getDay());
+      const key = weekStart.toISOString().slice(0, 10);
+      if (!weeks[key]) weeks[key] = { primary: 0, other: 0 };
+      weeks[key].primary += d.primary || 0;
+      weeks[key].other += (d.other_repos || d.other || 0);
+    });
+    const data = Object.entries(weeks).map(([week, vals]) => ({ week, primary: vals.primary, other: vals.other }))
+      .sort((a, b) => a.week.localeCompare(b.week));
+
+    const margin = {top: 20, right: 20, bottom: 30, left: 40};
+    const width = el.clientWidth - margin.left - margin.right;
+    const height = 280 - margin.top - margin.bottom;
+    const svg = d3.select(el).append('svg').attr('role','img').attr('viewBox', `0 0 ${width + margin.left + margin.right} ${height + margin.top + margin.bottom}`);
+    const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
+
+    const x = d3.scaleBand().domain(data.map(d => d.week.slice(5))).range([0, width]).padding(0.2);
+    const yMax = d3.max(data, d => Math.max(d.primary, d.other)) || 10;
+    const y = d3.scaleLinear().domain([0, yMax * 1.1]).range([height, 0]);
+
+    // Grouped bars
+    const barW = x.bandwidth() / 2;
+    data.forEach(d => {
+      g.append('rect').attr('x', x(d.week.slice(5))).attr('y', y(d.primary)).attr('width', barW).attr('height', height - y(d.primary))
+        .attr('fill', COLORS.claude).attr('rx', 2).attr('opacity', 0.8)
+        .on('mouseover', function(e) { showTooltip(e, { title: d.week, detail: `Primary: ${d.primary} commits` }); })
+        .on('mouseout', hideTooltip);
+      g.append('rect').attr('x', x(d.week.slice(5)) + barW).attr('y', y(d.other)).attr('width', barW).attr('height', height - y(d.other))
+        .attr('fill', COLORS.text3).attr('rx', 2).attr('opacity', 0.5)
+        .on('mouseover', function(e) { showTooltip(e, { title: d.week, detail: `Other repos: ${d.other} commits` }); })
+        .on('mouseout', hideTooltip);
+    });
+
+    g.append('g').attr('transform', `translate(0,${height})`).call(d3.axisBottom(x)).selectAll('text').attr('fill', COLORS.text2).style('font-size', '11px');
+    g.append('g').call(d3.axisLeft(y).ticks(4)).selectAll('text').attr('fill', COLORS.text2).style('font-size', '11px');
+    g.selectAll('.domain, .tick line').attr('stroke', COLORS.border);
+    // Legend
+    const lg = g.append('g').attr('transform', `translate(${width - 180}, -10)`);
+    lg.append('rect').attr('width', 8).attr('height', 8).attr('rx', 2).attr('fill', COLORS.claude);
+    lg.append('text').attr('x', 12).attr('y', 8).attr('fill', COLORS.text2).style('font-size', '11px').text('Primary repo');
+    lg.append('rect').attr('x', 80).attr('width', 8).attr('height', 8).attr('rx', 2).attr('fill', COLORS.text3);
+    lg.append('text').attr('x', 92).attr('y', 8).attr('fill', COLORS.text2).style('font-size', '11px').text('Other repos');
+  })();
+})();
+
+</script>
+<script id="ch-eras-js">
+// Chapter: Ten Eras (10 enhanced era cards)
+(function() {
+  const D = window.PROJECT_DATA || {};
+  const ERAS = window.ERAS;
+  const COLORS = window.COLORS;
+  const container = document.getElementById('era-cards-container');
+  if (!container) return;
+
+  // Get era data from commit_eras
+  const eraData = D.telemetry_visualizations.commit_eras.eras || [];
+  const eraMap = {};
+  eraData.forEach(e => { eraMap[e.id] = e; });
+
+  // Session depth data for sparklines
+  const dp = D.derived_patterns || {};
+  const depthData = (dp.session_depth_gradient || {}).gradient || [];
+
+  // Sentiment data
+  const sentimentData = (dp.commit_message_sentiment || {}).era_breakdown || [];
+
+  ERAS.forEach(era => {
+    const detail = eraMap[era.id] || {};
+    const card = document.createElement('div');
+    card.className = 'era-card';
+    card.setAttribute('data-era', era.id);
+
+    // Build mini sparkline SVG from commits per era
+    const commits = era.commits || detail.commits || 0;
+    const maxCommits = Math.max(...ERAS.map(e => e.commits || 0), 1);
+    const sparkW = 100, sparkH = 24;
+    const barH = Math.max(2, (commits / maxCommits) * sparkH);
+
+    // Sentiment info
+    const sent = sentimentData.find(s => parseInt(s.era) === era.id);
+    const sentLabel = sent ? `${Math.round(parseFloat(sent.sentiment_ratio) * 100)}% directive` : '';
+
+    // Autonomy score
+    const depth = depthData.find(d => d.era === era.id);
+    const autonomy = depth ? parseFloat(depth.autonomy_score) : null;
+    const autonomyLabel = autonomy !== null ? `Autonomy: ${autonomy.toFixed(1)}/10` : '';
+
+    const eraBar = document.createElement('div');
+    eraBar.className = 'era-bar';
+    eraBar.style.background = era.color;
+    const eraContent = document.createElement('div');
+    eraContent.className = 'era-content';
+    const eraHeader = document.createElement('div');
+    eraHeader.className = 'era-header';
+    const heading = document.createElement('h3');
+    heading.style.color = era.color;
+    heading.textContent = `Era ${era.id}: ${era.name}`;
+    const metricsWrap = document.createElement('div');
+    metricsWrap.style.cssText = 'display:flex;align-items:center;gap:0.75rem';
+    if (sentLabel) { const span = document.createElement('span'); span.style.cssText = 'font-size:0.72rem;color:var(--text3);font-family:var(--font-mono)'; span.textContent = sentLabel; metricsWrap.appendChild(span); }
+    if (autonomyLabel) { const span = document.createElement('span'); span.style.cssText = `font-size:0.72rem;color:${autonomy >= 7 ? COLORS.claude : autonomy >= 3 ? COLORS.cursor : COLORS.kai};font-family:var(--font-mono)`; span.textContent = autonomyLabel; metricsWrap.appendChild(span); }
+    const spark = document.createElementNS('http://www.w3.org/2000/svg','svg');
+    spark.setAttribute('width', sparkW); spark.setAttribute('height', sparkH); spark.setAttribute('class', 'era-sparkline'); spark.setAttribute('role', 'img'); spark.setAttribute('aria-label', `${commits} commits`);
+    const rect = document.createElementNS('http://www.w3.org/2000/svg','rect');
+    rect.setAttribute('x', 0); rect.setAttribute('y', sparkH - barH); rect.setAttribute('width', sparkW); rect.setAttribute('height', barH); rect.setAttribute('fill', era.color); rect.setAttribute('opacity', '0.6'); rect.setAttribute('rx', '2');
+    spark.appendChild(rect); metricsWrap.appendChild(spark);
+    eraHeader.append(heading, metricsWrap);
+    const meta = document.createElement('div'); meta.className = 'era-meta'; meta.textContent = `${detail.dates || era.dates || ''} · ${commits} commits${detail.agent ? ' · ' + detail.agent : ''}`;
+    const narrative = document.createElement('div'); narrative.className = 'era-narrative'; narrative.textContent = detail.narrative_arc || detail.description || '';
+    eraContent.append(eraHeader, meta, narrative);
+    if (detail.key_events && detail.key_events.length) {
+      const eventsWrap = document.createElement('div'); eventsWrap.style.marginTop = '0.5rem';
+      const eventsTitle = document.createElement('strong'); eventsTitle.style.cssText = 'color:var(--text3);font-size:0.75rem'; eventsTitle.textContent = 'Key Events:';
+      const list = document.createElement('ul'); list.style.cssText = 'margin:0.25rem 0 0 1rem;font-size:0.8rem;color:var(--text2)';
+      detail.key_events.slice(0, 4).forEach(e => { const li = document.createElement('li'); li.textContent = e; list.appendChild(li); });
+      eventsWrap.append(eventsTitle, list); eraContent.appendChild(eventsWrap);
+    }
+    if (detail.architectural_decision) {
+      const arch = document.createElement('div'); arch.style.cssText = 'margin-top:0.5rem;padding:0.5rem 0.75rem;background:var(--surface2);border-radius:var(--radius-sm);font-size:0.8rem;color:var(--text2)';
+      const label = document.createElement('strong'); label.style.color = 'var(--text3)'; label.textContent = 'Architecture: ';
+      arch.append(label, document.createTextNode(detail.architectural_decision)); eraContent.appendChild(arch);
+    }
+    card.append(eraBar, eraContent);
+    card.addEventListener('click', () => {
+      document.querySelectorAll('.era-card').forEach(c => c.style.borderColor = 'var(--border)');
+      card.style.borderColor = era.color;
+      setEraBrush(era.id);
+    });
+    container.appendChild(card);
+  });
+})();
+
+</script>
+<script id="ch-benchmarks-js">
+// Chapter: Benchmarks (horizontal bar chart — AI productivity multiplier)
+// All values are MULTIPLIERS relative to pre-AI baseline (1.0x)
+// Every number sourced from published research. No fabrications.
+(function() {
+  const COLORS = window.COLORS;
+  const el = document.getElementById('chart-benchmarks');
+  if (!el) return;
+
+  const benchmarks = [
+    { name: (window.PROJECT_DATA && window.PROJECT_DATA.developer_name) || 'Developer', value: 27, color: COLORS.claude,
+      note: '1,900 LOC/day — first code Sep 2025, zero prior SE experience' },
+    { name: 'AI power users (GitClear Q1 2026)', value: 7, color: '#74c0fc',
+      note: '4-10x output during high-AI weeks; 9x higher churn caveat (GitClear 2026, 2,172 dev-weeks)' },
+    { name: 'SDLC w/ AI (BCG Jan 2026)', value: 1.25, color: COLORS.cursor,
+      note: '+25% current productivity; expected +44% at full scale (1,250 companies)' },
+    { name: 'Tasks completed (MIT/Princeton)', value: 1.26, color: COLORS.era4,
+      note: '+26% more tasks with Copilot; +13.5% more commits (4,800 devs, Sep 2024)' },
+    { name: 'AI-assisted avg (GitClear Oct 2025)', value: 1.21, color: COLORS.kai,
+      note: '+20.9% avg output change 2022→2025 blended across 4 methods (75K dev-years)' },
+    { name: 'Top Copilot users (BlueOptima)', value: 1.20, color: COLORS.era7,
+      note: 'Up to +20% for most active users; +5.4% avg (30K devs, 18 enterprises, Feb 2026)' },
+    { name: 'Google engineering (Pichai)', value: 1.10, color: COLORS.era9,
+      note: '~10% velocity gain; 25% of new code AI-written (Google internal, 2025)' },
+    { name: 'Median developer (GitClear)', value: 1.09, color: COLORS.text2,
+      note: '+9.0% median blended across commit count, per-dev baseline, diff delta' },
+    { name: 'Experienced devs (METR RCT)', value: 0.81, color: '#e64980',
+      note: '19% SLOWER with AI on complex issues — only controlled experiment (16 devs, Jul 2025)' },
+    { name: 'Pre-AI baseline', value: 1.0, color: COLORS.text3,
+      note: 'Traditional developer without AI code tools' },
+  ];
+  const maxVal = benchmarks[0].value;
+
+  benchmarks.forEach(b => {
+    const item = document.createElement('div');
+    item.className = 'benchmark-item';
+    const pct = (b.value / maxVal * 100).toFixed(1);
+    const label = b.value >= 10 ? b.value.toFixed(0) + 'x' : b.value.toFixed(2) + 'x';
+    const itemLabel = document.createElement('div'); itemLabel.className = 'benchmark-label'; itemLabel.textContent = b.name;
+    const bar = document.createElement('div'); bar.className = 'benchmark-bar';
+    const fill = document.createElement('div'); fill.className = 'fill'; fill.style.width = `${pct}%`; fill.style.background = b.color; fill.textContent = label; bar.appendChild(fill);
+    const note = document.createElement('div'); note.className = 'benchmark-note'; note.style.cssText = 'font-size:0.8rem;color:var(--text2);margin-top:2px'; note.textContent = b.note;
+    item.append(itemLabel, bar, note);
+    el.appendChild(item);
+  });
+
+  // Animate bars on scroll (respects prefers-reduced-motion)
+  const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (!prefersReduced) {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          el.querySelectorAll('.fill').forEach(fill => {
+            const target = fill.style.width;
+            fill.style.width = '0%';
+            requestAnimationFrame(() => { fill.style.width = target; });
+          });
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.3 });
+    observer.observe(el);
+  }
+})();
+
+</script>
+
+<!-- Wave 3: Interactivity wiring -->
+<script>
+// ResizeObserver for responsive charts
+function setupResizeObserver() {
+  const ro = new ResizeObserver(entries => {
+    for (const entry of entries) {
+      const chartId = entry.target.dataset.chartId;
+      if (chartId && window.CHARTS[chartId]) {
+        const chart = window.CHARTS[chartId];
+        if (chart.resize) chart.resize();
+        else if (typeof chart === 'object' && chart.options) chart.resize();
+      }
+    }
+  });
+  document.querySelectorAll('.chart-box[data-chart-id]').forEach(el => ro.observe(el));
+}
+
+// Era brush: highlight era across all charts
+function setEraBrush(eraId) {
+  if (window.ERA_BRUSH.activeEra === eraId) {
+    window.ERA_BRUSH.activeEra = null;
+    window.ERA_BRUSH.startDate = null;
+    window.ERA_BRUSH.endDate = null;
+  } else {
+    window.ERA_BRUSH.activeEra = eraId;
+    const era = window.ERAS.find(e => e.id === eraId);
+    if (era) {
+      window.ERA_BRUSH.eraName = era.name;
+    }
+  }
+  // Dispatch custom event for chart listeners
+  document.dispatchEvent(new CustomEvent('era-brush', { detail: window.ERA_BRUSH }));
+}
+
+// Global era-brush visual handler: dim/highlight chart elements by era
+document.addEventListener('era-brush', function(e) {
+  const active = e.detail.activeEra;
+  const eraColors = window.ERAS.reduce((m, er) => { m[er.id] = er.hex; return m; }, {});
+  // For each SVG chart element with a data-era attribute, toggle opacity
+  document.querySelectorAll('svg [data-era]').forEach(el => {
+    if (!active) {
+      el.style.opacity = '';
+      el.style.transition = 'opacity 0.4s ease';
+    } else {
+      const elEra = parseInt(el.getAttribute('data-era'));
+      el.style.transition = 'opacity 0.4s ease';
+      el.style.opacity = elEra === active ? '1' : '0.15';
+    }
+  });
+  // Dim chart boxes themselves if they have data-era-range
+  document.querySelectorAll('.chart-box[data-era-range]').forEach(box => {
+    if (!active) { box.style.opacity = ''; return; }
+    const range = box.getAttribute('data-era-range').split('-').map(Number);
+    box.style.transition = 'opacity 0.4s ease';
+    box.style.opacity = (active >= range[0] && active <= range[1]) ? '1' : '0.2';
+  });
+});
+
+// Close modal on overlay click
+document.getElementById('modal-overlay').addEventListener('click', function(e) {
+  if (e.target === this) this.classList.remove('active');
+});
+
+// Close modal on Escape
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') document.getElementById('modal-overlay').classList.remove('active');
+});
+
+document.addEventListener('DOMContentLoaded', setupResizeObserver);
+</script>
+
+</body>
+</html>

@@ -1,0 +1,90 @@
+{
+  "project": "demo-project",
+  "analysis_date": "2026-05-03T06:36:00.960250",
+  "gaps": [
+    {
+      "practice": "CI/CD Pipeline",
+      "status": "ABSENT",
+      "evidence": [
+        {
+          "result_count": 0,
+          "ratio": "0.0%"
+        }
+      ],
+      "severity": "HIGH",
+      "effort_to_implement": 3,
+      "expected_impact": 5,
+      "roi": 1.67,
+      "recommendation": "Run local/GitHub quality gates automatically"
+    },
+    {
+      "practice": "Test Coverage",
+      "status": "PRESENT",
+      "evidence": [
+        {
+          "result_count": 1,
+          "ratio": "16.7%"
+        }
+      ],
+      "severity": "LOW",
+      "effort_to_implement": 2,
+      "expected_impact": 3,
+      "roi": 1.5,
+      "recommendation": "Keep behavior tests above the agreed threshold"
+    },
+    {
+      "practice": "Refactoring Discipline",
+      "status": "PRESENT",
+      "evidence": [
+        {
+          "result_count": 1,
+          "ratio": "16.7%"
+        }
+      ],
+      "severity": "LOW",
+      "effort_to_implement": 2,
+      "expected_impact": 3,
+      "roi": 1.5,
+      "recommendation": "Reserve explicit simplification cycles"
+    },
+    {
+      "practice": "Security Review",
+      "status": "ABSENT",
+      "evidence": [
+        {
+          "result_count": 0,
+          "ratio": "0.0%"
+        }
+      ],
+      "severity": "HIGH",
+      "effort_to_implement": 3,
+      "expected_impact": 5,
+      "roi": 1.67,
+      "recommendation": "Keep security findings tied to a verification gate"
+    },
+    {
+      "practice": "Documentation Hygiene",
+      "status": "PRESENT",
+      "evidence": [
+        {
+          "result_count": 2,
+          "ratio": "33.3%"
+        }
+      ],
+      "severity": "LOW",
+      "effort_to_implement": 2,
+      "expected_impact": 3,
+      "roi": 1.5,
+      "recommendation": "Synchronize public claims with canonical metrics"
+    }
+  ],
+  "summary": {
+    "total_gaps": 5,
+    "critical_gaps": 0,
+    "top_3_roi": [
+      "CI/CD Pipeline",
+      "Security Review",
+      "Test Coverage"
+    ]
+  }
+}

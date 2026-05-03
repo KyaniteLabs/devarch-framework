@@ -1,0 +1,74 @@
+{
+  "signal_detection": {
+    "min_gap_days": 3,
+    "velocity_shift_factor": 2.0,
+    "scope_change_keywords": ["refactor", "rewrite", "restructure", "migration", "architecture"],
+    "cross_repo_activation_threshold": 3
+  },
+  "session_extraction": {
+    "emotional_keywords": [
+      "frustrated", "stuck", "confused", "excited", "breakthrough", "proud",
+      "annoyed", "worried", "confident", "overwhelmed", "satisfied", "disappointed",
+      "curious", "surprised", "relieved", "impatient", "determined", "hopeful",
+      "anxious", "thrilled", "discouraged", "motivated", "uncertain", "stressed",
+      "angry", "happy", "sad", "fear", "joy", "love", "hate",
+      "beautiful", "ugly", "elegant", "hacky", "clean", "messy"
+    ],
+    "philosophical_keywords": [
+      "emergence", "evolution", "consciousness", "awareness", "pattern",
+      "structure", "meaning", "purpose", "essence", "nature",
+      "chaos", "order", "complexity", "simplicity", "abstraction",
+      "concrete", "universal", "particular", "infinite", "finite",
+      "becoming", "being", "time", "space", "identity",
+      "transformation", "creation", "destruction", "synthesis", "dialectic",
+      "beauty", "truth", "goodness", "reality", "appearance",
+      "phenomenon", "noumenon", "subject", "object", "ground"
+    ],
+    "redaction_patterns": [
+      "sk-[a-zA-Z0-9]{48}",
+      "ghp_[a-zA-Z0-9]{36}",
+      "gho_[a-zA-Z0-9]{36}",
+      "AKIA[0-9A-Z]{16}",
+      "[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}"
+    ]
+  },
+  "db_tables": {
+    "commits": {"file": "github-commits.csv", "format": "csv"},
+    "sessions": {"file": "human-messages.json", "format": "json_array"},
+    "youtube_searches": {"file": "youtube-search-history.json", "format": "json_array"},
+    "eras": {"file": "commit-eras.json", "format": "json_special"},
+    "derived_patterns": {"file": "derived-patterns.json", "format": "json_special"},
+    "cross_repo_analysis": {"file": "cross-repo-analysis.json", "format": "json_nested"},
+    "model_adoption": {"file": "model-adoption-analysis.json", "format": "json_nested"},
+    "lunar_phases": {"file": "lunar-phases.json", "format": "json_nested"},
+    "youtube_correlation": {"file": "youtube-ai-correlation.json", "format": "json_nested"},
+    "youtube_creators": {"file": "youtube-creators.json", "format": "json_array"},
+    "telemetry_git": {"file": "telemetry-git.json", "format": "json_nested"},
+    "telemetry_agents": {"file": "telemetry-agents.json", "format": "json_nested"},
+    "telemetry_codebase": {"file": "telemetry-codebase.json", "format": "json_nested"},
+    "telemetry_cross_repo": {"file": "telemetry-cross-repo.json", "format": "json_nested"},
+    "telemetry_github_full": {"file": "telemetry-github-full.json", "format": "json_nested"},
+    "telemetry_repo_depth": {"file": "telemetry-repo-depth.json", "format": "json_nested"},
+    "telemetry_visualizations": {"file": "telemetry-visualizations.json", "format": "json_nested"},
+    "youtube_topic_classification": {"file": "youtube-topic-classification.json", "format": "json_nested"},
+    "youtube_engagement": {"file": "youtube-engagement-heuristics.json", "format": "json"},
+    "youtube_transcript_analysis": {"file": "youtube-transcript-analysis.json", "format": "json"},
+    "context_management": {"file": "context-management-analysis.json", "format": "json"}
+  },
+  "visualization": {
+    "default_colors": {
+      "bg": "#06090f",
+      "text": "#e4e4e7",
+      "accent": "#6366f1",
+      "positive": "#22c55e",
+      "negative": "#ef4444"
+    },
+    "font_stack": "'Space Grotesk', 'DM Sans', 'JetBrains Mono', monospace",
+    "agent_colors": {
+      "kai": "#e74c3c",
+      "cursor": "#f97316",
+      "claude": "#22c55e",
+      "unknown": "#6b7280"
+    }
+  }
+}

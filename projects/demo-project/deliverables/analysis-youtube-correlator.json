@@ -1,0 +1,18 @@
+{
+  "project": "demo-project",
+  "analysis_date": "2026-05-03T06:36:00.964446",
+  "commit_count": 6,
+  "active_days": 4,
+  "date_range_days": 5,
+  "correlations": [],
+  "creator_influence": [],
+  "lag_analysis": {},
+  "topic_overlap": [],
+  "smoking_guns": [],
+  "summary": {
+    "correlation_count": 0,
+    "creator_count": 0,
+    "smoking_gun_count": 0,
+    "data_available": false
+  }
+}

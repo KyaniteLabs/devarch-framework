@@ -1,0 +1,1070 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Portfolio — An Archaeology of Multi-Repo Development</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#06090f;--surface:#0c1018;--surface2:#141a24;--surface3:#1c2432;
+  --border:#1a2232;--border-hover:#2a3a52;
+  --text:#e8ecf2;--text2:#8d99aa;--text3:#6a7888;
+  /* AGENT COLORS */
+  --kai:#ff6b6b;--cursor:#ffa94d;--claude:#51cf66;--unknown:#495057;
+  --glow-kai:rgba(255,107,107,0.08);--glow-cursor:rgba(255,169,77,0.08);--glow-claude:rgba(81,207,102,0.08);
+  --font-display:'Space Grotesk',sans-serif;--font-body:'DM Sans',sans-serif;
+  --font-mono:'JetBrains Mono',monospace;--font-quote:'Playfair Display',serif;
+  --radius-sm:6px;--radius-md:10px;--radius-lg:16px;
+  --shadow-sm:0 1px 3px rgba(0,0,0,0.3);--shadow-md:0 4px 16px rgba(0,0,0,0.4);--shadow-lg:0 8px 32px rgba(0,0,0,0.5);
+  --ease-out:cubic-bezier(0.16,1,0.3,1);--ease-in-out:cubic-bezier(0.65,0,0.35,1);
+}
+html{scroll-behavior:smooth;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+body{background:var(--bg);color:var(--text);font-family:var(--font-body);line-height:1.65;overflow-x:hidden}
+
+/* ─── Neurodivergent Accessibility: Reduced Motion ─── */
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{
+    animation-duration:0.01ms!important;
+    animation-iteration-count:1!important;
+    transition-duration:0.01ms!important;
+    scroll-behavior:auto!important;
+  }
+  .reveal{opacity:1;transform:none}
+  .counter .number{-webkit-text-fill-color:var(--text)}
+  body::before{display:none}
+  .heatmap-cell:hover{transform:none}
+  .stat-card:hover{transform:none}
+  .repo-card:hover{transform:none}
+}
+
+/* ─── Neurodivergent Accessibility: High Contrast ─── */
+@media(prefers-contrast:more){
+  :root{
+    --bg:#000000;--surface:#0a0a0a;--surface2:#141414;--surface3:#1e1e1e;
+    --border:#333333;--border-hover:#555555;
+    --text:#ffffff;--text2:#cccccc;--text3:#999999;
+  }
+  .hero h1{-webkit-text-fill-color:#ffffff;background:none}
+  .counter .number{-webkit-text-fill-color:#ffffff;background:none}
+  .chart-box{border-width:2px}
+  .stat-card{border-width:2px}
+  .repo-card{border-width:2px}
+}
+
+/* ─── Neurodivergent Accessibility: Focus Indicators ─── */
+:focus-visible{
+  outline:2px solid var(--claude);
+  outline-offset:2px;
+  border-radius:var(--radius-sm);
+}
+a:focus-visible{
+  outline:2px solid var(--claude);
+  outline-offset:3px;
+  text-decoration:underline;
+}
+
+/* ─── Neurodivergent Accessibility: Skip Link ─── */
+.skip-link{position:absolute;top:-100%;left:1rem;background:var(--surface);color:var(--text);
+  padding:0.75rem 1.25rem;border-radius:var(--radius-sm);border:2px solid var(--claude);
+  font-family:var(--font-body);font-size:0.9rem;z-index:10000;transition:top .2s}
+.skip-link:focus{top:1rem}
+h1,h2,h3,h4{font-family:var(--font-display);font-weight:600;line-height:1.15;letter-spacing:-0.01em}
+a{color:var(--claude);text-decoration:none;transition:color .2s}
+a:hover{color:#74e089}
+.mono{font-family:var(--font-mono)}
+
+/* Subtle grain overlay (removed for reduced-motion users) */
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.02'/%3E%3C/svg%3E");
+  opacity:0.3}
+
+/* Hero */
+.hero{text-align:center;padding:7rem 2rem 5rem;max-width:900px;margin:0 auto;position:relative}
+.hero::before{content:'';position:absolute;top:-40%;left:50%;transform:translateX(-50%);width:600px;height:600px;
+  background:radial-gradient(circle,rgba(81,207,102,0.06) 0%,rgba(255,169,77,0.03) 40%,transparent 70%);pointer-events:none}
+.hero h1{font-size:clamp(2.25rem,5.5vw,4rem);letter-spacing:-0.03em;font-weight:700;
+  background:linear-gradient(135deg,var(--kai) 0%,var(--cursor) 50%,var(--claude) 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:1.25rem}
+.hero .subtitle{font-size:clamp(0.95rem,1.8vw,1.15rem);color:var(--text2);max-width:580px;margin:0 auto 3.5rem;font-weight:300;letter-spacing:0.01em}
+.counters{display:flex;justify-content:center;gap:3rem;flex-wrap:wrap}
+.counter{text-align:center;position:relative}
+.counter::after{content:'';position:absolute;bottom:-0.75rem;left:50%;transform:translateX(-50%);width:32px;height:2px;
+  background:linear-gradient(90deg,var(--kai),var(--cursor),var(--claude));border-radius:1px;opacity:0.4}
+.counter .number{font-family:var(--font-display);font-size:clamp(2rem,4.5vw,3.25rem);font-weight:700;
+  background:linear-gradient(180deg,var(--text) 30%,var(--text2) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.counter .label{font-size:0.75rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.12em;font-weight:500;margin-top:0.5rem}
+
+/* Repo Cards */
+.repo-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1rem;padding:0 2rem;max-width:1200px;margin:0 auto 5rem}
+.repo-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:1.5rem;
+  display:grid;grid-template-columns:4px 1fr;gap:1.25rem;transition:all .3s var(--ease-out);position:relative;overflow:hidden}
+.repo-card::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at var(--mouse-x,50%) var(--mouse-y,50%),var(--glow-claude),transparent 60%);opacity:0;transition:opacity .3s;pointer-events:none}
+.repo-card:hover{border-color:var(--border-hover);background:var(--surface2);box-shadow:var(--shadow-sm)}
+.repo-card:hover::before{opacity:0.4}
+.repo-card .repo-bar{border-radius:2px;height:100%;background:var(--repo-color,var(--claude))}
+.repo-card .repo-content{min-width:0}
+.repo-card .repo-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem}
+.repo-card .repo-name{font-family:var(--font-display);font-size:1.1rem;font-weight:600;letter-spacing:-0.01em}
+.repo-card .repo-commits{font-family:var(--font-mono);font-size:0.75rem;color:var(--text3);background:var(--surface3);padding:0.25rem 0.6rem;border-radius:var(--radius-sm)}
+.repo-card .repo-meta{font-size:0.78rem;color:var(--text2);margin-bottom:0.5rem;font-family:var(--font-mono)}
+.repo-card .repo-stats{display:flex;gap:1rem;flex-wrap:wrap;margin-top:0.75rem}
+.repo-card .repo-stat{font-size:0.75rem;color:var(--text3)}
+.repo-card .repo-stat strong{color:var(--text2);font-weight:500}
+
+/* Chapters */
+.chapter{padding:5rem 2rem;max-width:1200px;margin:0 auto}
+.chapter h2{font-size:clamp(1.5rem,3vw,2rem);margin-bottom:0.5rem;position:relative;display:inline-flex;align-items:center}
+.chapter .chapter-sub{color:var(--text2);font-size:0.9rem;margin-bottom:2.5rem;font-weight:300}
+.chapter h2 .chapter-dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:10px;vertical-align:middle}
+.chart-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:1.25rem;margin-bottom:2rem}
+.chart-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:1.5rem;
+  position:relative;overflow:hidden;transition:border-color .3s;min-height:200px}
+.chart-box canvas{max-height:400px!important}
+.chart-box svg{max-height:500px!important}
+.chart-box:hover{border-color:var(--border-hover)}
+.chart-box::after{content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,var(--border-hover),transparent);opacity:0;transition:opacity .3s}
+.chart-box:hover::after{opacity:1}
+.chart-box .chart-title{font-family:var(--font-display);font-size:0.88rem;color:var(--text3);margin-bottom:1rem;font-weight:500;
+  text-transform:uppercase;letter-spacing:0.06em}
+.chart-box svg,.chart-box canvas{width:100%!important;display:block}
+
+/* Tooltip */
+.tooltip{position:fixed;pointer-events:none;background:rgba(12,16,24,0.96);border:1px solid var(--border-hover);
+  border-radius:var(--radius-md);padding:0.875rem 1.125rem;font-size:0.82rem;max-width:320px;z-index:1000;
+  opacity:0;transition:opacity .15s;box-shadow:var(--shadow-lg);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+.tooltip.visible{opacity:1}
+.tooltip .tt-title{font-family:var(--font-display);font-weight:600;margin-bottom:0.3rem;font-size:0.88rem}
+.tooltip .tt-detail{color:var(--text2);line-height:1.5}
+.tooltip .tt-row{display:flex;justify-content:space-between;gap:1rem;margin-top:0.25rem}
+.tooltip .tt-row .tt-label{color:var(--text3)}
+.tooltip .tt-row .tt-value{font-family:var(--font-mono);font-weight:500}
+
+/* Footer */
+.footer{text-align:center;padding:5rem 2rem;color:var(--text3);font-size:0.78rem;border-top:1px solid var(--border);
+  max-width:800px;margin:5rem auto 0}
+.footer h3{color:var(--text2);font-size:0.9rem;margin-bottom:1rem;text-transform:uppercase;letter-spacing:0.06em;font-weight:500}
+
+/* Scroll Reveal */
+.reveal{opacity:0;transform:translateY(24px);transition:opacity .7s var(--ease-out),transform .7s var(--ease-out)}
+.reveal.revealed{opacity:1;transform:translateY(0)}
+
+/* Heatmap cell */
+.heatmap-cell{stroke:var(--bg);stroke-width:1.5px;rx:2px;transition:opacity .15s}
+.heatmap-cell:hover{opacity:0.85}
+
+/* Force graph */
+.force-node{cursor:grab}
+.force-node:active{cursor:grabbing}
+.force-link{stroke-opacity:0.4}
+
+/* Responsive */
+@media(max-width:768px){
+  .hero{padding:5rem 1.5rem 3rem}
+  .counters{gap:1.5rem}
+  .repo-grid{padding:0 1rem;grid-template-columns:1fr}
+  .chapter{padding:3rem 1.25rem}
+  .chart-grid{grid-template-columns:1fr}
+}
+@media(max-width:480px){
+  .hero{padding:4rem 1rem 2rem}
+  .counter .number{font-size:1.75rem}
+  .counters{gap:1rem}
+}
+
+/* Selection */
+::selection{background:rgba(81,207,102,0.2);color:var(--text)}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:8px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:4px}
+::-webkit-scrollbar-thumb:hover{background:var(--border-hover)}
+</style>
+</head>
+<body>
+<a href="#main-content" class="skip-link">Skip to main content</a>
+
+<!-- Hero -->
+<header class="hero reveal">
+  <h1>The Portfolio</h1>
+  <p class="subtitle" id="hero-subtitle">An Archaeology of Multi-Repo Development</p>
+  <div class="counters">
+    <div class="counter"><div class="number" data-target="0" id="counter-commits">0</div><div class="label">Total Commits</div></div>
+    <div class="counter"><div class="number" data-target="0" id="counter-repos">0</div><div class="label">Repositories</div></div>
+    <div class="counter"><div class="number" data-target="0" id="counter-days">0</div><div class="label">Active Days</div></div>
+    <div class="counter"><div class="number" data-target="0" id="counter-authors">0</div><div class="label">Authors</div></div>
+  </div>
+</header>
+
+<!-- Repo Cards -->
+<main id="main-content">
+<section class="repo-grid" id="repo-grid" aria-label="Repository overview">
+  <!-- Populated by JS -->
+</section>
+
+<!-- Chapter: Cross-Repo Timeline -->
+<section id="ch-timeline" class="chapter reveal">
+  <h2><span class="chapter-dot" style="background:var(--claude)"></span>Cross-Repo Timeline</h2>
+  <p class="chapter-sub">How development activity flows across repositories over time</p>
+  <div class="chart-grid">
+    <div class="chart-box" style="grid-column:1/-1" id="chart-timeline">
+      <div class="chart-title">Daily Commit Activity by Repository</div>
+    </div>
+  </div>
+</section>
+
+<!-- Chapter: Author Universe -->
+<section id="ch-authors" class="chapter reveal">
+  <h2><span class="chapter-dot" style="background:var(--cursor)"></span>Author Universe</h2>
+  <p class="chapter-sub">The network of contributors and their repository affiliations</p>
+  <div class="chart-grid">
+    <div class="chart-box" style="grid-column:1/-1" id="chart-authors">
+      <div class="chart-title">Author-Repository Network</div>
+    </div>
+  </div>
+</section>
+
+<!-- Chapter: Language Distribution -->
+<section id="ch-languages" class="chapter reveal">
+  <h2><span class="chapter-dot" style="background:var(--kai)"></span>Language Distribution</h2>
+  <p class="chapter-sub">Programming languages used across all repositories</p>
+  <div class="chart-grid">
+    <div class="chart-box" style="grid-column:1/-1" id="chart-languages">
+      <div class="chart-title">Top Languages by Repository</div>
+    </div>
+  </div>
+</section>
+
+<!-- Chapter: Velocity Comparison -->
+<section id="ch-velocity" class="chapter reveal">
+  <h2><span class="chapter-dot" style="background:var(--claude)"></span>Velocity Comparison</h2>
+  <p class="chapter-sub">Development speed and intensity across repositories</p>
+  <div class="chart-grid">
+    <div class="chart-box" style="grid-column:1/-1" id="chart-velocity">
+      <div class="chart-title">Commits per Day by Repository</div>
+    </div>
+  </div>
+</section>
+
+<!-- Chapter: Activity Heatmap -->
+<section id="ch-heatmap" class="chapter reveal">
+  <h2><span class="chapter-dot" style="background:var(--cursor)"></span>Activity Heatmap</h2>
+  <p class="chapter-sub">When development happens — day and time patterns</p>
+  <div class="chart-grid">
+    <div class="chart-box" style="grid-column:1/-1" id="chart-heatmap">
+      <div class="chart-title">Commit Activity by Day and Hour</div>
+    </div>
+  </div>
+</section>
+
+<!-- Chapter: Commit Types -->
+<section id="ch-commit-types" class="chapter reveal">
+  <h2><span class="chapter-dot" style="background:var(--kai)"></span>Commit Types</h2>
+  <p class="chapter-sub">Distribution of commit types across repositories</p>
+  <div class="chart-grid">
+    <div class="chart-box" style="grid-column:1/-1" id="chart-commit-types">
+      <div class="chart-title">Commit Type Breakdown by Repository</div>
+    </div>
+  </div>
+</section>
+
+<!-- Chapter: Correlation Timeline -->
+<section id="ch-correlation" class="chapter reveal">
+  <h2><span class="chapter-dot" style="background:var(--claude)"></span>Correlation Timeline</h2>
+  <p class="chapter-sub">Concurrent activity patterns across repositories</p>
+  <div class="chart-grid">
+    <div class="chart-box" style="grid-column:1/-1" id="chart-correlation">
+      <div class="chart-title">Cross-Repository Activity Over Time</div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- Tooltip -->
+<div class="tooltip" id="tooltip" role="tooltip" aria-hidden="true"></div>
+
+<!-- Footer -->
+<footer class="footer">
+  <h3>Development Archaeology</h3>
+  <p>Generated by Development Archaeology · An exploration of multi-repository development patterns</p>
+</footer>
+
+<script>
+// GLOBAL_DATA_PLACEHOLDER
+window.GLOBAL_DATA = {};
+</script>
+
+<script>
+(function() {
+  'use strict';
+
+  const data = window.GLOBAL_DATA;
+  if (!data || !data.meta) {
+    console.error('No global data available');
+    return;
+  }
+
+  // Hide sections that don't have data (GitHub API mode lacks per-commit detail)
+  const sectionDataMap = {
+    'ch-timeline': 'timeline',
+    'ch-heatmap': 'heatmap',
+    'ch-commit-types': 'commit_types',
+    'ch-correlation': 'correlation',
+  };
+  Object.entries(sectionDataMap).forEach(([sectionId, dataKey]) => {
+    if (!data[dataKey]) {
+      const el = document.getElementById(sectionId);
+      if (el) el.style.display = 'none';
+    }
+  });
+
+  // Show GitHub badge if data comes from API
+  if (data.source === 'github-api') {
+    const badge = document.createElement('div');
+    badge.style.cssText = 'text-align:center;padding:0.5rem;font-size:0.75rem;color:var(--text3);';
+    badge.textContent = `${data.total_repos_on_github || data.meta.total_repos} repositories from GitHub API`;
+    document.querySelector('.hero').appendChild(badge);
+  }
+
+  // Format utilities
+  const fmtNum = n => n.toLocaleString();
+  const fmtPct = n => (n * 100).toFixed(1) + '%';
+  const formatDate = d => {
+    const date = new Date(d);
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
+  // Tooltip
+  const tooltip = document.getElementById('tooltip');
+  const showTooltip = (html, x, y) => {
+    tooltip.innerHTML = html;
+    tooltip.classList.add('visible');
+    const rect = tooltip.getBoundingClientRect();
+    let tx = x + 12;
+    let ty = y + 12;
+    if (tx + rect.width > window.innerWidth - 20) tx = x - rect.width - 12;
+    if (ty + rect.height > window.innerHeight - 20) ty = y - rect.height - 12;
+    tooltip.style.left = tx + 'px';
+    tooltip.style.top = ty + 'px';
+  };
+  const hideTooltip = () => tooltip.classList.remove('visible');
+
+  // Scroll reveal
+  const revealOnScroll = () => {
+    const reveals = document.querySelectorAll('.reveal:not(.revealed)');
+    reveals.forEach(el => {
+      const rect = el.getBoundingClientRect();
+      if (rect.top < window.innerHeight - 100) {
+        el.classList.add('revealed');
+      }
+    });
+  };
+  window.addEventListener('scroll', revealOnScroll, { passive: true });
+  setTimeout(revealOnScroll, 100);
+
+  // Counter animation
+  const animateCounter = (el, target) => {
+    const duration = 2000;
+    const start = performance.now();
+    const startVal = 0;
+    const update = (now) => {
+      const elapsed = now - start;
+      const progress = Math.min(elapsed / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      const current = Math.floor(startVal + (target - startVal) * eased);
+      el.textContent = fmtNum(current);
+      if (progress < 1) requestAnimationFrame(update);
+    };
+    requestAnimationFrame(update);
+  };
+
+  // Initialize counters
+  document.getElementById('counter-commits').dataset.target = data.meta.total_commits;
+  document.getElementById('counter-repos').dataset.target = data.meta.total_repos;
+  document.getElementById('counter-days').dataset.target = data.meta.total_active_days;
+  document.getElementById('counter-authors').dataset.target = data.meta.total_authors;
+
+  document.getElementById('hero-subtitle').innerHTML = `An Archaeology of Multi-Repo Development<br>${data.meta.first_date} — ${data.meta.last_date}`;
+
+  document.querySelectorAll('.counter .number').forEach(el => {
+    const target = parseInt(el.dataset.target);
+    if (!isNaN(target) && target > 0) {
+      setTimeout(() => animateCounter(el, target), 300);
+    }
+  });
+
+  // Repo cards
+  const repoGrid = document.getElementById('repo-grid');
+  if (data.repos && data.repos.length > 0) {
+    data.repos.forEach(repo => {
+      const card = document.createElement('div');
+      card.className = 'repo-card reveal';
+      card.style.setProperty('--repo-color', repo.color);
+      card.innerHTML = `
+        <div class="repo-bar"></div>
+        <div class="repo-content">
+          <div class="repo-header">
+            <div class="repo-name">${repo.name}</div>
+            <div class="repo-commits">${fmtNum(repo.total_commits)} commits</div>
+          </div>
+          <div class="repo-meta">${formatDate(repo.first_date)} — ${formatDate(repo.last_date)}</div>
+          <div class="repo-stats">
+            <div class="repo-stat"><strong>${repo.active_days}</strong> active days</div>
+            <div class="repo-stat"><strong>${repo.top_language}</strong> top language</div>
+            <div class="repo-stat"><strong>${repo.top_author}</strong> top author</div>
+          </div>
+        </div>
+      `;
+      card.addEventListener('mousemove', e => {
+        const rect = card.getBoundingClientRect();
+        card.style.setProperty('--mouse-x', (e.clientX - rect.left) + 'px');
+        card.style.setProperty('--mouse-y', (e.clientY - rect.top) + 'px');
+      });
+      repoGrid.appendChild(card);
+    });
+  }
+
+  // Chart.js defaults
+  Chart.defaults.color = '#8d99aa';
+  Chart.defaults.font.family = "'DM Sans', sans-serif";
+
+  // 1. Cross-Repo Timeline (D3 Stacked Area)
+  if (data.timeline && data.timeline.dates && data.timeline.repos) {
+    const timelineContainer = document.getElementById('chart-timeline');
+    const margin = { top: 20, right: 20, bottom: 40, left: 50 };
+    const width = timelineContainer.offsetWidth - margin.left - margin.right;
+    const height = 300 - margin.top - margin.bottom;
+
+    const svg = d3.select('#chart-timeline')
+      .append('svg')
+      .attr('width', width + margin.left + margin.right)
+      .attr('height', height + margin.top + margin.bottom)
+      .append('g')
+      .attr('transform', `translate(${margin.left},${margin.top})`);
+
+    const dates = data.timeline.dates.map(d => new Date(d));
+    const repoNames = Object.keys(data.timeline.repos);
+
+    // d3.stack expects array of objects: [{repo1: count, repo2: count, ...}, ...]
+    const seriesData = dates.map((_, i) => {
+      const point = {};
+      repoNames.forEach(name => { point[name] = data.timeline.repos[name][i]; });
+      return point;
+    });
+
+    const stack = d3.stack().keys(repoNames);
+    const stackedData = stack(seriesData);
+
+    const x = d3.scaleTime()
+      .domain(d3.extent(dates))
+      .range([0, width]);
+
+    const y = d3.scaleLinear()
+      .domain([0, d3.max(stackedData, d => d3.max(d, d => d[1]))])
+      .range([height, 0]);
+
+    const area = d3.area()
+      .x((d, i) => x(dates[i]))
+      .y0(d => y(d[0]))
+      .y1(d => y(d[1]))
+      .defined(d => !isNaN(d[0]) && !isNaN(d[1]));
+
+    const color = d3.scaleOrdinal()
+      .domain(repoNames)
+      .range(repoNames.map(name => data.timeline.repo_colors[name] || '#495057'));
+
+    svg.selectAll('path')
+      .data(stackedData)
+      .join('path')
+      .attr('fill', d => color(d.key))
+      .attr('fill-opacity', 0.7)
+      .attr('d', area)
+      .style('mix-blend-mode', 'screen');
+
+    // X axis
+    svg.append('g')
+      .attr('transform', `translate(0,${height})`)
+      .call(d3.axisBottom(x).ticks(width / 80).tickSizeOuter(0))
+      .call(g => g.select('.domain').attr('stroke', '#1a2232'))
+      .call(g => g.selectAll('.tick line').attr('stroke', '#1a2232'))
+      .call(g => g.selectAll('.tick text').attr('fill', '#6a7888').attr('font-size', '11px'));
+
+    // Y axis
+    svg.append('g')
+      .call(d3.axisLeft(y).ticks(5))
+      .call(g => g.select('.domain').attr('stroke', '#1a2232'))
+      .call(g => g.selectAll('.tick line').attr('stroke', '#1a2232'))
+      .call(g => g.selectAll('.tick text').attr('fill', '#6a7888').attr('font-size', '11px'));
+
+    // Overlay for tooltips
+    const overlay = svg.append('rect')
+      .attr('width', width)
+      .attr('height', height)
+      .attr('fill', 'transparent')
+      .on('mousemove', function(event) {
+        const [mx] = d3.pointer(event);
+        const date = x.invert(mx);
+        const dateStr = date.toISOString().split('T')[0];
+        const idx = data.timeline.dates.findIndex(d => d === dateStr);
+
+        if (idx >= 0) {
+          let html = `<div class="tt-title">${formatDate(dateStr)}</div><div class="tt-detail">`;
+          let total = 0;
+          repoNames.forEach(name => {
+            const count = data.timeline.repos[name][idx] || 0;
+            if (count > 0) {
+              total += count;
+              html += `<div class="tt-row"><span class="tt-label" style="color:${data.timeline.repo_colors[name]}">● ${name}</span><span class="tt-value">${count}</span></div>`;
+            }
+          });
+          html += `</div>`;
+          showTooltip(html, event.pageX, event.pageY);
+        }
+      })
+      .on('mouseleave', hideTooltip);
+  }
+
+  // 2. Author Universe (D3 Force-Directed Graph)
+  if (data.authors && data.authors.nodes && data.authors.links) {
+    const authorsContainer = document.getElementById('chart-authors');
+    const width = authorsContainer.offsetWidth;
+    const height = 600;
+
+    const svg = d3.select('#chart-authors')
+      .append('svg')
+      .attr('viewBox', `0 0 ${width} ${height}`)
+      .attr('width', '100%')
+      .attr('height', height)
+      .style('max-height', '600px');
+
+    // Zoom + pan
+    const g = svg.append('g');
+    svg.call(d3.zoom().scaleExtent([0.3, 4]).on('zoom', (event) => {
+      g.attr('transform', event.transform);
+    }));
+
+    const simulation = d3.forceSimulation(data.authors.nodes)
+      .force('link', d3.forceLink(data.authors.links).id(d => d.id).distance(80))
+      .force('charge', d3.forceManyBody().strength(-200))
+      .force('center', d3.forceCenter(width / 2, height / 2))
+      .force('x', d3.forceX(width / 2).strength(0.05))
+      .force('y', d3.forceY(height / 2).strength(0.05))
+      .force('collision', d3.forceCollide().radius(20));
+
+    const link = g.append('g')
+      .selectAll('line')
+      .data(data.authors.links)
+      .join('line')
+      .attr('class', 'force-link')
+      .attr('stroke', '#495057')
+      .attr('stroke-width', d => Math.max(1, Math.sqrt(d.value) / 4));
+
+    const node = g.append('g')
+      .selectAll('circle')
+      .data(data.authors.nodes)
+      .join('circle')
+      .attr('class', 'force-node')
+      .attr('r', d => d.type === 'author' ? Math.sqrt(d.commits) / 2 + 8 : 20)
+      .attr('fill', d => d.type === 'repo' ? d.color : '#51cf66')
+      .attr('stroke', '#1a2232')
+      .attr('stroke-width', 2)
+      .call(d3.drag()
+        .on('start', dragstarted)
+        .on('drag', dragged)
+        .on('end', dragended))
+      .on('mouseover', function(event, d) {
+        let html = `<div class="tt-title">${d.id}</div><div class="tt-detail">`;
+        if (d.type === 'author') {
+          html += `<div>Commits: ${fmtNum(d.commits)}</div>`;
+          html += `<div>Repos: ${d.repos.join(', ')}</div>`;
+        } else {
+          html += `<div>Repository</div>`;
+        }
+        html += `</div>`;
+        showTooltip(html, event.pageX, event.pageY);
+      })
+      .on('mouseout', hideTooltip);
+
+    // Labels for repo nodes
+    const label = g.append('g')
+      .selectAll('text')
+      .data(data.authors.nodes.filter(n => n.type === 'repo'))
+      .join('text')
+      .attr('font-size', '10px')
+      .attr('font-family', 'var(--font-display)')
+      .attr('fill', 'var(--text2)')
+      .attr('text-anchor', 'middle')
+      .attr('dy', 30)
+      .text(d => d.id);
+
+    simulation.on('tick', () => {
+      link
+        .attr('x1', d => d.source.x)
+        .attr('y1', d => d.source.y)
+        .attr('x2', d => d.target.x)
+        .attr('y2', d => d.target.y);
+
+      node
+        .attr('cx', d => d.x)
+        .attr('cy', d => d.y);
+
+      label
+        .attr('x', d => d.x)
+        .attr('y', d => d.y);
+    });
+
+    function dragstarted(event, d) {
+      if (!event.active) simulation.alphaTarget(0.3).restart();
+      d.fx = d.x;
+      d.fy = d.y;
+    }
+
+    function dragged(event, d) {
+      d.fx = event.x;
+      d.fy = event.y;
+    }
+
+    function dragended(event, d) {
+      if (!event.active) simulation.alphaTarget(0);
+      d.fx = null;
+      d.fy = null;
+    }
+  }
+
+  // 3. Language Distribution (Chart.js Stacked Horizontal Bars)
+  if (data.languages && data.languages.length > 0) {
+    const langContainer = document.getElementById('chart-languages');
+    // Add an aggregate overview chart above the per-repo one
+    const allLangs = {};
+    data.languages.forEach(repo => {
+      repo.languages.forEach(l => {
+        allLangs[l.language] = (allLangs[l.language] || 0) + l.count;
+      });
+    });
+    const sortedLangs = Object.entries(allLangs).sort((a, b) => b[1] - a[1]).slice(0, 12);
+    const totalBytes = sortedLangs.reduce((s, [, v]) => s + v, 0);
+    const langOverviewDiv = document.createElement('div');
+    langOverviewDiv.style.cssText = 'display:flex;flex-wrap:wrap;gap:0.5rem;margin-bottom:1rem;';
+    sortedLangs.forEach(([lang, bytes]) => {
+      const pct = (bytes / totalBytes * 100).toFixed(1);
+      const chip = document.createElement('span');
+      chip.style.cssText = `background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0.25rem 0.75rem;font-size:0.8rem;color:var(--text2);display:inline-flex;gap:0.4rem;`;
+      chip.innerHTML = `<strong style="color:var(--text)">${lang}</strong>${pct}%`;
+      langOverviewDiv.appendChild(chip);
+    });
+    langContainer.insertBefore(langOverviewDiv, langContainer.firstChild);
+
+    let langCanvas = langContainer.querySelector('canvas');
+    if (!langCanvas) { langCanvas = document.createElement('canvas'); langContainer.appendChild(langCanvas); }
+    // Cap height to prevent infinite growth
+    langCanvas.style.maxHeight = '400px';
+    langCanvas.parentElement.style.height = '500px';
+
+    // Collect all unique languages
+    const allLanguages = new Set();
+    data.languages.forEach(repo => {
+      repo.languages.forEach(lang => allLanguages.add(lang.language));
+    });
+    const languageList = Array.from(allLanguages).slice(0, 10);
+
+    const datasets = data.languages.map(repo => ({
+      label: repo.repo,
+      data: languageList.map(lang => {
+        const langData = repo.languages.find(l => l.language === lang);
+        return langData ? langData.count : 0;
+      }),
+      backgroundColor: repo.color,
+      borderColor: repo.color,
+      borderWidth: 1
+    }));
+
+    new Chart(langCanvas, {
+      type: 'bar',
+      data: {
+        labels: languageList,
+        datasets: datasets
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            stacked: true,
+            grid: { color: '#1a2232' },
+            ticks: { color: '#6a7888' }
+          },
+          y: {
+            stacked: true,
+            grid: { display: false },
+            ticks: { color: '#8d99aa' }
+          }
+        },
+        plugins: {
+          legend: {
+            position: 'top',
+            labels: { color: '#8d99aa', usePointStyle: true, pointStyle: 'circle' }
+          },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => {
+                const v = ctx.raw;
+                if (v > 100000) return `${ctx.dataset.label}: ${(v/1024).toFixed(0)} KB`;
+                return `${ctx.dataset.label}: ${fmtNum(v)}`;
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+
+  // 4. Velocity Comparison (Chart.js Horizontal Bar)
+  if (data.velocity && data.velocity.length > 0) {
+    const velContainer = document.getElementById('chart-velocity');
+    let velCanvas = velContainer.querySelector('canvas');
+    if (!velCanvas) { velCanvas = document.createElement('canvas'); velContainer.appendChild(velCanvas); }
+    velCanvas.style.maxHeight = '350px';
+    velContainer.style.height = '450px';
+    const sorted = [...data.velocity].sort((a, b) => b.commits_per_day - a.commits_per_day);
+
+    new Chart(velCanvas, {
+      type: 'bar',
+      data: {
+        labels: sorted.map(d => d.repo),
+        datasets: [{
+          label: 'Commits per Day',
+          data: sorted.map(d => d.commits_per_day),
+          backgroundColor: sorted.map(d => d.color),
+          borderColor: sorted.map(d => d.color),
+          borderWidth: 1
+        }]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            grid: { color: '#1a2232' },
+            ticks: { color: '#6a7888', callback: v => v.toFixed(1) }
+          },
+          y: {
+            grid: { display: false },
+            ticks: { color: '#8d99aa' }
+          }
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              afterLabel: (ctx) => {
+                const item = sorted[ctx.dataIndex];
+                const parts = [`Total: ${fmtNum(item.total_commits)} commits`];
+                if (item.peak_count > 0) parts.push(`Peak: ${item.peak_count} commits on ${formatDate(item.peak_day)}`);
+                if (item.span_days) parts.push(`Span: ${item.span_days} days`);
+                return parts.join('\n');
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+
+  // 5. Activity Heatmap (D3 SVG)
+  if (data.heatmap && data.heatmap.cells) {
+    const heatContainer = document.getElementById('chart-heatmap');
+    const cellSize = 20;
+    const margin = { top: 40, right: 20, bottom: 20, left: 50 };
+    const width = 24 * cellSize + margin.left + margin.right;
+    const height = 7 * cellSize + margin.top + margin.bottom;
+
+    const svg = d3.select('#chart-heatmap')
+      .append('svg')
+      .attr('width', width)
+      .attr('height', height);
+
+    const dayOrder = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const colorScale = d3.scaleSequential(d3.interpolateViridis)
+      .domain([0, data.heatmap.max_count]);
+
+    // Y axis labels
+    svg.append('g')
+      .selectAll('text')
+      .data(dayOrder)
+      .join('text')
+      .attr('x', margin.left - 10)
+      .attr('y', (d, i) => margin.top + i * cellSize + cellSize / 2 + 4)
+      .attr('text-anchor', 'end')
+      .attr('fill', '#6a7888')
+      .attr('font-size', '11px')
+      .text(d => d);
+
+    // X axis labels
+    svg.append('g')
+      .selectAll('text')
+      .data(d3.range(0, 24, 4))
+      .join('text')
+      .attr('x', d => margin.left + d * cellSize + cellSize / 2)
+      .attr('y', margin.top - 10)
+      .attr('text-anchor', 'middle')
+      .attr('fill', '#6a7888')
+      .attr('font-size', '11px')
+      .text(d => d);
+
+    // Cells
+    svg.selectAll('rect')
+      .data(data.heatmap.cells)
+      .join('rect')
+      .attr('class', 'heatmap-cell')
+      .attr('x', d => margin.left + d.hour * cellSize)
+      .attr('y', d => margin.top + dayOrder.indexOf(d.day) * cellSize)
+      .attr('width', cellSize - 2)
+      .attr('height', cellSize - 2)
+      .attr('fill', d => d.count > 0 ? colorScale(d.count) : '#141a24')
+      .on('mouseover', function(event, d) {
+        const html = `
+          <div class="tt-title">${d.day} ${d.hour}:00</div>
+          <div class="tt-detail">${fmtNum(d.count)} commits</div>
+        `;
+        showTooltip(html, event.pageX, event.pageY);
+      })
+      .on('mouseout', hideTooltip);
+
+    // Legend
+    const legendWidth = 120;
+    const legendHeight = 12;
+    const legend = svg.append('g')
+      .attr('transform', `translate(${margin.left}, ${height - 5})`);
+
+    const legendScale = d3.scaleLinear()
+      .domain([0, data.heatmap.max_count])
+      .range([0, legendWidth]);
+
+    const legendGradient = legend.append('defs')
+      .append('linearGradient')
+      .attr('id', 'legend-gradient')
+      .attr('x1', '0%')
+      .attr('x2', '100%');
+
+    legendGradient.append('stop')
+      .attr('offset', '0%')
+      .attr('stop-color', colorScale(0));
+
+    legendGradient.append('stop')
+      .attr('offset', '100%')
+      .attr('stop-color', colorScale(data.heatmap.max_count));
+
+    legend.append('rect')
+      .attr('width', legendWidth)
+      .attr('height', legendHeight)
+      .style('fill', 'url(#legend-gradient)')
+      .attr('rx', 2);
+
+    legend.append('text')
+      .attr('x', 0)
+      .attr('y', -5)
+      .attr('fill', '#6a7888')
+      .attr('font-size', '10px')
+      .text('0');
+
+    legend.append('text')
+      .attr('x', legendWidth)
+      .attr('y', -5)
+      .attr('text-anchor', 'end')
+      .attr('fill', '#6a7888')
+      .attr('font-size', '10px')
+      .text(fmtNum(data.heatmap.max_count));
+  }
+
+  // 6. Commit Types (Chart.js Grouped Bar)
+  if (data.commit_types && data.commit_types.repos) {
+    const typesContainer = document.getElementById('chart-commit-types');
+    const types = data.commit_types.types;
+    const repos = data.commit_types.repos;
+
+    const datasets = repos.map(repo => ({
+      label: repo.repo,
+      data: types.map(type => repo.breakdown[type] || 0),
+      backgroundColor: repo.color,
+      borderColor: repo.color,
+      borderWidth: 1
+    }));
+
+    let typesCanvas = typesContainer.querySelector('canvas');
+    if (!typesCanvas) { typesCanvas = document.createElement('canvas'); typesContainer.appendChild(typesCanvas); }
+    typesCanvas.style.maxHeight = '400px';
+    typesContainer.style.height = '500px';
+
+    new Chart(typesCanvas, {
+      type: 'bar',
+      data: {
+        labels: types,
+        datasets: datasets
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: { color: '#8d99aa' }
+          },
+          y: {
+            grid: { color: '#1a2232' },
+            ticks: { color: '#6a7888' }
+          }
+        },
+        plugins: {
+          legend: {
+            position: 'top',
+            labels: { color: '#8d99aa', usePointStyle: true, pointStyle: 'circle' }
+          },
+          tooltip: {
+            mode: 'index',
+            intersect: false
+          }
+        }
+      }
+    });
+  }
+
+  // 7. Correlation Timeline (D3 Multi-line)
+  if (data.correlation && data.correlation.dates && data.correlation.rows) {
+    const corrContainer = document.getElementById('chart-correlation');
+    const margin = { top: 20, right: 120, bottom: 40, left: 50 };
+    const width = corrContainer.offsetWidth - margin.left - margin.right;
+    const height = 300 - margin.top - margin.bottom;
+
+    const svg = d3.select('#chart-correlation')
+      .append('svg')
+      .attr('width', width + margin.left + margin.right)
+      .attr('height', height + margin.top + margin.bottom)
+      .append('g')
+      .attr('transform', `translate(${margin.left},${margin.top})`);
+
+    const dates = data.correlation.dates.map(d => new Date(d));
+    const repos = data.correlation.repos;
+
+    // Create line data
+    const lineData = repos.map(repo => ({
+      name: repo,
+      color: data.correlation.repo_colors[repo],
+      values: data.correlation.rows.map(row => ({
+        date: new Date(row.date),
+        value: row[repo] || 0
+      }))
+    }));
+
+    const x = d3.scaleTime()
+      .domain(d3.extent(dates))
+      .range([0, width]);
+
+    const y = d3.scaleLinear()
+      .domain([0, d3.max(lineData, d => d3.max(d.values, v => v.value))])
+      .range([height, 0]);
+
+    const line = d3.line()
+      .x(d => x(d.date))
+      .y(d => y(d.value))
+      .curve(d3.curveMonotoneX);
+
+    const area = d3.area()
+      .x(d => x(d.date))
+      .y0(height)
+      .y1(d => y(d.value))
+      .curve(d3.curveMonotoneX);
+
+    // Draw areas
+    svg.selectAll('path.area')
+      .data(lineData)
+      .join('path')
+      .attr('class', 'area')
+      .attr('fill', d => d.color)
+      .attr('fill-opacity', 0.15)
+      .attr('d', d => area(d.values));
+
+    // Draw lines
+    svg.selectAll('path.line')
+      .data(lineData)
+      .join('path')
+      .attr('class', 'line')
+      .attr('fill', 'none')
+      .attr('stroke', d => d.color)
+      .attr('stroke-width', 2)
+      .attr('d', d => line(d.values));
+
+    // X axis
+    svg.append('g')
+      .attr('transform', `translate(0,${height})`)
+      .call(d3.axisBottom(x).ticks(width / 80).tickSizeOuter(0))
+      .call(g => g.select('.domain').attr('stroke', '#1a2232'))
+      .call(g => g.selectAll('.tick line').attr('stroke', '#1a2232'))
+      .call(g => g.selectAll('.tick text').attr('fill', '#6a7888').attr('font-size', '11px'));
+
+    // Y axis
+    svg.append('g')
+      .call(d3.axisLeft(y).ticks(5))
+      .call(g => g.select('.domain').attr('stroke', '#1a2232'))
+      .call(g => g.selectAll('.tick line').attr('stroke', '#1a2232'))
+      .call(g => g.selectAll('.tick text').attr('fill', '#6a7888').attr('font-size', '11px'));
+
+    // Legend
+    const legend = svg.selectAll('.legend')
+      .data(lineData)
+      .join('g')
+      .attr('class', 'legend')
+      .attr('transform', (d, i) => `translate(${width + 10}, ${i * 20})`);
+
+    legend.append('rect')
+      .attr('width', 12)
+      .attr('height', 12)
+      .attr('fill', d => d.color)
+      .attr('rx', 2);
+
+    legend.append('text')
+      .attr('x', 18)
+      .attr('y', 10)
+      .attr('fill', '#8d99aa')
+      .attr('font-size', '11px')
+      .text(d => d.name);
+
+    // Overlay for tooltips
+    const overlay = svg.append('rect')
+      .attr('width', width)
+      .attr('height', height)
+      .attr('fill', 'transparent')
+      .on('mousemove', function(event) {
+        const [mx] = d3.pointer(event);
+        const date = x.invert(mx);
+        const dateStr = date.toISOString().split('T')[0];
+        const row = data.correlation.rows.find(r => r.date === dateStr);
+
+        if (row) {
+          let html = `<div class="tt-title">${formatDate(dateStr)}</div><div class="tt-detail">`;
+          repos.forEach(repo => {
+            const count = row[repo] || 0;
+            if (count > 0) {
+              html += `<div class="tt-row"><span class="tt-label" style="color:${data.correlation.repo_colors[repo]}">● ${repo}</span><span class="tt-value">${count}</span></div>`;
+            }
+          });
+          html += `</div>`;
+          showTooltip(html, event.pageX, event.pageY);
+        }
+      })
+      .on('mouseleave', hideTooltip);
+  }
+
+})();
+</script>
+</body>
+</html>

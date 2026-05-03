@@ -1,0 +1,58 @@
+# Default Datasette metadata — project name is injected at serve time
+databases:
+  archaeology:
+    title: "Archaeology Database"
+    description: "Forensic mining of development history — commits, sessions, eras, telemetry, and YouTube correlation data"
+    tables:
+      commits:
+        description: "Git commit history across all repositories. Columns: repo, date, time, message, author."
+        facets:
+          - repo
+          - author
+        sort: date desc
+      eras:
+        description: "Developmental eras identified through commit gap detection, velocity shifts, and scope changes."
+        facets:
+          - frustration_category
+          - dominant_intent
+        sort: id asc
+      sessions:
+        description: "AI coding sessions from Claude Code JSONL logs."
+        sort: timestamp desc
+      frustration_patterns:
+        description: "Maps frustration expressions to the automation hooks that resolved them."
+      monthly_velocity:
+        description: "Monthly commit counts showing development velocity over time."
+      model_timeline:
+        description: "Timeline of AI model adoption, showing when each model was first used."
+        facets:
+          - model
+      lunar_phases:
+        description: "Daily lunar phases correlated with development activity."
+      yt_correlations:
+        description: "Correlations between YouTube AI video watching and subsequent commit themes."
+      yt_creators:
+        description: "Top AI content creators and their influence patterns."
+      yt_classified:
+        description: "YouTube videos classified by AI/ML topic relevance."
+        facets:
+          - category
+      commits_by_hour:
+        description: "Hourly commit distribution showing work patterns."
+      authors:
+        description: "Contributor statistics and co-authorship patterns."
+      github_repos:
+        description: "All GitHub repositories with activity metrics."
+    sql_queries:
+      era_velocity:
+        sql: "SELECT e.name as era, e.commits as total_commits, e.dates, ROUND(CAST(e.commits AS REAL) / (julianday(SUBSTR(e.dates, INSTR(e.dates, '–') + 2)) - julianday(SUBSTR(e.dates, 1, INSTR(e.dates, '–') - 1))), 1) as commits_per_day FROM eras e ORDER BY e.id"
+        description: "Commits per day per era"
+      author_heatmap:
+        sql: "SELECT * FROM commits_by_hour ORDER BY hour"
+        description: "Commits by hour and day of week"
+      frustration_timeline:
+        sql: "SELECT category, first_expression, frustration_level, automation_response, latency_hours FROM frustration_patterns ORDER BY first_expression"
+        description: "Frustration patterns over time"
+      model_adoption:
+        sql: "SELECT model, first_seen, last_seen, mention_count FROM model_timeline ORDER BY first_seen"
+        description: "When each model was first used"

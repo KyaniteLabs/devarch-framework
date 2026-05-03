@@ -1,0 +1,34 @@
+#!/bin/bash
+# Pre-push hook: run demo and test suite to verify basic functionality
+
+set -e
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+NC='\033[0m' # No Color
+
+echo "Running pre-push checks..."
+
+# Run demo project generation and build
+echo "Building demo project..."
+if ! python3 -m archaeology.cli demo --force --build-db > /dev/null 2>&1; then
+    echo -e "${RED}✗ Demo project build failed${NC}"
+    exit 1
+fi
+echo -e "${GREEN}✓ Demo project builds successfully${NC}"
+
+# Run test suite if tests exist
+if [ -d "tests" ] && [ "$(ls -A tests/*.py 2>/dev/null)" ]; then
+    echo "Running test suite..."
+    if ! python3 -m pytest tests/ -x -q; then
+        echo -e "${RED}✗ Tests failed${NC}"
+        exit 1
+    fi
+    echo -e "${GREEN}✓ All tests passed${NC}"
+else
+    echo -e "${YELLOW}⚠ No tests found, skipping test suite${NC}"
+fi
+
+echo -e "${GREEN}✓ Pre-push checks passed${NC}"
+exit 0

@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Documentation
+    url: https://github.com/Pastorsimon1798/devarch-framework/blob/main/README.md
+    about: Check the documentation for usage guides and examples
+  - name: Contributing Guide
+    url: https://github.com/Pastorsimon1798/devarch-framework/blob/main/CONTRIBUTING.md
+    about: Learn how to contribute to DevArch Framework

@@ -1,0 +1,31 @@
+{
+  "project": "Demo Archaeology",
+  "lifespan": "5 days (2026-01-01 to 2026-01-05)",
+  "total_commits": 6,
+  "eras": [
+    {
+      "id": 1,
+      "name": "Intent",
+      "dates": "2026-01-01",
+      "commits": 1,
+      "description": "The project goal is written down.",
+      "narrative_arc": "A clear intent appears before code."
+    },
+    {
+      "id": 2,
+      "name": "Prototype",
+      "dates": "2026-01-01 to 2026-01-02",
+      "commits": 2,
+      "description": "The prototype is scaffolded and wired.",
+      "narrative_arc": "Implementation pressure exposes the first integration gap."
+    },
+    {
+      "id": 3,
+      "name": "Hardening",
+      "dates": "2026-01-03 to 2026-01-05",
+      "commits": 3,
+      "description": "Tests and audit boundaries are added.",
+      "narrative_arc": "The project shifts from making claims to proving them."
+    }
+  ]
+}

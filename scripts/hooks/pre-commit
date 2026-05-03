@@ -1,0 +1,39 @@
+#!/bin/bash
+# Pre-commit hook: syntax check Python files and verify archaeology package imports
+
+set -e
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+NC='\033[0m' # No Color
+
+# Get list of staged .py files
+PY_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep '\.py$' || true)
+
+if [ -z "$PY_FILES" ]; then
+    exit 0
+fi
+
+echo "Checking Python syntax..."
+
+# Check syntax of all staged Python files
+for file in $PY_FILES; do
+    if ! python3 -m py_compile "$file" 2>/dev/null; then
+        echo -e "${RED}✗ Syntax error in $file${NC}"
+        exit 1
+    fi
+done
+
+echo -e "${GREEN}✓ All Python files pass syntax check${NC}"
+
+# If any files in archaeology/ are staged, verify the package still imports
+if echo "$PY_FILES" | grep -q '^archaeology/'; then
+    echo "Verifying archaeology package imports..."
+    if ! python3 -c "import archaeology; print('OK')" 2>/dev/null; then
+        echo -e "${RED}✗ archaeology package import failed${NC}"
+        exit 1
+    fi
+    echo -e "${GREEN}✓ archaeology package imports successfully${NC}"
+fi
+
+exit 0

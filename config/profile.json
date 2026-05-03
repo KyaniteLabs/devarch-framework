@@ -1,0 +1,13 @@
+{
+  "projects": [],
+  "developer": {
+    "name": "",
+    "github_username": "",
+    "email": ""
+  },
+  "sync_settings": {
+    "auto_mine": true,
+    "auto_signals": true,
+    "min_gap_days": 14
+  }
+}

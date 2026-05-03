@@ -1,0 +1,45 @@
+{
+  "name": "demo-project",
+  "description": "Sanitized demo project for Dev-Archaeology",
+  "repo_url": "https://github.com/example/demo-archaeology",
+  "developer": {
+    "name": "Demo Developer",
+    "github": "demo"
+  },
+  "timeline": {
+    "start_date": "2026-01-01",
+    "end_date": "2026-01-05",
+    "total_days": 5
+  },
+  "overrides": {
+    "era_count": 3,
+    "total_commits": 6,
+    "active_days": 4
+  },
+  "visualization": {
+    "title": "DEMO ARCHAEOLOGY",
+    "subtitle": "A sanitized sample project",
+    "counters": [
+      {
+        "label": "commits",
+        "value": 6
+      },
+      {
+        "label": "eras",
+        "value": 3
+      }
+    ],
+    "agent_colors": {
+      "Human": "#74c0fc",
+      "Agent": "#51cf66"
+    },
+    "era_colors": {
+      "era-01": "#74c0fc",
+      "era-02": "#51cf66",
+      "era-03": "#ffd43b"
+    }
+  },
+  "data_sources": {
+    "github_api": false
+  }
+}
