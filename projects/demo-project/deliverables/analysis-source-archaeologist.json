@@ -1,0 +1,77 @@
+{
+  "analysis_metadata": {
+    "timestamp": "2026-05-03T06:36:00.963954",
+    "analyst": "Automated Source Code Archaeologist",
+    "project": "demo-project",
+    "commit_count": 6
+  },
+  "quality_trajectory": {
+    "assessment": "IMPROVING",
+    "evidence_count": 4,
+    "by_month": {
+      "2026-01": 4
+    }
+  },
+  "architecture_drift": {
+    "large_change_signals": [
+      {
+        "hash": "demo005",
+        "date": "2026-01-05 13:00:00 +0000",
+        "message": "refactor: extract audit boundary",
+        "author": "Demo Developer"
+      }
+    ],
+    "todo_or_stub_signals": []
+  },
+  "hotspots": [
+    {
+      "message": "test: add behavior checks",
+      "cnt": 1
+    },
+    {
+      "message": "refactor: extract audit boundary",
+      "cnt": 1
+    },
+    {
+      "message": "fix: wire prototype output",
+      "cnt": 1
+    },
+    {
+      "message": "feat: scaffold prototype",
+      "cnt": 1
+    },
+    {
+      "message": "docs: write initial product intent",
+      "cnt": 1
+    },
+    {
+      "message": "docs: publish remediation notes",
+      "cnt": 1
+    }
+  ],
+  "improvements": [
+    {
+      "rank": 1,
+      "title": "Keep audit gate as release blocker",
+      "effort": "M",
+      "impact": "HIGH"
+    },
+    {
+      "rank": 2,
+      "title": "Replace placeholder analytics with derived joins",
+      "effort": "M",
+      "impact": "HIGH"
+    },
+    {
+      "rank": 3,
+      "title": "Continue splitting large evaluator/router surfaces",
+      "effort": "L",
+      "impact": "MEDIUM"
+    }
+  ],
+  "summary": {
+    "quality_signal_count": 4,
+    "large_change_signal_count": 1,
+    "todo_signal_count": 0
+  }
+}

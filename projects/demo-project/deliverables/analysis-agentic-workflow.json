@@ -1,0 +1,32 @@
+{
+  "project": "demo-project",
+  "analysis_date": "2026-05-03T06:36:00.961916",
+  "session_depth_distribution": {
+    "sessions_total": 2,
+    "micro_lt5": 0,
+    "standard_5_20": 1,
+    "deep_20_50": 0,
+    "marathon_50_plus": 1
+  },
+  "session_taxonomy": {
+    "SCAFFOLDING": 1,
+    "BUILDING": 2,
+    "DEBUGGING": 1,
+    "REFACTORING": 1
+  },
+  "hook_effectiveness": [],
+  "agent_attribution": [
+    {
+      "author": "Agent",
+      "cnt": 3
+    },
+    {
+      "author": "Demo Developer",
+      "cnt": 3
+    }
+  ],
+  "summary": {
+    "total_sessions_analyzed": 2,
+    "dominant_session_type": "BUILDING"
+  }
+}

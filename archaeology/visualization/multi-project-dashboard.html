@@ -1,0 +1,1138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dev-Archaeology — Multi-Project Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500&family=Playfair+Display:ital,wght@0,400;0,700,1,400&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#06090f;--surface:#0c1018;--surface2:#141a24;--surface3:#1c2432;
+  --border:#1a2232;--border-hover:#2a3a52;
+  --text:#e8ecf2;--text2:#8d99aa;--text3:#6a7888;
+  /* Category Colors */
+  --creative:#ff6b6b;--tools:#51cf66;--infrastructure:#74c0fc;--research:#ffa94d;--personal:#cc5de8;
+  --font-display:'Space Grotesk',sans-serif;--font-body:'DM Sans',sans-serif;
+  --font-mono:'JetBrains Mono',monospace;--font-quote:'Playfair Display',serif;
+  --radius-sm:6px;--radius-md:10px;--radius-lg:16px;
+  --shadow-sm:0 1px 3px rgba(0,0,0,0.3);--shadow-md:0 4px 16px rgba(0,0,0,0.4);--shadow-lg:0 8px 32px rgba(0,0,0,0.5);
+  --ease-out:cubic-bezier(0.16,1,0.3,1);--ease-in-out:cubic-bezier(0.65,0,0.35,1);
+}
+html{scroll-behavior:smooth;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+body{background:var(--bg);color:var(--text);font-family:var(--font-body);line-height:1.65;overflow-x:hidden}
+
+/* ─── Neurodivergent Accessibility: Reduced Motion ─── */
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{
+    animation-duration:0.01ms!important;
+    animation-iteration-count:1!important;
+    transition-duration:0.01ms!important;
+    scroll-behavior:auto!important;
+  }
+  .reveal{opacity:1;transform:none}
+  .counter .number{-webkit-text-fill-color:var(--text)}
+  body::before{display:none}
+  .heatmap-cell:hover{transform:none}
+  .repo-card:hover{transform:none}
+}
+
+/* ─── Neurodivergent Accessibility: High Contrast ─── */
+@media(prefers-contrast:more){
+  :root{
+    --bg:#000000;--surface:#0a0a0a;--surface2:#141414;--surface3:#1e1e1e;
+    --border:#333333;--border-hover:#555555;
+    --text:#ffffff;--text2:#cccccc;--text3:#999999;
+  }
+  .hero h1{-webkit-text-fill-color:#ffffff;background:none}
+  .counter .number{-webkit-text-fill-color:#ffffff;background:none}
+  .chart-box{border-width:2px}
+  .stat-card{border-width:2px}
+  .repo-card{border-width:2px}
+}
+
+/* ─── Neurodivergent Accessibility: Focus Indicators ─── */
+:focus-visible{
+  outline:2px solid var(--tools);
+  outline-offset:2px;
+  border-radius:var(--radius-sm);
+}
+a:focus-visible{
+  outline:2px solid var(--tools);
+  outline-offset:3px;
+  text-decoration:underline;
+}
+
+/* ─── Neurodivergent Accessibility: Skip Link ─── */
+.skip-link{position:absolute;top:-100%;left:1rem;background:var(--surface);color:var(--text);
+  padding:0.75rem 1.25rem;border-radius:var(--radius-sm);border:2px solid var(--tools);
+  font-family:var(--font-body);font-size:0.9rem;z-index:10000;transition:top .2s}
+.skip-link:focus{top:1rem}
+h1,h2,h3,h4{font-family:var(--font-display);font-weight:600;line-height:1.15;letter-spacing:-0.01em}
+a{color:var(--tools);text-decoration:none;transition:color .2s}
+a:hover{color:#74e089}
+.mono{font-family:var(--font-mono)}
+
+/* Subtle grain overlay (removed for reduced-motion users) */
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.02'/%3E%3C/svg%3E");
+  opacity:0.3}
+
+/* Hero */
+.hero{text-align:center;padding:5rem 2rem 3rem;max-width:1200px;margin:0 auto;position:relative}
+.hero::before{content:'';position:absolute;top:-40%;left:50%;transform:translateX(-50%);width:600px;height:600px;
+  background:radial-gradient(circle,rgba(81,207,102,0.06) 0%,rgba(255,169,77,0.03) 40%,transparent 70%);pointer-events:none}
+.hero h1{font-size:clamp(2rem,5vw,3.5rem);letter-spacing:-0.03em;font-weight:700;
+  background:linear-gradient(135deg,var(--creative) 0%,var(--tools) 50%,var(--infrastructure) 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:1.25rem}
+.hero .subtitle{font-size:clamp(0.9rem,1.6vw,1.05rem);color:var(--text2);max-width:680px;margin:0 auto 2.5rem;font-weight:300;letter-spacing:0.01em}
+.counters{display:flex;justify-content:center;gap:2.5rem;flex-wrap:wrap}
+.counter{text-align:center;position:relative}
+.counter::after{content:'';position:absolute;bottom:-0.75rem;left:50%;transform:translateX(-50%);width:32px;height:2px;
+  background:linear-gradient(90deg,var(--creative),var(--tools),var(--infrastructure));border-radius:1px;opacity:0.4}
+.counter .number{font-family:var(--font-display);font-size:clamp(1.75rem,4vw,2.75rem);font-weight:700;
+  background:linear-gradient(180deg,var(--text) 30%,var(--text2) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.counter .label{font-size:0.7rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.12em;font-weight:500;margin-top:0.5rem}
+
+/* Filter Controls */
+.filters{display:flex;justify-content:center;gap:0.75rem;flex-wrap:wrap;margin-bottom:2rem;padding:0 2rem}
+.filter-btn{background:var(--surface);border:1px solid var(--border);color:var(--text2);padding:0.5rem 1rem;border-radius:var(--radius-sm);
+  font-family:var(--font-body);font-size:0.8rem;cursor:pointer;transition:all .2s;font-weight:500}
+.filter-btn:hover{border-color:var(--border-hover);background:var(--surface2)}
+.filter-btn.active{border-color:var(--tools);background:var(--surface2);color:var(--text)}
+
+/* Chapters */
+.chapter{padding:4rem 2rem;max-width:1400px;margin:0 auto}
+.chapter h2{font-size:clamp(1.4rem,2.5vw,1.75rem);margin-bottom:0.5rem;position:relative;display:inline-flex;align-items:center}
+.chapter .chapter-sub{color:var(--text2);font-size:0.85rem;margin-bottom:2rem;font-weight:300}
+.chapter h2 .chapter-dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:10px;vertical-align:middle}
+.chart-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,450px),1fr));gap:1.25rem;margin-bottom:2rem}
+.chart-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:1.5rem;
+  position:relative;overflow:hidden;transition:border-color .3s;min-height:250px}
+.chart-box canvas{max-height:450px!important}
+.chart-box svg{max-height:600px!important}
+.chart-box:hover{border-color:var(--border-hover)}
+.chart-box::after{content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,var(--border-hover),transparent);opacity:0;transition:opacity .3s}
+.chart-box:hover::after{opacity:1}
+.chart-box .chart-title{font-family:var(--font-display);font-size:0.82rem;color:var(--text3);margin-bottom:1rem;font-weight:500;
+  text-transform:uppercase;letter-spacing:0.06em}
+.chart-box svg,.chart-box canvas{width:100%!important;display:block}
+
+/* Repo Health Table */
+.repo-health-table{width:100%;border-collapse:collapse;font-size:0.85rem}
+.repo-health-table th{background:var(--surface2);color:var(--text3);font-weight:500;text-align:left;padding:0.75rem 1rem;
+  border-bottom:2px solid var(--border);position:sticky;top:0}
+.repo-health-table td{padding:0.75rem 1rem;border-bottom:1px solid var(--border);color:var(--text2)}
+.repo-health-table tr:hover{background:var(--surface2)}
+.repo-health-table .repo-name{color:var(--text);font-weight:500;font-family:var(--font-mono)}
+.repo-health-table .status-badge{display:inline-block;padding:0.25rem 0.6rem;border-radius:var(--radius-sm);font-size:0.7rem;font-weight:500}
+.repo-health-table .status-active{background:rgba(81,207,102,0.15);color:#51cf66}
+.repo-health-table .status-dormant{background:rgba(255,107,107,0.15);color:#ff6b6b}
+.repo-health-table .stat-num{font-family:var(--font-mono);color:var(--text)}
+
+/* Gantt Chart */
+.gantt-chart{overflow-x:auto}
+.gantt-row{height:32px;margin-bottom:0.5rem;position:relative}
+.gantt-label{position:absolute;left:0;width:120px;font-size:0.8rem;color:var(--text2);font-family:var(--font-mono);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gantt-bar-area{position:absolute;left:130px;right:0;height:100%;background:var(--surface2);border-radius:var(--radius-sm)}
+.gantt-bar{position:absolute;height:24px;top:4px;border-radius:var(--radius-sm);transition:width 0.3s var(--ease-out);
+  cursor:pointer;display:flex;align-items:center;padding:0 0.5rem;font-size:0.7rem;color:var(--bg);font-weight:600;overflow:hidden}
+.gantt-bar:hover{opacity:0.85}
+.gantt-axis{height:30px;margin-bottom:1rem;display:flex;align-items:center;padding-left:130px;font-size:0.75rem;color:var(--text3)}
+.gantt-tick{flex:1;text-align:center;border-left:1px solid var(--border)}
+
+/* Tooltip */
+.tooltip{position:fixed;pointer-events:none;background:rgba(12,16,24,0.96);border:1px solid var(--border-hover);
+  border-radius:var(--radius-md);padding:0.875rem 1.125rem;font-size:0.8rem;max-width:320px;z-index:1000;
+  opacity:0;transition:opacity .15s;box-shadow:var(--shadow-lg);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+.tooltip.visible{opacity:1}
+.tooltip .tt-title{font-family:var(--font-display);font-weight:600;margin-bottom:0.3rem;font-size:0.88rem}
+.tooltip .tt-detail{color:var(--text2);line-height:1.5}
+.tooltip .tt-row{display:flex;justify-content:space-between;gap:1rem;margin-top:0.25rem}
+.tooltip .tt-row .tt-label{color:var(--text3)}
+.tooltip .tt-row .tt-value{font-family:var(--font-mono);font-weight:500}
+
+/* Heatmap cell */
+.heatmap-cell{stroke:var(--bg);stroke-width:1.5px;rx:2px;transition:opacity .15s}
+.heatmap-cell:hover{opacity:0.85}
+
+/* Scroll Reveal */
+.reveal{opacity:0;transform:translateY(24px);transition:opacity .7s var(--ease-out),transform .7s var(--ease-out)}
+.reveal.revealed{opacity:1;transform:translateY(0)}
+
+/* Footer */
+.footer{text-align:center;padding:4rem 2rem;color:var(--text3);font-size:0.75rem;border-top:1px solid var(--border);
+  max-width:800px;margin:4rem auto 0}
+.footer h3{color:var(--text2);font-size:0.85rem;margin-bottom:1rem;text-transform:uppercase;letter-spacing:0.06em;font-weight:500}
+
+/* Responsive */
+@media(max-width:768px){
+  .hero{padding:4rem 1.5rem 2rem}
+  .counters{gap:1.5rem}
+  .chapter{padding:3rem 1rem}
+  .chart-grid{grid-template-columns:1fr}
+  .filters{padding:0 1rem}
+  .repo-health-table{font-size:0.75rem}
+  .repo-health-table th,.repo-health-table td{padding:0.5rem}
+  .gantt-label{width:90px}
+  .gantt-bar-area{left:100px}
+  .gantt-axis{padding-left:100px}
+}
+@media(max-width:480px){
+  .hero{padding:3rem 1rem 1.5rem}
+  .counter .number{font-size:1.5rem}
+  .counters{gap:1rem}
+}
+
+/* Selection */
+::selection{background:rgba(81,207,102,0.2);color:var(--text)}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:4px}
+::-webkit-scrollbar-thumb:hover{background:var(--border-hover)}
+</style>
+</head>
+<body>
+<a href="#main-content" class="skip-link">Skip to main content</a>
+
+<!-- Hero -->
+<header class="hero reveal">
+  <h1>Dev-Archaeology Dashboard</h1>
+  <p class="subtitle" id="hero-subtitle">Multi-Project Development Overview</p>
+  <div class="counters">
+    <div class="counter"><div class="number" data-target="0" id="counter-commits">0</div><div class="label">Total Commits</div></div>
+    <div class="counter"><div class="number" data-target="0" id="counter-repos">0</div><div class="label">Repositories</div></div>
+    <div class="counter"><div class="number" data-target="0" id="counter-authors">0</div><div class="label">Authors</div></div>
+    <div class="counter"><div class="number" data-target="0" id="counter-span">0</div><div class="label">Days Span</div></div>
+  </div>
+</header>
+
+<!-- Filters -->
+<div class="filters reveal" id="filters">
+  <button class="filter-btn active" data-filter="all">All Repos</button>
+  <button class="filter-btn" data-filter="creative">Creative</button>
+  <button class="filter-btn" data-filter="tools">Tools</button>
+  <button class="filter-btn" data-filter="infrastructure">Infrastructure</button>
+  <button class="filter-btn" data-filter="research">Research</button>
+  <button class="filter-btn" data-filter="active">Active Only</button>
+  <button class="filter-btn" data-filter="dormant">Dormant Only</button>
+</div>
+
+<!-- Main Content -->
+<main id="main-content">
+
+<!-- Chapter: Repo Activity Timeline (Gantt) -->
+<section id="ch-timeline" class="chapter reveal">
+  <h2><span class="chapter-dot" style="background:var(--creative)"></span>Repository Activity Timeline</h2>
+  <p class="chapter-sub">When each repository was active — colored by category</p>
+  <div class="chart-grid">
+    <div class="chart-box" style="grid-column:1/-1" id="chart-gantt">
+      <div class="chart-title">Repository Lifespans</div>
+    </div>
+  </div>
+</section>
+
+<!-- Chapter: Commit Heatmap -->
+<section id="ch-heatmap" class="chapter reveal">
+  <h2><span class="chapter-dot" style="background:var(--tools)"></span>Commit Heatmap</h2>
+  <p class="chapter-sub">Repository × Time matrix showing commit density</p>
+  <div class="chart-grid">
+    <div class="chart-box" style="grid-column:1/-1" id="chart-heatmap">
+      <div class="chart-title">Weekly Commit Density</div>
+    </div>
+  </div>
+</section>
+
+<!-- Chapter: Language Distribution -->
+<section id="ch-languages" class="chapter reveal">
+  <h2><span class="chapter-dot" style="background:var(--infrastructure)"></span>Language Distribution</h2>
+  <p class="chapter-sub">Primary languages across all repositories</p>
+  <div class="chart-grid">
+    <div class="chart-box" id="chart-languages-pie">
+      <div class="chart-title">Language Distribution (Pie)</div>
+    </div>
+    <div class="chart-box" id="chart-languages-bar">
+      <div class="chart-title">Top Languages (Bar)</div>
+    </div>
+  </div>
+</section>
+
+<!-- Chapter: Top Repos -->
+<section id="ch-top-repos" class="chapter reveal">
+  <h2><span class="chapter-dot" style="background:var(--creative)"></span>Top Repositories by Commits</h2>
+  <p class="chapter-sub">The most active repositories</p>
+  <div class="chart-grid">
+    <div class="chart-box" style="grid-column:1/-1" id="chart-top-repos">
+      <div class="chart-title">Top 15 Repositories</div>
+    </div>
+  </div>
+</section>
+
+<!-- Chapter: Category Breakdown -->
+<section id="ch-categories" class="chapter reveal">
+  <h2><span class="chapter-dot" style="background:var(--tools)"></span>Category Breakdown</h2>
+  <p class="chapter-sub">Repositories grouped by category</p>
+  <div class="chart-grid">
+    <div class="chart-box" id="chart-categories-pie">
+      <div class="chart-title">Repos by Category</div>
+    </div>
+    <div class="chart-box" id="chart-categories-bar">
+      <div class="chart-title">Commits by Category</div>
+    </div>
+  </div>
+</section>
+
+<!-- Chapter: Activity Over Time -->
+<section id="ch-activity" class="chapter reveal">
+  <h2><span class="chapter-dot" style="background:var(--infrastructure)"></span>Activity Over Time</h2>
+  <p class="chapter-sub">Total commits per week across all repositories</p>
+  <div class="chart-grid">
+    <div class="chart-box" style="grid-column:1/-1" id="chart-activity">
+      <div class="chart-title">Weekly Commit Activity</div>
+    </div>
+  </div>
+</section>
+
+<!-- Chapter: Repo Health -->
+<section id="ch-health" class="chapter reveal">
+  <h2><span class="chapter-dot" style="background:var(--research)"></span>Repository Health Indicators</h2>
+  <p class="chapter-sub">Status and health metrics for all repositories</p>
+  <div class="chart-grid">
+    <div class="chart-box" style="grid-column:1/-1;overflow:auto">
+      <div class="chart-title">Repository Health Table</div>
+      <table class="repo-health-table" id="repo-health-table">
+        <thead>
+          <tr>
+            <th>Repository</th>
+            <th>Commits</th>
+            <th>Last Update</th>
+            <th>Primary Language</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Populated by JS -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- Tooltip -->
+<div class="tooltip" id="tooltip" role="tooltip" aria-hidden="true"></div>
+
+<!-- Footer -->
+<footer class="footer">
+  <h3>Dev-Archaeology Multi-Project Dashboard</h3>
+  <p>Generated by Development Archaeology · Comprehensive multi-repository visualization</p>
+</footer>
+
+<script>
+// DATA_PLACEHOLDER
+window.DASHBOARD_DATA = {};
+</script>
+
+<script>
+(function() {
+  'use strict';
+
+  const data = window.DASHBOARD_DATA;
+  if (!data || !data.meta) {
+    console.error('No dashboard data available');
+    return;
+  }
+
+  // Format utilities
+  const fmtNum = n => n.toLocaleString();
+  const formatDate = d => {
+    const date = new Date(d);
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  };
+  const formatShortDate = d => {
+    const date = new Date(d);
+    return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+  };
+
+  // Category classification (heuristic-based)
+  const classifyRepo = (repo) => {
+    const name = repo.name.toLowerCase();
+    const desc = (repo.description || '').toLowerCase();
+    const lang = repo.top_language || '';
+
+    // Creative projects
+    if (name.includes('creative') || name.includes('art') || name.includes('design') ||
+        name.includes('portfolio') || name.includes('atelier') || name.includes('generative') ||
+        desc.includes('creative') || desc.includes('art')) {
+      return 'creative';
+    }
+    // Infrastructure projects
+    if (name.includes('pipeline') || name.includes('api') || name.includes('infra') ||
+        name.includes('devops') || name.includes('ci') || name.includes('deploy') ||
+        name.includes('archaeology') || name.includes('cli') && name.includes('sh')) {
+      return 'infrastructure';
+    }
+    // Research projects
+    if (name.includes('research') || name.includes('lab') || name.includes('experiment') ||
+        name.includes('study') || name.includes('analysis')) {
+      return 'research';
+    }
+    // Tools (default)
+    return 'tools';
+  };
+
+  // Assign categories to repos
+  data.repos.forEach(repo => {
+    repo.category = classifyRepo(repo);
+  });
+
+  const categoryColors = {
+    creative: '#ff6b6b',
+    tools: '#51cf66',
+    infrastructure: '#74c0fc',
+    research: '#ffa94d',
+    personal: '#cc5de8'
+  };
+
+  const getCategoryColor = (category) => categoryColors[category] || '#495057';
+
+  // Active/Dormant classification (last update within 90 days = active)
+  const daysSinceUpdate = (lastDate) => {
+    const now = new Date();
+    const last = new Date(lastDate);
+    return Math.floor((now - last) / (1000 * 60 * 60 * 24));
+  };
+
+  data.repos.forEach(repo => {
+    repo.daysSinceUpdate = daysSinceUpdate(repo.last_date);
+    repo.status = repo.daysSinceUpdate <= 90 ? 'active' : 'dormant';
+  });
+
+  // Tooltip
+  const tooltip = document.getElementById('tooltip');
+  const showTooltip = (html, x, y) => {
+    tooltip.innerHTML = html;
+    tooltip.classList.add('visible');
+    const rect = tooltip.getBoundingClientRect();
+    let tx = x + 12;
+    let ty = y + 12;
+    if (tx + rect.width > window.innerWidth - 20) tx = x - rect.width - 12;
+    if (ty + rect.height > window.innerHeight - 20) ty = y - rect.height - 12;
+    tooltip.style.left = tx + 'px';
+    tooltip.style.top = ty + 'px';
+  };
+  const hideTooltip = () => tooltip.classList.remove('visible');
+
+  // Scroll reveal
+  const revealOnScroll = () => {
+    const reveals = document.querySelectorAll('.reveal:not(.revealed)');
+    reveals.forEach(el => {
+      const rect = el.getBoundingClientRect();
+      if (rect.top < window.innerHeight - 100) {
+        el.classList.add('revealed');
+      }
+    });
+  };
+  window.addEventListener('scroll', revealOnScroll, { passive: true });
+  setTimeout(revealOnScroll, 100);
+
+  // Counter animation
+  const animateCounter = (el, target) => {
+    const duration = 2000;
+    const start = performance.now();
+    const startVal = 0;
+    const update = (now) => {
+      const elapsed = now - start;
+      const progress = Math.min(elapsed / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      const current = Math.floor(startVal + (target - startVal) * eased);
+      el.textContent = fmtNum(current);
+      if (progress < 1) requestAnimationFrame(update);
+    };
+    requestAnimationFrame(update);
+  };
+
+  // Initialize counters
+  document.getElementById('counter-commits').dataset.target = data.meta.total_commits;
+  document.getElementById('counter-repos').dataset.target = data.meta.total_repos;
+  document.getElementById('counter-authors').dataset.target = data.meta.total_authors;
+  document.getElementById('counter-span').dataset.target = data.meta.total_calendar_days || 0;
+
+  document.getElementById('hero-subtitle').innerHTML = `Multi-Project Development Overview<br>${data.meta.first_date} — ${data.meta.last_date}`;
+
+  document.querySelectorAll('.counter .number').forEach(el => {
+    const target = parseInt(el.dataset.target);
+    if (!isNaN(target) && target > 0) {
+      setTimeout(() => animateCounter(el, target), 300);
+    }
+  });
+
+  // Filter functionality
+  let currentFilter = 'all';
+  let filteredRepos = [...data.repos];
+
+  const applyFilter = (filter) => {
+    currentFilter = filter;
+    filteredRepos = data.repos.filter(repo => {
+      if (filter === 'all') return true;
+      if (filter === 'active') return repo.status === 'active';
+      if (filter === 'dormant') return repo.status === 'dormant';
+      return repo.category === filter;
+    });
+
+    // Update charts
+    updateGanttChart();
+    updateHeatmap();
+    updateTopRepos();
+    updateCategoryCharts();
+    updateActivityChart();
+    updateHealthTable();
+  };
+
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      applyFilter(btn.dataset.filter);
+    });
+  });
+
+  // Chart.js defaults
+  Chart.defaults.color = '#8d99aa';
+  Chart.defaults.font.family = "'DM Sans', sans-serif";
+
+  // 1. Gantt Chart (Repository Timeline)
+  const updateGanttChart = () => {
+    const container = document.getElementById('chart-gantt');
+    container.innerHTML = '<div class="chart-title">Repository Lifespans</div>';
+
+    if (filteredRepos.length === 0) {
+      container.innerHTML += '<div style="padding:2rem;text-align:center;color:var(--text3)">No repositories match the current filter</div>';
+      return;
+    }
+
+    const repos = filteredRepos.sort((a, b) => new Date(a.first_date) - new Date(b.first_date));
+    const firstDate = new Date(Math.min(...repos.map(r => new Date(r.first_date))));
+    const lastDate = new Date(Math.max(...repos.map(r => new Date(r.last_date))));
+    const totalDays = Math.ceil((lastDate - firstDate) / (1000 * 60 * 60 * 24));
+
+    const ganttDiv = document.createElement('div');
+    ganttDiv.className = 'gantt-chart';
+
+    // Time axis
+    const axis = document.createElement('div');
+    axis.className = 'gantt-axis';
+    const months = Math.ceil(totalDays / 30);
+    for (let i = 0; i <= months; i++) {
+      const tick = document.createElement('div');
+      tick.className = 'gantt-tick';
+      const tickDate = new Date(firstDate);
+      tickDate.setMonth(tickDate.getMonth() + i);
+      tick.textContent = tickDate.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+      axis.appendChild(tick);
+    }
+    ganttDiv.appendChild(axis);
+
+    // Repository rows
+    repos.forEach(repo => {
+      const row = document.createElement('div');
+      row.className = 'gantt-row';
+
+      const label = document.createElement('div');
+      label.className = 'gantt-label';
+      label.textContent = repo.name;
+      label.title = repo.name;
+      row.appendChild(label);
+
+      const barArea = document.createElement('div');
+      barArea.className = 'gantt-bar-area';
+
+      const startOffset = Math.max(0, (new Date(repo.first_date) - firstDate) / (1000 * 60 * 60 * 24));
+      const duration = Math.max(1, (new Date(repo.last_date) - new Date(repo.first_date)) / (1000 * 60 * 60 * 24) + 1);
+      const leftPct = (startOffset / totalDays) * 100;
+      const widthPct = (duration / totalDays) * 100;
+
+      const bar = document.createElement('div');
+      bar.className = 'gantt-bar';
+      bar.style.left = leftPct + '%';
+      bar.style.width = widthPct + '%';
+      bar.style.backgroundColor = getCategoryColor(repo.category);
+      bar.textContent = repo.total_commits + ' commits';
+      bar.title = `${repo.name}: ${repo.total_commits} commits from ${formatDate(repo.first_date)} to ${formatDate(repo.last_date)}`;
+
+      bar.addEventListener('mouseenter', (e) => {
+        const html = `
+          <div class="tt-title">${repo.name}</div>
+          <div class="tt-detail">
+            <div class="tt-row"><span class="tt-label">Commits:</span><span class="tt-value">${fmtNum(repo.total_commits)}</span></div>
+            <div class="tt-row"><span class="tt-label">Period:</span><span class="tt-value">${formatDate(repo.first_date)} - ${formatDate(repo.last_date)}</span></div>
+            <div class="tt-row"><span class="tt-label">Category:</span><span class="tt-value">${repo.category}</span></div>
+          </div>
+        `;
+        showTooltip(html, e.pageX, e.pageY);
+      });
+      bar.addEventListener('mouseleave', hideTooltip);
+
+      barArea.appendChild(bar);
+      row.appendChild(barArea);
+      ganttDiv.appendChild(row);
+    });
+
+    container.appendChild(ganttDiv);
+  };
+
+  // 2. Commit Heatmap
+  const updateHeatmap = () => {
+    const container = document.getElementById('chart-heatmap');
+    container.innerHTML = '<div class="chart-title">Weekly Commit Density</div>';
+
+    if (filteredRepos.length === 0) {
+      container.innerHTML += '<div style="padding:2rem;text-align:center;color:var(--text3)">No repositories match the current filter</div>';
+      return;
+    }
+
+    // Create weekly buckets
+    const weeklyData = {};
+    filteredRepos.forEach(repo => {
+      weeklyData[repo.name] = {};
+    });
+
+    const allDates = new Set();
+    filteredRepos.forEach(repo => {
+      const start = new Date(repo.first_date);
+      const end = new Date(repo.last_date);
+      const totalCommits = repo.total_commits;
+      const totalDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) || 1;
+
+      for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 7)) {
+        const weekKey = d.toISOString().slice(0, 10);
+        allDates.add(weekKey);
+        // Distribute commits evenly across weeks (simplified)
+        weeklyData[repo.name][weekKey] = Math.round(totalCommits / (totalDays / 7));
+      }
+    });
+
+    const sortedDates = Array.from(allDates).sort();
+    const sortedRepos = filteredRepos.sort((a, b) => b.total_commits - a.total_commits).slice(0, 20);
+
+    if (sortedRepos.length === 0) return;
+
+    const margin = { top: 60, right: 20, bottom: 40, left: 120 };
+    const cellWidth = 12;
+    const cellHeight = 20;
+    const width = Math.max(400, sortedDates.length * cellWidth + margin.left + margin.right);
+    const height = sortedRepos.length * cellHeight + margin.top + margin.bottom;
+
+    const svg = d3.select('#chart-heatmap')
+      .append('svg')
+      .attr('width', width)
+      .attr('height', height);
+
+    const maxCommits = Math.max(...sortedRepos.map(repo => repo.total_commits));
+    const colorScale = d3.scaleSequential(d3.interpolateViridis).domain([0, maxCommits]);
+
+    // Y axis (repo names)
+    svg.selectAll('text.repo-label')
+      .data(sortedRepos)
+      .join('text')
+      .attr('x', margin.left - 10)
+      .attr('y', (d, i) => margin.top + i * cellHeight + cellHeight / 2 + 4)
+      .attr('text-anchor', 'end')
+      .attr('fill', '#8d99aa')
+      .attr('font-size', '11px')
+      .attr('font-family', 'var(--font-mono)')
+      .text(d => d.name.length > 15 ? d.name.slice(0, 12) + '...' : d.name);
+
+    // X axis (months)
+    const monthTicks = new Set();
+    sortedDates.forEach(dateStr => {
+      const d = new Date(dateStr);
+      monthTicks.add(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
+    });
+
+    svg.selectAll('text.month-label')
+      .data(Array.from(monthTicks).sort())
+      .join('text')
+      .attr('x', d => {
+        const [year, month] = d.split('-');
+        const monthDate = new Date(year, month - 1, 1);
+        const idx = sortedDates.findIndex(date => date.startsWith(d));
+        return margin.left + idx * cellWidth + cellWidth / 2;
+      })
+      .attr('y', margin.top - 10)
+      .attr('text-anchor', 'middle')
+      .attr('fill', '#6a7888')
+      .attr('font-size', '10px')
+      .text(d => {
+        const [year, month] = d.split('-');
+        return new Date(year, month - 1).toLocaleDateString('en-US', { month: 'short' });
+      });
+
+    // Cells
+    const cells = [];
+    sortedRepos.forEach((repo, i) => {
+      sortedDates.forEach((dateStr, j) => {
+        const commits = weeklyData[repo.name][dateStr] || 0;
+        if (commits > 0) {
+          cells.push({
+            repo: repo.name,
+            date: dateStr,
+            commits: commits,
+            row: i,
+            col: j
+          });
+        }
+      });
+    });
+
+    svg.selectAll('rect')
+      .data(cells)
+      .join('rect')
+      .attr('class', 'heatmap-cell')
+      .attr('x', d => margin.left + d.col * cellWidth)
+      .attr('y', d => margin.top + d.row * cellHeight)
+      .attr('width', cellWidth - 1)
+      .attr('height', cellHeight - 1)
+      .attr('fill', d => colorScale(d.commits))
+      .on('mouseover', function(event, d) {
+        const html = `
+          <div class="tt-title">${d.repo}</div>
+          <div class="tt-detail">
+            <div>Week of ${formatDate(d.date)}</div>
+            <div>~${fmtNum(d.commits)} commits</div>
+          </div>
+        `;
+        showTooltip(html, event.pageX, event.pageY);
+      })
+      .on('mouseout', hideTooltip);
+
+    // Legend
+    const legendWidth = 120;
+    const legend = svg.append('g')
+      .attr('transform', `translate(${width - legendWidth - 20}, ${height - 30})`);
+
+    const legendGradient = legend.append('defs')
+      .append('linearGradient')
+      .attr('id', 'legend-gradient')
+      .attr('x1', '0%')
+      .attr('x2', '100%');
+
+    legendGradient.append('stop')
+      .attr('offset', '0%')
+      .attr('stop-color', colorScale(0));
+
+    legendGradient.append('stop')
+      .attr('offset', '100%')
+      .attr('stop-color', colorScale(maxCommits));
+
+    legend.append('rect')
+      .attr('width', legendWidth)
+      .attr('height', 12)
+      .style('fill', 'url(#legend-gradient)')
+      .attr('rx', 2);
+
+    legend.append('text')
+      .attr('x', 0)
+      .attr('y', -5)
+      .attr('fill', '#6a7888')
+      .attr('font-size', '10px')
+      .text('0');
+
+    legend.append('text')
+      .attr('x', legendWidth)
+      .attr('y', -5)
+      .attr('text-anchor', 'end')
+      .attr('fill', '#6a7888')
+      .attr('font-size', '10px')
+      .text(fmtNum(maxCommits));
+  };
+
+  // 3. Language Distribution
+  const updateLanguageCharts = () => {
+    // Aggregate languages
+    const langCounts = {};
+    filteredRepos.forEach(repo => {
+      const lang = repo.top_language || 'Unknown';
+      langCounts[lang] = (langCounts[lang] || 0) + repo.total_commits;
+    });
+
+    const sortedLangs = Object.entries(langCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10);
+
+    // Pie Chart
+    const pieContainer = document.getElementById('chart-languages-pie');
+    let pieCanvas = pieContainer.querySelector('canvas');
+    if (!pieCanvas) {
+      pieCanvas = document.createElement('canvas');
+      pieContainer.appendChild(pieCanvas);
+    }
+    pieCanvas.style.maxHeight = '350px';
+
+    const colors = ['#ff6b6b', '#51cf66', '#74c0fc', '#ffa94d', '#cc5de8', '#20c997', '#845ef7', '#ffd43b', '#ff8787', '#63e6be'];
+
+    new Chart(pieCanvas, {
+      type: 'doughnut',
+      data: {
+        labels: sortedLangs.map(([lang]) => lang),
+        datasets: [{
+          data: sortedLangs.map(([, count]) => count),
+          backgroundColor: colors,
+          borderColor: '#0c1018',
+          borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'right',
+            labels: {
+              color: '#8d99aa',
+              usePointStyle: true,
+              pointStyle: 'circle',
+              font: { size: 11 }
+            }
+          },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => {
+                const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                const pct = ((ctx.raw / total) * 100).toFixed(1);
+                return `${ctx.label}: ${fmtNum(ctx.raw)} (${pct}%)`;
+              }
+            }
+          }
+        }
+      }
+    });
+
+    // Bar Chart
+    const barContainer = document.getElementById('chart-languages-bar');
+    let barCanvas = barContainer.querySelector('canvas');
+    if (!barCanvas) {
+      barCanvas = document.createElement('canvas');
+      barContainer.appendChild(barCanvas);
+    }
+    barCanvas.style.maxHeight = '350px';
+
+    new Chart(barCanvas, {
+      type: 'bar',
+      data: {
+        labels: sortedLangs.map(([lang]) => lang),
+        datasets: [{
+          label: 'Commits',
+          data: sortedLangs.map(([, count]) => count),
+          backgroundColor: colors,
+          borderColor: colors,
+          borderWidth: 1
+        }]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            grid: { color: '#1a2232' },
+            ticks: { color: '#6a7888' }
+          },
+          y: {
+            grid: { display: false },
+            ticks: { color: '#8d99aa' }
+          }
+        },
+        plugins: {
+          legend: { display: false }
+        }
+      }
+    });
+  };
+
+  // 4. Top Repos
+  const updateTopRepos = () => {
+    const container = document.getElementById('chart-top-repos');
+    let canvas = container.querySelector('canvas');
+    if (!canvas) {
+      canvas = document.createElement('canvas');
+      container.appendChild(canvas);
+    }
+    canvas.style.maxHeight = '500px';
+
+    const topRepos = filteredRepos
+      .sort((a, b) => b.total_commits - a.total_commits)
+      .slice(0, 15);
+
+    new Chart(canvas, {
+      type: 'bar',
+      data: {
+        labels: topRepos.map(r => r.name),
+        datasets: [{
+          label: 'Commits',
+          data: topRepos.map(r => r.total_commits),
+          backgroundColor: topRepos.map(r => getCategoryColor(r.category)),
+          borderColor: topRepos.map(r => getCategoryColor(r.category)),
+          borderWidth: 1
+        }]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            grid: { color: '#1a2232' },
+            ticks: { color: '#6a7888' }
+          },
+          y: {
+            grid: { display: false },
+            ticks: {
+              color: '#8d99aa',
+              font: { size: 11 }
+            }
+          }
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              afterLabel: (ctx) => {
+                const repo = topRepos[ctx.dataIndex];
+                return [
+                  `Category: ${repo.category}`,
+                  `Language: ${repo.top_language}`,
+                  `Status: ${repo.status}`,
+                  `Last update: ${formatDate(repo.last_date)}`
+                ];
+              }
+            }
+          }
+        }
+      }
+    });
+  };
+
+  // 5. Category Breakdown
+  const updateCategoryCharts = () => {
+    const categoryCounts = {};
+    const categoryCommits = {};
+
+    filteredRepos.forEach(repo => {
+      const cat = repo.category;
+      categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
+      categoryCommits[cat] = (categoryCommits[cat] || 0) + repo.total_commits;
+    });
+
+    // Pie Chart (by repo count)
+    const pieContainer = document.getElementById('chart-categories-pie');
+    let pieCanvas = pieContainer.querySelector('canvas');
+    if (!pieCanvas) {
+      pieCanvas = document.createElement('canvas');
+      pieContainer.appendChild(pieCanvas);
+    }
+    pieCanvas.style.maxHeight = '350px';
+
+    const categories = Object.keys(categoryCounts);
+    const categoryColorsList = categories.map(c => getCategoryColor(c));
+
+    new Chart(pieCanvas, {
+      type: 'pie',
+      data: {
+        labels: categories.map(c => c.charAt(0).toUpperCase() + c.slice(1)),
+        datasets: [{
+          data: categories.map(c => categoryCounts[c]),
+          backgroundColor: categoryColorsList,
+          borderColor: '#0c1018',
+          borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'right',
+            labels: {
+              color: '#8d99aa',
+              usePointStyle: true,
+              pointStyle: 'circle',
+              font: { size: 11 }
+            }
+          },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => {
+                const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                const pct = ((ctx.raw / total) * 100).toFixed(1);
+                return `${ctx.label}: ${ctx.raw} repos (${pct}%)`;
+              }
+            }
+          }
+        }
+      }
+    });
+
+    // Bar Chart (by commits)
+    const barContainer = document.getElementById('chart-categories-bar');
+    let barCanvas = barContainer.querySelector('canvas');
+    if (!barCanvas) {
+      barCanvas = document.createElement('canvas');
+      barContainer.appendChild(barCanvas);
+    }
+    barCanvas.style.maxHeight = '350px';
+
+    new Chart(barCanvas, {
+      type: 'bar',
+      data: {
+        labels: categories.map(c => c.charAt(0).toUpperCase() + c.slice(1)),
+        datasets: [{
+          label: 'Commits',
+          data: categories.map(c => categoryCommits[c]),
+          backgroundColor: categoryColorsList,
+          borderColor: categoryColorsList,
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: { color: '#8d99aa' }
+          },
+          y: {
+            grid: { color: '#1a2232' },
+            ticks: { color: '#6a7888' }
+          }
+        },
+        plugins: {
+          legend: { display: false }
+        }
+      }
+    });
+  };
+
+  // 6. Activity Over Time
+  const updateActivityChart = () => {
+    const container = document.getElementById('chart-activity');
+    let canvas = container.querySelector('canvas');
+    if (!canvas) {
+      canvas = document.createElement('canvas');
+      container.appendChild(canvas);
+    }
+    canvas.style.maxHeight = '400px';
+
+    // Aggregate commits by week
+    const weeklyCommits = {};
+    filteredRepos.forEach(repo => {
+      const start = new Date(repo.first_date);
+      const end = new Date(repo.last_date);
+      const totalCommits = repo.total_commits;
+      const totalDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) || 1;
+      const weeks = Math.ceil(totalDays / 7);
+
+      for (let i = 0; i < weeks; i++) {
+        const weekDate = new Date(start);
+        weekDate.setDate(weekDate.getDate() + i * 7);
+        const weekKey = weekDate.toISOString().slice(0, 10);
+        weeklyCommits[weekKey] = (weeklyCommits[weekKey] || 0) + Math.round(totalCommits / weeks);
+      }
+    });
+
+    const sortedWeeks = Object.keys(weeklyCommits).sort();
+
+    new Chart(canvas, {
+      type: 'line',
+      data: {
+        labels: sortedWeeks.map(d => formatDate(d)),
+        datasets: [{
+          label: 'Weekly Commits',
+          data: sortedWeeks.map(w => weeklyCommits[w]),
+          borderColor: '#51cf66',
+          backgroundColor: 'rgba(81, 207, 102, 0.1)',
+          fill: true,
+          tension: 0.3,
+          pointRadius: 2,
+          pointHoverRadius: 5
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            grid: { color: '#1a2232' },
+            ticks: {
+              color: '#6a7888',
+              maxTicksLimit: 10
+            }
+          },
+          y: {
+            grid: { color: '#1a2232' },
+            ticks: { color: '#6a7888' },
+            beginAtZero: true
+          }
+        },
+        plugins: {
+          legend: {
+            display: true,
+            labels: { color: '#8d99aa' }
+          },
+          tooltip: {
+            mode: 'index',
+            intersect: false
+          }
+        },
+        interaction: {
+          mode: 'nearest',
+          axis: 'x',
+          intersect: false
+        }
+      }
+    });
+  };
+
+  // 7. Repo Health Table
+  const updateHealthTable = () => {
+    const tbody = document.querySelector('#repo-health-table tbody');
+    tbody.innerHTML = '';
+
+    const sortedRepos = [...filteredRepos].sort((a, b) => b.total_commits - a.total_commits);
+
+    sortedRepos.forEach(repo => {
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td class="repo-name">${repo.name}</td>
+        <td class="stat-num">${fmtNum(repo.total_commits)}</td>
+        <td class="stat-num">${formatDate(repo.last_date)}</td>
+        <td><span style="color:${getCategoryColor(repo.category)}">${repo.top_language || 'Unknown'}</span></td>
+        <td><span class="status-badge status-${repo.status}">${repo.status}</span></td>
+      `;
+      tbody.appendChild(row);
+    });
+  };
+
+  // Initial render
+  updateGanttChart();
+  updateHeatmap();
+  updateLanguageCharts();
+  updateTopRepos();
+  updateCategoryCharts();
+  updateActivityChart();
+  updateHealthTable();
+
+})();
+</script>
+</body>
+</html>

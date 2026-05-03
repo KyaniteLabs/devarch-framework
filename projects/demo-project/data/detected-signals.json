@@ -1,0 +1,25 @@
+{
+  "commit_count": 6,
+  "date_range": {
+    "first": "2026-01-01",
+    "last": "2026-01-05"
+  },
+  "active_days": 4,
+  "signals": [],
+  "cluster_summary": [
+    {
+      "start_date": "2026-01-01",
+      "end_date": "2026-01-05",
+      "active_days": 4,
+      "commit_count": 6,
+      "primary_author": "Demo Developer",
+      "dominant_repo": "",
+      "daily_breakdown": {
+        "2026-01-01": 2,
+        "2026-01-02": 1,
+        "2026-01-03": 1,
+        "2026-01-05": 2
+      }
+    }
+  ]
+}

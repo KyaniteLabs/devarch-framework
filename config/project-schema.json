@@ -1,0 +1,239 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://dev-archaeology.example.com/schemas/project-schema.json",
+  "title": "Dev Archaeology Project Configuration",
+  "description": "Schema for project-specific configuration files used by the dev-archaeology forensic mining pipeline. Each project gets a project.json under projects/<name>/.",
+  "type": "object",
+  "required": [
+    "name",
+    "description",
+    "repo_url"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Unique project identifier. Must match the directory name under projects/.",
+      "pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "description": {
+      "type": "string",
+      "description": "Human-readable one-line description of the project.",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "repo_path": {
+      "type": "string",
+      "description": "Absolute local path to the git repository on disk. Used for local data extraction.",
+      "pattern": "^(/|~)"
+    },
+    "repo_url": {
+      "type": "string",
+      "description": "HTTPS URL of the GitHub repository.",
+      "format": "uri",
+      "pattern": "^https://github\\.com/"
+    },
+    "developer": {
+      "type": "object",
+      "description": "Information about the primary developer of the project.",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Full name of the developer.",
+          "minLength": 1
+        },
+        "github": {
+          "type": "string",
+          "description": "GitHub username.",
+          "minLength": 1
+        }
+      }
+    },
+    "timeline": {
+      "type": "object",
+      "description": "Date range of the archaeology analysis window.",
+      "additionalProperties": false,
+      "required": [
+        "start_date",
+        "end_date"
+      ],
+      "properties": {
+        "start_date": {
+          "type": "string",
+          "description": "ISO 8601 date for the start of the analysis period.",
+          "format": "date"
+        },
+        "end_date": {
+          "type": "string",
+          "description": "ISO 8601 date for the end of the analysis period.",
+          "format": "date"
+        },
+        "total_days": {
+          "type": "integer",
+          "description": "Total number of days in the analysis window.",
+          "minimum": 1
+        }
+      }
+    },
+    "overrides": {
+      "type": "object",
+      "description": "Manual overrides for statistics that would otherwise be computed automatically. Use when the automated extraction produces incorrect counts.",
+      "additionalProperties": false,
+      "properties": {
+        "era_count": {
+          "type": "integer",
+          "description": "Number of developmental eras detected in the project history.",
+          "minimum": 1
+        },
+        "total_commits": {
+          "type": "integer",
+          "description": "Total number of commits in the primary repository during the analysis window.",
+          "minimum": 0
+        },
+        "cross_repo_commits": {
+          "type": "integer",
+          "description": "Total commits across all related repositories during the analysis window.",
+          "minimum": 0
+        },
+        "repos_analyzed": {
+          "type": "integer",
+          "description": "Number of GitHub repositories included in the analysis.",
+          "minimum": 0
+        },
+        "sessions_analyzed": {
+          "type": "integer",
+          "description": "Number of AI coding tool sessions extracted and analyzed.",
+          "minimum": 0
+        },
+        "active_days": {
+          "type": "integer",
+          "description": "Number of active development days in the analysis window.",
+          "minimum": 0
+        }
+      }
+    },
+    "visualization": {
+      "type": "object",
+      "description": "Configuration for the archaeology.html visualization output.",
+      "additionalProperties": false,
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Main title displayed in the visualization header.",
+          "minLength": 1
+        },
+        "subtitle": {
+          "type": "string",
+          "description": "Subtitle displayed below the main title.",
+          "minLength": 1
+        },
+        "counters": {
+          "type": "array",
+          "description": "Key statistics displayed as counter widgets in the visualization.",
+          "items": {
+            "type": "object",
+            "required": [
+              "label",
+              "value"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "label": {
+                "type": "string",
+                "description": "Display label for the counter.",
+                "minLength": 1
+              },
+              "value": {
+                "description": "The counter value. Can be a number or a formatted string (e.g. '104K').",
+                "oneOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "^[0-9]+[KMB]?$"
+                  }
+                ]
+              }
+            }
+          },
+          "minItems": 1
+        },
+        "agent_colors": {
+          "type": "object",
+          "description": "Color assignments for each AI agent/collaborator. Keys are agent names, values are hex colors.",
+          "additionalProperties": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "description": "Hex color code (e.g. '#e74c3c')."
+          }
+        },
+        "era_colors": {
+          "type": "object",
+          "description": "Color assignments for each developmental era. Keys are era identifiers (era-NN format), values are hex colors.",
+          "additionalProperties": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "description": "Hex color code (e.g. '#4ade80')."
+          },
+          "propertyNames": {
+            "pattern": "^era-[0-9]{2}$",
+            "description": "Era identifier in era-NN format."
+          }
+        }
+      }
+    },
+    "data_sources": {
+      "type": "object",
+      "description": "Paths and settings for data extraction sources.",
+      "additionalProperties": false,
+      "properties": {
+        "sessions_dir": {
+          "type": "string",
+          "description": "Path to the directory containing AI tool session logs (e.g. Claude Code project directory). Supports ~ for home directory.",
+          "minLength": 1
+        },
+        "youtube_takeout": {
+          "type": "string",
+          "description": "Filename of the YouTube takeout data file relative to the project data directory.",
+          "minLength": 1
+        },
+        "github_api": {
+          "type": "boolean",
+          "description": "Whether to use the GitHub API for repository metadata extraction.",
+          "default": false
+        },
+        "github_pipeline": {
+          "type": "string",
+          "description": "Path to GitHub pipeline logs or repository for pipeline telemetry.",
+          "minLength": 1
+        },
+        "session_archaeology": {
+          "type": "string",
+          "description": "Path to additional session archaeology source data.",
+          "minLength": 1
+        },
+        "dogfood_campaigns": {
+          "type": "string",
+          "description": "Path to dogfood campaign results data.",
+          "minLength": 1
+        },
+        "omx_telemetry": {
+          "type": "string",
+          "description": "Path to OMX telemetry logs.",
+          "minLength": 1
+        },
+        "external": {
+          "type": "object",
+          "description": "Additional project-specific external data source paths.",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

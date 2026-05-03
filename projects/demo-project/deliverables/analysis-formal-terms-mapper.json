@@ -1,0 +1,16 @@
+{
+  "project": "demo-project",
+  "analysis_date": "2026-05-03T06:36:00.963374",
+  "term_dictionary": [],
+  "naming_trajectory": "Project-specific metaphors are increasingly mapped onto formal control-loop, pipeline, and verification vocabulary.",
+  "learning_opportunities": [
+    "Control theory",
+    "Quality-diversity algorithms",
+    "Event sourcing",
+    "Multi-agent evaluation"
+  ],
+  "summary": {
+    "terms_mapped": 0,
+    "high_confidence": 0
+  }
+}
