@@ -1,113 +1,42 @@
-"""Tests for pipeline/core/validate.py validation logic."""
+"""Tests for archaeology audit module — replaces old pipeline.core.validate tests."""
 
-from pipeline.core.validate import MetricValidator
+from pathlib import Path
 
-
-def test_compare_int_valid_values():
-    """Test _compare() with valid int values returns True when equal."""
-    validator = MetricValidator({}, {}, "", {})
-    assert validator._compare(100, 100, "int")
-    assert validator._compare(0, 0, "int")
-    assert validator._compare(-5, -5, "int")
+from archaeology.audit import AuditFinding, check_project_config
 
 
-def test_compare_int_different_values():
-    """Test _compare() with different int values returns False."""
-    validator = MetricValidator({}, {}, "", {})
-    assert not validator._compare(100, 99, "int")
-    assert not validator._compare(0, 1, "int")
+def test_audit_finding_severity_order():
+    """Test that AuditFinding severity levels are distinct."""
+    info = AuditFinding(severity="INFO", code="TEST", message="test", path="x")
+    high = AuditFinding(severity="HIGH", code="TEST", message="test", path="x")
+    critical = AuditFinding(severity="CRITICAL", code="TEST", message="test", path="x")
+    assert critical.severity != info.severity
+    assert high.severity != info.severity
 
 
-def test_compare_float_valid_values():
-    """Test _compare() with valid float values returns True when close."""
-    validator = MetricValidator({}, {}, "", {})
-    assert validator._compare(100.0, 100.05, "float")
-    assert validator._compare(0.0, 0.09, "float")
-    assert validator._compare(50.5, 50.55, "float")
+def test_audit_finding_fields():
+    """Test AuditFinding dataclass has expected fields."""
+    f = AuditFinding(severity="INFO", code="TEST_CODE", message="test msg", path="a/b")
+    assert f.severity == "INFO"
+    assert f.code == "TEST_CODE"
+    assert f.message == "test msg"
+    assert f.path == "a/b"
 
 
-def test_compare_float_different_values():
-    """Test _compare() with different float values returns False."""
-    validator = MetricValidator({}, {}, "", {})
-    assert not validator._compare(100.0, 100.2, "float")
-    assert not validator._compare(0.0, 0.15, "float")
+def test_check_project_config_missing_dir():
+    """Test check_project_config handles missing project directory gracefully."""
+    findings = check_project_config("nonexistent-project", root=Path("/tmp"))
+    assert isinstance(findings, list)
 
 
-def test_compare_non_numeric_strings():
-    """Test _compare() with non-numeric strings returns False, not crash."""
-    validator = MetricValidator({}, {}, "", {})
-    assert not validator._compare("n/a", 100, "int")
-    assert not validator._compare("n/a", 100.0, "float")
-    assert not validator._compare("unknown", "100", "int")
-    assert not validator._compare("", 0, "int")
+def test_audit_finding_optional_detail():
+    """Test AuditFinding optional detail field."""
+    f = AuditFinding(severity="INFO", code="TEST", message="test", detail="extra info")
+    assert f.detail == "extra info"
 
 
-def test_compare_none_values():
-    """Test _compare() with None values returns False gracefully."""
-    validator = MetricValidator({}, {}, "", {})
-    assert not validator._compare(None, 100, "int")
-    assert not validator._compare(100, None, "int")
-    assert not validator._compare(None, None, "int")
-
-
-def test_find_author_in_verified_decimal_strings():
-    """Test _find_author_in_verified() with decimal strings (commas)."""
-    validator = MetricValidator(
-        metrics={},
-        data_json={},
-        verified_stats="| Simon | 1,234 |\n| Liminal | 567 |",
-        commit_eras={}
-    )
-    assert validator._find_author_in_verified("Simon") == 1234
-    assert validator._find_author_in_verified("Liminal") == 567
-
-
-def test_find_author_in_verified_not_found():
-    """Test _find_author_in_verified() returns None when author not found."""
-    validator = MetricValidator(
-        metrics={},
-        data_json={},
-        verified_stats="| Simon | 100 |",
-        commit_eras={}
-    )
-    assert validator._find_author_in_verified("UnknownAuthor") is None
-
-
-def test_find_author_in_verified_malformed_decimal():
-    """Test _find_author_in_verified() with malformed decimal strings."""
-    validator = MetricValidator(
-        metrics={},
-        data_json={},
-        verified_stats="| Simon | not-a-number |",
-        commit_eras={}
-    )
-    assert validator._find_author_in_verified("Simon") is None
-
-
-def test_metric_validator_handles_missing_metrics():
-    """Test MetricValidator handles missing metrics gracefully without crashing."""
-    validator = MetricValidator(
-        metrics={"total_commits": {"value": 3951, "type": "int", "source": "meta"}},
-        data_json={"telemetry_visualizations": {"meta": {"total_commits": 3951}}},
-        verified_stats="",
-        commit_eras={}
-    )
-    results = validator.validate(verbose=False)
-    # Should have one ok result for total_commits
-    assert any(r["status"] == "ok" for r in results if r["metric"] == "total_commits")
-
-
-def test_metric_validator_skips_non_checkable_types():
-    """Test MetricValidator skips dict/string/ratio types."""
-    validator = MetricValidator(
-        metrics={
-            "dict_metric": {"value": {}, "type": "dict"},
-            "string_metric": {"value": "text", "type": "string"},
-            "ratio_metric": {"value": "1:2", "type": "ratio"},
-        },
-        data_json={},
-        verified_stats="",
-        commit_eras={}
-    )
-    results = validator.validate(verbose=False)
-    assert all(r["status"] == "skip" for r in results)
+def test_audit_finding_defaults():
+    """Test AuditFinding with minimal required fields."""
+    f = AuditFinding(severity="INFO", code="TEST", message="test")
+    assert f.path is None
+    assert f.detail is None
