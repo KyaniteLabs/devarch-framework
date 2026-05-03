@@ -139,26 +139,25 @@ def test_builder_unlink_missing_db_does_not_crash(tmp_path):
     assert not db_path.exists()
 
 
-# ── Issue #46: Three-state comparison ────────────────────────────
+# ── Issue #46: Audit value conversion ────────────────────────────
 
-def test_validate_compare_returns_none_on_type_error():
-    from pipeline.core.validate import MetricValidator
-    v = MetricValidator({}, {}, {}, {})
-    result = v._compare("not_a_number", "also_not", "int")
-    assert result is None
-
-
-def test_validate_compare_returns_true_on_match():
-    from pipeline.core.validate import MetricValidator
-    v = MetricValidator({}, {}, {}, {})
-    assert v._compare(100, 100, "int") is True
-    assert v._compare(1.5, 1.5, "float") is True
+def test_audit_as_int_returns_none_on_non_numeric():
+    from archaeology.audit import _as_int
+    assert _as_int("not_a_number") is None
+    assert _as_int(None) is None
 
 
-def test_validate_compare_returns_false_on_mismatch():
-    from pipeline.core.validate import MetricValidator
-    v = MetricValidator({}, {}, {}, {})
-    assert v._compare(100, 200, "int") is False
+def test_audit_as_int_returns_int_on_numeric():
+    from archaeology.audit import _as_int
+    assert _as_int(100) == 100
+    assert _as_int(0) == 0
+    assert _as_int("42") == 42
+
+
+def test_audit_as_int_handles_string_numbers():
+    from archaeology.audit import _as_int
+    assert _as_int("200") == 200
+    assert _as_int("") is None
 
 
 # ── Issue #45: Dynamic color generation ──────────────────────────
