@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -42,7 +43,7 @@ def atomic_write(path: Path | str, content: str, encoding: str = "utf-8") -> Non
     tmp = p.with_suffix(p.suffix + ".tmp")
     try:
         tmp.write_text(content, encoding=encoding)
-        tmp.rename(p)
+        os.replace(tmp, p)
     except BaseException:
         tmp.unlink(missing_ok=True)
         raise

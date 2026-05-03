@@ -1,6 +1,7 @@
 """Tests for architecture audit fixes (issues #32-#46)."""
 
 import json
+import pytest
 import sqlite3
 import tempfile
 from pathlib import Path
@@ -30,6 +31,10 @@ def test_load_json_logs_warning_on_io_error(tmp_path, caplog):
     bad = tmp_path / "unreadable.json"
     bad.write_text("{}", encoding="utf-8")
     bad.chmod(0o000)
+    import sys
+    if sys.platform == "win32":
+        # Windows ignores Unix-style chmod for owner — skip this test
+        pytest.skip("chmod(0o000) does not prevent reads on Windows")
     try:
         with caplog.at_level("WARNING"):
             result = _load_json(bad)
