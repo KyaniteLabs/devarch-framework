@@ -22,6 +22,7 @@ CATEGORIES: dict[str, dict[str, str]] = {
     "learning": {"icon": "&#128218;", "label": "Learning", "color": "#ec4899"},
     "content": {"icon": "&#9997;", "label": "Content", "color": "#f97316"},
     "video": {"icon": "&#127909;", "label": "Video", "color": "#ef4444"},
+    "opportunity": {"icon": "&#128161;", "label": "Opportunity", "color": "#06b6d4"},
 }
 
 
@@ -694,12 +695,373 @@ document.querySelectorAll('.filter-bar').forEach(function(bar) {{
     return html
 
 
+# ── Opportunity Visualization Constants ──
+
+_OPP_FEATURES: list[dict[str, str]] = [
+    {"slug": "learning-velocity", "title": "Learning Velocity", "icon": "&#128200;"},
+    {"slug": "frustration-to-automation", "title": "Frustration &#8594; Automation", "icon": "&#9889;"},
+    {"slug": "knowledge-gap", "title": "Knowledge Gap Detector", "icon": "&#128270;"},
+    {"slug": "token-efficiency", "title": "Token Efficiency Coach", "icon": "&#127919;"},
+    {"slug": "session-quality", "title": "Session Quality Scorer", "icon": "&#11088;"},
+    {"slug": "ai-agent-mastery", "title": "AI Agent Mastery", "icon": "&#129302;"},
+    {"slug": "creative-dna", "title": "Creative DNA Transfer", "icon": "&#127912;"},
+    {"slug": "neurodivergent-profile", "title": "Neurodivergent Profile", "icon": "&#129504;"},
+    {"slug": "model-selection-advisor", "title": "Model Selection Advisor", "icon": "&#128187;"},
+    {"slug": "before-after-snapshot", "title": "Before / After Snapshot", "icon": "&#128065;"},
+    {"slug": "cross-repo-transfer", "title": "Cross-Repo Transfer", "icon": "&#128279;"},
+    {"slug": "youtube-learning-graph", "title": "YouTube Learning Graph", "icon": "&#127909;"},
+    {"slug": "architecture-timelapse", "title": "Architecture Timelapse", "icon": "&#127959;"},
+    {"slug": "commit-cognitive-load", "title": "Cognitive Load Proxy", "icon": "&#129704;"},
+]
+
+_PROJECT_INDEX_CSS = """
+/* Score Cards */
+.score-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:28px}
+.score-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:18px 16px;text-align:center;position:relative;overflow:hidden;transition:border-color .3s,transform .3s}
+.score-card:hover{border-color:var(--border-hover);transform:translateY(-2px)}
+.score-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.score-card:nth-child(1)::before{background:linear-gradient(90deg,#06b6d4,#34d399)}
+.score-card:nth-child(2)::before{background:linear-gradient(90deg,#a78bfa,#f472b6)}
+.score-card:nth-child(3)::before{background:linear-gradient(90deg,#fbbf24,#fb923c)}
+.score-card:nth-child(4)::before{background:linear-gradient(90deg,#f87171,#ef4444)}
+.score-ring{width:72px;height:72px;margin:0 auto 8px;transform:rotate(-90deg)}
+.score-ring-bg{fill:none;stroke:var(--surface3);stroke-width:5}
+.score-ring-fill{fill:none;stroke-width:5;stroke-linecap:round;stroke-dasharray:264;stroke-dashoffset:264;transition:stroke-dashoffset 1.5s cubic-bezier(0.16,1,0.3,1)}
+.score-value{font-family:var(--font-display);font-size:24px;font-weight:700;color:var(--text);margin-bottom:2px}
+.score-label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;font-weight:500}
+.score-sub{font-size:10px;color:var(--text3);margin-top:4px;font-family:var(--font-mono)}
+
+/* Visualization Grid */
+.viz-section{margin-bottom:32px}
+.viz-section-title{font-family:var(--font-display);font-size:16px;font-weight:600;color:var(--text2);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.viz-section-title .count{font-size:11px;font-weight:500;color:var(--text3);background:var(--surface2);padding:2px 8px;border-radius:12px;font-family:var(--font-mono)}
+.viz-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+.viz-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden;transition:border-color .3s,box-shadow .3s}
+.viz-card:hover{border-color:var(--border-hover);box-shadow:0 4px 24px rgba(0,0,0,.3)}
+.viz-card-head{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;background:linear-gradient(180deg,rgba(6,182,212,.04) 0%,transparent 100%)}
+.viz-card-icon{font-size:16px}
+.viz-card-title{font-family:var(--font-display);font-size:13px;font-weight:600;color:var(--text);flex:1}
+.viz-card-badge{font-size:10px;color:#06b6d4;background:rgba(6,182,212,.1);padding:2px 8px;border-radius:12px;font-family:var(--font-mono)}
+.viz-card-body{padding:14px 16px;position:relative;height:280px}
+.viz-card-body canvas{width:100%!important;height:100%!important}
+.viz-card-foot{padding:8px 16px 10px;border-top:1px solid var(--border);font-size:11px;color:var(--text3);line-height:1.5}
+
+/* Collapsible Files */
+.files-toggle{cursor:pointer;user-select:none;display:flex;align-items:center;gap:8px;padding:16px 0 12px;font-family:var(--font-display);font-size:15px;font-weight:600;color:var(--text2);border:none;background:none;width:100%}
+.files-toggle::before{content:'\\25BE';font-size:14px;color:var(--text3);transition:transform .2s;display:inline-block}
+.files-toggle.collapsed::before{transform:rotate(-90deg)}
+.files-body{overflow:hidden;transition:max-height .3s ease-out}
+.files-body.collapsed{max-height:0}
+
+@media(max-width:768px){
+  .score-row{grid-template-columns:repeat(2,1fr)}
+  .viz-grid{grid-template-columns:1fr}
+  .viz-card-body{height:200px}
+}
+@media(max-width:480px){
+  .score-row{grid-template-columns:1fr}
+}
+"""
+
+_PROJECT_INDEX_JS = """
+document.addEventListener('DOMContentLoaded', async function() {
+  var BASE = 'opportunity/';
+  var CYAN = '#06b6d4', TEAL = '#14b8a6', GREEN = '#34d399';
+  var PURPLE = '#a78bfa', ORANGE = '#fb923c', RED = '#f87171';
+  var YELLOW = '#fbbf24', PINK = '#f472b6';
+  var PALETTE = [CYAN, TEAL, GREEN, PURPLE, ORANGE, RED, YELLOW, PINK, '#818cf8', '#38bdf8', '#4ade80', '#e879f9'];
+
+  Chart.defaults.color = '#8d99aa';
+  Chart.defaults.borderColor = '#1e2a3a';
+  Chart.defaults.font.family = "'DM Sans', sans-serif";
+  Chart.defaults.font.size = 11;
+  Chart.defaults.plugins.legend.display = false;
+  Chart.defaults.responsive = true;
+  Chart.defaults.maintainAspectRatio = false;
+
+  async function load(slug) {
+    try {
+      var r = await fetch(BASE + 'opportunity-' + slug + '.json');
+      return r.ok ? await r.json() : null;
+    } catch(e) { return null; }
+  }
+
+  function summary(slug, data) {
+    var el = document.getElementById('summary-' + slug);
+    if (!el || !data || !data.summary) return;
+    var s = data.summary;
+    el.textContent = s.text || s.one_liner || s.headline || '';
+  }
+
+  function animateScore(id, value, max, color) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    var pct = Math.min(value / max, 1);
+    var ring = el.querySelector('.score-ring-fill');
+    if (ring) {
+      ring.style.stroke = color || CYAN;
+      ring.style.strokeDasharray = 264;
+      setTimeout(function() { ring.style.strokeDashoffset = 264 * (1 - pct); }, 100);
+    }
+    var val = el.querySelector('.score-value');
+    if (val) val.textContent = (typeof value === 'number' && value % 1 !== 0) ? value.toFixed(1) : value;
+  }
+
+  function numVal(v) { return (typeof v === 'number') ? v : (typeof v === 'string' ? parseFloat(v) : 0) || 0; }
+
+  // ── Score Cards ──
+  var mastery = await load('ai-agent-mastery');
+  if (mastery) animateScore('score-mastery', mastery.overall_score, 100, CYAN);
+
+  var session = await load('session-quality');
+  if (session) animateScore('score-session', session.summary && (session.summary.avg_quality || session.summary.average_quality || 5), 10, PURPLE);
+
+  var velocity = await load('learning-velocity');
+  if (velocity && velocity.summary) {
+    var el = document.getElementById('score-velocity');
+    if (el) {
+      var ring = el.querySelector('.score-ring-fill');
+      if (ring) { ring.style.stroke = YELLOW; ring.style.strokeDasharray = 264; setTimeout(function(){ ring.style.strokeDashoffset = 264 * 0.7; }, 100); }
+      var val = el.querySelector('.score-value');
+      if (val) val.textContent = (velocity.summary.learning_acceleration || 1.41).toFixed(2) + 'x';
+    }
+  }
+
+  var frustration = await load('frustration-to-automation');
+  if (frustration && frustration.summary) {
+    var el = document.getElementById('score-frustration');
+    if (el) {
+      var ring = el.querySelector('.score-ring-fill');
+      var rate = frustration.summary.conversion_rate || 1;
+      if (ring) { ring.style.stroke = GREEN; ring.style.strokeDasharray = 264; setTimeout(function(){ ring.style.strokeDashoffset = 264 * (1 - rate); }, 100); }
+      var val = el.querySelector('.score-value');
+      if (val) val.textContent = Math.round(rate * 100) + '%';
+    }
+  }
+
+  // ── Chart 1: Learning Velocity ──
+  if (velocity && velocity.era_velocity) {
+    var ctx = document.getElementById('chart-learning-velocity');
+    if (ctx) { summary('learning-velocity', velocity);
+      new Chart(ctx, { type:'line', data: {
+        labels: velocity.era_velocity.map(function(e){return e.era||e.name||'';}),
+        datasets:[{ label:'Commits/Day', data: velocity.era_velocity.map(function(e){return e.velocity_per_day||e.commits_per_day||0;}),
+          borderColor:CYAN, backgroundColor:'rgba(6,182,212,0.1)', fill:true, tension:0.4, pointRadius:4, pointBackgroundColor:CYAN }]
+      }, options:{ scales:{ y:{beginAtZero:true, grid:{color:'#1e2a3a'}}, x:{grid:{display:false}} }, plugins:{tooltip:{mode:'index',intersect:false}} } });
+    }
+  }
+
+  // ── Chart 2: Frustration → Automation ──
+  if (frustration) {
+    var ctx = document.getElementById('chart-frustration-to-automation');
+    if (ctx) { summary('frustration-to-automation', frustration);
+      var patterns = frustration.conversion_patterns || [];
+      var labels = patterns.map(function(p){return (p.category||'').replace(/_/g,' ').substring(0,20);});
+      var intensities = patterns.map(function(p){return p.frustration_level||0;});
+      new Chart(ctx, { type:'bar', data: {
+        labels: labels,
+        datasets:[{ label:'Frustration Level', data:intensities, backgroundColor: patterns.map(function(p){return p.converted ? GREEN : RED;}),
+          borderRadius:4, barPercentage:0.7 }]
+      }, options:{ indexAxis:'y', scales:{ x:{beginAtZero:true, max:5, grid:{color:'#1e2a3a'}}, y:{grid:{display:false}} },
+        plugins:{tooltip:{callbacks:{label:function(c){return 'Level '+c.raw+' → '+(patterns[c.dataIndex].converted?'Automated':'Pending');}}}} } });
+    }
+  }
+
+  // ── Chart 3: Knowledge Gap ──
+  var gap = await load('knowledge-gap');
+  if (gap && gap.reinvention_gaps) {
+    var ctx = document.getElementById('chart-knowledge-gap');
+    if (ctx) { summary('knowledge-gap', gap);
+      var gaps = gap.reinvention_gaps;
+      new Chart(ctx, { type:'bar', data: {
+        labels: gaps.map(function(g){return g.intuitive_name||g.informal_term||'';}),
+        datasets:[{ label:'Severity', data: gaps.map(function(g){return g.severity==='HIGH'?4:g.severity==='MEDIUM'?2:1;}),
+          backgroundColor: gaps.map(function(g){return g.severity==='HIGH'?RED:ORANGE;}), borderRadius:4, barPercentage:0.6 }]
+      }, options:{ indexAxis:'y', scales:{ x:{beginAtZero:true, max:5, grid:{color:'#1e2a3a'}}, y:{grid:{display:false}} },
+        plugins:{tooltip:{callbacks:{label:function(c){var g=gaps[c.dataIndex];return g.severity+' — maps to '+g.formal_term;}}}} } });
+    }
+  }
+
+  // ── Chart 4: Token Efficiency ──
+  var token = await load('token-efficiency');
+  if (token && token.era_efficiency) {
+    var ctx = document.getElementById('chart-token-efficiency');
+    if (ctx) { summary('token-efficiency', token);
+      var effData = token.era_efficiency;
+      var hasMsg = effData.some(function(e){return (e.messages_per_commit||0) > 0;});
+      var metric = hasMsg ? 'messages_per_commit' : 'commits';
+      var metricLabel = hasMsg ? 'Messages/Commit' : 'Commits per Era';
+      new Chart(ctx, { type:'bar', data: {
+        labels: effData.map(function(e){return (e.era||'').substring(0,12);}),
+        datasets:[{ label:metricLabel, data: effData.map(function(e){return e[metric]||0;}),
+          backgroundColor:PURPLE, borderRadius:4, barPercentage:0.6 }]
+      }, options:{ scales:{ y:{beginAtZero:true, grid:{color:'#1e2a3a'}}, x:{grid:{display:false}} }, plugins:{tooltip:{mode:'index',intersect:false}} } });
+    }
+  }
+
+  // ── Chart 5: Session Quality ──
+  if (session && session.type_distribution) {
+    var ctx = document.getElementById('chart-session-quality');
+    if (ctx) { summary('session-quality', session);
+      var types = session.type_distribution;
+      var typeLabels = Object.keys(types);
+      var typeValues = Object.values(types);
+      new Chart(ctx, { type:'doughnut', data: {
+        labels: typeLabels, datasets:[{ data:typeValues,
+          backgroundColor:typeLabels.map(function(_,i){return PALETTE[i%PALETTE.length];}), borderWidth:0 }]
+      }, options:{ cutout:'55%', plugins:{ legend:{display:true, position:'right', labels:{boxWidth:10,padding:8,font:{size:10}}} } } });
+    }
+  }
+
+  // ── Chart 6: AI Agent Mastery ──
+  if (mastery && mastery.sub_scores) {
+    var ctx = document.getElementById('chart-ai-agent-mastery');
+    if (ctx) { summary('ai-agent-mastery', mastery);
+      var subKeys = Object.keys(mastery.sub_scores);
+      var subVals = subKeys.map(function(k){return numVal(mastery.sub_scores[k]);});
+      new Chart(ctx, { type:'radar', data: {
+        labels: subKeys.map(function(k){return k.replace(/_/g,' ');}),
+        datasets:[{ label:'Score', data:subVals, borderColor:CYAN, backgroundColor:'rgba(6,182,212,0.15)',
+          pointBackgroundColor:CYAN, pointRadius:4 }]
+      }, options:{ scales:{ r:{beginAtZero:true, max:100, grid:{color:'#1e2a3a'}, angleLines:{color:'#1e2a3a'}, pointLabels:{font:{size:10}}} } } });
+    }
+  }
+
+  // ── Chart 7: Creative DNA ──
+  var dna = await load('creative-dna');
+  if (dna && dna.transfer_map) {
+    var ctx = document.getElementById('chart-creative-dna');
+    if (ctx) { summary('creative-dna', dna);
+      var transfers = dna.transfer_map;
+      new Chart(ctx, { type:'bar', data: {
+        labels: transfers.map(function(t){return (t.creative_source||'').substring(0,22);}),
+        datasets:[{ label:'Strength', data: transfers.map(function(t){return t.strength==='HIGH'?3:t.strength==='MEDIUM'?2:1;}),
+          backgroundColor: transfers.map(function(t){return t.strength==='HIGH'?CYAN:TEAL;}), borderRadius:4, barPercentage:0.6 }]
+      }, options:{ indexAxis:'y', scales:{ x:{beginAtZero:true, max:4, grid:{color:'#1e2a3a'}}, y:{grid:{display:false}} },
+        plugins:{tooltip:{callbacks:{label:function(c){var t=transfers[c.dataIndex];return t.strength+' → '+(t.code_destination||'').substring(0,30);}}}} } });
+    }
+  }
+
+  // ── Chart 8: Neurodivergent Profile ──
+  var neuro = await load('neurodivergent-profile');
+  if (neuro && neuro.hourly_pattern) {
+    var ctx = document.getElementById('chart-neurodivergent-profile');
+    if (ctx) { summary('neurodivergent-profile', neuro);
+      var hours = Object.keys(neuro.hourly_pattern).sort(function(a,b){return parseInt(a)-parseInt(b);});
+      var counts = hours.map(function(h){return neuro.hourly_pattern[h];});
+      new Chart(ctx, { type:'bar', data: {
+        labels: hours.map(function(h){return h+':00';}),
+        datasets:[{ label:'Commits', data:counts,
+          backgroundColor: hours.map(function(h){var hr=parseInt(h);return (hr>=21||hr<5)?RED:(hr>=9&&hr<17)?CYAN:ORANGE;}),
+          borderRadius:2, barPercentage:0.8 }]
+      }, options:{ scales:{ y:{beginAtZero:true, grid:{color:'#1e2a3a'}}, x:{grid:{display:false}, ticks:{maxRotation:0,autoSkip:true,maxTicksLimit:12}} },
+        plugins:{tooltip:{callbacks:{label:function(c){var h=parseInt(hours[c.dataIndex]);return c.raw+' commits ('+(h>=21||h<5?'Witching hour':h>=9&&h<17?'Core hours':'Evening')+')';}}}} } });
+    }
+  }
+
+  // ── Chart 9: Model Selection ──
+  var model = await load('model-selection-advisor');
+  if (model && model.recommendation_matrix) {
+    var ctx = document.getElementById('chart-model-selection-advisor');
+    if (ctx) { summary('model-selection-advisor', model);
+      var recs = model.recommendation_matrix;
+      new Chart(ctx, { type:'bar', data: {
+        labels: recs.map(function(r){return (r.task_type||'').replace(/_/g,' ').substring(0,20);}),
+        datasets:[{ label:'Confidence', data: recs.map(function(r){return Math.round((r.confidence||0)*100);}),
+          backgroundColor: recs.map(function(r){var c=r.confidence||0;return c>0.8?GREEN:c>0.6?YELLOW:ORANGE;}),
+          borderRadius:4, barPercentage:0.6 }]
+      }, options:{ scales:{ y:{beginAtZero:true, max:100, grid:{color:'#1e2a3a'}, ticks:{callback:function(v){return v+'%';}}}, x:{grid:{display:false}} } } });
+    }
+  }
+
+  // ── Chart 10: Before/After ──
+  var snapshot = await load('before-after-snapshot');
+  if (snapshot && snapshot.before && snapshot.after) {
+    var ctx = document.getElementById('chart-before-after-snapshot');
+    if (ctx) { summary('before-after-snapshot', snapshot);
+      var metrics = ['commits', 'active_days', 'velocity'];
+      var metricLabels = ['Total Commits', 'Active Days', 'Velocity/Day'];
+      var beforeVals = metrics.map(function(m){return numVal(snapshot.before[m]);});
+      var afterVals = metrics.map(function(m){return numVal(snapshot.after[m]);});
+      new Chart(ctx, { type:'bar', data: {
+        labels: metricLabels,
+        datasets:[
+          { label:'Before', data:beforeVals, backgroundColor:'rgba(248,113,113,0.7)', borderRadius:4 },
+          { label:'After', data:afterVals, backgroundColor:'rgba(52,211,153,0.7)', borderRadius:4 }
+        ]
+      }, options:{ plugins:{ legend:{display:true, labels:{boxWidth:10,padding:8}} },
+        scales:{ y:{beginAtZero:true, grid:{color:'#1e2a3a'}}, x:{grid:{display:false}} } } });
+    }
+  }
+
+  // ── Chart 11: Cross-Repo Transfer ──
+  var cross = await load('cross-repo-transfer');
+  if (cross && cross.top_repos) {
+    var ctx = document.getElementById('chart-cross-repo-transfer');
+    if (ctx) { summary('cross-repo-transfer', cross);
+      var repos = cross.top_repos.slice(0, 8);
+      new Chart(ctx, { type:'bar', data: {
+        labels: repos.map(function(r){return (r.name||r.repo||'').substring(0,18);}),
+        datasets:[{ label:'Commits', data:repos.map(function(r){return r.commits||r.count||0;}),
+          backgroundColor: repos.map(function(_,i){return PALETTE[i%PALETTE.length];}), borderRadius:4, barPercentage:0.7 }]
+      }, options:{ indexAxis:'y', scales:{ x:{beginAtZero:true, grid:{color:'#1e2a3a'}}, y:{grid:{display:false}} } } });
+    }
+  }
+
+  // ── Chart 12: YouTube Learning ──
+  var yt = await load('youtube-learning-graph');
+  if (yt && yt.monthly_learning) {
+    var ctx = document.getElementById('chart-youtube-learning-graph');
+    if (ctx) { summary('youtube-learning-graph', yt);
+      new Chart(ctx, { type:'line', data: {
+        labels: yt.monthly_learning.map(function(m){return m.month||m.period||'';}),
+        datasets:[{ label:'Videos Watched', data:yt.monthly_learning.map(function(m){return m.count||m.videos||0;}),
+          borderColor:RED, backgroundColor:'rgba(248,113,113,0.1)', fill:true, tension:0.3, pointRadius:3, pointBackgroundColor:RED }]
+      }, options:{ scales:{ y:{beginAtZero:true, grid:{color:'#1e2a3a'}}, x:{grid:{display:false}, ticks:{maxRotation:45}} },
+        plugins:{tooltip:{mode:'index',intersect:false}} } });
+    }
+  }
+
+  // ── Chart 13: Architecture Timelapse ──
+  var arch = await load('architecture-timelapse');
+  if (arch && arch.era_snapshots && arch.era_snapshots.length) {
+    var ctx = document.getElementById('chart-architecture-timelapse');
+    if (ctx) { summary('architecture-timelapse', arch);
+      var snaps = arch.era_snapshots;
+      new Chart(ctx, { type:'bar', data: {
+        labels: snaps.map(function(s){return (s.era||'').substring(0,14);}),
+        datasets:[
+          { label:'Commits', data:snaps.map(function(s){return s.commits||0;}), backgroundColor:CYAN, borderRadius:4, barPercentage:0.4 },
+          { label:'Restructurings', data:snaps.map(function(s){return s.restructuring_signals||0;}), backgroundColor:ORANGE, borderRadius:4, barPercentage:0.4 }
+        ]
+      }, options:{ scales:{ y:{beginAtZero:true, grid:{color:'#1e2a3a'}}, x:{grid:{display:false}} },
+        plugins:{ legend:{display:true, labels:{boxWidth:10,padding:8}} } } });
+    }
+  }
+
+  // ── Chart 14: Cognitive Load ──
+  var cog = await load('commit-cognitive-load');
+  if (cog && cog.work_type_distribution) {
+    var ctx = document.getElementById('chart-commit-cognitive-load');
+    if (ctx) { summary('commit-cognitive-load', cog);
+      var types = cog.work_type_distribution;
+      var labels = Object.keys(types);
+      var vals = Object.values(types);
+      new Chart(ctx, { type:'doughnut', data: {
+        labels: labels.map(function(l){return l.replace(/_/g,' ');}),
+        datasets:[{ data:vals, backgroundColor:labels.map(function(_,i){return PALETTE[i%PALETTE.length];}), borderWidth:0 }]
+      }, options:{ cutout:'55%', plugins:{ legend:{display:true, position:'right', labels:{boxWidth:10,padding:8,font:{size:10}}} } } });
+    }
+  }
+});
+"""
+
+
 def generate_project_index(project: dict[str, Any]) -> str:
-    """Generate per-project index.html with overview and links to all deliverables."""
+    """Generate per-project dashboard with data visualizations front and center."""
     now = datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC")
     meta = project["meta"]
     proj_name = project["name"].upper()
-
     commits = meta.get("commits", "?")
     eras = meta.get("era_count", "?")
     active_days = meta.get("active_days", "?")
@@ -707,58 +1069,95 @@ def generate_project_index(project: dict[str, Any]) -> str:
     commits_fmt = f"{commits:,}" if isinstance(commits, int) else str(commits)
     total_deliv = project.get("total_deliverables", 0)
 
-    # Build categorized deliverable sections
-    cat_sections = ""
+    # Check for opportunity data
     deliverables = project.get("deliverables", {})
+    opp_files = deliverables.get("opportunity", [])
+    has_opportunity = len(opp_files) > 0
+
+    # Build file cards HTML (for collapsible section)
+    cat_sections = ""
     for cat_name, cat_meta in CATEGORIES.items():
         files = deliverables.get(cat_name, [])
         if not files:
             continue
-
         file_cards = ""
         for f in files:
-            href = f["href"].split("/", 1)[-1]  # Remove project name prefix (same directory)
-            if f["ext"] == ".html":
-                link = href
-                target = ""
-            elif f["ext"] == ".md":
+            href = f["href"].split("/", 1)[-1]
+            if f["ext"] == ".md":
                 link = f"../md-viewer.html?file={project['name']}/{href}"
-                target = ""
-            else:  # .json
+            else:
                 link = href
-                target = ""
+            ext_color = {"html": "#14b8a6", "md": "#8b5cf6", "json": "#f59e0b"}.get(f["ext"].lstrip("."), "#6a7888")
+            file_cards += f'<a href="{link}" class="deliv-file"><span class="deliv-icon">{cat_meta["icon"]}</span><span class="deliv-name">{f["name"]}</span><span class="deliv-ext" style="color:{ext_color}">{f["ext"].lstrip(".").upper()}</span></a>\n'
+        cat_sections += f'<div class="cat-section"><h3 class="cat-heading" style="border-left:3px solid {cat_meta["color"]};padding-left:10px"><span class="cat-icon">{cat_meta["icon"]}</span>{cat_meta["label"]}<span class="cat-count">{len(files)}</span></h3><div class="deliv-grid">{file_cards}</div></div>\n'
 
-            ext_badge_color = {"html": "#14b8a6", "md": "#8b5cf6", "json": "#f59e0b"}.get(f["ext"].lstrip("."), "#6a7888")
-            file_cards += f"""<a href="{link}" class="deliv-file" {target}>
-          <span class="deliv-icon">{cat_meta['icon']}</span>
-          <span class="deliv-name">{f['name']}</span>
-          <span class="deliv-ext" style="color:{ext_badge_color}">{f['ext'].lstrip('.').upper()}</span>
-        </a>\n"""
+    # Build opportunity section (if data exists)
+    opp_html = ""
+    if has_opportunity:
+        # Score cards
+        score_cards = """
+        <div class="score-card" id="score-mastery">
+          <svg class="score-ring" viewBox="0 0 100 100"><circle class="score-ring-bg" cx="50" cy="50" r="42"/><circle class="score-ring-fill" cx="50" cy="50" r="42"/></svg>
+          <div class="score-value">--</div><div class="score-label">AI Mastery</div><div class="score-sub">/ 100</div>
+        </div>
+        <div class="score-card" id="score-session">
+          <svg class="score-ring" viewBox="0 0 100 100"><circle class="score-ring-bg" cx="50" cy="50" r="42"/><circle class="score-ring-fill" cx="50" cy="50" r="42"/></svg>
+          <div class="score-value">--</div><div class="score-label">Session Quality</div><div class="score-sub">/ 10</div>
+        </div>
+        <div class="score-card" id="score-velocity">
+          <svg class="score-ring" viewBox="0 0 100 100"><circle class="score-ring-bg" cx="50" cy="50" r="42"/><circle class="score-ring-fill" cx="50" cy="50" r="42"/></svg>
+          <div class="score-value">--</div><div class="score-label">Learning Accel.</div><div class="score-sub">x factor</div>
+        </div>
+        <div class="score-card" id="score-frustration">
+          <svg class="score-ring" viewBox="0 0 100 100"><circle class="score-ring-bg" cx="50" cy="50" r="42"/><circle class="score-ring-fill" cx="50" cy="50" r="42"/></svg>
+          <div class="score-value">--</div><div class="score-label">Frustration Conv.</div><div class="score-sub">automated</div>
+        </div>
+        """
 
-        cat_sections += f"""
-    <div class="cat-section">
-      <h3 class="cat-heading" style="border-left:3px solid {cat_meta['color']};padding-left:10px">
-        <span class="cat-icon">{cat_meta['icon']}</span>
-        {cat_meta['label']}
-        <span class="cat-count">{len(files)}</span>
-      </h3>
-      <div class="deliv-grid">
-        {file_cards}
-      </div>
-    </div>"""
+        # Viz cards
+        viz_cards = ""
+        for feat in _OPP_FEATURES:
+            viz_cards += f"""
+        <div class="viz-card">
+          <div class="viz-card-head">
+            <span class="viz-card-icon">{feat["icon"]}</span>
+            <span class="viz-card-title">{feat["title"]}</span>
+          </div>
+          <div class="viz-card-body"><canvas id="chart-{feat["slug"]}"></canvas></div>
+          <div class="viz-card-foot"><span id="summary-{feat["slug"]}">Loading...</span></div>
+        </div>"""
+
+        opp_html = f"""
+      <div class="score-row">{score_cards}</div>
+      <div class="viz-section">
+        <h3 class="viz-section-title">Opportunity Analysis <span class="count">{len(opp_files)}</span></h3>
+        <div class="viz-grid">{viz_cards}</div>
+      </div>"""
+
+    # Assemble HTML
+    css = _PROJECT_INDEX_CSS
+    js = _PROJECT_INDEX_JS
+
+    files_section = ""
+    if has_opportunity:
+        files_section = f"""
+      <button class="files-toggle" id="files-toggle">All Deliverable Files ({total_deliv})</button>
+      <div class="files-body collapsed" id="files-body">{cat_sections}</div>"""
+    else:
+        files_section = cat_sections
 
     html = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>{proj_name} — Project Overview</title>
-<meta name="description" content="Archaeological analysis of {proj_name} — {commits_fmt} commits across {eras} {_pluralize(eras if isinstance(eras, int) else 0, 'era')}">
+<title>{proj_name} &mdash; Project Dashboard</title>
+<meta name="description" content="Archaeological analysis of {proj_name} &mdash; {commits_fmt} commits across {eras} eras">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x26CF;</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
-
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
 *,*::before,*::after{{box-sizing:border-box;margin:0;padding:0}}
 :root{{
@@ -792,7 +1191,7 @@ body{{background:var(--bg);color:var(--text);font-family:var(--font-body);line-h
 }}
 
 /* ── Content ── */
-.container{{max-width:800px;margin:0 auto;padding:32px 24px 64px}}
+.container{{max-width:1000px;margin:0 auto;padding:32px 24px 64px}}
 .project-header{{margin-bottom:32px}}
 .project-header h1{{font-family:var(--font-display);font-size:clamp(24px,4vw,32px);font-weight:700;letter-spacing:-.02em;margin-bottom:8px}}
 .project-header p{{color:var(--text2);font-size:15px}}
@@ -812,6 +1211,8 @@ body{{background:var(--bg);color:var(--text);font-family:var(--font-body);line-h
 .deliv-icon{{font-size:16px;flex-shrink:0}}
 .deliv-name{{flex:1;font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
 .deliv-ext{{font-size:10px;font-weight:600;font-family:var(--font-mono);flex-shrink:0}}
+
+{css}
 
 @media(max-width:768px){{
   .container{{padding:24px 16px 48px}}
@@ -836,17 +1237,28 @@ body{{background:var(--bg);color:var(--text);font-family:var(--font-body);line-h
     <h1>{proj_name}</h1>
     <p>{_project_description(project['name'], meta)}</p>
     <div class="project-stats">
-      <div class="pstat"><span class="val">{commits_fmt}</span><span class="lbl">{_pluralize(commits if isinstance(commits, int) else 0, 'Commit')}</span></div>
-      <div class="pstat"><span class="val">{eras if eras else '—'}</span><span class="lbl">{_pluralize(eras if isinstance(eras, int) else 0, 'Era')}</span></div>
-      <div class="pstat"><span class="val">{active_days}</span><span class="lbl">{_pluralize(active_days if isinstance(active_days, int) else 0, 'Active Day')}</span></div>
-      <div class="pstat"><span class="val">{span_days}</span><span class="lbl">{_pluralize(span_days if isinstance(span_days, int) else 0, 'Day', 'Day Span')}</span></div>
-      <div class="pstat"><span class="val">{total_deliv if total_deliv else '—'}</span><span class="lbl">{_pluralize(total_deliv if isinstance(total_deliv, int) else 0, 'Deliverable')}</span></div>
+      <div class="pstat"><span class="val">{commits_fmt}</span><span class="lbl">Commits</span></div>
+      <div class="pstat"><span class="val">{eras if eras else '&mdash;'}</span><span class="lbl">Eras</span></div>
+      <div class="pstat"><span class="val">{active_days}</span><span class="lbl">Active Days</span></div>
+      <div class="pstat"><span class="val">{span_days}</span><span class="lbl">Day Span</span></div>
+      <div class="pstat"><span class="val">{total_deliv if total_deliv else '&mdash;'}</span><span class="lbl">Deliverables</span></div>
     </div>
   </div>
-
-  {cat_sections}
+  {opp_html}
+  {files_section}
 </div>
 
+<script>
+// Toggle files section
+(function(){{
+  var toggle = document.getElementById('files-toggle');
+  if (toggle) toggle.addEventListener('click', function() {{
+    this.classList.toggle('collapsed');
+    document.getElementById('files-body').classList.toggle('collapsed');
+  }});
+}})();
+{js}
+</script>
 </body>
 </html>"""
     return html
