@@ -257,6 +257,118 @@ def _parse_value_chain(project_dir):
     return result
 
 
+def _parse_bcg(project_dir):
+    """Parse BCG-MATRIX.md into structured data."""
+    md_path = project_dir / "deliverables" / "strategy" / "BCG-MATRIX.md"
+    sections = _parse_md_sections(md_path)
+    if not sections:
+        return None
+
+    overview = sections.get("Overview", "")
+    result = {"project": project_dir.name}
+
+    m = re.search(r"Total commits\*\*: (\d+)", overview)
+    if m:
+        result["total_commits"] = int(m.group(1))
+    m = re.search(r"Velocity trend\*\*: (\w+)", overview)
+    if m:
+        result["velocity_trend"] = m.group(1)
+
+    components = []
+    table_text = sections.get("Component Classification", "")
+    for line in table_text.splitlines():
+        if "|" in line and not line.strip().startswith("|-") and not line.strip().startswith("| Component"):
+            cells = [c.strip() for c in line.split("|") if c.strip()]
+            if len(cells) >= 4:
+                components.append({
+                    "component": cells[0],
+                    "commits": cells[1],
+                    "share": cells[2],
+                    "quadrant": cells[3],
+                })
+    result["components"] = components
+
+    for quadrant_key in ("Stars", "Cash Cows", "Question Marks", "Dogs"):
+        section = sections.get(f"{quadrant_key}", "")
+        count_match = re.search(rf"\((\d+)\)", sections.get("Quadrant Analysis", ""))
+        result[quadrant_key.lower().replace(" ", "_")] = _parse_list_items(section)
+
+    result["recommendations"] = _parse_list_items(sections.get("Strategic Recommendations", ""))
+    return result
+
+
+def _parse_ansoff(project_dir):
+    """Parse ANSOFF-MATRIX.md into structured data."""
+    md_path = project_dir / "deliverables" / "strategy" / "ANSOFF-MATRIX.md"
+    sections = _parse_md_sections(md_path)
+    if not sections:
+        return None
+
+    overview = sections.get("Overview", "")
+    result = {"project": project_dir.name}
+
+    m = re.search(r"Primary strategy\*\*: ([\w\s]+)", overview)
+    if m:
+        result["primary_strategy"] = m.group(1).strip()
+    m = re.search(r"Secondary strategy\*\*: ([\w\s]+)", overview)
+    if m:
+        result["secondary_strategy"] = m.group(1).strip()
+
+    scores = {}
+    table_text = sections.get("Quadrant Scores", "")
+    for line in table_text.splitlines():
+        if "|" in line and "Strategy" not in line and not line.strip().startswith("|-"):
+            cells = [c.strip() for c in line.split("|") if c.strip()]
+            if len(cells) >= 2:
+                strategy = cells[0]
+                score_match = re.match(r"(\d+)/100", cells[1])
+                if score_match:
+                    scores[strategy] = int(score_match.group(1))
+    result["scores"] = scores
+
+    result["recommendations"] = _parse_list_items(sections.get("Recommendations", ""))
+    return result
+
+
+def _parse_blue_ocean(project_dir):
+    """Parse BLUE-OCEAN.md into structured data."""
+    md_path = project_dir / "deliverables" / "strategy" / "BLUE-OCEAN.md"
+    sections = _parse_md_sections(md_path)
+    if not sections:
+        return None
+
+    overview = sections.get("Overview", "")
+    result = {"project": project_dir.name}
+
+    m = re.search(r"Average value score\*\*: ([\d.]+)/10", overview)
+    if m:
+        result["avg_value_score"] = float(m.group(1))
+    m = re.search(r"Critical gaps\*\*: (\d+)", overview)
+    if m:
+        result["critical_gaps"] = int(m.group(1))
+
+    factors = []
+    table_text = sections.get("Strategy Canvas", "")
+    for line in table_text.splitlines():
+        if "|" in line and "Value Factor" not in line and not line.strip().startswith("|-"):
+            cells = [c.strip() for c in line.split("|") if c.strip()]
+            if len(cells) >= 2:
+                score_match = re.match(r"(\d+)/10", cells[1])
+                if score_match:
+                    factors.append({"factor": cells[0], "score": int(score_match.group(1))})
+    result["factors"] = factors
+
+    for action in ("Eliminate", "Reduce", "Raise", "Create"):
+        section_key = f"{action} — What to {'stop doing' if action == 'Eliminate' else 'do less of' if action == 'Reduce' else 'do more of' if action == 'Raise' else 'build that doesn'}"
+        section = sections.get(section_key, "")
+        if not section:
+            section = sections.get(action, "")
+        result[action.lower()] = _parse_list_items(section)
+
+    result["recommendations"] = _parse_list_items(sections.get("Recommendations", ""))
+    return result
+
+
 def _get_pipeline_status(project_dir):
     """Get latest pipeline run status from archaeology.db."""
     db_path = project_dir / "data" / "archaeology.db"
@@ -355,6 +467,9 @@ def handle_insights(handler, project_name):
     swot = _parse_swot(pdir)
     wardley = _parse_wardley(pdir)
     value_chain = _parse_value_chain(pdir)
+    bcg = _parse_bcg(pdir)
+    ansoff = _parse_ansoff(pdir)
+    blue_ocean = _parse_blue_ocean(pdir)
     pipeline = _get_pipeline_status(pdir)
     health = _compute_health_score(metrics, swot, wardley, value_chain)
 
@@ -365,6 +480,9 @@ def handle_insights(handler, project_name):
         "swot": swot,
         "wardley": wardley,
         "value_chain": value_chain,
+        "bcg": bcg,
+        "ansoff": ansoff,
+        "blue_ocean": blue_ocean,
         "pipeline": pipeline,
     })
 
@@ -399,6 +517,39 @@ def handle_value_chain(handler, project_name):
     data = _parse_value_chain(pdir)
     if not data:
         return _error_response(handler, f"Value Chain not found for '{project_name}'")
+    _json_response(handler, data)
+
+
+def handle_bcg(handler, project_name):
+    """GET /api/bcg/<project>"""
+    pdir = PROJECTS_DIR / project_name
+    if not pdir.exists():
+        return _error_response(handler, f"Project '{project_name}' not found")
+    data = _parse_bcg(pdir)
+    if not data:
+        return _error_response(handler, f"BCG Matrix not found for '{project_name}'")
+    _json_response(handler, data)
+
+
+def handle_ansoff(handler, project_name):
+    """GET /api/ansoff/<project>"""
+    pdir = PROJECTS_DIR / project_name
+    if not pdir.exists():
+        return _error_response(handler, f"Project '{project_name}' not found")
+    data = _parse_ansoff(pdir)
+    if not data:
+        return _error_response(handler, f"Ansoff Matrix not found for '{project_name}'")
+    _json_response(handler, data)
+
+
+def handle_blue_ocean(handler, project_name):
+    """GET /api/blue-ocean/<project>"""
+    pdir = PROJECTS_DIR / project_name
+    if not pdir.exists():
+        return _error_response(handler, f"Project '{project_name}' not found")
+    data = _parse_blue_ocean(pdir)
+    if not data:
+        return _error_response(handler, f"Blue Ocean analysis not found for '{project_name}'")
     _json_response(handler, data)
 
 
@@ -447,6 +598,9 @@ def _generate_bridge():
         swot = _parse_swot(pdir)
         wardley = _parse_wardley(pdir)
         value_chain = _parse_value_chain(pdir)
+        bcg = _parse_bcg(pdir)
+        ansoff = _parse_ansoff(pdir)
+        blue_ocean = _parse_blue_ocean(pdir)
         pipeline = _get_pipeline_status(pdir)
         health = _compute_health_score(metrics, swot, wardley, value_chain)
 
@@ -463,6 +617,9 @@ def _generate_bridge():
             } if swot else None,
             "wardley_maturity": wardley.get("maturity") if wardley else None,
             "value_chain_margin": value_chain.get("margin_score") if value_chain else None,
+            "bcg_velocity_trend": bcg.get("velocity_trend") if bcg else None,
+            "ansoff_primary": ansoff.get("primary_strategy") if ansoff else None,
+            "blue_ocean_avg_score": blue_ocean.get("avg_value_score") if blue_ocean else None,
             "last_pipeline_status": pipeline.get("status") if pipeline else None,
             "recommendations": (
                 (wardley.get("recommendations", []) if wardley else [])
@@ -477,7 +634,7 @@ def _generate_bridge():
         "cross_repo": {
             "total_repos": len(projects_data),
             "total_commits": sum(p["total_commits"] for p in projects_data.values()),
-            "frameworks_available": ["swot", "wardley", "value-chain"],
+            "frameworks_available": ["swot", "wardley", "value-chain", "bcg", "ansoff", "blue-ocean"],
         },
     }
 
@@ -503,6 +660,9 @@ ROUTES = [
     (r"^/api/swot/(.+)$", handle_swot, True),
     (r"^/api/wardley/(.+)$", handle_wardley, True),
     (r"^/api/value-chain/(.+)$", handle_value_chain, True),
+    (r"^/api/bcg/(.+)$", handle_bcg, True),
+    (r"^/api/ansoff/(.+)$", handle_ansoff, True),
+    (r"^/api/blue-ocean/(.+)$", handle_blue_ocean, True),
     (r"^/api/health-trend/(.+)$", handle_health_trend, True),
 ]
 
