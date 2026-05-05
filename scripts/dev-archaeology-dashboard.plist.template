@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.kyanitelabs.dev-archaeology.dashboard</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/opt/homebrew/bin/python3</string>
+        <string>-m</string>
+        <string>archaeology.cli</string>
+        <string>serve</string>
+        <string>--no-open</string>
+        <string>--port</string>
+        <string>8099</string>
+    </array>
+    <key>WorkingDirectory</key>
+    <string>/Users/simongonzalezdecruz/workspaces/dev-archaeology</string>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+    <key>StandardOutPath</key>
+    <string>/tmp/dev-archaeology-dashboard.log</string>
+    <key>StandardErrorPath</key>
+    <string>/tmp/dev-archaeology-dashboard.err</string>
+</dict>
+</plist>

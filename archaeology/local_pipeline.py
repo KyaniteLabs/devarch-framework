@@ -83,15 +83,44 @@ def read_local_pipeline_status(pipeline_dir: str | Path, repo_name: str) -> Loca
     if not path.exists():
         raise FileNotFoundError(f"Local pipeline latest.json not found: {path}")
     payload = json.loads(path.read_text(encoding="utf-8"))
+
+    # Try to find repo in supervision.missions first (new format)
     target = None
-    for repo in payload.get("repos", []):
-        names = {str(repo.get("name", "")), str(repo.get("full_name", "")), str(repo.get("path", ""))}
-        if repo_name in names or repo_name.endswith("/" + str(repo.get("name", ""))):
-            target = repo
-            break
+    supervision = payload.get("supervision", {})
+    if isinstance(supervision, dict):
+        missions = supervision.get("missions", [])
+        if missions and isinstance(missions, list):
+            for mission in missions:
+                if isinstance(mission, dict):
+                    mission_repo = mission.get("repo", "")
+                    # Match against owner/repo or just repo name
+                    if (mission_repo == repo_name or
+                        mission_repo.endswith("/" + repo_name) or
+                        repo_name.endswith("/" + mission_repo.split("/")[-1])):
+                        target = mission
+                        break
+
+    # Fall back to repos array (old format)
     if target is None:
-        reviewed = ", ".join(str(repo.get("name")) for repo in payload.get("repos", []))
+        for repo in payload.get("repos", []):
+            names = {str(repo.get("name", "")), str(repo.get("full_name", "")), str(repo.get("path", ""))}
+            if repo_name in names or repo_name.endswith("/" + str(repo.get("name", ""))):
+                target = repo
+                break
+
+    if target is None:
+        # Build helpful error message with available repos
+        reviewed_repos = []
+        supervision = payload.get("supervision", {})
+        if isinstance(supervision, dict):
+            missions = supervision.get("missions", [])
+            if missions:
+                reviewed_repos = [m.get("repo", "") for m in missions if isinstance(m, dict)]
+        if not reviewed_repos:
+            reviewed_repos = [repo.get("name", "") for repo in payload.get("repos", [])]
+        reviewed = ", ".join(str(r) for r in reviewed_repos)
         raise ValueError(f"Repo '{repo_name}' not found in latest local pipeline reviewed repos. Reviewed: {reviewed}")
+
     summary = payload.get("summary", {})
     # Normalize issues to dict - pipeline may return list or dict
     raw_issues = target.get("issues")
@@ -99,12 +128,25 @@ def read_local_pipeline_status(pipeline_dir: str | Path, repo_name: str) -> Loca
         issues = {"items": raw_issues, "total": len(raw_issues)}
     else:
         issues = raw_issues or {}
+
+    # Extract repo name from multiple possible fields
+    repo_full_name = (
+        target.get("repo") or  # new format
+        target.get("full_name") or  # old format
+        target.get("path") or
+        target.get("name", "")
+    )
+
+    # Extract health/verdict from mission or repo data
+    repo_health = target.get("health") or target.get("status")
+    repo_verdict = target.get("verdict")
+
     return LocalPipelineStatus(
         run_timestamp=payload.get("run_timestamp"),
         overall_health=summary.get("overall_health"),
-        repo=str(target.get("full_name") or target.get("path") or target.get("name")),
-        repo_health=target.get("health"),
-        repo_verdict=target.get("verdict"),
+        repo=str(repo_full_name),
+        repo_health=repo_health,
+        repo_verdict=repo_verdict,
         issues=issues,
         open_prs=target.get("open_prs"),
         open_issues=target.get("open_issues"),

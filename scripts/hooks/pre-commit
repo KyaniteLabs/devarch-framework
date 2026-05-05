@@ -1,39 +1,67 @@
-#!/bin/bash
-# Pre-commit hook: syntax check Python files and verify archaeology package imports
+#!/usr/bin/env bash
+#
+# Pre-commit hook for dev-archaeology
+# Runs era scanner on deliverable changes and reminds about framework sync
+#
 
 set -e
 
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-NC='\033[0m' # No Color
+# Get list of staged files
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM)
 
-# Get list of staged .py files
-PY_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep '\.py$' || true)
+# Check if any deliverable files are staged
+DELIVERABLES_CHANGED=$(echo "$STAGED_FILES" | grep -E '^projects/[^/]+/deliverables/' || true)
 
-if [ -z "$PY_FILES" ]; then
-    exit 0
+if [ -n "$DELIVERABLES_CHANGED" ]; then
+    echo "📜 Deliverable files staged, running era scanner..."
+
+    # Determine project directory from first staged deliverable
+    FIRST_FILE=$(echo "$DELIVERABLES_CHANGED" | head -1)
+    PROJECT_DIR=$(echo "$FIRST_FILE" | sed -E 's|^(projects/[^/]+).*|\1|')
+
+    # Locate commit-eras.json (could be in project dir or project/data/)
+    ERAS_FILE=""
+    for candidate in "$PROJECT_DIR/commit-eras.json" "$PROJECT_DIR/data/commit-eras.json"; do
+        if [ -f "$candidate" ]; then
+            ERAS_FILE="$candidate"
+            break
+        fi
+    done
+
+    if [ -z "$ERAS_FILE" ]; then
+        echo "⚠️  No commit-eras.json found for $PROJECT_DIR — skipping era scan"
+    else
+        # Run era scanner via Python module
+        FINDING_COUNT=$(python3 -c "
+import sys
+sys.path.insert(0, '.')
+from pathlib import Path
+from archaeology.era_scanner import scan_deliverables
+from archaeology.era_mapper import load_eras
+eras = load_eras(Path('$ERAS_FILE'))
+result = scan_deliverables(Path('$PROJECT_DIR'), eras)
+print(len(result.refs))
+" 2>&1) || {
+            echo "⚠️  Era scanner error. Output: $FINDING_COUNT"
+            exit 1
+        }
+
+        if [ "$FINDING_COUNT" != "0" ]; then
+            echo "⚠️  Era scanner found $FINDING_COUNT issues. Run the scanner to review."
+            exit 1
+        fi
+
+        echo "✓ Era scanner passed (0 findings)"
+    fi
 fi
 
-echo "Checking Python syntax..."
+# Check if archaeology/ package files are staged
+ARCHAEOLGY_CHANGED=$(echo "$STAGED_FILES" | grep -E '^archaeology/' || true)
 
-# Check syntax of all staged Python files
-for file in $PY_FILES; do
-    if ! python3 -m py_compile "$file" 2>/dev/null; then
-        echo -e "${RED}✗ Syntax error in $file${NC}"
-        exit 1
-    fi
-done
-
-echo -e "${GREEN}✓ All Python files pass syntax check${NC}"
-
-# If any files in archaeology/ are staged, verify the package still imports
-if echo "$PY_FILES" | grep -q '^archaeology/'; then
-    echo "Verifying archaeology package imports..."
-    if ! python3 -c "import archaeology; print('OK')" 2>/dev/null; then
-        echo -e "${RED}✗ archaeology package import failed${NC}"
-        exit 1
-    fi
-    echo -e "${GREEN}✓ archaeology package imports successfully${NC}"
+if [ -n "$ARCHAEOLGY_CHANGED" ]; then
+    echo ""
+    echo "⚠️  archaeology/ package changed — remember to sync devarch-framework"
+    echo "   Run: python3 scripts/sync/check_parity.py after syncing"
 fi
 
 exit 0

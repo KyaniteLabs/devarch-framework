@@ -83,9 +83,10 @@ def cascade(
     if data_json.exists() and data_js.exists():
         _mirror_data_js(data_json, data_js, dry_run)
 
-    # Step 5: Fix HTML files
+    # Step 5: Fix HTML files (check both root and visuals/ subdirectory)
     deliverables = project_dir / "deliverables"
-    for html_file in deliverables.glob("*.html"):
+    html_files = list(deliverables.glob("*.html")) + list(deliverables.glob("visuals/*.html"))
+    for html_file in html_files:
         if html_file.name in EXEMPT_FILES:
             continue
         _fix_html_file(html_file, eras, n_eras, dry_run, result)

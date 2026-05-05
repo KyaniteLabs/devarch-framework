@@ -91,7 +91,7 @@ def test_analyze_command_runs_all_six_vectors_for_demo(tmp_path, monkeypatch):
     analyze_result = runner.invoke(main, ["analyze", "demo"])
     assert analyze_result.exit_code == 0, analyze_result.output
 
-    deliverables = tmp_path / "projects" / "demo" / "deliverables"
+    analysis_dir = tmp_path / "projects" / "demo" / "deliverables" / "analysis"
     expected = {
         "analysis-sdlc-gap-finder.json",
         "analysis-ml-pattern-mapper.json",
@@ -100,7 +100,7 @@ def test_analyze_command_runs_all_six_vectors_for_demo(tmp_path, monkeypatch):
         "analysis-source-archaeologist.json",
         "analysis-youtube-correlator.json",
     }
-    assert expected == {path.name for path in deliverables.glob("analysis-*.json")}
+    assert expected == {path.name for path in analysis_dir.glob("analysis-*.json")}
 
 
 def test_export_report_from_demo_analysis(tmp_path, monkeypatch):
@@ -111,7 +111,7 @@ def test_export_report_from_demo_analysis(tmp_path, monkeypatch):
     assert analyze.exit_code == 0, analyze.output
     export = runner.invoke(main, ["export-report", "demo"])
     assert export.exit_code == 0, export.output
-    report = tmp_path / "projects" / "demo" / "deliverables" / "ARCHAEOLOGY-REPORT.md"
+    report = tmp_path / "projects" / "demo" / "deliverables" / "reports" / "ARCHAEOLOGY-REPORT.md"
     text = report.read_text()
     assert "# DEMO ARCHAEOLOGY Archaeology Report" in text
     assert "## Canonical Metrics" in text
@@ -124,7 +124,7 @@ def test_export_report_from_demo_analysis(tmp_path, monkeypatch):
 
     html_export = runner.invoke(main, ["export-report", "demo", "--format", "html"])
     assert html_export.exit_code == 0, html_export.output
-    html_report = tmp_path / "projects" / "demo" / "deliverables" / "ARCHAEOLOGY-REPORT.html"
+    html_report = tmp_path / "projects" / "demo" / "deliverables" / "visuals" / "report.html"
     html = html_report.read_text()
     assert "<!doctype html>" in html
     assert "DEMO ARCHAEOLOGY Archaeology Report" in html

@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Document Viewer — DEV-ARCH</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x26CF;</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#06090f;--surface:#0c1018;--surface2:#141a24;--surface3:#1c2432;
+  --border:#1a2232;--border-hover:#2a3a52;
+  --text:#e8ecf2;--text2:#8d99aa;--text3:#6a7888;
+  --accent:#34d399;
+  --font-display:'Space Grotesk',sans-serif;--font-body:'DM Sans',sans-serif;
+  --font-mono:'JetBrains Mono',monospace;
+  --radius-sm:6px;--radius-md:10px;--radius-lg:16px;
+}
+html{scroll-behavior:smooth;-webkit-font-smoothing:antialiased}
+body{background:var(--bg);color:var(--text);font-family:var(--font-body);line-height:1.65;min-height:100vh}
+
+.site-nav{position:sticky;top:0;z-index:100;background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;display:flex;align-items:center;gap:12px;height:52px;font-family:var(--font-display);backdrop-filter:blur(12px)}
+.site-nav .nav-home{font-weight:700;font-size:14px;letter-spacing:.02em;color:var(--text3);text-decoration:none;padding:4px 10px;border-radius:var(--radius-sm);transition:color .15s,background .15s}
+.site-nav .nav-home:hover{color:var(--text);background:var(--surface2)}
+.site-nav .nav-sep{width:1px;height:24px;background:var(--border)}
+.site-nav .nav-title{font-weight:600;font-size:15px;color:var(--text);letter-spacing:-.01em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.site-nav .nav-meta{margin-left:auto;font-size:11px;color:var(--text3);font-family:var(--font-mono)}
+
+.container{max-width:860px;margin:0 auto;padding:32px 24px 64px}
+
+.loading{text-align:center;padding:80px 24px;color:var(--text3);font-family:var(--font-mono);font-size:14px}
+.loading::after{content:'';display:inline-block;width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin-left:8px;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.error{background:var(--surface);border:1px solid #ef444444;border-radius:var(--radius-md);padding:24px;text-align:center;color:#f87171;font-family:var(--font-mono);font-size:13px}
+
+.md-body{color:var(--text2);line-height:1.8}
+.md-body h1{font-family:var(--font-display);font-size:28px;font-weight:700;color:var(--text);margin:32px 0 16px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+.md-body h2{font-family:var(--font-display);font-size:22px;font-weight:600;color:var(--text);margin:28px 0 12px}
+.md-body h3{font-family:var(--font-display);font-size:18px;font-weight:600;color:var(--text);margin:24px 0 10px}
+.md-body h4{font-family:var(--font-display);font-size:15px;font-weight:600;color:var(--text);margin:20px 0 8px}
+.md-body p{margin:0 0 16px}
+.md-body ul,.md-body ol{margin:0 0 16px;padding-left:24px}
+.md-body li{margin:4px 0}
+.md-body strong{color:var(--text);font-weight:600}
+.md-body a{color:var(--accent);text-decoration:none}
+.md-body a:hover{text-decoration:underline}
+.md-body code{font-family:var(--font-mono);font-size:0.9em;background:var(--surface2);padding:2px 6px;border-radius:3px;color:#34d399}
+.md-body pre{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px;overflow-x:auto;margin:0 0 16px}
+.md-body pre code{background:none;padding:0;font-size:13px;line-height:1.6;color:var(--text2)}
+.md-body blockquote{border-left:3px solid var(--accent);padding:8px 16px;margin:0 0 16px;color:var(--text3);font-style:italic}
+.md-body table{width:100%;border-collapse:collapse;margin:0 0 16px}
+.md-body th,.md-body td{border:1px solid var(--border);padding:8px 12px;text-align:left;font-size:14px}
+.md-body th{background:var(--surface);font-weight:600;color:var(--text)}
+.md-body hr{border:none;border-top:1px solid var(--border);margin:24px 0}
+.md-body img{max-width:100%;border-radius:var(--radius-sm)}
+
+@media(max-width:768px){
+  .container{padding:24px 16px 48px}
+  .site-nav{padding:0 16px}
+  .md-body h1{font-size:22px}
+  .md-body h2{font-size:18px}
+}
+</style>
+</head>
+<body>
+
+<nav class="site-nav">
+  <a href="/" class="nav-home">Home</a>
+  <div class="nav-sep"></div>
+  <span class="nav-title" id="nav-title">Loading...</span>
+  <span class="nav-meta" id="nav-meta"></span>
+</nav>
+
+<div class="container">
+  <div class="loading" id="loading">Loading document</div>
+  <div class="md-body" id="content" style="display:none"></div>
+</div>
+
+<script>
+(function() {
+  var params = new URLSearchParams(window.location.search);
+  var file = params.get('file');
+  var titleEl = document.getElementById('nav-title');
+  var metaEl = document.getElementById('nav-meta');
+  var loadingEl = document.getElementById('loading');
+  var contentEl = document.getElementById('content');
+
+  if (!file) {
+    loadingEl.innerHTML = 'No file specified. Use ?file=path/to/document.md';
+    return;
+  }
+
+  var displayName = file.split('/').pop().replace(/[-_]/g, ' ').replace(/\.\w+$/, '');
+  titleEl.textContent = displayName;
+  document.title = displayName + ' — DEV-ARCH';
+
+  var parts = file.split('/');
+  var backHref = '/';
+  if (parts.length >= 1) backHref = '/' + parts[0] + '/';
+  metaEl.innerHTML = '<a href="' + backHref + '" style="color:var(--text3);text-decoration:none">&larr; back</a>';
+
+  fetch(file)
+    .then(function(r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.text();
+    })
+    .then(function(text) {
+      loadingEl.style.display = 'none';
+      contentEl.style.display = 'block';
+      contentEl.innerHTML = marked.parse(text);
+    })
+    .catch(function(err) {
+      loadingEl.style.display = 'none';
+      contentEl.style.display = 'block';
+      contentEl.innerHTML = '<div class="error">Failed to load: ' + err.message + '<br><br>File: ' + file + '</div>';
+    });
+})();
+</script>
+</body>
+</html>

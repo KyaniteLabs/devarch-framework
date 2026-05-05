@@ -293,10 +293,12 @@ class AnalysisRunner:
         if unknown:
             raise ValueError(f"Unknown analysis vector(s): {', '.join(unknown)}")
         self.deliverables_dir.mkdir(parents=True, exist_ok=True)
+        analysis_dir = self.deliverables_dir / "analysis"
+        analysis_dir.mkdir(parents=True, exist_ok=True)
         for vector_name in target:
             runner_func = runners[vector_name]
             try:
-                output_path = self.deliverables_dir / f"analysis-{vector_name}.json"
+                output_path = analysis_dir / f"analysis-{vector_name}.json"
                 result = runner_func()
                 atomic_write(output_path, json.dumps(result, indent=2, ensure_ascii=False) + "\n")
                 results[vector_name] = str(output_path)

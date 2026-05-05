@@ -1,0 +1,11 @@
+{
+  "generated": "2026-01-05",
+  "source_scope": "sanitized demo fixture",
+  "total_commits": 6,
+  "span_days": 5,
+  "active_days": 4,
+  "peak_day": "2026-01-05",
+  "peak_day_commits": 2,
+  "session_count": 2,
+  "human_messages": 2
+}

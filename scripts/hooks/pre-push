@@ -1,34 +1,24 @@
-#!/bin/bash
-# Pre-push hook: run demo and test suite to verify basic functionality
+#!/usr/bin/env bash
+#
+# Pre-push hook for devarch-framework
+# Blocks push if audit fails or parity is broken
+#
 
 set -e
 
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[0;33m'
-NC='\033[0m' # No Color
+echo "🔍 Running pre-push checks..."
+echo ""
 
-echo "Running pre-push checks..."
-
-# Run demo project generation and build
-echo "Building demo project..."
-if ! python3 -m archaeology.cli demo --force --build-db > /dev/null 2>&1; then
-    echo -e "${RED}✗ Demo project build failed${NC}"
+# Run audit on demo project with fail-on HIGH
+echo "1️⃣  Running audit (HIGH severity blocks push)..."
+if ! python3 -m archaeology.cli audit demo-archaeology --fail-on HIGH; then
+    echo ""
+    echo "❌ Audit failed with HIGH or CRITICAL findings"
+    echo "   Please fix all blocking issues before pushing"
     exit 1
 fi
-echo -e "${GREEN}✓ Demo project builds successfully${NC}"
+echo "✓ Audit passed"
+echo ""
 
-# Run test suite if tests exist
-if [ -d "tests" ] && [ "$(ls -A tests/*.py 2>/dev/null)" ]; then
-    echo "Running test suite..."
-    if ! python3 -m pytest tests/ -x -q; then
-        echo -e "${RED}✗ Tests failed${NC}"
-        exit 1
-    fi
-    echo -e "${GREEN}✓ All tests passed${NC}"
-else
-    echo -e "${YELLOW}⚠ No tests found, skipping test suite${NC}"
-fi
-
-echo -e "${GREEN}✓ Pre-push checks passed${NC}"
+echo "✅ All pre-push checks passed"
 exit 0

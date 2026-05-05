@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>The Portfolio — An Archaeology of Multi-Repo Development</title>
+<meta name="description" content="Cross-repo archaeological analysis — 33 repositories, 2,111 commits across 8 months of development">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x26CF;</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -389,8 +391,14 @@ window.GLOBAL_DATA = {};
   // Initialize counters
   document.getElementById('counter-commits').dataset.target = data.meta.total_commits;
   document.getElementById('counter-repos').dataset.target = data.meta.total_repos;
-  document.getElementById('counter-days').dataset.target = data.meta.total_active_days;
+  const totalActiveDays = data.meta.total_active_days || 0;
+  document.getElementById('counter-days').dataset.target = totalActiveDays;
   document.getElementById('counter-authors').dataset.target = data.meta.total_authors;
+  // Show dash for zero-value counters instead of "0"
+  if (!totalActiveDays) {
+    const daysEl = document.getElementById('counter-days');
+    if (daysEl) daysEl.textContent = '—';
+  }
 
   document.getElementById('hero-subtitle').innerHTML = `An Archaeology of Multi-Repo Development<br>${data.meta.first_date} — ${data.meta.last_date}`;
 
@@ -417,7 +425,7 @@ window.GLOBAL_DATA = {};
           </div>
           <div class="repo-meta">${formatDate(repo.first_date)} — ${formatDate(repo.last_date)}</div>
           <div class="repo-stats">
-            <div class="repo-stat"><strong>${repo.active_days}</strong> active days</div>
+            <div class="repo-stat"><strong>${repo.active_days ?? '—'}</strong> active days</div>
             <div class="repo-stat"><strong>${repo.top_language}</strong> top language</div>
             <div class="repo-stat"><strong>${repo.top_author}</strong> top author</div>
           </div>
