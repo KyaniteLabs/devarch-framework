@@ -70,6 +70,29 @@ Search for modules with these patterns:
 
 5. **Token waste estimation**: For reinvented algorithms, estimate how many LLM tokens were spent debugging vs. what a direct library usage would have required.
 
+<!-- QA-2026-05: Finding 5 - Non-conventional commit taxonomy fallback -->
+6. **Commit taxonomy for non-standard prefixes**:
+   - When >50% of commits lack conventional prefixes, extract leading verbs and cluster:
+     - Exploration: explore, study, try, experiment, investigate
+     - Refinement: tighten, narrow, calibrate, adjust, tune
+     - Convergence: lock, finalize, set, freeze, commit
+     - Correction: repair, fix, reset, revert, correct
+     - Creation: build, add, create, make, construct
+   - Use verb clusters as proxy for intent classification when formal taxonomy is absent
+
+<!-- QA-2026-05: Finding 9 - Scope analysis for conventional commits -->
+7. **Scope extraction from conventional commits**:
+   - When >80% of commits use conventional prefixes perfectly, extract parenthetical scopes (e.g., feat(web):)
+   - First appearance of a new scope = potential new learning area
+   - 50+ file commits in same scope = integration work, not learning
+   - Track scope velocity to identify domain deepening vs. breadth exploration
+
+<!-- QA-2026-05: Finding 12 - Case-insensitive prefix matching -->
+8. **Case-insensitive conventional commit detection**:
+   - Some commits use Feat/, Refactor/, Fix/ instead of feat:, refactor:, fix:
+   - Match commit prefixes case-insensitively to avoid misclassification
+   - Normalize to lowercase before taxonomy assignment
+
 ---
 
 ## Output Schema

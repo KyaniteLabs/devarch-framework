@@ -352,6 +352,43 @@ def generate_master_dashboard(projects: list[dict[str, Any]], api_section_html: 
     owners = set(r["owner"] for r in api_repos) | {"mined"}
     n_networks = len(owners)
 
+    # ── Cross-project chart data ──
+    all_repos_chart = []
+    for p in projects:
+        c = p["meta"].get("commits", 0)
+        if isinstance(c, int) and c > 0:
+            all_repos_chart.append({"name": p["name"].upper(), "commits": c})
+    for r in api_repos:
+        c = r.get("commits", 0)
+        if isinstance(c, int) and c > 0:
+            all_repos_chart.append({"name": r["name"], "commits": c})
+    all_repos_chart.sort(key=lambda x: x["commits"], reverse=True)
+    top_chart = all_repos_chart[:12]
+    chart_repo_labels = json.dumps([r["name"][:22] for r in top_chart])
+    chart_repo_commits = json.dumps([r["commits"] for r in top_chart])
+
+    lang_dist: dict[str, int] = {}
+    for r in api_repos:
+        lang = r.get("language") or "Unknown"
+        lang_dist[lang] = lang_dist.get(lang, 0) + 1
+    chart_lang_labels = json.dumps(list(lang_dist.keys()))
+    chart_lang_counts = json.dumps(list(lang_dist.values()))
+
+    cat_totals: dict[str, int] = {}
+    for p in projects:
+        for cat_name, files in p.get("deliverables", {}).items():
+            cat_totals[cat_name] = cat_totals.get(cat_name, 0) + len(files)
+    cat_display = [CATEGORIES.get(k, {}).get("label", k.title()) for k in cat_totals]
+    chart_cat_labels = json.dumps(cat_display)
+    chart_cat_counts = json.dumps(list(cat_totals.values()))
+    chart_cat_colors = json.dumps([CATEGORIES.get(k, {}).get("color", "#6a7888") for k in cat_totals])
+
+    chart_proj_names = json.dumps([p["name"].upper() for p in projects_sorted])
+    chart_proj_days = [p["meta"].get("active_days", 0) if isinstance(p["meta"].get("active_days"), int) else 0 for p in projects_sorted]
+    chart_proj_eras = [p["meta"].get("era_count", 0) or 0 for p in projects_sorted]
+    chart_proj_days_json = json.dumps(chart_proj_days)
+    chart_proj_eras_json = json.dumps(chart_proj_eras)
+
     # ── API repos section (collapsed by default) ──
     api_section = ""
     if api_repos:
@@ -610,6 +647,16 @@ body{{background:var(--bg);color:var(--text);font-family:var(--font-body);line-h
 .cross-name{{font-family:var(--font-display);font-size:13px;font-weight:600}}
 .cross-path{{font-size:10px;color:var(--text3);font-family:var(--font-mono)}}
 
+/* ── Homepage Visualizations ── */
+.homepage-viz-section{{max-width:1200px;margin:0 auto;padding:0 24px 28px}}
+.homepage-viz-grid{{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px}}
+.homepage-viz-card{{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;transition:border-color .2s}}
+.homepage-viz-card:hover{{border-color:var(--border-hover)}}
+.hviz-head{{padding:14px 18px 0;font-family:var(--font-display);font-size:13px;font-weight:600;color:var(--text2);display:flex;align-items:center;gap:8px}}
+.hviz-head .hviz-icon{{font-size:18px}}
+.hviz-body{{padding:12px 14px 14px;height:280px;position:relative}}
+.hviz-body canvas{{width:100%!important;height:100%!important}}
+
 /* ── Mobile ── */
 @media(max-width:768px){{
   .section-wrap{{padding:0 16px 24px}}
@@ -622,8 +669,10 @@ body{{background:var(--bg);color:var(--text);font-family:var(--font-body);line-h
   .featured-links{{flex-direction:row;flex-wrap:wrap}}
   .global-viz-row{{grid-template-columns:1fr}}
   .api-grid{{grid-template-columns:1fr}}
+  .homepage-viz-grid{{grid-template-columns:1fr}}
 }}
 </style>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 </head>
 <body>
 
@@ -641,6 +690,28 @@ body{{background:var(--bg);color:var(--text);font-family:var(--font-body);line-h
     <div class="hero-stat"><span class="value">{total_commits_fmt}</span><span class="label">{_pluralize(total_commits, 'Commit')}</span></div>
     <div class="hero-stat"><span class="value">{total_deliverables}</span><span class="label">{_pluralize(total_deliverables, 'Deliverable')}</span></div>
     <div class="hero-stat"><span class="value">{n_networks}</span><span class="label">{_pluralize(n_networks, 'Network')}</span></div>
+  </div>
+</div>
+
+<div class="homepage-viz-section">
+  <h3 class="section-heading">Cross-Project Analytics</h3>
+  <div class="homepage-viz-grid">
+    <div class="homepage-viz-card">
+      <div class="hviz-head"><span class="hviz-icon">&#128202;</span>Commit Distribution</div>
+      <div class="hviz-body"><canvas id="chart-repo-commits"></canvas></div>
+    </div>
+    <div class="homepage-viz-card">
+      <div class="hviz-head"><span class="hviz-icon">&#127760;</span>Language Map</div>
+      <div class="hviz-body"><canvas id="chart-languages"></canvas></div>
+    </div>
+    <div class="homepage-viz-card">
+      <div class="hviz-head"><span class="hviz-icon">&#128218;</span>Deliverable Types</div>
+      <div class="hviz-body"><canvas id="chart-deliverables"></canvas></div>
+    </div>
+    <div class="homepage-viz-card">
+      <div class="hviz-head"><span class="hviz-icon">&#128197;</span>Project Activity</div>
+      <div class="hviz-body"><canvas id="chart-activity"></canvas></div>
+    </div>
   </div>
 </div>
 
@@ -688,6 +759,57 @@ document.querySelectorAll('.filter-bar').forEach(function(bar) {{
       }});
     }});
   }});
+}});
+</script>
+
+<script>
+// Cross-project charts
+document.addEventListener('DOMContentLoaded', function() {{
+  Chart.defaults.color = '#8d99aa';
+  Chart.defaults.borderColor = '#1e2a3a';
+  Chart.defaults.font.family = "'DM Sans', sans-serif";
+  Chart.defaults.plugins.legend.display = false;
+  Chart.defaults.responsive = true;
+  Chart.defaults.maintainAspectRatio = false;
+  var CYAN='#06b6d4',TEAL='#14b8a6',GREEN='#34d399',PURPLE='#a78bfa';
+  var ORANGE='#fb923c',RED='#f87171',YELLOW='#fbbf24',PINK='#f472b6';
+  var PALETTE=[CYAN,TEAL,GREEN,PURPLE,ORANGE,RED,YELLOW,PINK,'#818cf8','#38bdf8','#4ade80','#e879f9'];
+
+  // Chart 1: Commit Distribution
+  var ctx1 = document.getElementById('chart-repo-commits');
+  if (ctx1) new Chart(ctx1, {{ type:'bar', data: {{
+    labels: {chart_repo_labels},
+    datasets:[{{ label:'Commits', data:{chart_repo_commits},
+      backgroundColor:function(ctx){{ var i=ctx.dataIndex; var v=ctx.raw; var max={chart_repo_commits}[0]||1;
+        var pct=v/max; return pct>0.6?CYAN:pct>0.3?TEAL:'#4a6680'; }},
+      borderRadius:4, barPercentage:0.7 }}]
+  }}, options:{{ indexAxis:'y', scales:{{ x:{{beginAtZero:true,grid:{{color:'#1e2a3a'}}}}, y:{{grid:{{display:false}}}} }},
+    plugins:{{tooltip:{{callbacks:{{label:function(c){{return c.raw.toLocaleString()+' commits';}}}}}}}} }} }});
+
+  // Chart 2: Language Map
+  var ctx2 = document.getElementById('chart-languages');
+  if (ctx2) new Chart(ctx2, {{ type:'doughnut', data: {{
+    labels:{chart_lang_labels}, datasets:[{{ data:{chart_lang_counts},
+      backgroundColor:{chart_lang_labels}.map(function(_,i){{return PALETTE[i%PALETTE.length];}}), borderWidth:0 }}]
+  }}, options:{{ cutout:'55%', plugins:{{ legend:{{display:true,position:'right',labels:{{boxWidth:10,padding:8,font:{{size:10}}}}}} }} }} }});
+
+  // Chart 3: Deliverable Types
+  var ctx3 = document.getElementById('chart-deliverables');
+  if (ctx3) new Chart(ctx3, {{ type:'bar', data: {{
+    labels:{chart_cat_labels}, datasets:[{{ label:'Count', data:{chart_cat_counts},
+      backgroundColor:{chart_cat_colors}, borderRadius:4, barPercentage:0.6 }}]
+  }}, options:{{ scales:{{ y:{{beginAtZero:true,grid:{{color:'#1e2a3a'}}}}, x:{{grid:{{display:false}}}} }} }} }});
+
+  // Chart 4: Project Activity
+  var ctx4 = document.getElementById('chart-activity');
+  if (ctx4) new Chart(ctx4, {{ type:'bar', data: {{
+    labels:{chart_proj_names},
+    datasets:[
+      {{ label:'Active Days', data:{chart_proj_days_json}, backgroundColor:CYAN, borderRadius:4, barPercentage:0.4 }},
+      {{ label:'Eras', data:{chart_proj_eras_json}, backgroundColor:ORANGE, borderRadius:4, barPercentage:0.4 }}
+    ]
+  }}, options:{{ scales:{{ y:{{beginAtZero:true,grid:{{color:'#1e2a3a'}}}}, x:{{grid:{{display:false}}}} }},
+    plugins:{{ legend:{{display:true, labels:{{boxWidth:10,padding:8}}}} }} }} }});
 }});
 </script>
 </body>

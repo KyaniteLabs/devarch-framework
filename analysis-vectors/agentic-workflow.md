@@ -90,6 +90,30 @@ GROUP BY e.name;
 
 5. **Memory and context usage**: Analyze how the developer uses memory files, CLAUDE.md, and project instructions to shape agent behavior.
 
+<!-- QA-2026-05: Finding 2 - Burst-gap threshold definition -->
+6. **Burst and gap detection**:
+   - Gap: 6+ hours between consecutive commits (12+ hours in multi-author repos)
+   - Burst: 2+ commits within 4 hours
+   - Use these thresholds to identify work sessions and productivity patterns
+
+<!-- QA-2026-05: Finding 4 - MER proxy formula -->
+7. **MER proxy for session-less analysis**:
+   - When session logs are unavailable, compute MER_proxy = total_commits / co_authored_commits
+   - Mark confidence as LOW — this is a directional signal, not a substitute for full MER calculation
+   - Use only when true MER (session-based) cannot be computed
+
+<!-- QA-2026-05: Finding 8 - Batch merge detection -->
+8. **Batch merge identification**:
+   - 3+ commits from same author within 60 seconds = batch merge
+   - Count as 1 logical commit for velocity/burst calculations
+   - Separate batch activity from organic development patterns
+
+<!-- QA-2026-05: Finding 10 - Multi-tool MER decomposition -->
+9. **Multi-tool MER decomposition**:
+   - When co-authored commits reference multiple AI tools, compute MER per tool separately
+   - Flag confidence as LOW when sample size per tool is <50 commits
+   - This reveals which tools drive true autonomy vs. which are used for narrower tasks
+
 ---
 
 ## Output Schema

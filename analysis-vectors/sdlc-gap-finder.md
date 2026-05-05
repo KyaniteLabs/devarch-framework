@@ -86,6 +86,13 @@ ORDER BY date;
 
 5. **ROI calculation**: ROI = Impact / Effort. Higher = better investment.
 
+<!-- QA-2026-05: Finding 6 - Creative iteration exception for frustration heuristics -->
+6. **Creative flow exception**:
+   - Do NOT flag high modification counts on visual/design files as frustration
+   - Creative iteration on UI/UX, styling, or visual assets is normal design work
+   - Exclude file extensions: .css, .scss, .svg, .png, .jpg, .design, .fig, .sketch
+   - Only flag frustration when modifications exceed expected iteration for the file type
+
 ---
 
 ## Output Schema
