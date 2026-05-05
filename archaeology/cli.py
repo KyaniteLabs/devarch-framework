@@ -288,6 +288,34 @@ def analyze(project_name, vectors, prompts, verbose):
         raise click.exceptions.Exit(1)
 
 
+@main.command()
+@click.argument("project_name")
+@click.option("--analyzers", "-a", multiple=True, help="Specific analyzer(s) to run (default: all 14)")
+@click.option("--verbose", "-v", is_flag=True, help="Show detailed output")
+def opportunity(project_name, analyzers, verbose):
+    """Run all 14 opportunity analyzers against project data."""
+    from .opportunity_analyzers import OpportunityAnalyzer
+
+    target = list(analyzers) if analyzers else None
+    project_dir = _project_dir(project_name)
+    if not os.path.isdir(project_dir):
+        click.echo(f"Project '{project_name}' not found", err=True)
+        raise click.exceptions.Exit(1)
+
+    click.echo(f"Running opportunity analyzers for '{project_name}'")
+    if target:
+        click.echo(f"Analyzers: {', '.join(target)}")
+
+    runner = OpportunityAnalyzer(project_name, project_dir, verbose=verbose)
+    results = runner.run_all(analyzers=target)
+
+    ok = sum(1 for v in results.values() if v == "OK")
+    err = sum(1 for v in results.values() if v.startswith("ERROR"))
+    click.echo(f"\n  {ok} OK, {err} errors out of {len(results)} analyzers")
+    if err:
+        raise click.exceptions.Exit(1)
+
+
 @main.command("public-case-study")
 @click.option("--output", "output_dir", default="public-case-study", help="Output directory for the sanitized public case study")
 @click.option("--project", "project_name", default="demo-archaeology", help="Temporary/generated sanitized demo project name")
@@ -548,17 +576,17 @@ def cascade(project_name, dry_run, skip_mine):
         if not repo_path or not os.path.isdir(repo_path):
             click.echo(f"  SKIP: repo_path not found ({repo_path}). Use --skip-mine to skip mining.")
         else:
-            click.echo(f"\n[1/6] Mining git data from {repo_path}...")
+            click.echo(f"\n[1/7] Mining git data from {repo_path}...")
             csv_path = data_dir / "github-commits.csv"
             count = extract_git_log(repo_path, str(csv_path))
             click.echo(f"  Extracted {count} commits")
             stats_path = data_dir / "github-commits-with-stats.txt"
             extract_git_log_with_stats(repo_path, str(stats_path))
     else:
-        click.echo(f"\n[1/6] Mining — SKIPPED (--skip-mine)")
+        click.echo(f"\n[1/7] Mining — SKIPPED (--skip-mine)")
 
     # ── Step 2: Build database ──
-    click.echo(f"\n[2/6] Building database...")
+    click.echo(f"\n[2/7] Building database...")
     db_path = data_dir / "archaeology.db"
     cmd = [sys.executable, "-m", "archaeology.db.builder",
            "--project-root", str(project_dir)]
@@ -569,14 +597,14 @@ def cascade(project_name, dry_run, skip_mine):
         click.echo(f"  Build failed: {result.stderr}", err=True)
 
     # ── Step 3: Detect signals ──
-    click.echo(f"\n[3/6] Detecting signals...")
+    click.echo(f"\n[3/7] Detecting signals...")
     sig_result = detect_signals(project_name)
     n_signals = len(sig_result.get("signals", []))
     n_clusters = len(sig_result.get("cluster_summary", []))
     click.echo(f"  {n_signals} signals across {n_clusters} clusters")
 
     # ── Step 4: Era cascade ──
-    click.echo(f"\n[4/6] Running era cascade...")
+    click.echo(f"\n[4/7] Running era cascade...")
     if not eras_path.exists():
         click.echo(f"  ERROR: No commit-eras.json found at {eras_path}", err=True)
         sys.exit(1)
@@ -591,7 +619,7 @@ def cascade(project_name, dry_run, skip_mine):
     click.echo(f"  Stale refs remaining: {cascade_result.stale_refs_remaining}")
 
     # ── Step 5: Sync derived deliverables ──
-    click.echo(f"\n[5/6] Syncing derived deliverables...")
+    click.echo(f"\n[5/7] Syncing derived deliverables...")
     sync_script = Path(__file__).parent.parent / "scripts" / "sync" / "sync_derived_deliverables.py"
     if sync_script.exists():
         sync_cmd = [sys.executable, str(sync_script)]
@@ -603,11 +631,19 @@ def cascade(project_name, dry_run, skip_mine):
         click.echo("  SKIP: sync script not found")
 
     # ── Step 6: Audit ──
-    click.echo(f"\n[6/6] Running audit...")
+    click.echo(f"\n[6/7] Running audit...")
     from .audit import has_blocking_findings, run_audit, summarize
     findings = run_audit(project_name, root=Path.cwd())
     summary = summarize(findings)
     blocking = [f for f in findings if f.severity in ("CRITICAL", "HIGH")]
+
+    # ── Step 7: Opportunity analyzers ──
+    click.echo(f"\n[7/7] Running opportunity analyzers...")
+    from .opportunity_analyzers import OpportunityAnalyzer
+    opp_runner = OpportunityAnalyzer(project_name, str(project_dir), verbose=False)
+    opp_results = opp_runner.run_all()
+    opp_ok = sum(1 for v in opp_results.values() if v == "OK")
+    click.echo(f"  {opp_ok}/{len(opp_results)} opportunity analyzers OK")
 
     if blocking:
         click.echo(f"  FAIL: {len(blocking)} HIGH/CRITICAL findings")

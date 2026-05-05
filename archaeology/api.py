@@ -635,6 +635,13 @@ def _generate_bridge():
             "total_repos": len(projects_data),
             "total_commits": sum(p["total_commits"] for p in projects_data.values()),
             "frameworks_available": ["swot", "wardley", "value-chain", "bcg", "ansoff", "blue-ocean"],
+            "opportunity_features": [
+                "learning-velocity", "frustration-to-automation", "knowledge-gap",
+                "token-efficiency", "session-quality", "ai-agent-mastery",
+                "creative-dna", "neurodivergent-profile", "model-selection-advisor",
+                "before-after-snapshot", "cross-repo-transfer", "youtube-learning-graph",
+                "architecture-timelapse", "commit-cognitive-load",
+            ],
         },
     }
 
@@ -646,6 +653,83 @@ def generate_bridge_file():
     BRIDGE_PATH.write_text(json.dumps(bridge, indent=2, default=str) + "\n", encoding="utf-8")
     print(f"Bridge generated: {len(bridge['projects'])} projects → {BRIDGE_PATH}")
     return len(bridge["projects"])
+
+
+# ── Opportunity endpoints ────────────────────────────────────────
+
+OPPORTUNITY_FEATURES = [
+    "learning-velocity",
+    "frustration-to-automation",
+    "knowledge-gap",
+    "token-efficiency",
+    "session-quality",
+    "ai-agent-mastery",
+    "creative-dna",
+    "neurodivergent-profile",
+    "model-selection-advisor",
+    "before-after-snapshot",
+    "cross-repo-transfer",
+    "youtube-learning-graph",
+    "architecture-timelapse",
+    "commit-cognitive-load",
+]
+
+
+def _load_opportunity(project_name, feature):
+    """Load a single opportunity analysis JSON."""
+    path = PROJECTS_DIR / project_name / "deliverables" / "opportunity" / f"opportunity-{feature}.json"
+    return _load_json(path)
+
+
+def handle_opportunity_feature(handler, project_name, feature):
+    """GET /api/opportunity/<feature>/<project>"""
+    if feature not in OPPORTUNITY_FEATURES:
+        return _error_response(handler, f"Unknown opportunity feature: {feature}", 404)
+    pdir = PROJECTS_DIR / project_name
+    if not pdir.exists():
+        return _error_response(handler, f"Project '{project_name}' not found")
+    data = _load_opportunity(project_name, feature)
+    if not data:
+        return _error_response(handler, f"Opportunity '{feature}' not generated for '{project_name}'", 404)
+    _json_response(handler, data)
+
+
+def handle_opportunity_all(handler, project_name):
+    """GET /api/opportunity/all/<project> — All 14 opportunity analyses."""
+    pdir = PROJECTS_DIR / project_name
+    if not pdir.exists():
+        return _error_response(handler, f"Project '{project_name}' not found")
+    results = {}
+    for feature in OPPORTUNITY_FEATURES:
+        data = _load_opportunity(project_name, feature)
+        results[feature] = data
+    _json_response(handler, {
+        "project": project_name,
+        "features": OPPORTUNITY_FEATURES,
+        "data": results,
+        "generated_at": datetime.now().isoformat(),
+    })
+
+
+def handle_opportunity_index(handler, project_name):
+    """GET /api/opportunity/<project> — Index of available features with status."""
+    pdir = PROJECTS_DIR / project_name
+    if not pdir.exists():
+        return _error_response(handler, f"Project '{project_name}' not found")
+    available = []
+    for feature in OPPORTUNITY_FEATURES:
+        data = _load_opportunity(project_name, feature)
+        available.append({
+            "feature": feature,
+            "available": data is not None,
+            "analysis_type": data.get("analysis_type") if data else None,
+        })
+    _json_response(handler, {
+        "project": project_name,
+        "total_features": len(OPPORTUNITY_FEATURES),
+        "available_count": sum(1 for f in available if f["available"]),
+        "features": available,
+    })
 
 
 # ── Router ─────────────────────────────────────────────────────
@@ -664,6 +748,23 @@ ROUTES = [
     (r"^/api/ansoff/(.+)$", handle_ansoff, True),
     (r"^/api/blue-ocean/(.+)$", handle_blue_ocean, True),
     (r"^/api/health-trend/(.+)$", handle_health_trend, True),
+    # Opportunity endpoints (14 features) — specific routes FIRST, generic LAST
+    (r"^/api/opportunity/all/(.+)$", lambda h, p: handle_opportunity_all(h, p), True),
+    (r"^/api/opportunity/learning-velocity/(.+)$", lambda h, p: handle_opportunity_feature(h, p, "learning-velocity"), True),
+    (r"^/api/opportunity/frustration-to-automation/(.+)$", lambda h, p: handle_opportunity_feature(h, p, "frustration-to-automation"), True),
+    (r"^/api/opportunity/knowledge-gap/(.+)$", lambda h, p: handle_opportunity_feature(h, p, "knowledge-gap"), True),
+    (r"^/api/opportunity/token-efficiency/(.+)$", lambda h, p: handle_opportunity_feature(h, p, "token-efficiency"), True),
+    (r"^/api/opportunity/session-quality/(.+)$", lambda h, p: handle_opportunity_feature(h, p, "session-quality"), True),
+    (r"^/api/opportunity/ai-agent-mastery/(.+)$", lambda h, p: handle_opportunity_feature(h, p, "ai-agent-mastery"), True),
+    (r"^/api/opportunity/creative-dna/(.+)$", lambda h, p: handle_opportunity_feature(h, p, "creative-dna"), True),
+    (r"^/api/opportunity/neurodivergent-profile/(.+)$", lambda h, p: handle_opportunity_feature(h, p, "neurodivergent-profile"), True),
+    (r"^/api/opportunity/model-selection-advisor/(.+)$", lambda h, p: handle_opportunity_feature(h, p, "model-selection-advisor"), True),
+    (r"^/api/opportunity/before-after-snapshot/(.+)$", lambda h, p: handle_opportunity_feature(h, p, "before-after-snapshot"), True),
+    (r"^/api/opportunity/cross-repo-transfer/(.+)$", lambda h, p: handle_opportunity_feature(h, p, "cross-repo-transfer"), True),
+    (r"^/api/opportunity/youtube-learning-graph/(.+)$", lambda h, p: handle_opportunity_feature(h, p, "youtube-learning-graph"), True),
+    (r"^/api/opportunity/architecture-timelapse/(.+)$", lambda h, p: handle_opportunity_feature(h, p, "architecture-timelapse"), True),
+    (r"^/api/opportunity/commit-cognitive-load/(.+)$", lambda h, p: handle_opportunity_feature(h, p, "commit-cognitive-load"), True),
+    (r"^/api/opportunity/(.+)$", lambda h, p: handle_opportunity_index(h, p), True),
 ]
 
 
