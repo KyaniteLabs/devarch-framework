@@ -42,11 +42,20 @@ def export_markdown_report(project_name: str, project_root: str | Path, output_p
     """Export a concise Markdown report from canonical metrics + analysis JSON."""
     project_root = Path(project_root)
     deliverables = project_root / "deliverables"
+    analysis_dir = deliverables / "analysis"
     data_dir = project_root / "data"
     project = _load_json(project_root / "project.json") or {}
     canonical = _load_json(deliverables / "canonical-metrics.json") or {}
     eras = _load_json(data_dir / "commit-eras.json") or {}
-    analyses = {name.replace("analysis-", "").replace(".json", ""): _load_json(deliverables / name) for name in ANALYSIS_FILES}
+    # Look for analysis files in analysis/ subdirectory first, then fall back to deliverables root
+    analysis_search = [analysis_dir, deliverables]
+    analyses = {}
+    for name in ANALYSIS_FILES:
+        for search_dir in analysis_search:
+            loaded = _load_json(search_dir / name)
+            if loaded:
+                analyses[name.replace("analysis-", "").replace(".json", "")] = loaded
+                break
 
     title = project.get("visualization", {}).get("title") or project.get("name") or project_name
     out = []
@@ -204,7 +213,7 @@ def export_html_report(project_name: str, project_root: str | Path, output_path:
     project = _load_json(project_root / "project.json") or {}
     title = project.get("visualization", {}).get("title") or project.get("name") or project_name
     if output_path is None:
-        output_path = deliverables / "ARCHAEOLOGY-REPORT.html"
+        output_path = deliverables / "visuals" / "report.html"
     output = Path(output_path)
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(_markdown_to_html(markdown, f"{title} Archaeology Report"), encoding="utf-8")

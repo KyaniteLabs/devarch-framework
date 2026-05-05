@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>{{PROJECT_NAME}} — An Archaeology of AI Collaboration</title>
+<meta name="description" content="Archaeological analysis of {{PROJECT_NAME}} — {{TOTAL_COMMITS}} commits across {{ERA_COUNT}} eras">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x26CF;</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -197,6 +199,9 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
   .chapter{padding:3rem 1.25rem}
   .chart-grid{grid-template-columns:1fr}
   .benchmark-label{min-width:140px;font-size:0.8rem}
+  .site-nav{padding:0 12px}
+  .site-nav .nav-title{font-size:13px}
+  .site-nav .nav-link{font-size:11px;padding:3px 6px}
   .benchmark-item{flex-direction:column;align-items:flex-start;gap:0.375rem}
   .benchmark-label{text-align:left;min-width:auto}
 }
@@ -233,10 +238,38 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
 ::-webkit-scrollbar-track{background:var(--bg)}
 ::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:4px}
 ::-webkit-scrollbar-thumb:hover{background:var(--border-hover)}
+
+/* Nav */
+.site-nav{position:sticky;top:0;z-index:100;background:rgba(12,16,24,0.85);border-bottom:1px solid var(--border);padding:0 24px;display:flex;align-items:center;gap:12px;height:52px;font-family:var(--font-display);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+.site-nav .nav-title{font-weight:600;font-size:15px;color:var(--text);letter-spacing:-0.01em}
+.site-nav .nav-sep{width:1px;height:24px;background:var(--border)}
+.site-nav .nav-links{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none}
+.site-nav .nav-links::-webkit-scrollbar{display:none}
+.site-nav .nav-link{font-weight:400;font-size:12px;color:var(--text3);text-decoration:none;padding:4px 10px;border-radius:var(--radius-sm);transition:color .15s,background .15s;white-space:nowrap}
+.site-nav .nav-link:hover{color:var(--text);background:var(--surface2)}
+.site-nav .nav-link.active{color:var(--claude);background:rgba(81,207,102,0.08)}
 </style>
 </head>
 <body>
 <a href="#main-content" class="skip-link">Skip to main content</a>
+
+<!-- Nav -->
+<nav class="site-nav">
+  <span class="nav-title">{{PROJECT_NAME}}</span>
+  <div class="nav-sep"></div>
+  <div class="nav-links">
+    <a href="#ch-timeline" class="nav-link">Timeline</a>
+    <a href="#ch-rhythm" class="nav-link">Rhythm</a>
+    <a href="#ch-architecture" class="nav-link">Architecture</a>
+    <a href="#ch-emotional" class="nav-link">Emotional Arc</a>
+    <a href="#ch-patterns" class="nav-link">Patterns</a>
+    <a href="#ch-learning" class="nav-link">Learning</a>
+    <a href="#ch-voice" class="nav-link">Voice</a>
+    <a href="#ch-universe" class="nav-link">Universe</a>
+    <a href="#ch-eras" class="nav-link">Eras</a>
+    <a href="#ch-benchmarks" class="nav-link">Benchmarks</a>
+  </div>
+</nav>
 
 <!-- Hero -->
 <header class="hero reveal">
@@ -286,7 +319,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
   <div class="chart-grid">
     <div class="chart-box" data-era-range="1-10" id="chart-commit-timeline"><div class="chart-title">Commits per Day</div></div>
     <div class="chart-box" data-era-range="1-10" id="chart-loc-growth"><div class="chart-title">Lines of Code Growth</div></div>
-    <div class="chart-box" data-era-range="1-10" style="grid-column:1/-1" id="chart-era-map"><div class="chart-title">Era Map — 10 Chapters of Development</div></div>
+    <div class="chart-box" data-era-range="1-10" style="grid-column:1/-1" id="chart-era-map"><div class="chart-title">Era Map — Development Chapters</div></div>
   </div>
 </section>
 
@@ -353,7 +386,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
     <div class="chart-box" style="grid-column:1/-1" id="chart-learning-arc"><div class="chart-title">The 3-Year Learning Arc — Monthly AI Video Consumption (2023–2026)</div></div>
     <div class="chart-box" style="grid-column:1/-1" id="chart-topic-evolution"><div class="chart-title">Topic Evolution — How Viewing Focus Shifted Before and During the Build</div></div>
     <div class="chart-box" style="grid-column:1/-1" id="chart-creator-clusters"><div class="chart-title">Creator Influence Map — Who Shaped What Was Built</div></div>
-    <div class="chart-box" style="grid-column:1/-1" id="chart-learning-build"><div class="chart-title">Learn-Build Correlation — AI Videos vs. Your Commits During the 34-Day Sprint</div></div>
+    <div class="chart-box" style="grid-column:1/-1" id="chart-learning-build"><div class="chart-title">Learn-Build Correlation — AI Videos vs. Project Commits During the Sprint</div></div>
     <div class="chart-box" style="grid-column:1/-1" id="chart-search-timeline"><div class="chart-title">The Search That Shaped the Build — Active Learning Queries vs. Passive Video Consumption</div></div>
   </div>
 </section>
@@ -384,7 +417,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
 
 <!-- Chapter: Eras -->
 <section id="ch-eras" class="chapter reveal">
-  <h2><span class="era-dot" style="background:var(--era10)"></span>The Ten Eras</h2>
+  <h2><span class="era-dot" style="background:var(--era10)"></span>The Development Eras</h2>
   <p class="chapter-sub">Each era a chapter — from seed to forge</p>
   <div class="era-cards" id="era-cards-container"></div>
 </section>
@@ -404,7 +437,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
 <!-- Footer -->
 <footer class="footer reveal">
   <h3>Methodology</h3>
-  <p>Data mined from git history (675 commits), Claude Code session logs (58 sessions, 920 human messages) and GitHub API (50 repos). Visualization built with D3.js v7, Chart.js v4, d3-sankey. All data embedded inline — this file is fully self-contained.</p>
+  <p>Data mined from git history, AI tool session logs, and GitHub API. Visualization built with D3.js v7, Chart.js v4, d3-sankey. Data loaded from project JSON files.</p>
   <p style="margin-top:1rem">Generated by Development Archaeology.</p>
 </footer>
 
@@ -628,11 +661,29 @@ function initSparklines() {
   drawSparkline('spark-featfix', [ct.feat || 0, ct.fix || 0, ct.docs || 0, ct.refactor || 0, ct.test || 0, ct.chore || 0], '#ff6b6b');
 }
 
+// Scroll spy: highlight active nav link
+function setupScrollSpy() {
+  const sections = document.querySelectorAll('.chapter[id]');
+  const links = document.querySelectorAll('.site-nav .nav-link');
+  if (!sections.length || !links.length) return;
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        links.forEach(l => l.classList.remove('active'));
+        const active = document.querySelector(`.site-nav .nav-link[href="#${entry.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { threshold: 0.1, rootMargin: '-80px 0px -60% 0px' });
+  sections.forEach(s => observer.observe(s));
+}
+
 // Boot
 document.addEventListener('DOMContentLoaded', () => {
   setupScrollReveal();
   animateCounters();
   initSparklines();
+  setupScrollSpy();
 });
 </script>
 
@@ -1509,18 +1560,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const eras = [
       {name:'Pre-seed\n(Feb 1-27)',coding_agents:80,local_ai:19,llm_models:136,agent_arch:49,ml_fund:6,creative:0},
-      {name:'Era 1\n(Feb 28-Mar 7)',coding_agents:29,local_ai:3,llm_models:48,agent_arch:32,ml_fund:1,creative:0},
+      {name:'Era 1\n(Feb 28-Mar 18)',coding_agents:29,local_ai:3,llm_models:48,agent_arch:32,ml_fund:1,creative:0},
       {name:'Dormancy\n(Mar 8-17)',coding_agents:9,local_ai:4,llm_models:31,agent_arch:15,ml_fund:0,creative:1},
-      {name:'Era 2\n(Mar 18-19)',coding_agents:4,local_ai:2,llm_models:12,agent_arch:10,ml_fund:9,creative:0},
-      {name:'Eras 3-5\n(Mar 20-23)',coding_agents:4,local_ai:0,llm_models:12,agent_arch:10,ml_fund:5,creative:1},
-      {name:'Era 6\n(Mar 24-27)',coding_agents:3,local_ai:1,llm_models:15,agent_arch:5,ml_fund:1,creative:0},
-      {name:'Era 7\n(Mar 28-29)',coding_agents:8,local_ai:3,llm_models:18,agent_arch:6,ml_fund:0,creative:0},
-      {name:'Era 8\n(Mar 30-31)',coding_agents:3,local_ai:2,llm_models:6,agent_arch:7,ml_fund:0,creative:0},
-      {name:'Era 9\n(Apr 1)',coding_agents:3,local_ai:3,llm_models:11,agent_arch:1,ml_fund:0,creative:0},
-      {name:'Era 10\n(Apr 2)',coding_agents:5,local_ai:1,llm_models:8,agent_arch:12,ml_fund:3,creative:0},
-      {name:'Era 11\n(Apr 2-3)',coding_agents:8,local_ai:2,llm_models:15,agent_arch:18,ml_fund:2,creative:1},
-      {name:'Era 12\n(Apr 3-4)',coding_agents:10,local_ai:3,llm_models:12,agent_arch:8,ml_fund:4,creative:2},
-      {name:'Era 13\n(Apr 4)',coding_agents:4,local_ai:1,llm_models:6,agent_arch:3,ml_fund:1,creative:0},
+      {name:'Era 2\n(Mar 19-31)',coding_agents:22,local_ai:8,llm_models:63,agent_arch:38,ml_fund:15,creative:1},
+      {name:'Era 3\n(Apr 1-6)',coding_agents:30,local_ai:10,llm_models:52,agent_arch:42,ml_fund:10,creative:3},
     ];
 
     const topics = ['coding_agents','llm_models','agent_arch','ml_fund','local_ai','creative'];
@@ -1951,7 +1994,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!el) return;
     const gradient = dp.session_depth_gradient;
     if (!gradient || !gradient.gradient) return;
-    const data = gradient.gradient.filter(d => d.autonomy_score !== null);
+    const data = gradient.gradient.filter(d => d.autonomy_score !== null && d.name);
+    const fmtName = n => (n || '').replace('era','').replace('-',' ');
     const margin = {top: 20, right: 20, bottom: 30, left: 80};
     const width = el.clientWidth - margin.left - margin.right;
     const height = 280 - margin.top - margin.bottom;
@@ -1959,7 +2003,7 @@ document.addEventListener('DOMContentLoaded', () => {
       .attr('viewBox', `0 0 ${width + margin.left + margin.right} ${height + margin.top + margin.bottom}`);
     const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
 
-    const x = d3.scaleBand().domain(data.map(d => d.name.replace('era','').replace('-',' '))).range([0, width]).padding(0.35);
+    const x = d3.scaleBand().domain(data.map(d => fmtName(d.name))).range([0, width]).padding(0.35);
     const y = d3.scaleLinear().domain([0, 10.5]).range([height, 0]);
 
     // Background zones
@@ -1972,7 +2016,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     g.selectAll('.bar').data(data).enter().append('rect')
-      .attr('x', d => x(d.name.replace('era','').replace('-',' '))).attr('width', x.bandwidth())
+      .attr('x', d => x(fmtName(d.name))).attr('width', x.bandwidth())
       .attr('y', d => y(parseFloat(d.autonomy_score)))
       .attr('height', d => height - y(parseFloat(d.autonomy_score)))
       .attr('fill', d => { const s = parseFloat(d.autonomy_score); return s >= 7 ? COLORS.claude : s >= 3 ? COLORS.cursor : COLORS.kai; })
@@ -1986,7 +2030,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     g.append('g').attr('transform', `translate(0,${height})`).call(d3.axisBottom(x))
       .selectAll('text').attr('fill', COLORS.text2).style('font-size', '10px')
-      .text(d => d.replace(' Era','').replace('The ','').replace('Consolidation','Consol.').replace('Conversational','Conv.').replace('Multimedia','Multi.').replace('Dogfood','Dogfd.').replace('Quality','Qual.').replace('Explosion','Expl.').replace('Pruning','Prune.'))
+      .text(d => (d || '').replace(' Era','').replace('The ','').replace('Consolidation','Consol.').replace('Conversational','Conv.').replace('Multimedia','Multi.').replace('Dogfood','Dogfd.').replace('Quality','Qual.').replace('Explosion','Expl.').replace('Pruning','Prune.'))
       .attr('transform', 'rotate(-35)').attr('text-anchor', 'end').attr('dx', '-3px').attr('dy', '3px');
     g.append('g').call(d3.axisLeft(y).ticks(5)).selectAll('text').attr('fill', COLORS.text2).style('font-size', '11px');
     g.selectAll('.domain, .tick line').attr('stroke', COLORS.border);
@@ -2048,7 +2092,7 @@ document.addEventListener('DOMContentLoaded', () => {
   (function() {
     const el = document.getElementById('chart-cross-repo');
     if (!el) return;
-    const density = cross.commit_density || cross.primary_commit_density || {};
+    const density = cross.commit_density || cross.liminal_commit_density || {};
     // Generate timeline from density keys if timeline array not available
     let timeline = cross.timeline || [];
     if (!timeline.length && Object.keys(density).length > 0) {
@@ -2058,12 +2102,12 @@ document.addEventListener('DOMContentLoaded', () => {
       const empty = document.createElement('div'); empty.style.cssText = 'padding:40px;text-align:center;color:var(--text3)'; empty.textContent = 'No cross-repo timeline data available'; el.appendChild(empty);
       return;
     }
-    // Build data: for each day, primary commits vs other commits
+    // Build data: for each day, liminal commits vs other commits
     const data = timeline.map(d => {
       const date = d.date || d;
-      const primary = typeof d === 'object' ? (d.primary || density[date] || 0) : (density[date] || 0);
-      const other = typeof d === 'object' ? (d.other || d.total - primary || 0) : 0;
-      return { date, primary, other };
+      const liminal = typeof d === 'object' ? (d.liminal || density[date] || 0) : (density[date] || 0);
+      const other = typeof d === 'object' ? (d.other || d.total - liminal || 0) : 0;
+      return { date, liminal, other };
     }).sort((a, b) => a.date.localeCompare(b.date));
     const margin = {top: 20, right: 20, bottom: 30, left: 45};
     const width = el.clientWidth - margin.left - margin.right;
@@ -2071,8 +2115,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const svg = d3.select(el).append('svg').attr('role','img').attr('viewBox', `0 0 ${width + margin.left + margin.right} ${height + margin.top + margin.bottom}`);
     const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
     const x = d3.scalePoint().domain(data.map(d => d.date)).range([0, width]);
-    const y = d3.scaleLinear().domain([0, d3.max(data, d => d.primary + d.other) || 1]).range([height, 0]);
-    const stack = d3.stack().keys(['other', 'primary'])(data);
+    const y = d3.scaleLinear().domain([0, d3.max(data, d => d.liminal + d.other) || 1]).range([height, 0]);
+    const stack = d3.stack().keys(['other', 'liminal'])(data);
     const colors = [COLORS.unknown, COLORS.claude];
     stack.forEach((layer, i) => {
       const area = d3.area().x(d => x(d.data.date)).y0(d => y(d[0])).y1(d => y(d[1])).curve(d3.curveMonotoneX);
@@ -2196,19 +2240,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const agents = D.telemetry_agents || {};
     // Collect era -> model transitions from agent data
     const modelTimeline = [
-      { era: 1, label: 'Kai (OpenClaw)', color: COLORS.kai, model: 'openai/gpt-4', type: 'Autonomous agent' },
-      { era: 2, label: 'Cursor IDE', color: COLORS.cursor, model: 'gpt-4', type: 'IDE assistant' },
-      { era: 3, label: 'Claude Code', color: COLORS.claude, model: 'claude-3.5-sonnet', type: 'CLI agent' },
-      { era: 4, label: 'Claude Code', color: COLORS.claude, model: 'claude-3.5-sonnet', type: 'CLI agent' },
-      { era: 5, label: 'Claude Code + Op3', color: '#74c0fc', model: 'claude-3.5 + o3', type: 'CLI + API' },
-      { era: 6, label: 'Claude Code', color: COLORS.claude, model: 'claude-3.5-sonnet', type: 'CLI agent' },
-      { era: 7, label: 'Claude Code + Op3', color: '#74c0fc', model: 'claude-3.5 + o3', type: 'CLI + API' },
-      { era: 8, label: 'Claude Code + Op3', color: '#74c0fc', model: 'claude-3.5 + o3', type: 'CLI + API' },
-      { era: 9, label: 'Claude Code + Op3', color: '#74c0fc', model: 'claude-3.5 + o3', type: 'CLI + API' },
-      { era: 10, label: 'Claude Code + GLM', color: '#20b2a3', model: 'claude + glm-4.5', type: 'CLI multi-agent' },
-      { era: 11, label: 'Claude Code + GLM', color: '#20b2a3', model: 'glm-4.5/glm-5.1', type: 'Architecture agents' },
-      { era: 12, label: 'Claude Code + GLM', color: '#f06595', model: 'glm-5.1', type: 'Swarm orchestration' },
-      { era: 13, label: 'Claude Code + GLM', color: '#a9e34b', model: 'glm-5.1', type: 'Final cleanup' }
+      { era: 1, label: 'Kai + Cursor + Claude', color: COLORS.kai, model: 'gpt-4 + claude-3.5', type: 'Multi-agent exploration' },
+      { era: 2, label: 'Claude Code + Op3', color: '#74c0fc', model: 'claude-3.5 + o3', type: 'CLI + API' },
+      { era: 3, label: 'Claude Code + GLM', color: '#20b2a3', model: 'claude + glm-4.5', type: 'CLI multi-agent' },
+      { era: 4, label: 'Claude Code + GLM', color: '#20b2a3', model: 'glm-4.5/glm-5.1', type: 'Architecture agents' },
+      { era: 5, label: 'Claude Code + GLM', color: '#20b2a3', model: 'glm-5.1', type: 'Studio development' },
+      { era: 6, label: 'Claude Code + GLM', color: '#f06595', model: 'glm-5.1', type: 'Swarm orchestration' },
+      { era: 7, label: 'Claude Code + GLM', color: '#a9e34b', model: 'glm-5.1', type: 'Final forge' }
     ];
     const margin = {top: 20, right: 20, bottom: 30, left: 45};
     const width = el.clientWidth - margin.left - margin.right;
@@ -2246,11 +2284,11 @@ document.addEventListener('DOMContentLoaded', () => {
       const weekStart = new Date(date);
       weekStart.setDate(date.getDate() - date.getDay());
       const key = weekStart.toISOString().slice(0, 10);
-      if (!weeks[key]) weeks[key] = { primary: 0, other: 0 };
-      weeks[key].primary += d.primary || 0;
+      if (!weeks[key]) weeks[key] = { liminal: 0, other: 0 };
+      weeks[key].liminal += d.liminal || 0;
       weeks[key].other += (d.other_repos || d.other || 0);
     });
-    const data = Object.entries(weeks).map(([week, vals]) => ({ week, primary: vals.primary, other: vals.other }))
+    const data = Object.entries(weeks).map(([week, vals]) => ({ week, liminal: vals.liminal, other: vals.other }))
       .sort((a, b) => a.week.localeCompare(b.week));
 
     const margin = {top: 20, right: 20, bottom: 30, left: 40};
@@ -2260,15 +2298,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
 
     const x = d3.scaleBand().domain(data.map(d => d.week.slice(5))).range([0, width]).padding(0.2);
-    const yMax = d3.max(data, d => Math.max(d.primary, d.other)) || 10;
+    const yMax = d3.max(data, d => Math.max(d.liminal, d.other)) || 10;
     const y = d3.scaleLinear().domain([0, yMax * 1.1]).range([height, 0]);
 
     // Grouped bars
     const barW = x.bandwidth() / 2;
     data.forEach(d => {
-      g.append('rect').attr('x', x(d.week.slice(5))).attr('y', y(d.primary)).attr('width', barW).attr('height', height - y(d.primary))
+      g.append('rect').attr('x', x(d.week.slice(5))).attr('y', y(d.liminal)).attr('width', barW).attr('height', height - y(d.liminal))
         .attr('fill', COLORS.claude).attr('rx', 2).attr('opacity', 0.8)
-        .on('mouseover', function(e) { showTooltip(e, { title: d.week, detail: `Primary: ${d.primary} commits` }); })
+        .on('mouseover', function(e) { showTooltip(e, { title: d.week, detail: `Primary: ${d.liminal} commits` }); })
         .on('mouseout', hideTooltip);
       g.append('rect').attr('x', x(d.week.slice(5)) + barW).attr('y', y(d.other)).attr('width', barW).attr('height', height - y(d.other))
         .attr('fill', COLORS.text3).attr('rx', 2).attr('opacity', 0.5)
@@ -2290,7 +2328,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 </script>
 <script id="ch-eras-js">
-// Chapter: Ten Eras (10 enhanced era cards)
+// Chapter: Development Eras (era cards)
 (function() {
   const D = window.PROJECT_DATA || {};
   const ERAS = window.ERAS;

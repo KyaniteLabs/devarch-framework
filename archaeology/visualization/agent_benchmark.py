@@ -658,7 +658,8 @@ def run_benchmark_analysis(project_dir: str) -> str:
     project_path = Path(project_dir)
     db_path = project_path / "data" / "archaeology.db"
     deliverables_dir = project_path / "deliverables"
-    output_path = deliverables_dir / "agent-benchmark.html"
+    visuals_dir = deliverables_dir / "visuals"
+    output_path = visuals_dir / "agent-benchmark.html"
 
     if not db_path.exists():
         raise FileNotFoundError(f"Database not found: {db_path}")
@@ -673,7 +674,7 @@ def run_benchmark_analysis(project_dir: str) -> str:
     html_content = generate_benchmark_html(benchmark_data, project_name)
 
     # Write output
-    deliverables_dir.mkdir(parents=True, exist_ok=True)
+    visuals_dir.mkdir(parents=True, exist_ok=True)
     output_path.write_text(html_content, encoding="utf-8")
 
     return str(output_path)

@@ -420,6 +420,9 @@ def visualize(project_name):
     html = html.replace("{{TOTAL_COMMITS}}", str(total_commits or 803))
     html = html.replace("{{TOTAL_LINES}}", str(total_lines or "35,600"))
     html = html.replace("{{AGENT_COUNT}}", str(agent_count or 6))
+    # Compute era count for meta description
+    era_count = len(eras_data.get("eras", [])) if os.path.exists(eras_json) else 0
+    html = html.replace("{{ERA_COUNT}}", str(era_count))
 
     # Also update <title> tag if it still has the old format
     html = html.replace(
@@ -496,10 +499,10 @@ def ingest_pipeline(project_name, logs_dir, verbose):
     # Auto-detect pipeline logs dir
     if not logs_dir:
         candidates = [
-            os.path.expanduser("~/Desktop/OMC/.omc/logs/repo-pipeline"),
-            os.path.expanduser("~/.claude/data/review"),
+            os.path.expanduser("~/workspaces/GITHUB_pipeline/.omc/logs/repo-pipeline"),
             os.path.expanduser("~/dev/GITHUB_pipeline/.omc/logs/repo-pipeline"),
             os.path.expanduser("~/Desktop/GITHUB_pipeline/.omc/logs/repo-pipeline"),
+            os.path.expanduser("~/Desktop/OMC/.omc/logs/repo-pipeline"),
         ]
         for c in candidates:
             if os.path.isdir(c):
@@ -968,6 +971,68 @@ def global_viz(output_dir, top_n, year, verbose):
     click.echo(f"  {meta.get('total_commits', '?')} commits across {meta.get('total_repos', '?')} repos")
 
 
+@main.command("multi-project-dashboard")
+@click.option("--output", "output_dir", default="global/deliverables", help="Output directory for the dashboard")
+@click.option("--top", "top_n", type=int, help="Limit to top N repos by commit count")
+@click.option("--year", type=int, help="Only include repos updated in this year")
+@click.option("--verbose", "-v", is_flag=True)
+def multi_project_dashboard(output_dir, top_n, year, verbose):
+    """Generate comprehensive multi-project dashboard visualization."""
+    from .visualization.global_data_builder import prepare_dashboard_data
+
+    global_dir = "global"
+    data_dir = os.path.join(global_dir, "data")
+    github_json = os.path.join(data_dir, "github-repos.json")
+
+    if not os.path.exists(github_json):
+        click.echo("No GitHub data found. Run 'archaeology fetch-github' first.", err=True)
+        sys.exit(1)
+
+    # Build dashboard data
+    click.echo("Building dashboard data...")
+    dashboard_data = prepare_dashboard_data(global_dir, top_n=top_n, year=year)
+
+    # Write dashboard data JSON
+    dashboard_json_path = os.path.join(data_dir, "dashboard-data.json")
+    with open(dashboard_json_path, "w") as f:
+        json.dump(dashboard_data, f, indent=2)
+    if verbose:
+        click.echo(f"  Data written to {dashboard_json_path}")
+
+    # Hydrate template
+    template_path = os.path.join("archaeology", "visualization", "multi-project-dashboard.html")
+    if not os.path.exists(template_path):
+        click.echo(f"Template not found at {template_path}", err=True)
+        sys.exit(1)
+
+    with open(template_path, encoding="utf-8") as f:
+        html = f.read()
+
+    # Inline the data JSON
+    safe_data = json.dumps(dashboard_data).replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026")
+
+    # Replace the placeholder
+    old_placeholder = "// DATA_PLACEHOLDER\nwindow.DASHBOARD_DATA = {};"
+    new_inline = f"window.DASHBOARD_DATA = {safe_data};\n  window.dispatchEvent(new Event('dashboard-data-loaded'));"
+    if old_placeholder in html:
+        html = html.replace(old_placeholder, new_inline)
+    elif "window.DASHBOARD_DATA = {};" in html:
+        html = html.replace("window.DASHBOARD_DATA = {};", f"window.DASHBOARD_DATA = {safe_data};")
+    else:
+        click.echo("Warning: could not find DASHBOARD_DATA placeholder in template", err=True)
+
+    # Write output
+    os.makedirs(output_dir, exist_ok=True)
+    output_path = os.path.join(output_dir, "dashboard.html")
+    with open(output_path, "w", encoding="utf-8") as f:
+        f.write(html)
+
+    click.echo(f"Multi-project dashboard generated at {output_path}")
+    meta = dashboard_data.get("meta", {})
+    click.echo(f"  {meta.get('total_commits', '?')} commits across {meta.get('total_repos', '?')} repos")
+    click.echo(f"  Period: {meta.get('first_date', '?')} to {meta.get('last_date', '?')}")
+
+
 @main.command("fetch-github")
 @click.option("--owner", default="Pastorsimon1798", help="GitHub username/org")
 @click.option("--output", "output_path", default="global/data/github-repos.json", help="Output JSON path")
@@ -1001,61 +1066,6 @@ def benchmark(project_name):
         sys.exit(1)
 
 
-@main.command("multi-project-dashboard")
-@click.option("--output", "output_dir", default="global/deliverables", help="Output directory for the dashboard")
-@click.option("--top", "top_n", type=int, help="Limit to top N repos by commit count")
-@click.option("--year", type=int, help="Only include repos updated in this year")
-@click.option("--verbose", "-v", is_flag=True)
-def multi_project_dashboard(output_dir, top_n, year, verbose):
-    """Generate comprehensive multi-project dashboard visualization."""
-    from .visualization.global_data_builder import prepare_dashboard_data
-
-    global_dir = "global"
-    data_dir = os.path.join(global_dir, "data")
-    github_json = os.path.join(data_dir, "github-repos.json")
-
-    if not os.path.exists(github_json):
-        click.echo("No GitHub data found. Run 'archaeology fetch-github' first.", err=True)
-        sys.exit(1)
-
-    click.echo("Building dashboard data...")
-    dashboard_data = prepare_dashboard_data(global_dir, top_n=top_n, year=year)
-
-    dashboard_json_path = os.path.join(data_dir, "dashboard-data.json")
-    with open(dashboard_json_path, "w") as f:
-        json.dump(dashboard_data, f, indent=2)
-    if verbose:
-        click.echo(f"  Data written to {dashboard_json_path}")
-
-    template_path = os.path.join("archaeology", "visualization", "multi-project-dashboard.html")
-    if not os.path.exists(template_path):
-        click.echo(f"Template not found at {template_path}", err=True)
-        sys.exit(1)
-
-    with open(template_path, encoding="utf-8") as f:
-        html = f.read()
-
-    safe_data = json.dumps(dashboard_data).replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026")
-
-    old_placeholder = "// DATA_PLACEHOLDER\nwindow.DASHBOARD_DATA = {};"
-    new_inline = f"window.DASHBOARD_DATA = {safe_data};\n  window.dispatchEvent(new Event('dashboard-data-loaded'));"
-    if old_placeholder in html:
-        html = html.replace(old_placeholder, new_inline)
-    elif "window.DASHBOARD_DATA = {};" in html:
-        html = html.replace("window.DASHBOARD_DATA = {};", f"window.DASHBOARD_DATA = {safe_data};")
-    else:
-        click.echo("Warning: could not find DASHBOARD_DATA placeholder in template", err=True)
-
-    os.makedirs(output_dir, exist_ok=True)
-    output_path = os.path.join(output_dir, "dashboard.html")
-    with open(output_path, "w", encoding="utf-8") as f:
-        f.write(html)
-
-    click.echo(f"Multi-project dashboard generated at {output_path}")
-    meta = dashboard_data.get("meta", {})
-    click.echo(f"  {meta.get('total_commits', '?')} commits across {meta.get('total_repos', '?')} repos")
-
-
 @main.command()
 @click.option("--port", default=8080, help="Port to serve on")
 @click.option("--no-open", is_flag=True, help="Don't open browser automatically")
@@ -1065,21 +1075,15 @@ def serve(port, no_open):
     Generates the master dashboard and serves all projects over HTTP.
     Accessible from any device on your Tailscale network.
     """
-    import functools
     import http.server
     import threading
     import webbrowser
 
-    from .visualization.dashboard import (
-        discover_projects,
-        generate_global_section,
-        generate_master_dashboard,
-        generate_project_index,
-        load_api_repos,
-    )
+    from .visualization.dashboard import discover_projects, generate_master_dashboard, generate_project_index, load_api_repos, generate_global_section
 
     root = Path.cwd()
     projects_dir = root / "projects"
+    global_data_dir = root / "global" / "data"
 
     # Generate master dashboard
     projects = discover_projects(projects_dir)
@@ -1087,22 +1091,20 @@ def serve(port, no_open):
         click.echo("No projects found. Run 'archaeology mine <repo>' first.", err=True)
         sys.exit(1)
 
-    # Load API repos and deduplicate against mined projects
-    global_data_dir = root / "global" / "data"
+    # Load API-only repos (no cloning needed)
     api_repos = load_api_repos(global_data_dir) if global_data_dir.exists() else []
+    # Deduplicate: remove API repos already present as mined projects
     mined_names = {p["name"].lower().replace("-", "").replace("_", "") for p in projects}
     api_repos = [r for r in api_repos if r["name"].lower().replace("-", "").replace("_", "") not in mined_names]
     print(f"  After dedup: {len(api_repos)} API-only repos")
+    owner_labels = {"Pastorsimon1798": "Pastorsimon1798 (Personal)", "KyaniteLabs": "KyaniteLabs (Org)"}
+    api_section_html = generate_global_section(api_repos, owner_labels) if api_repos else ""
 
-    api_section_html = generate_global_section(api_repos)
     dashboard_html = generate_master_dashboard(projects, api_section_html=api_section_html, api_repos=api_repos)
 
-    # Write master dashboard to a temp location that the server will serve
+    # Symlink global visualizations if they exist
     site_dir = root / ".serve"
     site_dir.mkdir(exist_ok=True)
-    (site_dir / "index.html").write_text(dashboard_html, encoding="utf-8")
-
-    # Symlink global deliverables (multi-project dashboard, network graph)
     global_deliverables = root / "global" / "deliverables"
     if global_deliverables.exists():
         for html_file in global_deliverables.glob("*.html"):
@@ -1110,8 +1112,9 @@ def serve(port, no_open):
             if link_path.is_symlink() or link_path.exists():
                 link_path.unlink()
             link_path.symlink_to(html_file.resolve())
+    (site_dir / "index.html").write_text(dashboard_html, encoding="utf-8")
 
-    # Generate per-project index pages and symlink/copy HTML files
+    # Generate per-project index pages and symlink all deliverable files
     for proj in projects:
         proj_site_dir = site_dir / proj["name"]
         proj_site_dir.mkdir(exist_ok=True)
@@ -1120,36 +1123,75 @@ def serve(port, no_open):
         proj_index_html = generate_project_index(proj)
         (proj_site_dir / "index.html").write_text(proj_index_html, encoding="utf-8")
 
-        # Symlink HTML files from deliverables
+        # Symlink ALL deliverable files from all subdirectories
         deliverables_dir = projects_dir / proj["name"] / "deliverables"
-        visuals_dir = deliverables_dir / "visuals"
-        source_dir = visuals_dir if visuals_dir.exists() else deliverables_dir
+        if deliverables_dir.exists():
+            # Symlink top-level data files (data.json, canonical-metrics.json)
+            for data_file in deliverables_dir.glob("*.json"):
+                link_path = proj_site_dir / data_file.name
+                if link_path.is_symlink() or link_path.exists():
+                    link_path.unlink()
+                link_path.symlink_to(data_file.resolve())
 
-        for html_file in source_dir.glob("*.html"):
-            link_path = proj_site_dir / html_file.name
-            # Remove old symlink if exists
-            if link_path.is_symlink():
-                link_path.unlink()
-            elif link_path.exists():
-                link_path.unlink()
-            link_path.symlink_to(html_file.resolve())
+            # Symlink all files from each deliverable subdirectory
+            for sub_dir in deliverables_dir.iterdir():
+                if not sub_dir.is_dir():
+                    continue
+                target_dir = proj_site_dir / sub_dir.name
+                target_dir.mkdir(exist_ok=True)
+                for f in sub_dir.iterdir():
+                    if f.is_dir():
+                        continue
+                    link_path = target_dir / f.name
+                    if link_path.is_symlink() or link_path.exists():
+                        link_path.unlink()
+                    link_path.symlink_to(f.resolve())
 
-        # Symlink data.json if it exists (needed by HTML visualizations)
-        data_json = deliverables_dir / "data.json"
-        if data_json.exists():
-            link_path = proj_site_dir / "data.json"
-            if link_path.is_symlink():
+    # Symlink global deliverables for cross-repo analysis
+    global_deliverables_dir = root / "global" / "deliverables"
+    if global_deliverables_dir.exists():
+        global_site_dir = site_dir / "global"
+        global_site_dir.mkdir(exist_ok=True)
+        for f in global_deliverables_dir.rglob("*"):
+            if f.is_dir():
+                continue
+            rel = f.relative_to(global_deliverables_dir)
+            link_path = global_site_dir / rel
+            link_path.parent.mkdir(parents=True, exist_ok=True)
+            if link_path.is_symlink() or link_path.exists():
                 link_path.unlink()
-            elif link_path.exists():
-                link_path.unlink()
-            link_path.symlink_to(data_json.resolve())
+            link_path.symlink_to(f.resolve())
 
+    # Copy md-viewer.html to serve directory
+    md_viewer_src = root / "archaeology" / "templates" / "md-viewer.html"
+    if md_viewer_src.exists():
+        md_viewer_dst = site_dir / "md-viewer.html"
+        if md_viewer_dst.exists():
+            md_viewer_dst.unlink()
+        import shutil
+        shutil.copy2(md_viewer_src, md_viewer_dst)
+
+    total_deliverables = sum(p.get("total_deliverables", 0) for p in projects)
     click.echo(f"  Master dashboard: {len(projects)} projects")
-    total_html = sum(len(p["visuals"]) for p in projects)
-    click.echo(f"  Total visualizations: {total_html}")
+    click.echo(f"  Total deliverables: {total_deliverables}")
 
-    # Custom handler to serve from site_dir
-    handler = functools.partial(http.server.SimpleHTTPRequestHandler, directory=str(site_dir))
+    # Custom handler: /api/* routes to JSON API, everything else is static files
+    import functools
+    from .api import route as api_route
+
+    class DevArchHandler(http.server.SimpleHTTPRequestHandler):
+        def do_GET(self):
+            if self.path.startswith("/api/"):
+                api_route(self)
+            else:
+                super().do_GET()
+
+        def log_message(self, fmt, *args):
+            # Suppress per-request logging for static files, keep for API
+            if self.path.startswith("/api/"):
+                click.echo(f"  API: {self.path}")
+
+    handler = functools.partial(DevArchHandler, directory=str(site_dir))
 
     server = http.server.HTTPServer(("0.0.0.0", port), handler)
     url = f"http://localhost:{port}"
@@ -1174,13 +1216,7 @@ def publish_static(output_dir):
     """Generate a static site for deployment (GitHub Pages, nginx, etc.)."""
     import shutil
 
-    from .visualization.dashboard import (
-        discover_projects,
-        generate_global_section,
-        generate_master_dashboard,
-        generate_project_index,
-        load_api_repos,
-    )
+    from .visualization.dashboard import discover_projects, generate_master_dashboard, generate_project_index, load_api_repos, generate_global_section
 
     root = Path.cwd()
     projects_dir = root / "projects"
@@ -1197,23 +1233,25 @@ def publish_static(output_dir):
         click.echo("No projects found.", err=True)
         sys.exit(1)
 
-    # Load API repos and deduplicate
+    # Load and deduplicate API repos
     global_data_dir = root / "global" / "data"
     api_repos = load_api_repos(global_data_dir) if global_data_dir.exists() else []
     mined_names = {p["name"].lower().replace("-", "").replace("_", "") for p in projects}
     api_repos = [r for r in api_repos if r["name"].lower().replace("-", "").replace("_", "") not in mined_names]
+    owner_labels = {"Pastorsimon1798": "Pastorsimon1798 (Personal)", "KyaniteLabs": "KyaniteLabs (Org)"}
+    api_section_html = generate_global_section(api_repos, owner_labels) if api_repos else ""
 
-    api_section_html = generate_global_section(api_repos)
     dashboard_html = generate_master_dashboard(projects, api_section_html=api_section_html, api_repos=api_repos)
     (site / "index.html").write_text(dashboard_html, encoding="utf-8")
 
-    click.echo(f"  Master dashboard: {len(projects)} projects")
+    click.echo(f"  Master dashboard: {len(projects)} projects, {len(api_repos)} API repos")
 
-    # Copy global deliverables
+    # Copy global deliverables (dashboard.html, global.html)
     global_deliverables = root / "global" / "deliverables"
     if global_deliverables.exists():
         for html_file in global_deliverables.glob("*.html"):
             shutil.copy2(html_file, site / html_file.name)
+        click.echo(f"  Global visualizations copied")
 
     # Generate per-project pages
     for proj in projects:

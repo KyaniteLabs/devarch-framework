@@ -169,6 +169,40 @@ def _discover_visuals(deliverables_dir: Path, project_name: str) -> list[dict[st
     return visuals
 
 
+def _pluralize(n: int, singular: str, plural: str = "") -> str:
+    """Return singular or plural form based on count."""
+    if plural == "":
+        plural = singular + "s"
+    return singular if n == 1 else plural
+
+
+def _format_stat(value: Any, singular: str, plural: str = "") -> str:
+    """Format a stat value, using dash for zero/unknown and correct pluralization."""
+    if value == 0 or value == "?" or value is None:
+        return "—"
+    n = int(value) if isinstance(value, (int, float)) else 0
+    return f"{n:,} {_pluralize(n, singular, plural)}"
+
+
+def _project_description(name: str, meta: dict) -> str:
+    """Generate a project description from metadata."""
+    commits = meta.get("commits", 0)
+    eras = meta.get("era_count", 0)
+    days = meta.get("active_days", 0)
+    if not commits:
+        return "Infrastructure project supporting the archaeology pipeline"
+    parts = []
+    if eras and eras > 1:
+        parts.append(f"{eras} distinct development eras")
+    elif not eras:
+        pass  # Skip era mention for pipeline/infra projects
+    if days:
+        parts.append(f"{days} active days of development")
+    if parts:
+        return f"{commits:,} commits across " + " and ".join(parts)
+    return f"{commits:,} commits of development history"
+
+
 def generate_master_dashboard(projects: list[dict[str, Any]], api_section_html: str = "", api_repos: list[dict[str, Any]] | None = None) -> str:
     """Generate the master dashboard HTML."""
     now = datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC")
@@ -194,10 +228,10 @@ def generate_master_dashboard(projects: list[dict[str, Any]], api_section_html: 
     featured_html = ""
     if featured:
         fm = featured["meta"]
-        fc = fm.get("commits", "?")
+        fc = fm.get("commits", "—")
         fc_fmt = f"{fc:,}" if isinstance(fc, int) else str(fc)
-        fe = fm.get("era_count", "?")
-        fad = fm.get("active_days", "?")
+        fe = fm.get("era_count", 0)
+        fad = fm.get("active_days", "—")
         fviz = ""
         for viz in featured["visuals"]:
             fviz += f'<a href="{viz["href"]}" class="fviz-link">{viz["name"]}</a>\n            '
@@ -207,11 +241,11 @@ def generate_master_dashboard(projects: list[dict[str, Any]], api_section_html: 
     <div class="featured-main">
       <span class="featured-badge">Featured Project</span>
       <h2 class="featured-title">{featured['name'].upper()}</h2>
-      <p class="featured-desc">Full archaeological analysis with era timeline, telemetry, and agent benchmarks</p>
+      <p class="featured-desc">{_project_description(featured['name'], fm)}</p>
       <div class="featured-stats">
-        <div class="fstat"><span class="fstat-val">{fc_fmt}</span><span class="fstat-lbl">commits</span></div>
-        <div class="fstat"><span class="fstat-val">{fe}</span><span class="fstat-lbl">eras</span></div>
-        <div class="fstat"><span class="fstat-val">{fad}</span><span class="fstat-lbl">active days</span></div>
+        <div class="fstat"><span class="fstat-val">{fc_fmt}</span><span class="fstat-lbl">{_pluralize(fc if isinstance(fc, int) else 0, 'commit')}</span></div>
+        <div class="fstat"><span class="fstat-val">{fe if fe else '—'}</span><span class="fstat-lbl">{_pluralize(fe, 'era')}</span></div>
+        <div class="fstat"><span class="fstat-val">{fad}</span><span class="fstat-lbl">{_pluralize(fad if isinstance(fad, int) else 0, 'active day')}</span></div>
       </div>
     </div>
     <div class="featured-links" onclick="event.stopPropagation()">
@@ -224,9 +258,9 @@ def generate_master_dashboard(projects: list[dict[str, Any]], api_section_html: 
     project_cards = ""
     for proj in rest_projects:
         meta = proj["meta"]
-        commits = meta.get("commits", "?")
-        eras = meta.get("era_count", "?")
-        active_days = meta.get("active_days", "?")
+        commits = meta.get("commits", "—")
+        eras = meta.get("era_count", 0)
+        active_days = meta.get("active_days", "—")
         n_visuals = len(proj["visuals"])
         commits_fmt = f"{commits:,}" if isinstance(commits, int) else str(commits)
         viz_links = ""
@@ -236,12 +270,12 @@ def generate_master_dashboard(projects: list[dict[str, Any]], api_section_html: 
         <a href="{proj['name']}/" class="project-card">
           <div class="card-header">
             <h2 class="card-title">{proj['name'].upper()}</h2>
-            <span class="card-badge">{n_visuals} {'page' if n_visuals == 1 else 'pages'}</span>
+            <span class="card-badge">{n_visuals} {_pluralize(n_visuals, 'deliverable')}</span>
           </div>
           <div class="card-stats">
-            <div class="stat"><span class="stat-value">{commits_fmt}</span><span class="stat-label">commits</span></div>
-            <div class="stat"><span class="stat-value">{eras}</span><span class="stat-label">eras</span></div>
-            <div class="stat"><span class="stat-value">{active_days}</span><span class="stat-label">active days</span></div>
+            <div class="stat"><span class="stat-value">{commits_fmt}</span><span class="stat-label">{_pluralize(commits if isinstance(commits, int) else 0, 'commit')}</span></div>
+            <div class="stat"><span class="stat-value">{eras if eras else '—'}</span><span class="stat-label">{_pluralize(eras, 'era')}</span></div>
+            <div class="stat"><span class="stat-value">{active_days}</span><span class="stat-label">{_pluralize(active_days if isinstance(active_days, int) else 0, 'active day')}</span></div>
           </div>
           <div class="card-links" onclick="event.stopPropagation()">
             {viz_links}
@@ -305,6 +339,8 @@ def generate_master_dashboard(projects: list[dict[str, Any]], api_section_html: 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dev-Archaeology</title>
+<meta name="description" content="Forensic analysis of development history across {total_repos} repositories">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x26CF;</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -487,19 +523,19 @@ body{{background:var(--bg);color:var(--text);font-family:var(--font-body);line-h
 </nav>
 
 <div class="hero">
-  <h1>Your Development Fossil Record</h1>
-  <p>Forensic analysis of {total_repos} repositories across your entire development ecosystem</p>
+  <h1>Development Fossil Record</h1>
+  <p>Forensic archaeology of {total_repos} repositories — {total_commits_fmt} commits mined, analyzed, and visualized</p>
   <div class="hero-stats">
-    <div class="hero-stat"><span class="value">{total_repos_fmt}</span><span class="label">Repos</span></div>
-    <div class="hero-stat"><span class="value">{total_commits_fmt}</span><span class="label">Commits</span></div>
-    <div class="hero-stat"><span class="value">{n_networks}</span><span class="label">Networks</span></div>
+    <div class="hero-stat"><span class="value">{total_repos_fmt}</span><span class="label">{_pluralize(total_repos, 'Repository', 'Repositories')}</span></div>
+    <div class="hero-stat"><span class="value">{total_commits_fmt}</span><span class="label">{_pluralize(total_commits, 'Commit')}</span></div>
+    <div class="hero-stat"><span class="value">{n_networks}</span><span class="label">{_pluralize(n_networks, 'Network')}</span></div>
   </div>
 </div>
 
 {featured_html}
 
 {f'''<div class="section-wrap">
-  <h3 class="section-heading">Mined Projects ({len(rest_projects)})</h3>
+  <h3 class="section-heading">Analyzed Projects ({len(rest_projects)})</h3>
   <div class="grid">
   {project_cards}
   </div>
@@ -578,6 +614,8 @@ def generate_project_index(project: dict[str, Any]) -> str:
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>{proj_name} — Project Overview</title>
+<meta name="description" content="Archaeological analysis of {proj_name} — {commits_fmt} commits across {eras} {_pluralize(eras if isinstance(eras, int) else 0, 'era')}">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x26CF;</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -658,12 +696,12 @@ body{{background:var(--bg);color:var(--text);font-family:var(--font-body);line-h
 <div class="container">
   <div class="project-header">
     <h1>{proj_name}</h1>
-    <p>Archaeological analysis of development history</p>
+    <p>{_project_description(project['name'], meta)}</p>
     <div class="project-stats">
-      <div class="pstat"><span class="val">{commits_fmt}</span><span class="lbl">Commits</span></div>
-      <div class="pstat"><span class="val">{eras}</span><span class="lbl">Eras</span></div>
-      <div class="pstat"><span class="val">{active_days}</span><span class="lbl">Active Days</span></div>
-      <div class="pstat"><span class="val">{span_days}</span><span class="lbl">Day Span</span></div>
+      <div class="pstat"><span class="val">{commits_fmt}</span><span class="lbl">{_pluralize(commits if isinstance(commits, int) else 0, 'Commit')}</span></div>
+      <div class="pstat"><span class="val">{eras if eras else '—'}</span><span class="lbl">{_pluralize(eras if isinstance(eras, int) else 0, 'Era')}</span></div>
+      <div class="pstat"><span class="val">{active_days}</span><span class="lbl">{_pluralize(active_days if isinstance(active_days, int) else 0, 'Active Day')}</span></div>
+      <div class="pstat"><span class="val">{span_days}</span><span class="lbl">{_pluralize(span_days if isinstance(span_days, int) else 0, 'Day', 'Day Span')}</span></div>
     </div>
   </div>
 
