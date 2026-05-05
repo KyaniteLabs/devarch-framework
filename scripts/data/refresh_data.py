@@ -2,15 +2,14 @@
 """
 Dev-Archaeology: Incremental Data Refresh
 ==========================================
-Mines a git repo and updates data.json incrementally.
+Mines the Liminal git repo and updates data.json incrementally.
 Adds new dates without destroying historical analysis.
 
 Usage:
-    python3 refresh_data.py                              # Full refresh (uses DEFAULT_PRIMARY_PROJECT)
-    python3 refresh_data.py --primary-project myproject  # Use specific project as primary
+    python3 refresh_data.py                  # Full refresh
     python3 refresh_data.py --sections meta,commits,hourly  # Partial refresh
-    python3 refresh_data.py --dry-run                    # Show what would change
-    python3 refresh_data.py --repo /path/to/repo         # Custom repo path
+    python3 refresh_data.py --dry-run        # Show what would change
+    python3 refresh_data.py --repo /path/to/repo  # Custom repo path
 
 Design principles:
     - Existing data.json dates are PRESERVED (only appended to)
@@ -30,10 +29,9 @@ from collections import defaultdict
 
 # ─── Configuration ──────────────────────────────────────────────────────────────
 
-DEFAULT_PRIMARY_PROJECT = "liminal"  # Override with --primary-project
 DEFAULT_REPO = Path("/Users/simongonzalezdecruz/Desktop/OMC/liminal")
-DEFAULT_DATA_JSON = Path(__file__).parent / "projects" / DEFAULT_PRIMARY_PROJECT / "deliverables" / "data.json"
-DEFAULT_ERAS_JSON = Path(__file__).parent / "projects" / DEFAULT_PRIMARY_PROJECT / "data" / "commit-eras.json"
+DEFAULT_DATA_JSON = Path(__file__).parent / "projects" / "liminal" / "deliverables" / "data.json"
+DEFAULT_ERAS_JSON = Path(__file__).parent / "projects" / "liminal" / "data" / "commit-eras.json"
 
 ALL_SECTIONS = [
     "meta", "commits", "hourly", "types", "authors",
@@ -1173,15 +1171,15 @@ def update_sentiment(data: dict, repo: Path, dry_run: bool) -> list[str]:
     return changes
 
 
-def update_cross_repo(data: dict, repo: Path, dry_run: bool, primary_project: str = "primary") -> list[str]:
+def update_cross_repo(data: dict, repo: Path, dry_run: bool) -> list[str]:
     """Update cross_repo_velocity_correlation section."""
     changes = []
     crc = data.get("derived_patterns", {}).get("cross_repo_velocity_correlation", {})
 
-    # Get daily commits for primary project
+    # Get daily commits for liminal
     daily = extract_daily_commits(repo)
 
-    # Update daily_data (it's a list of dicts with date, primary, other_repos, total)
+    # Update daily_data (it's a list of dicts with date, liminal, other_repos, total)
     if "daily_data" in crc and isinstance(crc["daily_data"], list):
         daily_data = crc["daily_data"]
 
@@ -1189,20 +1187,20 @@ def update_cross_repo(data: dict, repo: Path, dry_run: bool, primary_project: st
         existing_by_date = {entry.get("date"): entry for entry in daily_data if isinstance(entry, dict)}
 
         # Update or add entries for each date
-        for date, primary_count in daily.items():
+        for date, liminal_count in daily.items():
             if date in existing_by_date:
                 entry = existing_by_date[date]
-                if entry.get("primary") != primary_count:
-                    changes.append(f"  cross_repo_velocity_correlation.daily_data[{date}].primary: {entry.get('primary')} → {primary_count}")
+                if entry.get("liminal") != liminal_count:
+                    changes.append(f"  cross_repo_velocity_correlation.daily_data[{date}].liminal: {entry.get('liminal')} → {liminal_count}")
                     if not dry_run:
-                        entry["primary"] = primary_count
+                        entry["liminal"] = liminal_count
                         # Update total
                         other = entry.get("other_repos", 0)
-                        entry["total"] = primary_count + other
+                        entry["total"] = liminal_count + other
             else:
                 # Add new entry
-                new_entry = {"date": date, "primary": primary_count, "other_repos": 0, "total": primary_count}
-                changes.append(f"  + cross_repo_velocity_correlation.daily_data[{date}]: primary={primary_count}")
+                new_entry = {"date": date, "liminal": liminal_count, "other_repos": 0, "total": liminal_count}
+                changes.append(f"  + cross_repo_velocity_correlation.daily_data[{date}]: liminal={liminal_count}")
                 if not dry_run:
                     daily_data.append(new_entry)
 
@@ -1437,7 +1435,6 @@ def main():
     parser.add_argument("--sections", help="Comma-separated sections to update (default: all)")
     parser.add_argument("--dry-run", action="store_true", help="Show changes without writing")
     parser.add_argument("--list", action="store_true", help="List available sections")
-    parser.add_argument("--primary-project", default=DEFAULT_PRIMARY_PROJECT, help="Primary project name (used in cross-repo data)")
     args = parser.parse_args()
 
     if args.list:
@@ -1480,11 +1477,7 @@ def main():
             continue
 
         try:
-            # Cross-repo section needs primary_project parameter
-            if section == "cross_repo":
-                changes = fn(data, args.repo, args.dry_run, args.primary_project)
-            else:
-                changes = fn(data, args.repo, args.dry_run)
+            changes = fn(data, args.repo, args.dry_run)
             if changes:
                 print(f"[{section}] {len(changes)} changes:")
                 for c in changes:

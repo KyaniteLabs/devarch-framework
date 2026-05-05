@@ -1,0 +1,227 @@
+# Example configuration for wiring research-scout to dev-archaeology
+# This shows how research-scout could trigger archaeological analysis on discovered repos
+
+# research-scout configuration example (pseudo-config)
+# Note: research-scout's actual configuration format may differ
+
+on_repository_discovered:
+  # Trigger archaeology analysis for repos with significant commit history
+  if:
+    - commits_count > 50
+    - not: fork
+    - language_in: [Python, TypeScript, JavaScript, Go, Rust]
+
+  then:
+    archaeology_analysis:
+      enabled: true
+      script_path: "/path/to/dev-archaeology/scripts/integrations/scout_hook.py"
+
+      # Input mapping from research-scout context to scout_hook args
+      input:
+        # Use repo URL for cloning
+        repo_url: "{{repository.url}}"
+
+        # Generate project name from repo owner/name
+        project_name: "{{repository.owner}}-{{repository.name}}"
+
+        # Optional: keep cloned repos for debugging
+        keep: false
+
+        # Optional: custom clone directory
+        clone_dir: "/tmp/archaeology-clones"
+
+      # Output parsing
+      parse_output: json
+
+      # Success criteria
+      success_criteria:
+        status:
+          - complete
+          - partial  # Accept partial success (some analysis vectors may fail)
+
+      # Actions based on results
+      on_success:
+        - log: "✓ Archaeology analysis complete: {{output.metrics.commit_count}} commits analyzed"
+        - log: "  - Signals detected: {{output.metrics.signal_count}}"
+        - log: "  - Analysis vectors: {{output.metrics.analysis_count}}/{{output.metrics.total_vectors}}"
+        - store_artifacts:
+            database: "{{output.artifacts.db_path}}"
+            analysis_files: "{{output.artifacts.analysis_files}}"
+        - label:
+            add: "archaeology:analyzed"
+
+      on_failure:
+        - log: "✗ Archaeology analysis failed: {{output.error}}"
+        - label:
+            add: "archaeology:failed"
+
+      # Conditional actions based on findings
+      on_signals_detected:
+        if: "{{output.metrics.signal_count}} > 10"
+        then:
+          - log: "⚠ High signal activity detected ({{output.metrics.signal_count}} signals)"
+          - label:
+              add: "archaeology:high-activity"
+
+      on_quality_gaps:
+        if: "{{output.analysis.sdlc_gap_finder.gaps}}"
+        then:
+          - log: "📋 SDLC gaps found: {{output.analysis.sdlc_gap_finder.gaps}}"
+          - create_issue:
+              title: "SDLC Gaps Detected in {{repository.name}}"
+              body: |
+                Archaeology analysis found {{output.analysis.sdlc_gap_finder.gaps.length}} SDLC gaps:
+
+                {% for gap in output.analysis.sdlc_gap_finder.gaps %}
+                - **{{gap.practice}}**: {{gap.status}} (severity: {{gap.severity}})
+                  Recommendation: {{gap.recommendation}}
+                {% endfor %}
+
+                Full analysis: {{output.artifacts.analysis_files}}
+
+# Alternative: Batch processing mode
+batch_analysis:
+  enabled: true
+  schedule: "0 0 * * 0"  # Weekly
+
+  # Find repos analyzed in the last week
+  repos:
+    source: "github"
+    query: "pushed:>7d language:python"
+    limit: 20
+
+  # Run archaeology analysis on each
+  pipeline:
+    - step: "trigger_archaeology"
+      script: "/path/to/dev-archaeology/scripts/integrations/scout_hook.py"
+      parallel: true  # Run up to 4 analyses in parallel
+      max_workers: 4
+
+    - step: "aggregate_results"
+      output: "weekly-archaeology-report.json"
+
+    - step: "notify"
+      slack:
+        channel: "#archaeology-updates"
+        message: |
+          Weekly archaeology analysis complete:
+          - Repos analyzed: {{aggregate_results.total_repos}}
+          - Total commits: {{aggregate_results.total_commits}}
+          - High-signal repos: {{aggregate_results.high_signal_repos}}
+          - Report: {{aggregate_results.report_url}}
+
+# Webhook mode: Receive triggers from external systems
+webhook:
+  endpoint: "/webhook/archaeology"
+  method: POST
+
+  # Expected payload format
+  payload_schema:
+    type: object
+    properties:
+      repo_url:
+        type: string
+        format: uri
+      project_name:
+        type: string
+      keep:
+        type: boolean
+        default: false
+
+  # Process webhook
+  handler: |
+    import subprocess
+    import json
+
+    payload = json.loads(request.body)
+    cmd = [
+        "python3", "/path/to/dev-archaeology/scripts/integrations/scout_hook.py",
+        "--repo-url", payload["repo_url"],
+        "--project-name", payload["project_name"],
+    ]
+    if payload.get("keep"):
+        cmd.append("--keep")
+
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    return json.loads(result.stdout)
+
+# CI/CD integration: GitHub Actions workflow example
+github_actions:
+  workflow: |
+    name: Archaeology Analysis
+
+    on:
+      push:
+        branches: [main]
+
+    jobs:
+      archaeology:
+        runs-on: ubuntu-latest
+        steps:
+          - name: Checkout dev-archaeology
+            uses: actions/checkout@v3
+            with:
+              path: dev-archaeology
+
+          - name: Set up Python
+            uses: actions/setup-python@v4
+            with:
+              python-version: '3.11'
+
+          - name: Install dependencies
+            run: |
+              cd dev-archaeology
+              pip install -e .
+
+          - name: Run archaeology analysis
+            run: |
+              python3 scripts/integrations/scout_hook.py \
+                --repo-url ${{ github.repositoryUrl }} \
+                --project-name ${{ github.event.repository.name }}
+
+          - name: Upload artifacts
+            uses: actions/upload-artifact@v3
+            with:
+              name: archaeology-results
+              path: dev-archaeology/projects/*/deliverables/
+
+# Example: Python programmatic integration
+python_example: |
+    import json
+    import subprocess
+    from pathlib import Path
+
+    def analyze_repo(repo_url: str, project_name: str) -> dict:
+        \"\"\"Trigger archaeology analysis from research-scout.\"\"\"
+        cmd = [
+            "python3", "scripts/integrations/scout_hook.py",
+            "--repo-url", repo_url,
+            "--project-name", project_name,
+        ]
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            cwd="/path/to/dev-archaeology",
+        )
+        return json.loads(result.stdout)
+
+    # Usage
+    result = analyze_repo(
+        "https://github.com/user/repo",
+        "my-project"
+    )
+
+    if result["status"] == "complete":
+        print(f\"✓ Analysis complete: {result['metrics']['commit_count']} commits\")
+        print(f\"  Signals: {result['metrics']['signal_count']}\")
+        print(f\"  Analysis files: {result['metrics']['analysis_count']}\")
+
+        # Check for quality gaps
+        with open(Path(result["artifacts"]["analysis_files"][0])) as f:
+            sdlc_data = json.load(f)
+            for gap in sdlc_data.get("gaps", []):
+                if gap["severity"] == "HIGH":
+                    print(f\"  ⚠ {gap['practice']}: {gap['status']}\")
+    else:
+        print(f\"✗ Analysis failed: {result.get('error')}\")

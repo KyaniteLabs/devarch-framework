@@ -44,50 +44,30 @@ def analyze_agent_benchmarks(db_path: str) -> Dict[str, Any]:
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
 
-    # Get era information
-    eras_data = cursor.execute(
-        "SELECT id, name FROM eras ORDER BY id"
-    ).fetchall()
+    # Check if eras table exists
+    has_eras = cursor.execute(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='eras'"
+    ).fetchone() is not None
 
-    eras = {row["id"]: row["name"] for row in eras_data}
+    # Get era information (optional)
+    eras = {}
+    era_date_ranges = {}
+    if has_eras:
+        eras_data = cursor.execute(
+            "SELECT id, name FROM eras ORDER BY id"
+        ).fetchall()
+        eras = {row["id"]: row["name"] for row in eras_data}
     era_ids = list(eras.keys())
 
     # Build era date ranges for mapping commits
     era_date_ranges = {}
-    for row in eras_data:
-        era_id = row["id"]
-        # Parse dates like "Feb 28 - Mar 18" or "Mar 19 - Mar 31"
-        dates_str = cursor.execute(
-            f"SELECT dates FROM eras WHERE id = {era_id}"
-        ).fetchone()["dates"]
-
-        # Simple parsing - assume format like "Feb 28 - Mar 18"
-        # We'll match commits by year-month pattern
-        era_date_ranges[era_id] = dates_str
-
-    # Get all commits with era mapping
-    # We need to map commits to eras based on date
-    commits_query = """
-        SELECT c.hash, c.date, c.message, c.author, e.id as era_id
-        FROM commits c
-        LEFT JOIN eras e ON c.date BETWEEN
-            substr(e.dates, 1, instr(e.dates, ' - ') - 1) ||
-            CASE WHEN substr(e.dates, 1, 2) LIKE 'Jan%' THEN ', 2026'
-                 WHEN substr(e.dates, 1, 2) LIKE 'Feb%' THEN ', 2026'
-                 WHEN substr(e.dates, 1, 2) LIKE 'Mar%' THEN ', 2026'
-                 WHEN substr(e.dates, 1, 2) LIKE 'Apr%' THEN ', 2026'
-                 WHEN substr(e.dates, 1, 2) LIKE 'May%' THEN ', 2026'
-                 ELSE ', 2026' END
-            AND
-            substr(e.dates, instr(e.dates, ' - ') + 4, 50) ||
-            CASE WHEN substr(e.dates, instr(e.dates, ' - ') + 4, 2) LIKE 'Jan%' THEN ', 2026'
-                 WHEN substr(e.dates, instr(e.dates, ' - ') + 4, 2) LIKE 'Feb%' THEN ', 2026'
-                 WHEN substr(e.dates, instr(e.dates, ' - ') + 4, 2) LIKE 'Mar%' THEN ', 2026'
-                 WHEN substr(e.dates, instr(e.dates, ' - ') + 4, 2) LIKE 'Apr%' THEN ', 2026'
-                 WHEN substr(e.dates, instr(e.dates, ' - ') + 4, 2) LIKE 'May%' THEN ', 2026'
-                 ELSE ', 2026' END
-        ORDER BY c.date
-    """
+    if has_eras:
+        for row in eras_data:
+            era_id = row["id"]
+            dates_str = cursor.execute(
+                f"SELECT dates FROM eras WHERE id = {era_id}"
+            ).fetchone()["dates"]
+            era_date_ranges[era_id] = dates_str
 
     # Simpler approach: get all commits and map to eras in Python
     commits = cursor.execute(
@@ -96,13 +76,14 @@ def analyze_agent_benchmarks(db_path: str) -> Dict[str, Any]:
 
     # Build era date mappings manually
     era_mappings = []
-    for era_id, era_name in eras.items():
-        era_row = cursor.execute(
-            f"SELECT dates, sub_phases FROM eras WHERE id = {era_id}"
-        ).fetchone()
+    if has_eras:
+        for era_id, era_name in eras.items():
+            era_row = cursor.execute(
+                f"SELECT dates, sub_phases FROM eras WHERE id = {era_id}"
+            ).fetchone()
 
-        dates_str = era_row["dates"]
-        sub_phases_str = era_row["sub_phases"]
+            dates_str = era_row["dates"]
+            sub_phases_str = era_row["sub_phases"]
 
         # Parse the main era date range
         # Format: "Feb 28 - Mar 18"
@@ -316,6 +297,8 @@ def generate_benchmark_html(benchmark_data: Dict[str, Any], project_name: str) -
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>{project_name.upper()} — Agent Performance Benchmark</title>
+<meta name="description" content="AI agent contribution analysis for {project_name.upper()}">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x26CF;</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -338,7 +321,12 @@ h1,h2,h3{{font-family:var(--font-display);font-weight:600;letter-spacing:-.01em}
 .mono{{font-family:var(--font-mono)}}
 
 .container{{max-width:1200px;margin:0 auto;padding:2rem}}
-.header{{margin-bottom:3rem}}
+.site-nav{{position:sticky;top:0;z-index:100;background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;display:flex;align-items:center;gap:12px;height:52px;font-family:var(--font-display);backdrop-filter:blur(12px)}}
+.site-nav .nav-back{{font-weight:500;font-size:13px;color:var(--text2);text-decoration:none;padding:4px 10px;border-radius:var(--radius-sm);transition:color .15s,background .15s;white-space:nowrap}}
+.site-nav .nav-back:hover{{color:var(--text);background:var(--surface2)}}
+.site-nav .nav-sep{{width:1px;height:24px;background:var(--border)}}
+.site-nav .nav-title{{font-weight:600;font-size:15px;color:var(--text);letter-spacing:-.01em}}
+.header{{margin-bottom:3rem;padding-top:1rem}}
 .header h1{{font-size:2.5rem;margin-bottom:.5rem}}
 .header p{{color:var(--text2);font-size:1.1rem}}
 
@@ -371,6 +359,11 @@ tr:hover td{{background:var(--surface2)}}
 </style>
 </head>
 <body>
+<nav class="site-nav">
+  <a href="." class="nav-back">&larr; Back</a>
+  <div class="nav-sep"></div>
+  <span class="nav-title">{project_name.upper()} Agent Benchmark</span>
+</nav>
 <div class="container">
   <div class="header">
     <h1>{project_name.upper()} — Agent Performance Benchmark</h1>

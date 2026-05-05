@@ -111,7 +111,7 @@ def test_export_report_from_demo_analysis(tmp_path, monkeypatch):
     assert analyze.exit_code == 0, analyze.output
     export = runner.invoke(main, ["export-report", "demo"])
     assert export.exit_code == 0, export.output
-    report = tmp_path / "projects" / "demo" / "deliverables" / "ARCHAEOLOGY-REPORT.md"
+    report = tmp_path / "projects" / "demo" / "deliverables" / "reports" / "ARCHAEOLOGY-REPORT.md"
     text = report.read_text()
     assert "# DEMO ARCHAEOLOGY Archaeology Report" in text
     assert "## Canonical Metrics" in text

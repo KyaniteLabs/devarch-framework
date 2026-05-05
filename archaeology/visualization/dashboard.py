@@ -12,6 +12,37 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+# Deliverable categories with display metadata and colors
+CATEGORIES: dict[str, dict[str, str]] = {
+    "visuals": {"icon": "&#128202;", "label": "Visualizations", "color": "#14b8a6"},
+    "analysis": {"icon": "&#128270;", "label": "Analysis", "color": "#8b5cf6"},
+    "reports": {"icon": "&#128196;", "label": "Reports", "color": "#3b82f6"},
+    "strategy": {"icon": "&#127919;", "label": "Strategy", "color": "#f59e0b"},
+    "planning": {"icon": "&#128203;", "label": "Planning", "color": "#10b981"},
+    "learning": {"icon": "&#128218;", "label": "Learning", "color": "#ec4899"},
+    "content": {"icon": "&#9997;", "label": "Content", "color": "#f97316"},
+    "video": {"icon": "&#127909;", "label": "Video", "color": "#ef4444"},
+}
+
+
+def _discover_all_deliverables(deliverables_dir: Path, project_name: str) -> dict[str, list[dict[str, str]]]:
+    """Scan all deliverable subdirectories and categorize files."""
+    result: dict[str, list[dict[str, str]]] = {}
+    for cat_name in CATEGORIES:
+        cat_dir = deliverables_dir / cat_name
+        if not cat_dir.exists():
+            continue
+        files = []
+        for f in sorted(cat_dir.iterdir()):
+            if f.suffix not in (".html", ".md", ".json"):
+                continue
+            display = f.stem.replace("-", " ").replace("_", " ").title()
+            href = f"{project_name}/{cat_name}/{f.name}"
+            files.append({"name": display, "href": href, "ext": f.suffix, "filename": f.name})
+        if files:
+            result[cat_name] = files
+    return result
+
 
 def discover_projects(projects_dir: Path) -> list[dict[str, Any]]:
     """Scan projects/ directory and collect metadata for each project.
@@ -36,14 +67,20 @@ def discover_projects(projects_dir: Path) -> list[dict[str, Any]]:
         # Load project metadata from data.json or canonical-metrics.json
         meta = _load_project_meta(deliverables_dir, data_dir)
 
-        # Discover HTML visualizations
+        # Discover HTML visualizations (backward compat)
         visuals = _discover_visuals(deliverables_dir, project_dir.name)
+
+        # Discover all categorized deliverables
+        deliverables = _discover_all_deliverables(deliverables_dir, project_dir.name)
+        total_deliverables = sum(len(v) for v in deliverables.values())
 
         projects.append({
             "name": project_dir.name,
             "slug": project_dir.name,
             "meta": meta,
             "visuals": visuals,
+            "deliverables": deliverables,
+            "total_deliverables": total_deliverables,
             "has_data": (deliverables_dir / "data.json").exists() or (data_dir).exists(),
         })
 
@@ -232,9 +269,19 @@ def generate_master_dashboard(projects: list[dict[str, Any]], api_section_html: 
         fc_fmt = f"{fc:,}" if isinstance(fc, int) else str(fc)
         fe = fm.get("era_count", 0)
         fad = fm.get("active_days", "—")
+        fd = featured.get("total_deliverables", 0)
         fviz = ""
         for viz in featured["visuals"]:
             fviz += f'<a href="{viz["href"]}" class="fviz-link">{viz["name"]}</a>\n            '
+
+        # Category pills
+        cat_pills = ""
+        for cat_name, cat_meta in CATEGORIES.items():
+            count = len(featured.get("deliverables", {}).get(cat_name, []))
+            if count:
+                color = cat_meta["color"]
+                cat_pills += f'<span class="cat-pill" style="background:{color}22;color:{color};border:1px solid {color}44">{cat_meta["label"]} {count}</span>\n'
+
         featured_html = f"""
 <div class="section-wrap">
   <a href="{featured['name']}/" class="featured-card">
@@ -246,7 +293,9 @@ def generate_master_dashboard(projects: list[dict[str, Any]], api_section_html: 
         <div class="fstat"><span class="fstat-val">{fc_fmt}</span><span class="fstat-lbl">{_pluralize(fc if isinstance(fc, int) else 0, 'commit')}</span></div>
         <div class="fstat"><span class="fstat-val">{fe if fe else '—'}</span><span class="fstat-lbl">{_pluralize(fe, 'era')}</span></div>
         <div class="fstat"><span class="fstat-val">{fad}</span><span class="fstat-lbl">{_pluralize(fad if isinstance(fad, int) else 0, 'active day')}</span></div>
+        <div class="fstat"><span class="fstat-val">{fd}</span><span class="fstat-lbl">{_pluralize(fd, 'deliverable')}</span></div>
       </div>
+      <div class="cat-pills">{cat_pills}</div>
     </div>
     <div class="featured-links" onclick="event.stopPropagation()">
       {fviz}
@@ -261,22 +310,32 @@ def generate_master_dashboard(projects: list[dict[str, Any]], api_section_html: 
         commits = meta.get("commits", "—")
         eras = meta.get("era_count", 0)
         active_days = meta.get("active_days", "—")
-        n_visuals = len(proj["visuals"])
+        total_deliverables = proj.get("total_deliverables", 0)
         commits_fmt = f"{commits:,}" if isinstance(commits, int) else str(commits)
         viz_links = ""
         for viz in proj["visuals"]:
             viz_links += f'<a href="{viz["href"]}" class="viz-link">{viz["name"]}</a>\n              '
+
+        # Category pills
+        cat_pills = ""
+        for cat_name, cat_meta in CATEGORIES.items():
+            count = len(proj.get("deliverables", {}).get(cat_name, []))
+            if count:
+                color = cat_meta["color"]
+                cat_pills += f'<span class="cat-pill" style="background:{color}22;color:{color};border:1px solid {color}44">{cat_meta["label"]} {count}</span>\n'
+
         project_cards += f"""
         <a href="{proj['name']}/" class="project-card">
           <div class="card-header">
             <h2 class="card-title">{proj['name'].upper()}</h2>
-            <span class="card-badge">{n_visuals} {_pluralize(n_visuals, 'deliverable')}</span>
+            <span class="card-badge">{total_deliverables} {_pluralize(total_deliverables, 'deliverable')}</span>
           </div>
           <div class="card-stats">
             <div class="stat"><span class="stat-value">{commits_fmt}</span><span class="stat-label">{_pluralize(commits if isinstance(commits, int) else 0, 'commit')}</span></div>
             <div class="stat"><span class="stat-value">{eras if eras else '—'}</span><span class="stat-label">{_pluralize(eras, 'era')}</span></div>
             <div class="stat"><span class="stat-value">{active_days}</span><span class="stat-label">{_pluralize(active_days if isinstance(active_days, int) else 0, 'active day')}</span></div>
           </div>
+          <div class="cat-pills">{cat_pills}</div>
           <div class="card-links" onclick="event.stopPropagation()">
             {viz_links}
           </div>
@@ -288,6 +347,7 @@ def generate_master_dashboard(projects: list[dict[str, Any]], api_section_html: 
     total_commits = mined_commits + api_commits
     total_commits_fmt = f"{total_commits:,}"
     total_repos_fmt = f"{total_repos:,}"
+    total_deliverables = sum(p.get("total_deliverables", 0) for p in projects)
     owners = set(r["owner"] for r in api_repos) | {"mined"}
     n_networks = len(owners)
 
@@ -314,6 +374,22 @@ def generate_master_dashboard(projects: list[dict[str, Any]], api_section_html: 
       {api_section_html}
     </div>
   </div>
+</div>"""
+
+    # ── Cross-Repo Analysis section ──
+    cross_repo_section = ""
+    global_deliverables_dir = Path("global/deliverables")
+    if global_deliverables_dir.exists():
+        md_files = sorted(global_deliverables_dir.rglob("*.md"))
+        if md_files:
+            cards_html = ""
+            for md in md_files:
+                display = md.stem.replace("-", " ").replace("_", " ").title()
+                rel = f"global/{md.relative_to(global_deliverables_dir)}"
+                cards_html += f'<a href="md-viewer.html?file={rel}" class="cross-card"><span class="cross-name">{display}</span><span class="cross-path">{rel}</span></a>\n'
+            cross_repo_section = f"""<div class="section-wrap">
+  <h3 class="section-heading">Cross-Repository Analysis ({len(md_files)})</h3>
+  <div class="cross-grid">{cards_html}</div>
 </div>"""
 
     # ── Global viz cards ──
@@ -441,6 +517,29 @@ body{{background:var(--bg);color:var(--text);font-family:var(--font-body);line-h
 }}
 .viz-link:hover{{color:var(--text);background:var(--surface3)}}
 
+/* ── Category pills ── */
+.cat-pills{{display:flex;gap:4px;flex-wrap:wrap;margin-top:8px}}
+.cat-pill{{font-size:10px;font-weight:500;padding:2px 8px;border-radius:12px;font-family:var(--font-mono);white-space:nowrap}}
+
+/* ── Cross-repo cards ── */
+.cross-grid{{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px}}
+.cross-card{{display:flex;flex-direction:column;gap:2px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:12px 14px;text-decoration:none;color:var(--text);transition:border-color .2s}}
+.cross-card:hover{{border-color:var(--border-hover)}}
+.cross-name{{font-family:var(--font-display);font-size:13px;font-weight:600}}
+.cross-path{{font-size:10px;color:var(--text3);font-family:var(--font-mono)}}
+
+/* ── Deliverable sections (project index) ── */
+.cat-section{{margin-bottom:28px}}
+.cat-heading{{font-family:var(--font-display);font-size:16px;font-weight:600;color:var(--text2);margin-bottom:12px;display:flex;align-items:center;gap:8px}}
+.cat-icon{{font-size:18px}}
+.cat-count{{font-size:11px;font-weight:500;color:var(--text3);background:var(--surface2);padding:2px 8px;border-radius:12px;font-family:var(--font-mono)}}
+.deliv-grid{{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px}}
+.deliv-file{{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 14px;text-decoration:none;color:var(--text);transition:border-color .15s,transform .15s}}
+.deliv-file:hover{{border-color:var(--border-hover);transform:translateX(2px)}}
+.deliv-icon{{font-size:16px;flex-shrink:0}}
+.deliv-name{{flex:1;font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
+.deliv-ext{{font-size:10px;font-weight:600;font-family:var(--font-mono);flex-shrink:0}}
+
 /* ── Global viz cards ── */
 .global-viz-row{{display:grid;grid-template-columns:1fr 1fr;gap:16px}}
 .global-viz-card{{
@@ -499,6 +598,17 @@ body{{background:var(--bg);color:var(--text);font-family:var(--font-body);line-h
 /* ── Footer ── */
 .footer{{text-align:center;padding:24px;color:var(--text3);font-size:12px;font-family:var(--font-mono);border-top:1px solid var(--border)}}
 
+/* ── Category pills ── */
+.cat-pills{{display:flex;gap:4px;flex-wrap:wrap;margin-top:8px}}
+.cat-pill{{font-size:10px;font-weight:500;padding:2px 8px;border-radius:12px;font-family:var(--font-mono);white-space:nowrap}}
+
+/* ── Cross-repo analysis ── */
+.cross-grid{{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px}}
+.cross-card{{display:flex;flex-direction:column;gap:2px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:12px 14px;text-decoration:none;color:var(--text);transition:border-color .2s}}
+.cross-card:hover{{border-color:var(--border-hover)}}
+.cross-name{{font-family:var(--font-display);font-size:13px;font-weight:600}}
+.cross-path{{font-size:10px;color:var(--text3);font-family:var(--font-mono)}}
+
 /* ── Mobile ── */
 @media(max-width:768px){{
   .section-wrap{{padding:0 16px 24px}}
@@ -528,6 +638,7 @@ body{{background:var(--bg);color:var(--text);font-family:var(--font-body);line-h
   <div class="hero-stats">
     <div class="hero-stat"><span class="value">{total_repos_fmt}</span><span class="label">{_pluralize(total_repos, 'Repository', 'Repositories')}</span></div>
     <div class="hero-stat"><span class="value">{total_commits_fmt}</span><span class="label">{_pluralize(total_commits, 'Commit')}</span></div>
+    <div class="hero-stat"><span class="value">{total_deliverables}</span><span class="label">{_pluralize(total_deliverables, 'Deliverable')}</span></div>
     <div class="hero-stat"><span class="value">{n_networks}</span><span class="label">{_pluralize(n_networks, 'Network')}</span></div>
   </div>
 </div>
@@ -540,6 +651,8 @@ body{{background:var(--bg);color:var(--text);font-family:var(--font-body);line-h
   {project_cards}
   </div>
 </div>''' if rest_projects else ""}
+
+{cross_repo_section}
 
 {global_viz_section}
 
@@ -582,7 +695,7 @@ document.querySelectorAll('.filter-bar').forEach(function(bar) {{
 
 
 def generate_project_index(project: dict[str, Any]) -> str:
-    """Generate per-project index.html with overview and links to visualizations."""
+    """Generate per-project index.html with overview and links to all deliverables."""
     now = datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC")
     meta = project["meta"]
     proj_name = project["name"].upper()
@@ -592,21 +705,47 @@ def generate_project_index(project: dict[str, Any]) -> str:
     active_days = meta.get("active_days", "?")
     span_days = meta.get("span_days", "?")
     commits_fmt = f"{commits:,}" if isinstance(commits, int) else str(commits)
+    total_deliv = project.get("total_deliverables", 0)
 
-    # Build visualization cards
-    viz_cards = ""
-    for viz in project["visuals"]:
-        href = viz["href"].split("/")[-1]  # Just the filename (same directory)
-        desc = _viz_description(viz["name"])
-        viz_cards += f"""
-        <a href="{href}" class="viz-card">
-          <div class="viz-icon">{_viz_icon(viz['name'])}</div>
-          <div class="viz-info">
-            <h3>{viz['name']}</h3>
-            <p>{desc}</p>
-          </div>
-          <span class="viz-arrow">&rarr;</span>
-        </a>"""
+    # Build categorized deliverable sections
+    cat_sections = ""
+    deliverables = project.get("deliverables", {})
+    for cat_name, cat_meta in CATEGORIES.items():
+        files = deliverables.get(cat_name, [])
+        if not files:
+            continue
+
+        file_cards = ""
+        for f in files:
+            href = f["href"].split("/", 1)[-1]  # Remove project name prefix (same directory)
+            if f["ext"] == ".html":
+                link = href
+                target = ""
+            elif f["ext"] == ".md":
+                link = f"../md-viewer.html?file={project['name']}/{href}"
+                target = ""
+            else:  # .json
+                link = href
+                target = ""
+
+            ext_badge_color = {"html": "#14b8a6", "md": "#8b5cf6", "json": "#f59e0b"}.get(f["ext"].lstrip("."), "#6a7888")
+            file_cards += f"""<a href="{link}" class="deliv-file" {target}>
+          <span class="deliv-icon">{cat_meta['icon']}</span>
+          <span class="deliv-name">{f['name']}</span>
+          <span class="deliv-ext" style="color:{ext_badge_color}">{f['ext'].lstrip('.').upper()}</span>
+        </a>\n"""
+
+        cat_sections += f"""
+    <div class="cat-section">
+      <h3 class="cat-heading" style="border-left:3px solid {cat_meta['color']};padding-left:10px">
+        <span class="cat-icon">{cat_meta['icon']}</span>
+        {cat_meta['label']}
+        <span class="cat-count">{len(files)}</span>
+      </h3>
+      <div class="deliv-grid">
+        {file_cards}
+      </div>
+    </div>"""
 
     html = f"""<!DOCTYPE html>
 <html lang="en">
@@ -662,25 +801,24 @@ body{{background:var(--bg);color:var(--text);font-family:var(--font-body);line-h
 .pstat .val{{font-family:var(--font-display);font-size:22px;font-weight:600;color:var(--text)}}
 .pstat .lbl{{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em}}
 
-.viz-list{{display:flex;flex-direction:column;gap:12px;margin-top:8px}}
-.viz-card{{
-  display:flex;align-items:center;gap:16px;
-  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);
-  padding:16px 20px;text-decoration:none;color:var(--text);
-  transition:border-color .2s,transform .2s;
-}}
-.viz-card:hover{{border-color:var(--border-hover);transform:translateX(4px)}}
-.viz-icon{{font-size:24px;width:40px;text-align:center;flex-shrink:0}}
-.viz-info{{flex:1}}
-.viz-info h3{{font-family:var(--font-display);font-size:15px;font-weight:600;margin-bottom:2px}}
-.viz-info p{{font-size:13px;color:var(--text3)}}
-.viz-arrow{{color:var(--text3);font-size:18px}}
+/* ── Deliverable categories ── */
+.cat-section{{margin-bottom:28px}}
+.cat-heading{{font-family:var(--font-display);font-size:16px;font-weight:600;color:var(--text2);margin-bottom:12px;display:flex;align-items:center;gap:8px}}
+.cat-icon{{font-size:18px}}
+.cat-count{{font-size:11px;font-weight:500;color:var(--text3);background:var(--surface2);padding:2px 8px;border-radius:12px;font-family:var(--font-mono)}}
+.deliv-grid{{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px}}
+.deliv-file{{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 14px;text-decoration:none;color:var(--text);transition:border-color .15s,transform .15s}}
+.deliv-file:hover{{border-color:var(--border-hover);transform:translateX(2px)}}
+.deliv-icon{{font-size:16px;flex-shrink:0}}
+.deliv-name{{flex:1;font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
+.deliv-ext{{font-size:10px;font-weight:600;font-family:var(--font-mono);flex-shrink:0}}
 
 @media(max-width:768px){{
   .container{{padding:24px 16px 48px}}
   .project-stats{{gap:12px}}
   .pstat{{min-width:80px;padding:10px 12px}}
   .pstat .val{{font-size:18px}}
+  .deliv-grid{{grid-template-columns:1fr}}
 }}
 </style>
 </head>
@@ -702,13 +840,11 @@ body{{background:var(--bg);color:var(--text);font-family:var(--font-body);line-h
       <div class="pstat"><span class="val">{eras if eras else '—'}</span><span class="lbl">{_pluralize(eras if isinstance(eras, int) else 0, 'Era')}</span></div>
       <div class="pstat"><span class="val">{active_days}</span><span class="lbl">{_pluralize(active_days if isinstance(active_days, int) else 0, 'Active Day')}</span></div>
       <div class="pstat"><span class="val">{span_days}</span><span class="lbl">{_pluralize(span_days if isinstance(span_days, int) else 0, 'Day', 'Day Span')}</span></div>
+      <div class="pstat"><span class="val">{total_deliv if total_deliv else '—'}</span><span class="lbl">{_pluralize(total_deliv if isinstance(total_deliv, int) else 0, 'Deliverable')}</span></div>
     </div>
   </div>
 
-  <h2 style="font-family:var(--font-display);font-size:16px;color:var(--text2);margin-bottom:16px">Visualizations</h2>
-  <div class="viz-list">
-    {viz_cards}
-  </div>
+  {cat_sections}
 </div>
 
 </body>

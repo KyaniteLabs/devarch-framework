@@ -71,8 +71,6 @@ def export_markdown_report(project_name: str, project_root: str | Path, output_p
         ("Total commits", canonical.get("total_commits") or eras.get("total_commits")),
         ("Span days", canonical.get("span_days")),
         ("Active days", canonical.get("active_days")),
-        ("Sessions", canonical.get("session_count")),
-        ("Human messages", canonical.get("human_messages")),
         ("Peak day", canonical.get("peak_day")),
         ("Peak day commits", canonical.get("peak_day_commits")),
     ]
@@ -133,7 +131,7 @@ def export_markdown_report(project_name: str, project_root: str | Path, output_p
     out.append(_bullet("Run `archaeology audit <project> --fail-on HIGH` before publishing."))
 
     if output_path is None:
-        output_path = deliverables / "ARCHAEOLOGY-REPORT.md"
+        output_path = deliverables / "reports" / "ARCHAEOLOGY-REPORT.md"
     output = Path(output_path)
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text("".join(out), encoding="utf-8")
@@ -151,6 +149,14 @@ def _markdown_to_html(markdown: str, title: str) -> str:
             body.append("</ul>")
             in_list = False
 
+    def render_inline(text: str) -> str:
+        """Convert **bold** and `code` inline markup to HTML."""
+        import re
+        text = html.escape(text)
+        text = re.sub(r'\*\*(.+?)\*\*', r'<strong>\1</strong>', text)
+        text = re.sub(r'`(.+?)`', r'<code>\1</code>', text)
+        return text
+
     for raw_line in markdown.splitlines():
         line = raw_line.rstrip()
         if not line:
@@ -158,45 +164,70 @@ def _markdown_to_html(markdown: str, title: str) -> str:
             continue
         if line.startswith("# "):
             close_list()
-            body.append(f"<h1>{html.escape(line[2:])}</h1>")
+            body.append(f"<h1>{render_inline(line[2:])}</h1>")
         elif line.startswith("## "):
             close_list()
-            body.append(f"<h2>{html.escape(line[3:])}</h2>")
+            body.append(f"<h2>{render_inline(line[3:])}</h2>")
         elif line.startswith("- "):
             if not in_list:
                 body.append("<ul>")
                 in_list = True
-            item = html.escape(line[2:]).replace("**", "")
-            body.append(f"<li>{item}</li>")
+            body.append(f"<li>{render_inline(line[2:])}</li>")
         else:
             close_list()
-            text = html.escape(line).replace("`", "")
-            body.append(f"<p>{text}</p>")
+            body.append(f"<p>{render_inline(line)}</p>")
     close_list()
     body_html = "\n    ".join(body)
     escaped_title = html.escape(title)
     return f"""<!doctype html>
-<html lang=\"en\">
+<html lang="en">
 <head>
-  <meta charset=\"utf-8\">
-  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{escaped_title}</title>
+  <meta name="description" content="Archaeological analysis report for {escaped_title}">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x26CF;</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    :root {{ color-scheme: dark; --bg:#070a0f; --panel:#0f1623; --text:#edf2f7; --muted:#97a6ba; --accent:#74c0fc; --border:#233044; }}
-    * {{ box-sizing: border-box; }}
-    body {{ margin:0; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: radial-gradient(circle at top left, #102036, var(--bg) 42rem); color:var(--text); line-height:1.65; }}
-    main {{ width:min(980px, calc(100% - 32px)); margin:0 auto; padding:56px 0 80px; }}
-    h1 {{ font-size: clamp(2.2rem, 6vw, 4.5rem); line-height:0.95; letter-spacing:-0.06em; margin:0 0 1rem; }}
-    h2 {{ margin-top:2.5rem; color:var(--accent); border-top:1px solid var(--border); padding-top:1.5rem; }}
-    p, li {{ color:var(--muted); }}
-    ul {{ padding:1rem 1.25rem; background:rgba(15,22,35,0.72); border:1px solid var(--border); border-radius:16px; }}
-    li + li {{ margin-top:0.55rem; }}
-    .badge {{ display:inline-block; margin-bottom:1rem; padding:0.35rem 0.7rem; border:1px solid var(--border); border-radius:999px; color:var(--accent); background:rgba(116,192,252,0.08); font-size:0.82rem; }}
+    :root {{ color-scheme: dark; --bg:#06090f; --surface:#0c1018; --surface2:#141a24; --surface3:#1c2432; --border:#1a2232; --border-hover:#2a3a52; --text:#e8ecf2; --text2:#8d99aa; --text3:#6a7888; --accent:#34d399; --font-display:'Space Grotesk',sans-serif; --font-body:'DM Sans',sans-serif; --font-mono:'JetBrains Mono',monospace; --radius-sm:6px; --radius-md:10px; --radius-lg:16px; }}
+    * {{ box-sizing: border-box; margin:0; padding:0; }}
+    html {{ scroll-behavior:smooth; -webkit-font-smoothing:antialiased; }}
+    body {{ background:var(--bg); color:var(--text); font-family:var(--font-body); line-height:1.65; min-height:100vh; }}
+    h1,h2,h3 {{ font-family:var(--font-display); font-weight:600; letter-spacing:-0.01em; }}
+
+    .site-nav {{ position:sticky; top:0; z-index:100; background:var(--surface); border-bottom:1px solid var(--border); padding:0 24px; display:flex; align-items:center; gap:12px; height:52px; font-family:var(--font-display); backdrop-filter:blur(12px); }}
+    .site-nav .nav-back {{ font-weight:500; font-size:13px; color:var(--text2); text-decoration:none; padding:4px 10px; border-radius:var(--radius-sm); transition:color .15s,background .15s; white-space:nowrap; }}
+    .site-nav .nav-back:hover {{ color:var(--text); background:var(--surface2); }}
+    .site-nav .nav-sep {{ width:1px; height:24px; background:var(--border); }}
+    .site-nav .nav-title {{ font-weight:600; font-size:15px; color:var(--text); letter-spacing:-0.01em; }}
+
+    main {{ max-width:800px; margin:0 auto; padding:40px 24px 80px; }}
+    h1 {{ font-size:clamp(1.75rem,4vw,2.5rem); line-height:1.1; letter-spacing:-0.03em; margin:0 0 1.5rem; color:var(--text); }}
+    h2 {{ font-size:1.1rem; margin-top:2.5rem; color:var(--accent); border-top:1px solid var(--border); padding-top:1.5rem; letter-spacing:0.02em; text-transform:uppercase; }}
+    p {{ color:var(--text2); margin-bottom:0.75rem; }}
+    ul {{ padding:1rem 1.25rem; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md); margin-bottom:1rem; }}
+    li {{ color:var(--text2); padding:0.2rem 0; }}
+    li + li {{ margin-top:0.4rem; }}
+    li strong {{ color:var(--text); font-weight:600; }}
+    code {{ font-family:var(--font-mono); font-size:0.85em; background:var(--surface2); padding:2px 6px; border-radius:4px; color:var(--accent); }}
+    .badge {{ display:inline-block; margin-bottom:1.25rem; padding:0.3rem 0.65rem; border:1px solid var(--border); border-radius:999px; color:var(--accent); background:rgba(52,211,153,0.06); font-size:0.75rem; font-weight:500; text-transform:uppercase; letter-spacing:0.04em; }}
+
+    @media(max-width:768px) {{
+      main {{ padding:28px 16px 60px; }}
+      .site-nav {{ padding:0 16px; }}
+    }}
   </style>
 </head>
 <body>
+  <nav class="site-nav">
+    <a href="." class="nav-back">&larr; Back</a>
+    <div class="nav-sep"></div>
+    <span class="nav-title">{escaped_title}</span>
+  </nav>
   <main>
-    <div class=\"badge\">Generated by Dev-Archaeology</div>
+    <div class="badge">Archaeology Report</div>
     {body_html}
   </main>
 </body>

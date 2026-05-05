@@ -6,19 +6,27 @@ and cross-referencing with commit/session data.
 
 Pipeline JSON format (expected keys):
   {
-    "timestamp": "2026-04-09T22:17:10Z",
-    "status": "pass|fail|partial",
+    "run_timestamp": "2026-04-09T22:17:10Z",
+    "status": "COMPLETE|NEEDS_ATTENTION|RUNNING",
     "duration_seconds": 120,
     "repos": [
       {
         "name": "repo-name",
         "tier": 1,
-        "issues": [...],
+        "issues": {...},
         "fixes_applied": 2,
         "status": "clean"
       }
     ],
-    "agents_used": ["hygiene-agent", "secret-scanner"],
+    "supervision": {
+      "missions": [
+        {
+          "repo": "owner/repo",
+          "status": "supervising|needs_attention",
+          ...
+        }
+      ]
+    },
     "summary": { ... }
   }
 """
@@ -62,6 +70,48 @@ CREATE INDEX IF NOT EXISTS idx_pipeline_repo_results_run ON pipeline_repo_result
 """
 
 
+def _normalize_status(raw_status: str) -> str:
+    """Normalize new pipeline status values to legacy format for backward compatibility."""
+    if not raw_status or not isinstance(raw_status, str):
+        return "unknown"
+
+    status_map = {
+        "COMPLETE": "pass",
+        "SUCCESS": "pass",
+        "NEEDS_ATTENTION": "partial",
+        "RUNNING": "partial",
+        "FAILED": "fail",
+        "ERROR": "fail",
+    }
+    return status_map.get(raw_status.upper(), raw_status.lower())
+
+
+def _extract_agents(run_json: dict) -> str:
+    """Extract agent list from either supervision.missions or agents_used field."""
+    # Try new format: supervision.missions
+    supervision = run_json.get("supervision", {})
+    if isinstance(supervision, dict):
+        missions = supervision.get("missions", [])
+        if missions and isinstance(missions, list):
+            # Extract unique agent types from mission assignments
+            agents = set()
+            for mission in missions:
+                if isinstance(mission, dict):
+                    assigned_layers = mission.get("assigned_layers", [])
+                    if assigned_layers and isinstance(assigned_layers, list):
+                        agents.update(assigned_layers)
+            if agents:
+                return json.dumps(sorted(agents))
+
+    # Fall back to old format: agents_used
+    agents_used = run_json.get("agents_used", [])
+    if agents_used:
+        return json.dumps(agents_used)
+
+    # Default: empty list
+    return "[]"
+
+
 def ensure_tables(db_path: Path) -> None:
     """Create pipeline tables if they don't exist."""
     conn = sqlite3.connect(str(db_path), timeout=30)
@@ -77,10 +127,14 @@ def ingest_run(db_path: Path, run_json: dict, source_file: str = "") -> int:
     ensure_tables(db_path)
     conn = sqlite3.connect(str(db_path), timeout=30)
     try:
-        ts = run_json.get("timestamp", datetime.utcnow().isoformat())
-        status = run_json.get("status", "unknown")
+        # Support both old (timestamp) and new (run_timestamp) field names
+        ts = run_json.get("run_timestamp") or run_json.get("timestamp", datetime.utcnow().isoformat())
+        # Map new status values to old format for backward compatibility
+        raw_status = run_json.get("status", "unknown")
+        status = _normalize_status(raw_status)
         duration = run_json.get("duration_seconds")
-        agents = json.dumps(run_json.get("agents_used", []))
+        # Extract agents from supervision.missions if available, else use agents_used
+        agents = _extract_agents(run_json)
         summary = json.dumps(run_json.get("summary", {}))
 
         cursor = conn.execute(
@@ -96,12 +150,16 @@ def ingest_run(db_path: Path, run_json: dict, source_file: str = "") -> int:
             issues_json = json.dumps(issues) if isinstance(issues, (list, dict)) else "[]"
             fixes_raw = repo.get("fixes_applied", 0)
             fixes_count = len(fixes_raw) if isinstance(fixes_raw, list) else fixes_raw if isinstance(fixes_raw, int) else 0
+
+            # Extract repo name from multiple possible fields
+            repo_name = (repo.get("full_name") or repo.get("path") or repo.get("name", "unknown"))
+
             conn.execute(
                 "INSERT INTO pipeline_repo_results (run_id, repo_name, tier, status, issues_count, fixes_applied, issues_json) "
                 "VALUES (?, ?, ?, ?, ?, ?, ?)",
                 (
                     run_id,
-                    repo.get("name", "unknown"),
+                    repo_name,
                     repo.get("tier"),
                     repo.get("status", "unknown"),
                     issues_count,
@@ -146,8 +204,10 @@ def ingest_directory(db_path: Path, logs_dir: Path, verbose: bool = False) -> di
             with open(json_file, encoding="utf-8") as f:
                 data = json.load(f)
 
-            # Validate it looks like a pipeline run
-            if "repos" not in data and "timestamp" not in data:
+            # Validate it looks like a pipeline run (support both old and new formats)
+            has_repos = "repos" in data or "supervision" in data
+            has_timestamp = "run_timestamp" in data or "timestamp" in data
+            if not has_repos and not has_timestamp:
                 if verbose:
                     print(f"  SKIP {json_file.name} (not a pipeline run)")
                 stats["skipped"] += 1

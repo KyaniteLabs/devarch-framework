@@ -1,0 +1,7 @@
+hash,date,message,author
+demo001,2026-01-01 09:00:00 +0000,docs: write initial product intent,Demo Developer
+demo002,2026-01-01 11:00:00 +0000,feat: scaffold prototype,Agent
+demo003,2026-01-02 15:30:00 +0000,fix: wire prototype output,Agent
+demo004,2026-01-03 10:15:00 +0000,test: add behavior checks,Agent
+demo005,2026-01-05 13:00:00 +0000,refactor: extract audit boundary,Demo Developer
+demo006,2026-01-05 16:45:00 +0000,docs: publish remediation notes,Demo Developer
