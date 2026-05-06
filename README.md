@@ -14,6 +14,8 @@ Forensic archaeology framework for git repositories. Extract commit history, det
 
 DevArch transforms git history into structured insights through a full-featured CLI with 20+ commands. The framework supports:
 
+> **Just want the quick learning diagnostic?** [Dev Learning Archaeologist](https://github.com/KyaniteLabs/dev-learning-archaeologist) is a zero-setup ICM folder that drops into any project and runs the same analysis through Claude Code — no install required.
+
 - **Complete Pipeline**: Initialize projects, mine git data, build SQLite databases, detect signals, analyze patterns, visualize results
 - **6 Analysis Vectors**: SDLC Gap Finder, ML Pattern Mapper, Agentic Workflow Analyzer, Formal Terms Mapper, Source Archaeologist, YouTube Correlator
 - **Era System**: Scan commits for era transitions, cascade era labels across codebases, map era boundaries
@@ -27,7 +29,7 @@ DevArch transforms git history into structured insights through a full-featured 
 
 ```bash
 # Clone the repository
-git clone https://github.com/Pastorsimon1798/devarch-framework.git
+git clone https://github.com/KyaniteLabs/devarch-framework.git
 cd devarch-framework
 
 # Install in editable mode
@@ -210,8 +212,6 @@ Visit http://localhost:8001 to explore commits, signals, and analysis results.
 
 ## Supplementary Data
 
-## Supplementary Data
-
 Add external data sources to correlate with commits:
 
 - Fitness tracker data (CSV/JSON)
@@ -285,3 +285,8 @@ For issues or questions:
 3. Run `devarch validate <project>` to check configuration
 4. Run `devarch audit <project>` to validate outputs
 5. Use `devarch serve <project>` for database inspection
+
+## Related Projects
+
+- **[Dev Learning Archaeologist](https://github.com/KyaniteLabs/dev-learning-archaeologist)** — Zero-setup ICM folder for Claude Code. Drop it in, ask one question, get a full HTML learning diagnostic. The lightweight version of this framework.
+- **[KyaniteLabs](https://github.com/KyaniteLabs)** — More AI-native developer tools: MCP servers, time estimation, and multi-agent orchestration.
