@@ -5,26 +5,141 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Achiote Go-To-Market Strategy</title>
   <meta name="description" content="Comprehensive Go-To-Market strategy for Achiote food-memory reconstruction MCP server">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&family=Lora:wght@400;600;700&family=Source+Sans+3:wght@300;400;500;600&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <style>
-    :root {
-      color-scheme: dark;
-      --bg: #0a0a0f;
-      --panel: #151522;
-      --text: #f0e6d3;
-      --muted: #a89f91;
-      --accent-primary: #e85d3a;
-      --accent-secondary: #f4a261;
-      --accent-teal: #2a9d8f;
-      --border: #2a2a3a;
-      --card-bg: rgba(21, 21, 34, 0.8);
-      --success: #2a9d8f;
-      --warning: #f4a261;
-      --danger: #e76f51;
+    /* ─── Design Tokens: All Three Themes ───────────────────── */
+    :root, [data-theme="warm"] {
+      --bg-main:     #1f1a14;
+      --bg-surface:  #2b241b;
+      --bg-card:     #383020;
+      --bg-card-alt: #453a28;
+      --bg-hover:    #504230;
+
+      --accent:      #d4a017;
+      --accent-dim:  rgba(212, 160, 23, 0.12);
+      --accent-mid:  rgba(212, 160, 23, 0.25);
+      --secondary:   #b87333;
+      --secondary-dim: rgba(184, 115, 51, 0.12);
+      --success:     #4caf70;
+      --success-dim: rgba(76, 175, 112, 0.12);
+      --warning:     #e8a830;
+      --warning-dim: rgba(232, 168, 48, 0.12);
+      --danger:      #c0392b;
+      --danger-dim:  rgba(192, 57, 43, 0.12);
+
+      --text:        #f5e8c8;
+      --text-2:      #c8b898;
+      --text-muted:  #9d8f78;
+      --text-faint:  #6b5f4e;
+
+      --border:      rgba(212, 160, 23, 0.15);
+      --border-subtle: rgba(255, 255, 255, 0.05);
+
+      --font-display: 'DM Serif Display', Georgia, serif;
+      --font-body:    'DM Sans', system-ui, sans-serif;
+      --font-mono:    'JetBrains Mono', 'Courier New', monospace;
     }
 
-    * {
+    [data-theme="editorial"] {
+      --bg-main:     #faf9f7;
+      --bg-surface:  #ffffff;
+      --bg-card:     #ffffff;
+      --bg-card-alt: #f5f4f2;
+      --bg-hover:    #efeeec;
+
+      --accent:      #1a5c3a;
+      --accent-dim:  rgba(26, 92, 58, 0.08);
+      --accent-mid:  rgba(26, 92, 58, 0.18);
+      --secondary:   #2c5aa0;
+      --secondary-dim: rgba(44, 90, 160, 0.08);
+      --success:     #1a5c3a;
+      --success-dim: rgba(26, 92, 58, 0.08);
+      --warning:     #8a6d2b;
+      --warning-dim: rgba(138, 109, 43, 0.08);
+      --danger:      #a8282d;
+      --danger-dim:  rgba(168, 40, 45, 0.08);
+
+      --text:        #1a1a1a;
+      --text-2:      #3d3d3d;
+      --text-muted:  #6b6b6b;
+      --text-faint:  #9d9d9d;
+
+      --border:      rgba(0, 0, 0, 0.10);
+      --border-subtle: rgba(0, 0, 0, 0.05);
+
+      --font-display: 'Lora', Georgia, serif;
+      --font-body:    'Source Sans 3', system-ui, sans-serif;
+      --font-mono:    'IBM Plex Mono', 'Courier New', monospace;
+    }
+
+    [data-theme="modern"] {
+      --bg-main:     #09090b;
+      --bg-surface:  #0f0f12;
+      --bg-card:     #16161a;
+      --bg-card-alt: #1c1c21;
+      --bg-hover:    #222228;
+
+      --accent:      #3b82f6;
+      --accent-dim:  rgba(59, 130, 246, 0.10);
+      --accent-mid:  rgba(59, 130, 246, 0.22);
+      --secondary:   #8b5cf6;
+      --secondary-dim: rgba(139, 92, 246, 0.10);
+      --success:     #10b981;
+      --success-dim: rgba(16, 185, 129, 0.10);
+      --warning:     #f59e0b;
+      --warning-dim: rgba(245, 158, 11, 0.10);
+      --danger:      #ef4444;
+      --danger-dim:  rgba(239, 68, 68, 0.10);
+
+      --text:        #edf0f7;
+      --text-2:      #b4bccf;
+      --text-muted:  #6b7a9a;
+      --text-faint:  #3d4c6a;
+
+      --border:      rgba(255, 255, 255, 0.08);
+      --border-subtle: rgba(255, 255, 255, 0.04);
+
+      --font-display: 'Inter', system-ui, sans-serif;
+      --font-body:    'Inter', system-ui, sans-serif;
+      --font-mono:    'JetBrains Mono', 'Courier New', monospace;
+    }
+
+    /* ─── Shared Spacing & Layout Tokens ────────────────────── */
+    :root {
+      --space-1:  4px;
+      --space-2:  8px;
+      --space-3:  12px;
+      --space-4:  16px;
+      --space-5:  20px;
+      --space-6:  24px;
+      --space-8:  32px;
+      --space-10: 40px;
+      --space-12: 48px;
+      --space-16: 64px;
+      --space-20: 80px;
+
+      --radius-sm: 6px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --radius-xl: 16px;
+
+      --max-width: 1200px;
+
+      --shadow-sm:  0 1px 2px rgba(0,0,0,0.08);
+      --shadow-md:  0 4px 12px rgba(0,0,0,0.10);
+      --shadow-lg:  0 8px 24px rgba(0,0,0,0.14);
+
+      --transition: 180ms ease;
+    }
+
+    /* ─── Reset & Base ───────────────────────────────────── */
+    *, *::before, *::after {
       box-sizing: border-box;
+      margin: 0;
+      padding: 0;
     }
 
     html {
@@ -32,28 +147,123 @@
     }
 
     body {
-      margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-      background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 50%, #0a0a0f 100%);
+      font-family: var(--font-body);
+      background: var(--bg-main);
       color: var(--text);
-      line-height: 1.7;
       font-size: 16px;
+      line-height: 1.7;
+      font-weight: 400;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
     }
 
     .container {
-      max-width: 1200px;
+      max-width: var(--max-width);
       margin: 0 auto;
-      padding: 0 20px;
+      padding: 0 var(--space-6);
     }
 
+    /* ─── Skip Link (Accessibility) ────────────────────────── */
+    .skip-link {
+      position: absolute;
+      top: -100%;
+      left: var(--space-4);
+      background: var(--accent);
+      color: var(--bg-main);
+      padding: var(--space-2) var(--space-4);
+      font-family: var(--font-body);
+      font-size: 14px;
+      border-radius: var(--radius-sm);
+      z-index: 9999;
+      transition: top var(--transition);
+    }
+
+    .skip-link:focus {
+      top: var(--space-4);
+    }
+
+    /* ─── Theme Switcher ───────────────────────────────────── */
+    .theme-switcher {
+      display: flex;
+      gap: var(--space-2);
+      position: fixed;
+      top: var(--space-4);
+      right: var(--space-4);
+      z-index: 1000;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: var(--space-2);
+    }
+
+    .theme-switcher button {
+      width: 36px;
+      height: 36px;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all var(--transition);
+      background: var(--bg-hover);
+      color: var(--text-muted);
+    }
+
+    .theme-switcher button:hover {
+      background: var(--bg-card-alt);
+      color: var(--text);
+    }
+
+    .theme-switcher button[aria-pressed="true"] {
+      background: var(--accent);
+      color: var(--bg-main);
+    }
+
+    .theme-switcher button:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    /* ─── Stage Indicator ──────────────────────────────────── */
+    .stage-indicator {
+      position: fixed;
+      top: var(--space-4);
+      left: var(--space-4);
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-2) var(--space-3);
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      z-index: 1000;
+    }
+
+    .stage-indicator::before {
+      content: '';
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--secondary);
+    }
+
+    /* ─── Header ────────────────────────────────────────────── */
     header {
-      background: rgba(10, 10, 15, 0.95);
+      background: var(--bg-surface);
       border-bottom: 1px solid var(--border);
-      padding: 1.5rem 0;
+      padding: var(--space-4) 0;
       position: sticky;
       top: 0;
       z-index: 100;
-      backdrop-filter: blur(10px);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
     }
 
     header .container {
@@ -63,165 +273,269 @@
     }
 
     .logo {
-      font-size: 1.8rem;
+      font-family: var(--font-display);
+      font-size: 24px;
       font-weight: 700;
-      color: var(--accent-primary);
-      margin: 0;
+      color: var(--text);
+      letter-spacing: -0.02em;
+      line-height: 1;
     }
 
-    .logo span {
-      color: var(--accent-secondary);
+    .logo .logo-accent {
+      color: var(--secondary);
+      font-style: italic;
     }
 
     nav {
       display: flex;
-      gap: 2rem;
-      align-items: center;
+      gap: var(--space-1);
     }
 
     nav a {
-      color: var(--muted);
+      color: var(--text-muted);
       text-decoration: none;
-      font-size: 0.9rem;
-      transition: color 0.3s;
+      font-family: var(--font-body);
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      padding: var(--space-2) var(--space-3);
+      border-radius: var(--radius-sm);
+      transition: all var(--transition);
     }
 
     nav a:hover {
-      color: var(--accent-primary);
+      color: var(--text);
+      background: var(--bg-hover);
     }
 
+    nav a:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    /* ─── Hero ──────────────────────────────────────────────── */
     .hero {
       text-align: center;
-      padding: 4rem 0 3rem;
+      padding: var(--space-20) 0 var(--space-16);
+      position: relative;
     }
 
-    .hero h1 {
-      font-size: clamp(2.5rem, 6vw, 4rem);
-      margin: 0 0 1rem;
-      background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      letter-spacing: -0.03em;
-    }
-
-    .hero .tagline {
-      font-size: 1.3rem;
-      color: var(--muted);
-      max-width: 700px;
-      margin: 0 auto 2rem;
-    }
-
-    .hero .meta {
+    .hero-badges {
       display: flex;
       justify-content: center;
-      gap: 2rem;
-      font-size: 0.9rem;
-      color: var(--muted);
-      flex-wrap: wrap;
-    }
-
-    .hero .meta span {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
+      gap: var(--space-3);
+      margin-bottom: var(--space-6);
     }
 
     .badge {
-      display: inline-block;
-      padding: 0.35rem 0.85rem;
-      border-radius: 999px;
-      font-size: 0.82rem;
-      font-weight: 600;
-      margin: 0 0.5rem 0.5rem 0;
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-1) var(--space-3);
+      border-radius: var(--radius-sm);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
     }
 
-    .badge-strategy {
-      background: rgba(232, 93, 58, 0.15);
-      color: var(--accent-primary);
-      border: 1px solid rgba(232, 93, 58, 0.3);
+    .badge--accent {
+      background: var(--accent-dim);
+      color: var(--accent);
+      border: 1px solid var(--accent-mid);
     }
 
-    .badge-version {
-      background: rgba(42, 157, 143, 0.15);
-      color: var(--accent-teal);
-      border: 1px solid rgba(42, 157, 143, 0.3);
+    .badge--secondary {
+      background: var(--secondary-dim);
+      color: var(--secondary);
+      border: 1px solid var(--secondary-dim);
     }
 
+    .badge--success {
+      background: var(--success-dim);
+      color: var(--success);
+      border: 1px solid var(--success-dim);
+    }
+
+    .hero h1 {
+      font-family: var(--font-display);
+      font-size: clamp(2.5rem, 6vw, 4.5rem);
+      font-weight: 700;
+      line-height: 1.1;
+      letter-spacing: -0.03em;
+      color: var(--text);
+      margin-bottom: var(--space-5);
+    }
+
+    .hero h1 .highlight {
+      color: var(--accent);
+    }
+
+    .hero .tagline {
+      font-family: var(--font-body);
+      font-size: 18px;
+      font-weight: 400;
+      color: var(--text-muted);
+      max-width: 640px;
+      margin: 0 auto var(--space-8);
+      line-height: 1.6;
+    }
+
+    .hero-meta {
+      display: flex;
+      justify-content: center;
+      gap: var(--space-10);
+      flex-wrap: wrap;
+    }
+
+    .hero-meta-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--space-1);
+    }
+
+    .hero-meta-item .meta-label {
+      font-family: var(--font-body);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-faint);
+    }
+
+    .hero-meta-item .meta-value {
+      font-family: var(--font-mono);
+      font-size: 14px;
+      color: var(--text-muted);
+    }
+
+    /* ─── Main Content ──────────────────────────────────────── */
     main {
-      padding: 2rem 0 4rem;
+      padding: var(--space-16) 0 var(--space-20);
     }
 
     .section {
-      margin-bottom: 4rem;
+      margin-bottom: var(--space-16);
       scroll-margin-top: 100px;
     }
 
-    .section h2 {
-      font-size: 2rem;
-      margin-bottom: 1.5rem;
-      color: var(--accent-secondary);
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
+    /* ─── Chapter Headers ───────────────────────────────────── */
+    .chapter-header {
+      position: relative;
+      padding: var(--space-10) 0 var(--space-6);
+      margin-bottom: var(--space-8);
+      border-top: 1px solid var(--border);
+      overflow: hidden;
     }
 
-    .section h2::before {
-      content: '';
-      width: 4px;
-      height: 2rem;
-      background: linear-gradient(180deg, var(--accent-primary), var(--accent-secondary));
-      border-radius: 2px;
+    .chapter-watermark {
+      position: absolute;
+      top: 50%;
+      right: var(--space-6);
+      transform: translateY(-50%);
+      font-family: var(--font-display);
+      font-weight: 300;
+      font-size: clamp(5rem, 12vw, 10rem);
+      line-height: 1;
+      color: var(--text);
+      opacity: 0.04;
+      letter-spacing: -0.04em;
+      pointer-events: none;
+      user-select: none;
+    }
+
+    .chapter-header h2 {
+      font-family: var(--font-display);
+      font-size: clamp(1.75rem, 4vw, 2.5rem);
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+      position: relative;
+    }
+
+    .chapter-rule {
+      display: block;
+      width: 48px;
+      height: 2px;
+      background: var(--accent);
+      margin-top: var(--space-4);
     }
 
     .section h3 {
-      font-size: 1.4rem;
-      margin: 2rem 0 1rem;
+      font-family: var(--font-display);
+      font-size: 20px;
+      font-weight: 600;
       color: var(--text);
+      letter-spacing: -0.01em;
+      margin: var(--space-8) 0 var(--space-4);
+      line-height: 1.3;
     }
 
+    .section h3:first-child {
+      margin-top: 0;
+    }
+
+    /* ─── Cards ──────────────────────────────────────────────── */
     .card {
-      background: var(--card-bg);
+      background: var(--bg-card);
       border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 1.5rem;
-      margin-bottom: 1.5rem;
-      transition: transform 0.3s, box-shadow 0.3s;
+      border-radius: var(--radius-lg);
+      padding: var(--space-6);
+      margin-bottom: var(--space-4);
+      transition: all var(--transition);
     }
 
     .card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 24px rgba(232, 93, 58, 0.1);
+      border-color: var(--accent-mid);
+      background: var(--bg-hover);
     }
 
     .card h4 {
-      margin: 0 0 0.75rem;
-      color: var(--accent-primary);
-      font-size: 1.1rem;
+      font-family: var(--font-display);
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: var(--space-3);
+      letter-spacing: -0.01em;
     }
 
     .card p {
-      margin: 0;
-      color: var(--muted);
-      font-size: 0.95rem;
+      color: var(--text-muted);
+      font-size: 14px;
+      line-height: 1.7;
+      margin-bottom: var(--space-2);
     }
 
+    .card p:last-child {
+      margin-bottom: 0;
+    }
+
+    .card strong {
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    /* ─── Grid Layouts ───────────────────────────────────────── */
     .grid-2 {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
-      gap: 1.5rem;
+      gap: var(--space-4);
     }
 
     .grid-3 {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 1.5rem;
+      gap: var(--space-4);
     }
 
     .grid-4 {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      gap: 1.5rem;
+      gap: var(--space-4);
     }
 
     @media (max-width: 900px) {
@@ -230,86 +544,150 @@
       }
     }
 
-    @media (max-width: 600px) {
+    @media (max-width: 640px) {
       .grid-2, .grid-3, .grid-4 {
         grid-template-columns: 1fr;
       }
+
       nav {
         display: none;
       }
+
+      .hero {
+        padding: var(--space-12) 0 var(--space-10);
+      }
+
+      .theme-switcher {
+        top: auto;
+        bottom: var(--space-4);
+        right: var(--space-4);
+      }
+
+      .stage-indicator {
+        top: auto;
+        bottom: var(--space-4);
+        left: var(--space-4);
+      }
     }
 
+    /* ─── Highlight Box ─────────────────────────────────────── */
     .highlight-box {
-      background: linear-gradient(135deg, rgba(232, 93, 58, 0.1), rgba(42, 157, 143, 0.1));
-      border: 1px solid rgba(232, 93, 58, 0.3);
-      border-radius: 12px;
-      padding: 2rem;
-      margin: 2rem 0;
+      border-left: 3px solid var(--accent);
+      background: var(--accent-dim);
+      border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
+      padding: var(--space-6) var(--space-8);
+      margin: var(--space-8) 0;
     }
 
     .highlight-box h3 {
-      margin-top: 0;
-      color: var(--accent-primary);
+      font-family: var(--font-display);
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--accent);
+      margin: 0 0 var(--space-3);
+      letter-spacing: -0.01em;
     }
 
+    .highlight-box p {
+      color: var(--text-muted);
+      font-size: 14px;
+      line-height: 1.7;
+      margin-bottom: var(--space-2);
+    }
+
+    .highlight-box p:last-child {
+      margin-bottom: 0;
+    }
+
+    .highlight-box strong {
+      color: var(--text);
+    }
+
+    /* ─── Stat Grid ──────────────────────────────────────────── */
     .stat-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 1.5rem;
-      margin: 2rem 0;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: var(--space-4);
+      margin: var(--space-8) 0;
     }
 
     .stat-card {
-      background: var(--card-bg);
+      background: var(--bg-card);
       border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 1.5rem;
+      border-radius: var(--radius-lg);
+      padding: var(--space-6);
       text-align: center;
+      transition: all var(--transition);
+    }
+
+    .stat-card:hover {
+      border-color: var(--accent-mid);
     }
 
     .stat-card .value {
-      font-size: 2.5rem;
-      font-weight: 700;
-      color: var(--accent-primary);
-      margin-bottom: 0.5rem;
+      font-family: var(--font-mono);
+      font-size: 36px;
+      font-weight: 500;
+      color: var(--accent);
+      margin-bottom: var(--space-2);
+      line-height: 1;
     }
 
     .stat-card .label {
-      font-size: 0.9rem;
-      color: var(--muted);
+      font-family: var(--font-body);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
     }
 
+    /* ─── Charts ─────────────────────────────────────────────── */
     .chart-container {
-      background: var(--card-bg);
+      background: var(--bg-card);
       border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 1.5rem;
-      margin: 2rem 0;
+      border-radius: var(--radius-lg);
+      padding: var(--space-6);
+      margin: var(--space-8) 0;
       height: 400px;
     }
 
+    /* ─── Tables ─────────────────────────────────────────────── */
     .table-wrapper {
       overflow-x: auto;
-      margin: 2rem 0;
+      margin: var(--space-8) 0;
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border);
     }
 
     table {
       width: 100%;
       border-collapse: collapse;
-      background: var(--card-bg);
-      border-radius: 12px;
-      overflow: hidden;
-    }
-
-    th, td {
-      padding: 1rem;
-      text-align: left;
-      border-bottom: 1px solid var(--border);
+      background: var(--bg-card);
+      font-size: 14px;
     }
 
     th {
-      background: rgba(232, 93, 58, 0.1);
-      color: var(--accent-primary);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      padding: var(--space-3) var(--space-4);
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-hover);
+    }
+
+    td {
+      padding: var(--space-3) var(--space-4);
+      border-bottom: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+    }
+
+    td strong {
+      color: var(--text);
       font-weight: 600;
     }
 
@@ -317,66 +695,82 @@
       border-bottom: none;
     }
 
-    tr:hover {
-      background: rgba(232, 93, 58, 0.05);
+    tr:hover td {
+      background: var(--bg-hover);
     }
 
+    /* ─── Timeline ───────────────────────────────────────────── */
     .timeline {
       position: relative;
-      padding-left: 2rem;
-      margin: 2rem 0;
+      padding-left: var(--space-8);
+      margin: var(--space-8) 0;
     }
 
     .timeline::before {
       content: '';
       position: absolute;
       left: 0;
-      top: 0;
-      bottom: 0;
-      width: 3px;
-      background: linear-gradient(180deg, var(--accent-primary), var(--accent-teal));
-      border-radius: 2px;
+      top: var(--space-2);
+      bottom: var(--space-2);
+      width: 2px;
+      background: linear-gradient(180deg, var(--accent) 0%, var(--accent-dim) 100%);
     }
 
     .timeline-item {
       position: relative;
-      margin-bottom: 2rem;
-      padding-left: 1.5rem;
+      margin-bottom: var(--space-8);
+      padding-left: var(--space-6);
+    }
+
+    .timeline-item:last-child {
+      margin-bottom: 0;
     }
 
     .timeline-item::before {
       content: '';
       position: absolute;
-      left: -2.4rem;
-      top: 0.5rem;
-      width: 12px;
-      height: 12px;
-      background: var(--accent-primary);
+      left: -33px;
+      top: 6px;
+      width: 10px;
+      height: 10px;
+      background: var(--accent);
       border-radius: 50%;
-      border: 3px solid var(--bg);
+      border: 2px solid var(--bg-main);
+      box-shadow: 0 0 0 4px var(--accent-dim);
     }
 
     .timeline-item .week {
-      font-weight: 700;
-      color: var(--accent-primary);
-      margin-bottom: 0.5rem;
+      font-family: var(--font-display);
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: var(--space-2);
+      letter-spacing: -0.01em;
     }
 
     .timeline-item .content {
-      color: var(--muted);
+      font-family: var(--font-body);
+      font-size: 14px;
+      color: var(--text-muted);
+      line-height: 1.7;
     }
 
+    .timeline-item .content strong {
+      color: var(--text);
+    }
+
+    /* ─── Checklist ──────────────────────────────────────────── */
     .checklist {
       list-style: none;
-      padding: 0;
+      margin: var(--space-6) 0;
     }
 
     .checklist li {
-      padding: 0.75rem 0;
+      padding: var(--space-4) 0;
       border-bottom: 1px solid var(--border);
       display: flex;
       align-items: flex-start;
-      gap: 0.75rem;
+      gap: var(--space-4);
     }
 
     .checklist li:last-child {
@@ -385,50 +779,79 @@
 
     .checklist .status {
       flex-shrink: 0;
-      width: 20px;
-      height: 20px;
-      border-radius: 4px;
+      width: 24px;
+      height: 24px;
+      border-radius: var(--radius-sm);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 0.75rem;
+      font-family: var(--font-body);
+      font-size: 12px;
       font-weight: 700;
+      margin-top: 2px;
     }
 
     .checklist .status.done {
-      background: rgba(42, 157, 143, 0.2);
+      background: var(--success-dim);
       color: var(--success);
+      border: 1px solid var(--success-dim);
     }
 
     .checklist .status.partial {
-      background: rgba(244, 162, 97, 0.2);
+      background: var(--warning-dim);
       color: var(--warning);
+      border: 1px solid var(--warning-dim);
     }
 
     .checklist .status.todo {
-      background: rgba(231, 111, 81, 0.2);
+      background: var(--danger-dim);
       color: var(--danger);
+      border: 1px solid var(--danger-dim);
     }
 
+    .checklist .check-content {
+      font-family: var(--font-body);
+      font-size: 14px;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    .checklist .check-content strong {
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    /* ─── Risk Meter ─────────────────────────────────────────── */
     .risk-meter {
       display: flex;
       align-items: center;
-      gap: 1rem;
-      margin: 1rem 0;
+      gap: var(--space-3);
+      margin: var(--space-4) 0;
+    }
+
+    .risk-meter-label {
+      font-family: var(--font-body);
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-faint);
+      flex-shrink: 0;
+      width: 48px;
     }
 
     .risk-meter-bar {
       flex: 1;
-      height: 8px;
-      background: rgba(42, 157, 143, 0.2);
-      border-radius: 4px;
+      height: 6px;
+      background: var(--bg-hover);
+      border-radius: var(--radius-sm);
       overflow: hidden;
     }
 
     .risk-meter-fill {
       height: 100%;
-      border-radius: 4px;
-      transition: width 0.3s;
+      border-radius: var(--radius-sm);
+      transition: width var(--transition);
     }
 
     .risk-meter-fill.low {
@@ -448,101 +871,192 @@
 
     .risk-meter-fill.critical {
       width: 100%;
-      background: #e63946;
+      background: var(--danger);
     }
 
+    /* ─── Metric Cards ───────────────────────────────────────── */
     .metric-card {
-      background: var(--card-bg);
+      background: var(--bg-card);
       border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 1.5rem;
+      border-radius: var(--radius-lg);
+      padding: var(--space-6);
+      transition: all var(--transition);
+    }
+
+    .metric-card:hover {
+      border-color: var(--accent-mid);
     }
 
     .metric-card .metric-header {
       display: flex;
       justify-content: space-between;
-      align-items: center;
-      margin-bottom: 1rem;
+      align-items: flex-start;
+      margin-bottom: var(--space-4);
+      gap: var(--space-3);
     }
 
     .metric-card .metric-name {
-      font-weight: 600;
+      font-family: var(--font-body);
+      font-size: 14px;
+      font-weight: 500;
       color: var(--text);
+      line-height: 1.4;
     }
 
     .metric-card .metric-type {
-      font-size: 0.75rem;
-      padding: 0.25rem 0.5rem;
-      border-radius: 4px;
-      background: rgba(42, 157, 143, 0.2);
-      color: var(--accent-teal);
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: var(--space-1) var(--space-2);
+      border-radius: var(--radius-sm);
+      background: var(--accent-dim);
+      color: var(--accent);
+      border: 1px solid var(--accent-mid);
+      flex-shrink: 0;
+      white-space: nowrap;
     }
 
     .metric-card .metric-target {
-      font-size: 1.8rem;
-      font-weight: 700;
-      color: var(--accent-primary);
-      margin-bottom: 0.5rem;
+      font-family: var(--font-mono);
+      font-size: 32px;
+      font-weight: 500;
+      color: var(--accent);
+      margin-bottom: var(--space-2);
+      line-height: 1;
     }
 
     .metric-card .metric-description {
-      font-size: 0.9rem;
-      color: var(--muted);
+      font-family: var(--font-body);
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.6;
     }
 
-    footer {
-      background: rgba(10, 10, 15, 0.95);
-      border-top: 1px solid var(--border);
-      padding: 2rem 0;
-      text-align: center;
-      color: var(--muted);
-      font-size: 0.9rem;
-    }
-
+    /* ─── Tagline Cards ──────────────────────────────────────── */
     .tagline-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 1.5rem;
-      margin: 2rem 0;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: var(--space-4);
+      margin: var(--space-6) 0;
     }
 
     .tagline-card {
-      background: var(--card-bg);
+      background: var(--bg-card);
       border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 1.5rem;
-      border-left: 4px solid var(--accent-primary);
+      border-left: 3px solid var(--accent);
+      border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
+      padding: var(--space-5);
     }
 
     .tagline-card .tagline-text {
-      font-size: 1.2rem;
+      font-family: var(--font-display);
+      font-size: 16px;
       font-weight: 600;
-      color: var(--text);
-      margin-bottom: 0.75rem;
       font-style: italic;
+      color: var(--text);
+      margin-bottom: var(--space-2);
+      line-height: 1.4;
     }
 
     .tagline-card .tagline-context {
-      font-size: 0.85rem;
-      color: var(--muted);
+      font-family: var(--font-body);
+      font-size: 12px;
+      color: var(--text-muted);
     }
 
-    @media print {
-      body {
-        background: white;
-        color: black;
-      }
-      .chart-container {
-        page-break-inside: avoid;
+    /* ─── Prose ──────────────────────────────────────────────── */
+    .section p {
+      font-family: var(--font-body);
+      font-size: 14px;
+      color: var(--text-muted);
+      line-height: 1.7;
+      margin-bottom: var(--space-4);
+    }
+
+    .section p:last-child {
+      margin-bottom: 0;
+    }
+
+    .section p strong {
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    .section p em {
+      color: var(--text);
+      font-style: italic;
+    }
+
+    /* ─── Footer ─────────────────────────────────────────────── */
+    footer {
+      background: var(--bg-surface);
+      border-top: 1px solid var(--border);
+      padding: var(--space-8) 0;
+    }
+
+    footer .container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: var(--space-4);
+    }
+
+    footer .footer-brand {
+      font-family: var(--font-display);
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    footer .footer-meta {
+      font-family: var(--font-body);
+      font-size: 13px;
+      color: var(--text-faint);
+      text-align: right;
+    }
+
+    footer .footer-meta a {
+      color: var(--text-muted);
+      text-decoration: none;
+    }
+
+    footer .footer-meta a:hover {
+      color: var(--accent);
+    }
+
+    /* ─── Focus Visible ──────────────────────────────────────── */
+    :focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+
+    /* ─── Reduced Motion ────────────────────────────────────── */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
       }
     }
   </style>
 </head>
 <body>
-  <header>
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+
+  <div class="theme-switcher" role="radiogroup" aria-label="Color theme">
+    <button data-theme="warm" aria-label="Warm theme" title="Warm">W</button>
+    <button data-theme="editorial" aria-label="Editorial theme" title="Editorial">E</button>
+    <button data-theme="modern" aria-label="Modern theme" title="Modern">M</button>
+  </div>
+
+  <div class="stage-indicator">Stage 09</div>
+
+  <header role="banner">
     <div class="container">
-      <h1 class="logo">Achiote<span>GTMS</span></h1>
-      <nav>
+      <p class="logo">Achiote <span class="logo-accent">GTM</span></p>
+      <nav role="navigation" aria-label="Strategy sections">
         <a href="#positioning">Positioning</a>
         <a href="#pricing">Pricing</a>
         <a href="#timeline">Timeline</a>
@@ -555,29 +1069,46 @@
     </div>
   </header>
 
-  <div class="hero">
+  <div class="hero" role="region" aria-label="Document header">
     <div class="container">
-      <span class="badge badge-strategy">Go-To-Market Strategy</span>
-      <span class="badge badge-version">v0.2.0</span>
-      <h1>Food Memory Reconstruction</h1>
+      <div class="hero-badges">
+        <span class="badge badge--accent">Go-To-Market Strategy</span>
+        <span class="badge badge--success">v0.2.0</span>
+      </div>
+      <h1>Food Memory<br><span class="highlight">Reconstruction</span></h1>
       <p class="tagline">Strategic roadmap for launching Achiote, the MCP server that turns half-remembered family dishes into structured culinary memories</p>
-      <div class="meta">
-        <span><strong>Target Launch:</strong> May 2026</span>
-        <span><strong>Development Velocity:</strong> 12.3 commits/day</span>
-        <span><strong>Status:</strong> Pre-Launch</span>
+      <div class="hero-meta">
+        <div class="hero-meta-item">
+          <span class="meta-label">Target Launch</span>
+          <span class="meta-value">May 2026</span>
+        </div>
+        <div class="hero-meta-item">
+          <span class="meta-label">Development Velocity</span>
+          <span class="meta-value">12.3 commits/day</span>
+        </div>
+        <div class="hero-meta-item">
+          <span class="meta-label">Status</span>
+          <span class="meta-value">Pre-Launch</span>
+        </div>
       </div>
     </div>
   </div>
 
-  <main class="container">
+  <main class="container" id="main-content">
 
-    <!-- Executive Summary -->
+    <!-- ── 00 Executive Summary ───────────────────────────── -->
     <section class="section" id="executive-summary">
-      <h2>Executive Summary</h2>
+      <div class="chapter-header">
+        <span class="chapter-watermark" aria-hidden="true">00</span>
+        <h2>Executive Summary</h2>
+        <span class="chapter-rule"></span>
+      </div>
+
       <div class="highlight-box">
         <h3>Key Recommendation</h3>
         <p><strong>Launch Achiote in May 2026 as a premium MCP-native food-memory reconstruction service, positioning it as "the culinary detective for lost family recipes" rather than another recipe app. Target diaspora communities and grief/loss support networks where emotional connection to food memory is strongest. Use a freemium model with Family Sprint as viral acquisition mechanism, focusing on MCP ecosystem integration as primary distribution channel.</strong></p>
       </div>
+
       <div class="grid-3">
         <div class="card">
           <h4>Market Opportunity</h4>
@@ -594,9 +1125,13 @@
       </div>
     </section>
 
-    <!-- Market Positioning -->
+    <!-- ── 01 Market Positioning ──────────────────────────── -->
     <section class="section" id="positioning">
-      <h2>Market Positioning</h2>
+      <div class="chapter-header">
+        <span class="chapter-watermark" aria-hidden="true">01</span>
+        <h2>Market Positioning</h2>
+        <span class="chapter-rule"></span>
+      </div>
 
       <h3>Unique Value Proposition</h3>
       <p>Achiote is not a recipe app. It is a <strong>food memory detective</strong> that uses forensic culinary analysis to reconstruct half-remembered dishes from fragmented descriptions, sensory memories, and family folklore. Unlike generic AI recipe chatbots, Achiote combines:</p>
@@ -688,9 +1223,13 @@
       </div>
     </section>
 
-    <!-- Pricing Strategy -->
+    <!-- ── 02 Pricing Strategy ─────────────────────────────── -->
     <section class="section" id="pricing">
-      <h2>Pricing Strategy</h2>
+      <div class="chapter-header">
+        <span class="chapter-watermark" aria-hidden="true">02</span>
+        <h2>Pricing Strategy</h2>
+        <span class="chapter-rule"></span>
+      </div>
 
       <h3>Current Pricing Tiers (from Billing Code)</h3>
       <div class="table-wrapper">
@@ -707,31 +1246,31 @@
             <tr>
               <td><strong>Personal</strong></td>
               <td>Monthly + Annual</td>
-              <td><span class="badge badge-strategy">Launch First</span></td>
+              <td><span class="badge badge--accent">Launch First</span></td>
               <td>Individual users, primary revenue driver, predictable recurring revenue</td>
             </tr>
             <tr>
               <td><strong>Pro</strong></td>
               <td>Monthly + Annual</td>
-              <td><span class="badge badge-strategy">Phase 2</span></td>
+              <td><span class="badge badge--secondary">Phase 2</span></td>
               <td>Power users, culinary professionals, higher usage limits</td>
             </tr>
             <tr>
               <td><strong>Family</strong></td>
               <td>Monthly + Annual</td>
-              <td><span class="badge badge-strategy">Launch First</span></td>
+              <td><span class="badge badge--accent">Launch First</span></td>
               <td>Viral acquisition mechanism, shared accounts bring multiple users</td>
             </tr>
             <tr>
               <td><strong>Memory Pack</strong></td>
               <td>Credit-based</td>
-              <td><span class="badge badge-strategy">Launch First</span></td>
+              <td><span class="badge badge--accent">Launch First</span></td>
               <td>Low-friction entry, gifting mechanism, casual users</td>
             </tr>
             <tr>
               <td><strong>Family Sprint</strong></td>
               <td>One-time event</td>
-              <td><span class="badge badge-strategy">Viral Tool</span></td>
+              <td><span class="badge badge--success">Viral Tool</span></td>
               <td>Acquisition channel, holiday/occasion-focused, upsell path</td>
             </tr>
           </tbody>
@@ -776,109 +1315,113 @@
         <p>Intensive 48-hour reconstruction sprint, dedicated AI agent, export-ready memory dossier, printable recipe cards, family interview guide. Limited-time offer creates urgency, success creates Personal/Family upsell.</p>
       </div>
 
-      <div class="chart-container">
+      <div class="chart-container" role="img" aria-label="Launch pricing comparison bar chart">
         <canvas id="pricingChart"></canvas>
       </div>
     </section>
 
-    <!-- Launch Timeline -->
+    <!-- ── 03 Launch Timeline ──────────────────────────────── -->
     <section class="section" id="timeline">
-      <h2>Launch Timeline</h2>
+      <div class="chapter-header">
+        <span class="chapter-watermark" aria-hidden="true">03</span>
+        <h2>Launch Timeline</h2>
+        <span class="chapter-rule"></span>
+      </div>
 
       <h3>Pre-Launch Checklist</h3>
-      <ul class="checklist">
+      <ul class="checklist" aria-label="Pre-launch checklist">
         <li>
-          <span class="status done">✓</span>
-          <div>
-            <strong>Core Product Development</strong>
-            <br>15 MCP tools implemented, Stripe billing integrated, security hardening complete
+          <span class="status done" aria-label="Complete">✓</span>
+          <div class="check-content">
+            <strong>Core Product Development</strong><br>
+            15 MCP tools implemented, Stripe billing integrated, security hardening complete
           </div>
         </li>
         <li>
-          <span class="status done">✓</span>
-          <div>
-            <strong>Landing Page</strong>
-            <br>Live at achiote.kyanitelabs.tech with Fraunces typography, OG tags, PWA manifest
+          <span class="status done" aria-label="Complete">✓</span>
+          <div class="check-content">
+            <strong>Landing Page</strong><br>
+            Live at achiote.kyanitelabs.tech with Fraunces typography, OG tags, PWA manifest
           </div>
         </li>
         <li>
-          <span class="status partial">~</span>
-          <div>
-            <strong>Test Coverage</strong>
-            <br>Only 2 test commits (1.6% rate) - needs comprehensive test suite before launch
+          <span class="status partial" aria-label="In progress">~</span>
+          <div class="check-content">
+            <strong>Test Coverage</strong><br>
+            Only 2 test commits (1.6% rate) — needs comprehensive test suite before launch
           </div>
         </li>
         <li>
-          <span class="status partial">~</span>
-          <div>
-            <strong>Documentation</strong>
-            <br>Only 3 docs commits - needs user guides, API docs, integration tutorials
+          <span class="status partial" aria-label="In progress">~</span>
+          <div class="check-content">
+            <strong>Documentation</strong><br>
+            Only 3 docs commits — needs user guides, API docs, integration tutorials
           </div>
         </li>
         <li>
-          <span class="status todo">○</span>
-          <div>
-            <strong>MCP Directory Listing</strong>
-            <br>Submit to official MCP server directory, prepare screenshots, demo videos
+          <span class="status todo" aria-label="Not started">○</span>
+          <div class="check-content">
+            <strong>MCP Directory Listing</strong><br>
+            Submit to official MCP server directory, prepare screenshots, demo videos
           </div>
         </li>
         <li>
-          <span class="status todo">○</span>
-          <div>
-            <strong>Launch Content</strong>
-            <br>Blog posts, social media content, press kit, demo videos
+          <span class="status todo" aria-label="Not started">○</span>
+          <div class="check-content">
+            <strong>Launch Content</strong><br>
+            Blog posts, social media content, press kit, demo videos
           </div>
         </li>
         <li>
-          <span class="status todo">○</span>
-          <div>
-            <strong>Support Infrastructure</strong>
-            <br>Help desk, community Discord, onboarding email sequence
+          <span class="status todo" aria-label="Not started">○</span>
+          <div class="check-content">
+            <strong>Support Infrastructure</strong><br>
+            Help desk, community Discord, onboarding email sequence
           </div>
         </li>
         <li>
-          <span class="status todo">○</span>
-          <div>
-            <strong>Analytics Setup</strong>
-            <br>Conversion tracking, funnel analytics, user cohort tracking
+          <span class="status todo" aria-label="Not started">○</span>
+          <div class="check-content">
+            <strong>Analytics Setup</strong><br>
+            Conversion tracking, funnel analytics, user cohort tracking
           </div>
         </li>
       </ul>
 
       <h3>Launch Week Plan</h3>
-      <div class="timeline">
-        <div class="timeline-item">
+      <div class="timeline" role="list" aria-label="Launch week timeline">
+        <div class="timeline-item" role="listitem">
           <div class="week">Day 1: Technical Launch</div>
           <div class="content">
             Deploy to production, verify all 15 MCP tools, test Stripe billing end-to-end, set up monitoring and alerts, prepare rollback plan.
           </div>
         </div>
-        <div class="timeline-item">
+        <div class="timeline-item" role="listitem">
           <div class="week">Day 2: MCP Ecosystem</div>
           <div class="content">
             Submit to MCP directory, post in Claude Code Discord, announce in MCP community forums, launch GitHub repo with README and demo videos.
           </div>
         </div>
-        <div class="timeline-item">
+        <div class="timeline-item" role="listitem">
           <div class="week">Day 3: Content Launch</div>
           <div class="content">
             Publish 3 blog posts (product announcement, technical deep dive, founder story), launch social media accounts, begin TikTok recipe mystery series.
           </div>
         </div>
-        <div class="timeline-item">
+        <div class="timeline-item" role="listitem">
           <div class="week">Day 4: Community Launch</div>
           <div class="content">
             Launch Discord server, host Reddit AMA in r/Cooking and r/Genealogy, outreach to diaspora community leaders, press release distribution.
           </div>
         </div>
-        <div class="timeline-item">
+        <div class="timeline-item" role="listitem">
           <div class="week">Day 5: Influencer Launch</div>
           <div class="content">
             Seed product to food TikTok creators, genealogy YouTubers, diaspora influencers, provide free Family Sprint passes for content creation.
           </div>
         </div>
-        <div class="timeline-item">
-          <div class="week">Day 6-7: Monitor & Optimize</div>
+        <div class="timeline-item" role="listitem">
+          <div class="week">Day 6–7: Monitor & Optimize</div>
           <div class="content">
             Analyze launch metrics, fix critical bugs, optimize onboarding flow, respond to community feedback, prepare first week retrospective.
           </div>
@@ -886,14 +1429,18 @@
       </div>
 
       <h3>First 30 Days Post-Launch</h3>
-      <div class="chart-container">
+      <div class="chart-container" role="img" aria-label="First 30 days projected metrics line chart">
         <canvas id="launchMetricsChart"></canvas>
       </div>
     </section>
 
-    <!-- Marketing Channels -->
+    <!-- ── 04 Marketing Channels ──────────────────────────── -->
     <section class="section" id="channels">
-      <h2>Marketing Channels</h2>
+      <div class="chapter-header">
+        <span class="chapter-watermark" aria-hidden="true">04</span>
+        <h2>Marketing Channels</h2>
+        <span class="chapter-rule"></span>
+      </div>
 
       <h3>Primary Channels</h3>
       <div class="grid-2">
@@ -925,24 +1472,24 @@
         <p><strong>Every reconstruction is a story. User-generated content writes itself.</strong></p>
         <div class="grid-3">
           <div>
-            <strong>Blog Content:</strong><br>
+            <p><strong>Blog Content:</strong><br>
             • "How we found Maria's lost tamales"<br>
             • "The AI that reconstructed my grandfather's barbecue sauce"<br>
-            • "50 years later: taste testing grandma's lasagna"
+            • "50 years later: taste testing grandma's lasagna"</p>
           </div>
           <div>
-            <strong>Video Content:</strong><br>
+            <p><strong>Video Content:</strong><br>
             • Grandmother taste test reactions<br>
             • Recipe reconstruction time-lapses<br>
             • Family reunion cooking reveals<br>
-            • Food mystery investigations
+            • Food mystery investigations</p>
           </div>
           <div>
-            <strong>Social Content:</strong><br>
+            <p><strong>Social Content:</strong><br>
             • "Sound like this" name resolution challenges<br>
             • Regional food identification games<br>
             • Ingredient substitution mysteries<br>
-            • Family food trivia
+            • Family food trivia</p>
           </div>
         </div>
       </div>
@@ -960,21 +1507,25 @@
       </div>
     </section>
 
-    <!-- Growth Engine -->
+    <!-- ── 05 Growth Engine ────────────────────────────────── -->
     <section class="section" id="growth">
-      <h2>Growth Engine</h2>
+      <div class="chapter-header">
+        <span class="chapter-watermark" aria-hidden="true">05</span>
+        <h2>Growth Engine</h2>
+        <span class="chapter-rule"></span>
+      </div>
 
       <h3>The Viral Loop</h3>
       <div class="highlight-box">
         <h3>Built-In Virality: Family Followup Questions</h3>
-        <p>Achiote's "family followup question generator" isn't just a feature -- it's the growth mechanism. After reconstructing a recipe, the AI generates specific questions to ask family members:</p>
+        <p>Achiote's "family followup question generator" isn't just a feature — it's the growth mechanism. After reconstructing a recipe, the AI generates specific questions to ask family members:</p>
         <p><em>"Ask your aunt: Did Grandma use fresh or dried oregano?"</em><br>
         <em>"Ask your cousin: Do you remember if she soaked the beans overnight?"</em></p>
         <p><strong>Result:</strong> User shares questions with family → family gets curious about project → user shares Achiote results → family signs up to reconstruct their own memories.</p>
       </div>
 
       <h3>Growth Funnel</h3>
-      <div class="chart-container">
+      <div class="chart-container" role="img" aria-label="Growth funnel bar chart showing 10K visitors to 192 upgrades">
         <canvas id="growthFunnelChart"></canvas>
       </div>
 
@@ -983,20 +1534,20 @@
         <h4>How Each Tier Feeds the Next</h4>
         <div class="grid-2">
           <div>
-            <strong>Free → Personal:</strong><br>
-            Hit 3-reconstruction limit → want to save research → want family interview tools → upgrade to Personal.
+            <p><strong>Free → Personal:</strong><br>
+            Hit 3-reconstruction limit → want to save research → want family interview tools → upgrade to Personal.</p>
           </div>
           <div>
-            <strong>Personal → Family:</strong><br>
-            Share reconstruction success → relatives want own accounts → realize Family is cheaper per person → upgrade together.
+            <p><strong>Personal → Family:</strong><br>
+            Share reconstruction success → relatives want own accounts → realize Family is cheaper per person → upgrade together.</p>
           </div>
           <div>
-            <strong>Memory Pack → Personal:</strong><br>
-            Casual user gets hooked → run out of credits → calculate subscription value → recurring makes sense.
+            <p><strong>Memory Pack → Personal:</strong><br>
+            Casual user gets hooked → run out of credits → calculate subscription value → recurring makes sense.</p>
           </div>
           <div>
-            <strong>Family Sprint → Family:</strong><br>
-            One-time event success → family wants ongoing documentation → monthly Family plan maintains momentum.
+            <p><strong>Family Sprint → Family:</strong><br>
+            One-time event success → family wants ongoing documentation → monthly Family plan maintains momentum.</p>
           </div>
         </div>
       </div>
@@ -1009,19 +1560,23 @@
       </div>
     </section>
 
-    <!-- Risk Assessment -->
+    <!-- ── 06 Risk Assessment ──────────────────────────────── -->
     <section class="section" id="risks">
-      <h2>Risk Assessment</h2>
+      <div class="chapter-header">
+        <span class="chapter-watermark" aria-hidden="true">06</span>
+        <h2>Risk Assessment</h2>
+        <span class="chapter-rule"></span>
+      </div>
 
       <h3>Technical Risks</h3>
       <div class="card">
         <h4>Test Coverage Gap</h4>
-        <div class="risk-meter">
-          <span>Low</span>
+        <div class="risk-meter" role="meter" aria-label="Risk level: medium" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100">
+          <span class="risk-meter-label">Low</span>
           <div class="risk-meter-bar">
             <div class="risk-meter-fill medium"></div>
           </div>
-          <span>Critical</span>
+          <span class="risk-meter-label" style="text-align:right;">Critical</span>
         </div>
         <p><strong>Risk:</strong> Only 1.6% test coverage (2 test commits). Production bugs could damage reputation early.</p>
         <p><strong>Mitigation:</strong> Hire QA contractor or use agent testing before launch. Implement automated testing pipeline. Set quality gate for all deployments. Launch with beta label initially.</p>
@@ -1029,12 +1584,12 @@
 
       <div class="card">
         <h4>Single Developer Bus Factor</h4>
-        <div class="risk-meter">
-          <span>Low</span>
+        <div class="risk-meter" role="meter" aria-label="Risk level: high" aria-valuenow="75" aria-valuemin="0" aria-valuemax="100">
+          <span class="risk-meter-label">Low</span>
           <div class="risk-meter-bar">
             <div class="risk-meter-fill high"></div>
           </div>
-          <span>Critical</span>
+          <span class="risk-meter-label" style="text-align:right;">Critical</span>
         </div>
         <p><strong>Risk:</strong> All development knowledge in one person. Illness or unavailability halts progress.</p>
         <p><strong>Mitigation:</strong> Comprehensive documentation (priority), agent workflow documentation, backup developer contract in place, knowledge sharing in public repos reduces lock-in.</p>
@@ -1043,12 +1598,12 @@
       <h3>Market Risks</h3>
       <div class="card">
         <h4>Niche Too Narrow</h4>
-        <div class="risk-meter">
-          <span>Low</span>
+        <div class="risk-meter" role="meter" aria-label="Risk level: low" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100">
+          <span class="risk-meter-label">Low</span>
           <div class="risk-meter-bar">
             <div class="risk-meter-fill low"></div>
           </div>
-          <span>Critical</span>
+          <span class="risk-meter-label" style="text-align:right;">Critical</span>
         </div>
         <p><strong>Risk:</strong> Limited total addressable market in food-memory reconstruction.</p>
         <p><strong>Mitigation:</strong> Expand to general recipe documentation, cultural preservation contracts, enterprise ancestry platform partnerships. MCP integration provides broader technical user base.</p>
@@ -1056,12 +1611,12 @@
 
       <div class="card">
         <h4>Emotional Category Fatigue</h4>
-        <div class="risk-meter">
-          <span>Low</span>
+        <div class="risk-meter" role="meter" aria-label="Risk level: medium" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100">
+          <span class="risk-meter-label">Low</span>
           <div class="risk-meter-bar">
             <div class="risk-meter-fill medium"></div>
           </div>
-          <span>Critical</span>
+          <span class="risk-meter-label" style="text-align:right;">Critical</span>
         </div>
         <p><strong>Risk:</strong> Grief/loss marketing can feel exploitative. Emotional fatigue in category.</p>
         <p><strong>Mitigation:</strong> Focus on celebration and discovery, not loss. Partner with grief counselors for ethical marketing. Emphasize cultural preservation over mourning. Celebrate success stories actively.</p>
@@ -1070,12 +1625,12 @@
       <h3>Competitive Risks</h3>
       <div class="card">
         <h4>Big Tech Food Features</h4>
-        <div class="risk-meter">
-          <span>Low</span>
+        <div class="risk-meter" role="meter" aria-label="Risk level: medium" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100">
+          <span class="risk-meter-label">Low</span>
           <div class="risk-meter-bar">
             <div class="risk-meter-fill medium"></div>
           </div>
-          <span>Critical</span>
+          <span class="risk-meter-label" style="text-align:right;">Critical</span>
         </div>
         <p><strong>Risk:</strong> OpenAI, Google, or Meta add food-memory features to existing products.</p>
         <p><strong>Mitigation:</strong> MCP-native differentiation, specialized forensics vs general chat, provenance tracking and citations, family collaboration features, multi-model hedge prevents provider lock-in.</p>
@@ -1083,21 +1638,26 @@
 
       <div class="card">
         <h4>Open Source Competitors</h4>
-        <div class="risk-meter">
-          <span>Low</span>
+        <div class="risk-meter" role="meter" aria-label="Risk level: low" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100">
+          <span class="risk-meter-label">Low</span>
           <div class="risk-meter-bar">
             <div class="risk-meter-fill low"></div>
           </div>
-          <span>Critical</span>
+          <span class="risk-meter-label" style="text-align:right;">Critical</span>
         </div>
         <p><strong>Risk:</strong> Food-reconstruction recipes shared openly, reducing perceived value.</p>
         <p><strong>Mitigation:</strong> Service value vs static recipes, ongoing access and updates, family collaboration tools, privacy and data security, convenience and time savings. Consider open-sourcing non-core tools to build community while keeping main reconstruction engine proprietary.</p>
       </div>
     </section>
 
-    <!-- Archaeology-Informed Insights -->
+    <!-- ── 07 Archaeology Insights ────────────────────────── -->
     <section class="section" id="archaeology">
-      <h2>Archaeology-Informed Insights</h2>
+      <div class="chapter-header">
+        <span class="chapter-watermark" aria-hidden="true">07</span>
+        <h2>Archaeology-Informed Insights</h2>
+        <span class="chapter-rule"></span>
+      </div>
+
       <p><em>This section uniquely leverages git archaeology data to inform strategic decisions.</em></p>
 
       <h3>Development Velocity Advantage</h3>
@@ -1128,7 +1688,7 @@
       <h3>Working Hours Pattern</h3>
       <div class="card">
         <h4>Developer Availability Analysis</h4>
-        <p><strong>Pattern:</strong> Midday primary (11-12), evening secondary (17-21), no late-night work.</p>
+        <p><strong>Pattern:</strong> Midday primary (11–12), evening secondary (17–21), no late-night work.</p>
         <p><strong>Strategic Implication:</strong> Developer available for daytime support during business hours. Good for enterprise customers who need daytime responsiveness. Consider timezone positioning for global support coverage. Evening secondary window allows for feature development while maintaining daytime availability.</p>
       </div>
 
@@ -1160,42 +1720,46 @@
       </div>
 
       <h3>Launch Commit Intensity</h3>
-      <div class="chart-container">
+      <div class="chart-container" role="img" aria-label="Development velocity line chart showing daily commit count">
         <canvas id="commitVelocityChart"></canvas>
       </div>
     </section>
 
-    <!-- 90-Day Action Plan -->
+    <!-- ── 08 90-Day Action Plan ───────────────────────────── -->
     <section class="section" id="action-plan">
-      <h2>90-Day Action Plan</h2>
+      <div class="chapter-header">
+        <span class="chapter-watermark" aria-hidden="true">08</span>
+        <h2>90-Day Action Plan</h2>
+        <span class="chapter-rule"></span>
+      </div>
 
-      <div class="timeline">
-        <div class="timeline-item">
+      <div class="timeline" role="list" aria-label="90-day action plan">
+        <div class="timeline-item" role="listitem">
           <div class="week">Week 1: Launch Execution</div>
           <div class="content">
-            <strong>Day 1-7:</strong> Execute launch week plan, deploy production infrastructure, activate all marketing channels, set up monitoring, respond to initial feedback, fix critical bugs, begin daily metrics review.
+            <strong>Day 1–7:</strong> Execute launch week plan, deploy production infrastructure, activate all marketing channels, set up monitoring, respond to initial feedback, fix critical bugs, begin daily metrics review.
           </div>
         </div>
-        <div class="timeline-item">
-          <div class="week">Week 2-3: Stabilization & Optimization</div>
+        <div class="timeline-item" role="listitem">
+          <div class="week">Week 2–3: Stabilization & Optimization</div>
           <div class="content">
             <strong>Focus:</strong> Fix launch bugs, optimize onboarding funnel, improve mobile experience, set up help documentation, establish support workflow, gather first user testimonials, iterate on messaging based on real usage patterns.
           </div>
         </div>
-        <div class="timeline-item">
-          <div class="week">Week 4-6: Content & Community</div>
+        <div class="timeline-item" role="listitem">
+          <div class="week">Week 4–6: Content & Community</div>
           <div class="content">
             <strong>Focus:</strong> Launch TikTok series with 10 videos, publish 5 blog posts, grow Discord to 500 members, secure first 3 diaspora community partnerships, launch referral program, begin Family Sprint holiday promotional campaign.
           </div>
         </div>
-        <div class="timeline-item">
-          <div class="week">Week 7-9: Growth & Expansion</div>
+        <div class="timeline-item" role="listitem">
+          <div class="week">Week 7–9: Growth & Expansion</div>
           <div class="content">
             <strong>Focus:</strong> Analyze conversion metrics, optimize freemium funnel, test new pricing tiers, expand to genealogy conferences, launch Pro tier for power users, begin enterprise cultural preservation outreach, prepare first major feature release.
           </div>
         </div>
-        <div class="timeline-item">
-          <div class="week">Week 10-12: Retention & Scale</div>
+        <div class="timeline-item" role="listitem">
+          <div class="week">Week 10–12: Retention & Scale</div>
           <div class="content">
             <strong>Focus:</strong> Focus on user retention, launch family collaboration features, implement email nurture sequences, expand content production, consider hiring first support contractor, prepare 90-day retrospective for investors, plan next quarter roadmap.
           </div>
@@ -1203,9 +1767,13 @@
       </div>
     </section>
 
-    <!-- Success Metrics -->
+    <!-- ── 09 Success Metrics ──────────────────────────────── -->
     <section class="section" id="metrics">
-      <h2>Success Metrics</h2>
+      <div class="chapter-header">
+        <span class="chapter-watermark" aria-hidden="true">09</span>
+        <h2>Success Metrics</h2>
+        <span class="chapter-rule"></span>
+      </div>
 
       <h3>North Star Metric</h3>
       <div class="highlight-box">
@@ -1231,7 +1799,7 @@
             <span class="metric-type">Monetization</span>
           </div>
           <div class="metric-target">8%</div>
-          <div class="metric-description">Free users who upgrade within 30 days. Industry average 3-5%, target 8% by Day 90.</div>
+          <div class="metric-description">Free users who upgrade within 30 days. Industry average 3–5%, target 8% by Day 90.</div>
         </div>
         <div class="metric-card">
           <div class="metric-header">
@@ -1310,7 +1878,7 @@
             <span class="metric-name">Support Response Time</span>
             <span class="metric-type">Operations</span>
           </div>
-          <div class="metric-target">&lt;4 hours</div>
+          <div class="metric-target">&lt;4 hrs</div>
           <div class="metric-description">Average response time. Target under 4 hours by Day 90.</div>
         </div>
       </div>
@@ -1318,214 +1886,408 @@
 
   </main>
 
-  <footer>
+  <footer role="contentinfo">
     <div class="container">
-      <p><strong>Achiote Go-To-Market Strategy</strong> | Generated for Launch Planning | Version 0.2.0</p>
-      <p>Food Memory Reconstruction powered by MCP | achiote.kyanitelabs.tech</p>
+      <div class="footer-brand">Achiote Go-To-Market Strategy</div>
+      <div class="footer-meta">
+        <div>Version 0.2.0 · Generated for Launch Planning</div>
+        <div>Food Memory Reconstruction powered by MCP · <a href="https://achiote.kyanitelabs.tech">achiote.kyanitelabs.tech</a></div>
+      </div>
     </div>
   </footer>
 
   <script>
-    // Pricing Comparison Chart
-    const pricingCtx = document.getElementById('pricingChart').getContext('2d');
-    new Chart(pricingCtx, {
-      type: 'bar',
-      data: {
-        labels: ['Free', 'Personal', 'Family', 'Memory Pack (10)', 'Family Sprint'],
-        datasets: [{
-          label: 'Monthly Cost ($)',
-          data: [0, 19, 39, 0, 0],
-          backgroundColor: 'rgba(232, 93, 58, 0.7)',
-          borderColor: 'rgba(232, 93, 58, 1)',
-          borderWidth: 1
-        }, {
-          label: 'One-Time Cost ($)',
-          data: [0, 0, 0, 29, 149],
-          backgroundColor: 'rgba(42, 157, 143, 0.7)',
-          borderColor: 'rgba(42, 157, 143, 1)',
-          borderWidth: 1
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          title: {
-            display: true,
-            text: 'Launch Pricing Comparison',
-            color: '#f0e6d3',
-            font: { size: 16 }
-          },
-          legend: {
-            labels: { color: '#a89f91' }
-          }
-        },
-        scales: {
-          y: {
-            beginAtZero: true,
-            ticks: { color: '#a89f91' },
-            grid: { color: 'rgba(42, 42, 58, 0.5)' }
-          },
-          x: {
-            ticks: { color: '#a89f91' },
-            grid: { display: false }
-          }
-        }
-      }
-    });
+    // ── Theme Switcher with localStorage ─────────────────────
+    (function() {
+      const savedTheme = localStorage.getItem('devarch-theme') || 'editorial';
+      document.documentElement.setAttribute('data-theme', savedTheme);
 
-    // Launch Metrics Chart
-    const launchCtx = document.getElementById('launchMetricsChart').getContext('2d');
-    new Chart(launchCtx, {
-      type: 'line',
-      data: {
-        labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
-        datasets: [{
-          label: 'Users',
-          data: [100, 350, 800, 1500],
-          borderColor: 'rgba(232, 93, 58, 1)',
-          backgroundColor: 'rgba(232, 93, 58, 0.1)',
-          tension: 0.4,
-          fill: true
-        }, {
-          label: 'Reconstructions',
-          data: [250, 900, 2200, 4500],
-          borderColor: 'rgba(42, 157, 143, 1)',
-          backgroundColor: 'rgba(42, 157, 143, 0.1)',
-          tension: 0.4,
-          fill: true
-        }, {
-          label: 'Paying Customers',
-          data: [5, 25, 60, 120],
-          borderColor: 'rgba(244, 162, 97, 1)',
-          backgroundColor: 'rgba(244, 162, 97, 0.1)',
-          tension: 0.4,
-          fill: true
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          title: {
-            display: true,
-            text: 'First 30 Days Projected Metrics',
-            color: '#f0e6d3',
-            font: { size: 16 }
-          },
-          legend: {
-            labels: { color: '#a89f91' }
-          }
-        },
-        scales: {
-          y: {
-            beginAtZero: true,
-            ticks: { color: '#a89f91' },
-            grid: { color: 'rgba(42, 42, 58, 0.5)' }
-          },
-          x: {
-            ticks: { color: '#a89f91' },
-            grid: { display: false }
-          }
+      const buttons = document.querySelectorAll('button[data-theme]');
+      buttons.forEach(btn => {
+        const theme = btn.getAttribute('data-theme');
+        if (theme === savedTheme) {
+          btn.setAttribute('aria-pressed', 'true');
         }
-      }
-    });
 
-    // Growth Funnel Chart
-    const funnelCtx = document.getElementById('growthFunnelChart').getContext('2d');
-    new Chart(funnelCtx, {
-      type: 'bar',
-      data: {
-        labels: ['Land', 'Sign Up Free', 'First Recon', 'Share with Family', 'Upgrade to Paid'],
-        datasets: [{
-          label: 'Users',
-          data: [10000, 3000, 2400, 960, 192],
-          backgroundColor: [
-            'rgba(232, 93, 58, 0.7)',
-            'rgba(244, 162, 97, 0.7)',
-            'rgba(42, 157, 143, 0.7)',
-            'rgba(45, 125, 154, 0.7)',
-            'rgba(231, 111, 81, 0.7)'
-          ],
-          borderColor: [
-            'rgba(232, 93, 58, 1)',
-            'rgba(244, 162, 97, 1)',
-            'rgba(42, 157, 143, 1)',
-            'rgba(45, 125, 154, 1)',
-            'rgba(231, 111, 81, 1)'
-          ],
-          borderWidth: 1
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          title: {
-            display: true,
-            text: 'Growth Funnel (10K Landing Page Visitors)',
-            color: '#f0e6d3',
-            font: { size: 16 }
-          },
-          legend: {
-            display: false
-          }
-        },
-        scales: {
-          y: {
-            beginAtZero: true,
-            ticks: { color: '#a89f91' },
-            grid: { color: 'rgba(42, 42, 58, 0.5)' }
-          },
-          x: {
-            ticks: { color: '#a89f91' },
-            grid: { display: false }
-          }
-        }
-      }
-    });
+        btn.addEventListener('click', () => {
+          document.documentElement.setAttribute('data-theme', theme);
+          localStorage.setItem('devarch-theme', theme);
 
-    // Commit Velocity Chart
-    const commitCtx = document.getElementById('commitVelocityChart').getContext('2d');
-    new Chart(commitCtx, {
-      type: 'line',
-      data: {
-        labels: ['Apr 18', 'Apr 20', 'Apr 22', 'Apr 24', 'Apr 26'],
-        datasets: [{
-          label: 'Daily Commits',
-          data: [8, 15, 12, 18, 14],
-          borderColor: 'rgba(232, 93, 58, 1)',
-          backgroundColor: 'rgba(232, 93, 58, 0.1)',
-          tension: 0.4,
-          fill: true
-        }]
-      },
-      options: {
+          buttons.forEach(b => b.setAttribute('aria-pressed', 'false'));
+          btn.setAttribute('aria-pressed', 'true');
+
+          // Update all charts with new theme colors
+          updateAllCharts();
+        });
+      });
+    })();
+
+    // ── Chart.js Theme Integration ─────────────────────────
+    function getThemeColors() {
+      const s = getComputedStyle(document.documentElement);
+      return {
+        accent:    s.getPropertyValue('--accent').trim(),
+        secondary: s.getPropertyValue('--secondary').trim(),
+        success:   s.getPropertyValue('--success').trim(),
+        warning:   s.getPropertyValue('--warning').trim(),
+        danger:    s.getPropertyValue('--danger').trim(),
+        text:      s.getPropertyValue('--text').trim(),
+        muted:     s.getPropertyValue('--text-muted').trim(),
+        border:    s.getPropertyValue('--border').trim(),
+        bg:        s.getPropertyValue('--bg-card').trim(),
+        bgHover:   s.getPropertyValue('--bg-hover').trim(),
+      };
+    }
+
+    // Chart instances for theme updates
+    let pricingChart, launchMetricsChart, growthFunnelChart, commitVelocityChart;
+
+    // ── Shared Chart Configuration ──────────────────────────
+    function getChartDefaults() {
+      const colors = getThemeColors();
+      return {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: {
-          title: {
-            display: true,
-            text: 'Development Velocity (Sample from Archaeology)',
-            color: '#f0e6d3',
-            font: { size: 16 }
-          },
-          legend: {
-            labels: { color: '#a89f91' }
-          }
+        color: colors.muted,
+        font: {
+          family: getComputedStyle(document.documentElement).getPropertyValue('--font-body').trim(),
+          size: 12
         },
         scales: {
           y: {
             beginAtZero: true,
-            ticks: { color: '#a89f91' },
-            grid: { color: 'rgba(42, 42, 58, 0.5)' }
+            ticks: {
+              color: colors.muted,
+              font: {
+                family: getComputedStyle(document.documentElement).getPropertyValue('--font-mono').trim(),
+                size: 11
+              },
+              padding: 8
+            },
+            grid: {
+              color: colors.border,
+              drawBorder: false
+            },
+            border: {
+              dash: [4, 4],
+              color: 'transparent'
+            }
           },
           x: {
-            ticks: { color: '#a89f91' },
-            grid: { display: false }
+            ticks: {
+              color: colors.muted,
+              font: {
+                family: getComputedStyle(document.documentElement).getPropertyValue('--font-body').trim(),
+                size: 11
+              },
+              padding: 8
+            },
+            grid: {
+              display: false
+            },
+            border: {
+              color: 'transparent'
+            }
+          }
+        },
+        plugins: {
+          legend: {
+            labels: {
+              color: colors.muted,
+              font: {
+                family: getComputedStyle(document.documentElement).getPropertyValue('--font-body').trim(),
+                size: 11
+              },
+              usePointStyle: true,
+              pointStyleWidth: 8,
+              padding: 20
+            }
+          },
+          tooltip: {
+            backgroundColor: colors.bg,
+            borderColor: colors.border,
+            borderWidth: 1,
+            titleColor: colors.text,
+            bodyColor: colors.muted,
+            titleFont: {
+              family: getComputedStyle(document.documentElement).getPropertyValue('--font-body').trim(),
+              weight: '600',
+              size: 12
+            },
+            bodyFont: {
+              family: getComputedStyle(document.documentElement).getPropertyValue('--font-mono').trim(),
+              size: 11
+            },
+            padding: 12,
+            cornerRadius: 6
           }
         }
+      };
+    }
+
+    // ── Pricing Chart ───────────────────────────────────────
+    function createPricingChart() {
+      const ctx = document.getElementById('pricingChart').getContext('2d');
+      const colors = getThemeColors();
+      const defaults = getChartDefaults();
+
+      pricingChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: ['Free', 'Personal', 'Family', 'Memory Pack (10)', 'Family Sprint'],
+          datasets: [{
+            label: 'Monthly Cost ($)',
+            data: [0, 19, 39, 0, 0],
+            backgroundColor: colors.accent + '20',
+            borderColor: colors.accent,
+            borderWidth: 1,
+            borderRadius: 4
+          }, {
+            label: 'One-Time Cost ($)',
+            data: [0, 0, 0, 29, 149],
+            backgroundColor: colors.warning + '20',
+            borderColor: colors.warning,
+            borderWidth: 1,
+            borderRadius: 4
+          }]
+        },
+        options: {
+          ...defaults,
+          plugins: {
+            ...defaults.plugins,
+            title: {
+              display: true,
+              text: 'Launch Pricing Comparison',
+              color: colors.text,
+              font: {
+                family: getComputedStyle(document.documentElement).getPropertyValue('--font-display').trim(),
+                size: 18,
+                weight: '600'
+              },
+              padding: { bottom: 20 }
+            }
+          }
+        }
+      });
+    }
+
+    // ── Launch Metrics Chart ────────────────────────────────
+    function createLaunchMetricsChart() {
+      const ctx = document.getElementById('launchMetricsChart').getContext('2d');
+      const colors = getThemeColors();
+      const defaults = getChartDefaults();
+
+      launchMetricsChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+          datasets: [{
+            label: 'Users',
+            data: [100, 350, 800, 1500],
+            borderColor: colors.accent,
+            backgroundColor: colors.accent + '15',
+            tension: 0.4,
+            fill: true,
+            pointBackgroundColor: colors.accent,
+            pointBorderColor: colors.bg,
+            pointBorderWidth: 2,
+            pointRadius: 5
+          }, {
+            label: 'Reconstructions',
+            data: [250, 900, 2200, 4500],
+            borderColor: colors.success,
+            backgroundColor: colors.success + '15',
+            tension: 0.4,
+            fill: true,
+            pointBackgroundColor: colors.success,
+            pointBorderColor: colors.bg,
+            pointBorderWidth: 2,
+            pointRadius: 5
+          }, {
+            label: 'Paying Customers',
+            data: [5, 25, 60, 120],
+            borderColor: colors.warning,
+            backgroundColor: colors.warning + '15',
+            tension: 0.4,
+            fill: true,
+            pointBackgroundColor: colors.warning,
+            pointBorderColor: colors.bg,
+            pointBorderWidth: 2,
+            pointRadius: 5
+          }]
+        },
+        options: {
+          ...defaults,
+          plugins: {
+            ...defaults.plugins,
+            title: {
+              display: true,
+              text: 'First 30 Days — Projected Metrics',
+              color: colors.text,
+              font: {
+                family: getComputedStyle(document.documentElement).getPropertyValue('--font-display').trim(),
+                size: 18,
+                weight: '600'
+              },
+              padding: { bottom: 20 }
+            }
+          }
+        }
+      });
+    }
+
+    // ── Growth Funnel Chart ──────────────────────────────────
+    function createGrowthFunnelChart() {
+      const ctx = document.getElementById('growthFunnelChart').getContext('2d');
+      const colors = getThemeColors();
+      const defaults = getChartDefaults();
+
+      growthFunnelChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: ['Land', 'Sign Up Free', 'First Recon', 'Share with Family', 'Upgrade to Paid'],
+          datasets: [{
+            label: 'Users',
+            data: [10000, 3000, 2400, 960, 192],
+            backgroundColor: [
+              colors.accent + '20',
+              colors.secondary + '20',
+              colors.success + '20',
+              colors.warning + '20',
+              colors.danger + '20'
+            ],
+            borderColor: [
+              colors.accent,
+              colors.secondary,
+              colors.success,
+              colors.warning,
+              colors.danger
+            ],
+            borderWidth: 1,
+            borderRadius: 4
+          }]
+        },
+        options: {
+          ...defaults,
+          plugins: {
+            ...defaults.plugins,
+            title: {
+              display: true,
+              text: 'Growth Funnel — 10K Landing Page Visitors',
+              color: colors.text,
+              font: {
+                family: getComputedStyle(document.documentElement).getPropertyValue('--font-display').trim(),
+                size: 18,
+                weight: '600'
+              },
+              padding: { bottom: 20 }
+            },
+            legend: {
+              display: false
+            }
+          }
+        }
+      });
+    }
+
+    // ── Commit Velocity Chart ────────────────────────────────
+    function createCommitVelocityChart() {
+      const ctx = document.getElementById('commitVelocityChart').getContext('2d');
+      const colors = getThemeColors();
+      const defaults = getChartDefaults();
+
+      commitVelocityChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: ['Apr 18', 'Apr 20', 'Apr 22', 'Apr 24', 'Apr 26'],
+          datasets: [{
+            label: 'Daily Commits',
+            data: [8, 15, 12, 18, 14],
+            borderColor: colors.warning,
+            backgroundColor: colors.warning + '15',
+            tension: 0.4,
+            fill: true,
+            pointBackgroundColor: colors.warning,
+            pointBorderColor: colors.bg,
+            pointBorderWidth: 2,
+            pointRadius: 6
+          }]
+        },
+        options: {
+          ...defaults,
+          plugins: {
+            ...defaults.plugins,
+            title: {
+              display: true,
+              text: 'Development Velocity — Sample from Archaeology',
+              color: colors.text,
+              font: {
+                family: getComputedStyle(document.documentElement).getPropertyValue('--font-display').trim(),
+                size: 18,
+                weight: '600'
+              },
+              padding: { bottom: 20 }
+            }
+          }
+        }
+      });
+    }
+
+    // ── Update All Charts on Theme Change ────────────────────
+    function updateAllCharts() {
+      const colors = getThemeColors();
+      const defaults = getChartDefaults();
+
+      // Update pricing chart
+      if (pricingChart) {
+        pricingChart.options = defaults;
+        pricingChart.data.datasets[0].backgroundColor = colors.accent + '20';
+        pricingChart.data.datasets[0].borderColor = colors.accent;
+        pricingChart.data.datasets[1].backgroundColor = colors.warning + '20';
+        pricingChart.data.datasets[1].borderColor = colors.warning;
+        pricingChart.update();
       }
+
+      // Update launch metrics chart
+      if (launchMetricsChart) {
+        launchMetricsChart.options = defaults;
+        launchMetricsChart.data.datasets[0].borderColor = colors.accent;
+        launchMetricsChart.data.datasets[0].backgroundColor = colors.accent + '15';
+        launchMetricsChart.data.datasets[0].pointBackgroundColor = colors.accent;
+        launchMetricsChart.data.datasets[1].borderColor = colors.success;
+        launchMetricsChart.data.datasets[1].backgroundColor = colors.success + '15';
+        launchMetricsChart.data.datasets[1].pointBackgroundColor = colors.success;
+        launchMetricsChart.data.datasets[2].borderColor = colors.warning;
+        launchMetricsChart.data.datasets[2].backgroundColor = colors.warning + '15';
+        launchMetricsChart.data.datasets[2].pointBackgroundColor = colors.warning;
+        launchMetricsChart.update();
+      }
+
+      // Update growth funnel chart
+      if (growthFunnelChart) {
+        growthFunnelChart.options = defaults;
+        const funnelColors = [colors.accent, colors.secondary, colors.success, colors.warning, colors.danger];
+        growthFunnelChart.data.datasets[0].backgroundColor = funnelColors.map(c => c + '20');
+        growthFunnelChart.data.datasets[0].borderColor = funnelColors;
+        growthFunnelChart.update();
+      }
+
+      // Update commit velocity chart
+      if (commitVelocityChart) {
+        commitVelocityChart.options = defaults;
+        commitVelocityChart.data.datasets[0].borderColor = colors.warning;
+        commitVelocityChart.data.datasets[0].backgroundColor = colors.warning + '15';
+        commitVelocityChart.data.datasets[0].pointBackgroundColor = colors.warning;
+        commitVelocityChart.update();
+      }
+    }
+
+    // ── Initialize Charts ────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', () => {
+      createPricingChart();
+      createLaunchMetricsChart();
+      createGrowthFunnelChart();
+      createCommitVelocityChart();
     });
   </script>
 </body>

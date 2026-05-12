@@ -1,1288 +1,1266 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="editorial">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Achiote Project Archaeology Report</title>
+    <title>Achiote Project Archaeology | DevArch Visualization</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&family=Lora:wght@400;600;700&family=Source+Sans+3:wght@300;400;500;600&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
-        * {
+        /* ── Reset & Base ────────────────────────────────────────── */
+        *, *::before, *::after {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
 
-        :root {
-            --bg-primary: #0a0a0f;
-            --bg-secondary: #12121a;
-            --bg-card: #1a1a24;
-            --text-primary: #f4f4f5;
-            --text-secondary: #a1a1aa;
-            --accent-warm: #e85d3a;
-            --accent-gold: #f4a261;
-            --accent-teal: #2a9d8f;
-            --accent-deep: #264653;
-            --accent-green: #2a9d8f;
-            --border-color: #2a2a3a;
-            --shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+        html {
+            scroll-behavior: smooth;
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: var(--bg-primary);
-            color: var(--text-primary);
+            font-family: var(--font-body);
+            font-weight: 400;
+            background: var(--bg-main);
+            color: var(--text);
             line-height: 1.6;
-            overflow-x: hidden;
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
 
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 0 20px;
+        /* ── Design Tokens: Warm Theme ───────────────────────────── */
+        :root, [data-theme="warm"] {
+            --bg-main:     #1f1a14;
+            --bg-surface:  #2b241b;
+            --bg-card:     #383020;
+            --bg-card-alt: #453a28;
+            --bg-hover:    #504230;
+
+            --accent:      #d4a017;
+            --accent-dim:  rgba(212, 160, 23, 0.12);
+            --accent-mid:  rgba(212, 160, 23, 0.25);
+            --secondary:   #b87333;
+            --secondary-dim: rgba(184, 115, 51, 0.12);
+            --success:     #4caf70;
+            --success-dim: rgba(76, 175, 112, 0.12);
+            --warning:     #e8a830;
+            --warning-dim: rgba(232, 168, 48, 0.12);
+            --danger:      #c0392b;
+            --danger-dim:  rgba(192, 57, 43, 0.12);
+
+            --text:        #f5e8c8;
+            --text-2:      #c8b898;
+            --text-muted:  #9d8f78;
+            --text-faint:  #6b5f4e;
+
+            --border:      rgba(212, 160, 23, 0.15);
+            --border-subtle: rgba(255, 255, 255, 0.05);
+
+            --font-display: 'DM Serif Display', Georgia, serif;
+            --font-body:    'DM Sans', system-ui, sans-serif;
+            --font-mono:    'JetBrains Mono', 'Courier New', monospace;
         }
 
-        /* Header */
+        /* ── Design Tokens: Clean Editorial ───────────────────────── */
+        [data-theme="editorial"] {
+            --bg-main:     #faf9f7;
+            --bg-surface:  #ffffff;
+            --bg-card:     #ffffff;
+            --bg-card-alt: #f5f4f2;
+            --bg-hover:    #efeeec;
+
+            --accent:      #1a5c3a;
+            --accent-dim:  rgba(26, 92, 58, 0.08);
+            --accent-mid:  rgba(26, 92, 58, 0.18);
+            --secondary:   #2c5aa0;
+            --secondary-dim: rgba(44, 90, 160, 0.08);
+            --success:     #1a5c3a;
+            --success-dim: rgba(26, 92, 58, 0.08);
+            --warning:     #8a6d2b;
+            --warning-dim: rgba(138, 109, 43, 0.08);
+            --danger:      #a8282d;
+            --danger-dim:  rgba(168, 40, 45, 0.08);
+
+            --text:        #1a1a1a;
+            --text-2:      #3d3d3d;
+            --text-muted:  #6b6b6b;
+            --text-faint:  #9d9d9d;
+
+            --border:      rgba(0, 0, 0, 0.10);
+            --border-subtle: rgba(0, 0, 0, 0.05);
+
+            --font-display: 'Lora', Georgia, serif;
+            --font-body:    'Source Sans 3', system-ui, sans-serif;
+            --font-mono:    'IBM Plex Mono', 'Courier New', monospace;
+        }
+
+        /* ── Design Tokens: Modern Data ──────────────────────────── */
+        [data-theme="modern"] {
+            --bg-main:     #09090b;
+            --bg-surface:  #0f0f12;
+            --bg-card:     #16161a;
+            --bg-card-alt: #1c1c21;
+            --bg-hover:    #222228;
+
+            --accent:      #3b82f6;
+            --accent-dim:  rgba(59, 130, 246, 0.10);
+            --accent-mid:  rgba(59, 130, 246, 0.22);
+            --secondary:   #8b5cf6;
+            --secondary-dim: rgba(139, 92, 246, 0.10);
+            --success:     #10b981;
+            --success-dim: rgba(16, 185, 129, 0.10);
+            --warning:     #f59e0b;
+            --warning-dim: rgba(245, 158, 11, 0.10);
+            --danger:      #ef4444;
+            --danger-dim:  rgba(239, 68, 68, 0.10);
+
+            --text:        #edf0f7;
+            --text-2:      #b4bccf;
+            --text-muted:  #6b7a9a;
+            --text-faint:  #3d4c6a;
+
+            --border:      rgba(255, 255, 255, 0.08);
+            --border-subtle: rgba(255, 255, 255, 0.04);
+
+            --font-display: 'Inter', system-ui, sans-serif;
+            --font-body:    'Inter', system-ui, sans-serif;
+            --font-mono:    'JetBrains Mono', 'Courier New', monospace;
+        }
+
+        /* ── Shared Spacing & Layout Tokens ──────────────────────── */
+        :root {
+            --space-1:  4px;
+            --space-2:  8px;
+            --space-3:  12px;
+            --space-4:  16px;
+            --space-5:  20px;
+            --space-6:  24px;
+            --space-8:  32px;
+            --space-10: 40px;
+            --space-12: 48px;
+            --space-16: 64px;
+            --space-20: 80px;
+
+            --radius-sm: 6px;
+            --radius-md: 8px;
+            --radius-lg: 12px;
+            --radius-xl: 16px;
+
+            --max-width: 1200px;
+
+            --shadow-sm:  0 1px 2px rgba(0,0,0,0.08);
+            --shadow-md:  0 4px 12px rgba(0,0,0,0.10);
+            --shadow-lg:  0 8px 24px rgba(0,0,0,0.14);
+
+            --transition: 180ms ease;
+        }
+
+        /* ── Skip Link ──────────────────────────────────────────── */
+        .skip-link {
+            position: absolute;
+            top: -100%;
+            left: var(--space-4);
+            background: var(--accent);
+            color: var(--bg-main);
+            padding: var(--space-2) var(--space-4);
+            border-radius: var(--radius-sm);
+            font-weight: 500;
+            text-decoration: none;
+            z-index: 10000;
+            transition: top var(--transition);
+        }
+        .skip-link:focus {
+            top: var(--space-4);
+        }
+
+        /* ── Focus Visible ──────────────────────────────────────── */
+        :focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
+        }
+
+        /* ── Header & Theme Switcher ────────────────────────────── */
         header {
-            position: fixed;
+            position: sticky;
             top: 0;
-            left: 0;
-            right: 0;
-            background: rgba(10, 10, 15, 0.95);
-            backdrop-filter: blur(10px);
-            border-bottom: 1px solid var(--border-color);
+            background: var(--bg-surface);
+            border-bottom: 1px solid var(--border);
+            padding: var(--space-3) var(--space-4);
             z-index: 1000;
-            padding: 15px 0;
-        }
-
-        .nav {
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
 
-        .nav-brand {
-            font-size: 1.2rem;
+        .header-brand {
+            font-family: var(--font-display);
+            font-size: 1.25rem;
             font-weight: 700;
-            background: linear-gradient(135deg, var(--accent-warm), var(--accent-gold));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            color: var(--text);
         }
 
-        .nav-links {
+        .header-brand span {
+            color: var(--accent);
+        }
+
+        .theme-switcher {
             display: flex;
-            gap: 20px;
-            list-style: none;
+            gap: var(--space-2);
+            role: radiogroup;
+            aria-label: "Color theme";
         }
 
-        .nav-links a {
-            color: var(--text-secondary);
-            text-decoration: none;
-            font-size: 0.9rem;
-            transition: color 0.3s;
+        .theme-switcher button {
+            width: 36px;
+            height: 36px;
+            border: 2px solid var(--border);
+            border-radius: var(--radius-md);
+            background: var(--bg-card);
+            color: var(--text-muted);
+            font-family: var(--font-mono);
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition);
         }
 
-        .nav-links a:hover {
-            color: var(--accent-gold);
+        .theme-switcher button:hover {
+            border-color: var(--accent-mid);
+            color: var(--text);
         }
 
-        /* Hero Section */
-        .hero {
-            min-height: 90vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-            overflow: hidden;
-            background: linear-gradient(135deg, #0a0a0f 0%, #1a1a24 50%, #0a0a0f 100%);
+        .theme-switcher button[aria-pressed="true"] {
+            border-color: var(--accent);
+            background: var(--accent-dim);
+            color: var(--accent);
         }
 
-        .hero::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle at 30% 30%, rgba(232, 93, 58, 0.1) 0%, transparent 50%),
-                        radial-gradient(circle at 70% 70%, rgba(42, 157, 143, 0.1) 0%, transparent 50%);
-            animation: pulse 15s ease-in-out infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-        }
-
-        .hero-content {
-            text-align: center;
-            z-index: 1;
-            padding: 40px;
-        }
-
-        .hero-title {
-            font-size: 4rem;
-            font-weight: 800;
-            margin-bottom: 20px;
-            background: linear-gradient(135deg, var(--accent-warm), var(--accent-gold), var(--accent-teal));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            animation: fadeInUp 1s ease-out;
-        }
-
-        .hero-tagline {
-            font-size: 1.5rem;
-            color: var(--text-secondary);
-            margin-bottom: 40px;
-            animation: fadeInUp 1s ease-out 0.2s both;
-        }
-
-        .hero-stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 30px;
-            max-width: 800px;
+        /* ── Main Container ─────────────────────────────────────── */
+        main {
+            max-width: var(--max-width);
             margin: 0 auto;
-            animation: fadeInUp 1s ease-out 0.4s both;
+            padding: var(--space-8) var(--space-4);
         }
 
-        .stat-card {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 20px;
-            transition: transform 0.3s, box-shadow 0.3s;
-        }
-
-        .stat-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 30px rgba(232, 93, 58, 0.2);
-        }
-
-        .stat-value {
-            font-size: 2.5rem;
-            font-weight: 700;
-            color: var(--accent-gold);
-            margin-bottom: 5px;
-            counter-reset: stat;
-        }
-
-        .stat-label {
-            font-size: 0.85rem;
-            color: var(--text-secondary);
+        /* ── Section Header ─────────────────────────────────────── */
+        .section-label {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            letter-spacing: 0.14em;
             text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        /* Section Styles */
-        section {
-            padding: 80px 0;
-            border-bottom: 1px solid var(--border-color);
+            color: var(--text-muted);
+            margin-bottom: var(--space-2);
         }
 
         .section-title {
-            font-size: 2.5rem;
+            font-family: var(--font-display);
+            font-size: clamp(1.5rem, 3vw, 2rem);
             font-weight: 700;
-            margin-bottom: 20px;
-            text-align: center;
+            color: var(--text);
+            line-height: 1.3;
+            margin-bottom: var(--space-6);
         }
 
-        .section-subtitle {
-            text-align: center;
-            color: var(--text-secondary);
-            margin-bottom: 50px;
-            font-size: 1.1rem;
-        }
-
-        /* Card Styles */
+        /* ── Cards ───────────────────────────────────────────────── */
         .card {
             background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: 16px;
-            padding: 30px;
-            margin-bottom: 30px;
-            box-shadow: var(--shadow);
-            transition: transform 0.3s, box-shadow 0.3s;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: var(--space-6);
+            transition: background var(--transition), border-color var(--transition);
         }
 
         .card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5);
+            background: var(--bg-hover);
+            border-color: var(--accent-mid);
         }
 
-        .card-title {
-            font-size: 1.5rem;
-            font-weight: 600;
-            margin-bottom: 15px;
-            color: var(--accent-gold);
+        /* ── Badge ───────────────────────────────────────────────── */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-2);
+            padding: var(--space-1) var(--space-3);
+            border-radius: var(--radius-sm);
+            font-family: var(--font-mono);
+            font-size: 12px;
+            font-weight: 500;
         }
+        .badge--success { background: var(--success-dim); color: var(--success); }
+        .badge--warning { background: var(--warning-dim); color: var(--warning); }
+        .badge--danger  { background: var(--danger-dim);  color: var(--danger);  }
+        .badge--accent  { background: var(--accent-dim);  color: var(--accent);  }
 
-        /* Grid Layouts */
+        /* ── Grid Layouts ────────────────────────────────────────── */
         .grid-2 {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
-            gap: 30px;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: var(--space-4);
         }
 
         .grid-3 {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-            gap: 30px;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: var(--space-4);
         }
 
         .grid-4 {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: var(--space-4);
         }
 
-        /* Charts */
+        /* ── Stat Cards ──────────────────────────────────────────── */
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: var(--space-4);
+            margin-bottom: var(--space-8);
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: var(--space-5);
+            text-align: center;
+            transition: border-color var(--transition);
+        }
+
+        .stat-card:hover {
+            border-color: var(--accent);
+        }
+
+        .stat-value {
+            font-family: var(--font-mono);
+            font-size: 2.5rem;
+            font-weight: 500;
+            color: var(--accent);
+            line-height: 1;
+            margin-bottom: var(--space-2);
+        }
+
+        .stat-label {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        /* ── Chart Containers ────────────────────────────────────── */
         .chart-container {
             position: relative;
             height: 350px;
-            margin-bottom: 20px;
+            margin: var(--space-4) 0;
         }
 
         .chart-container.lg {
             height: 450px;
         }
 
-        /* Metrics Grid */
-        .metric-card {
-            background: linear-gradient(135deg, var(--bg-card), var(--bg-secondary));
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 25px;
+        /* ── Timeline Visualization ───────────────────────────────── */
+        .timeline-bar {
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+            padding: var(--space-2) 0;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .timeline-date {
+            font-family: var(--font-mono);
+            font-size: 12px;
+            color: var(--text-muted);
+            width: 80px;
+            flex-shrink: 0;
+        }
+
+        .timeline-track {
+            flex: 1;
+            height: 32px;
+            background: var(--bg-card-alt);
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .timeline-fill {
+            height: 100%;
+            background: var(--accent);
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: var(--space-3);
+            font-family: var(--font-mono);
+            font-size: 12px;
+            color: var(--bg-main);
+            font-weight: 500;
+            transition: width var(--transition);
+        }
+
+        /* ── Hours Distribution ────────────────────────────────────── */
+        .hours-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: var(--space-3);
+        }
+
+        .hour-item {
+            background: var(--bg-card-alt);
+            border-radius: var(--radius-md);
+            padding: var(--space-3);
             text-align: center;
-            transition: all 0.3s;
         }
 
-        .metric-card:hover {
-            border-color: var(--accent-warm);
-            transform: scale(1.02);
+        .hour-label {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-bottom: var(--space-2);
         }
 
-        .metric-value {
-            font-size: 3rem;
-            font-weight: 700;
-            background: linear-gradient(135deg, var(--accent-warm), var(--accent-gold));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-bottom: 10px;
+        .hour-bar {
+            height: 120px;
+            background: var(--bg-hover);
+            border-radius: var(--radius-sm);
+            position: relative;
+            overflow: hidden;
         }
 
-        .metric-label {
-            font-size: 1rem;
-            color: var(--text-secondary);
+        .hour-fill {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--accent);
+            transition: height var(--transition);
         }
 
-        /* Architecture Map */
+        .hour-count {
+            position: absolute;
+            top: var(--space-2);
+            left: 0;
+            right: 0;
+            font-family: var(--font-mono);
+            font-size: 12px;
+            color: var(--text);
+            font-weight: 500;
+        }
+
+        /* ── Architecture Boxes ───────────────────────────────────── */
         .arch-container {
             display: flex;
             flex-wrap: wrap;
+            gap: var(--space-3);
             justify-content: center;
-            gap: 20px;
-            padding: 20px;
         }
 
         .arch-box {
-            background: var(--bg-secondary);
-            border: 2px solid var(--accent-teal);
-            border-radius: 10px;
-            padding: 15px 25px;
-            font-weight: 600;
-            transition: all 0.3s;
-            position: relative;
-        }
-
-        .arch-box.core {
-            background: linear-gradient(135deg, rgba(232, 93, 58, 0.2), rgba(244, 162, 97, 0.1));
-            border-color: var(--accent-warm);
-            font-size: 1.1rem;
+            background: var(--bg-surface);
+            border: 2px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: var(--space-3) var(--space-4);
+            font-family: var(--font-mono);
+            font-size: 13px;
+            color: var(--text-2);
+            transition: all var(--transition);
         }
 
         .arch-box:hover {
-            transform: scale(1.05);
-            box-shadow: 0 5px 20px rgba(42, 157, 143, 0.3);
+            border-color: var(--accent);
+            color: var(--text);
         }
 
-        /* Phase Timeline */
+        .arch-box.core {
+            border-color: var(--accent-mid);
+            background: var(--accent-dim);
+            color: var(--accent);
+        }
+
+        /* ── Phase Timeline ───────────────────────────────────────── */
         .phase-timeline {
             position: relative;
-            padding-left: 40px;
+            padding-left: var(--space-8);
         }
 
         .phase-timeline::before {
             content: '';
             position: absolute;
-            left: 10px;
+            left: 12px;
             top: 0;
             bottom: 0;
-            width: 3px;
-            background: linear-gradient(to bottom, var(--accent-warm), var(--accent-teal));
+            width: 2px;
+            background: var(--border);
         }
 
         .phase-item {
             position: relative;
-            margin-bottom: 30px;
-            padding: 20px;
+            margin-bottom: var(--space-6);
+            padding: var(--space-4);
             background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            transition: transform 0.3s;
-        }
-
-        .phase-item:hover {
-            transform: translateX(5px);
-            border-color: var(--accent-gold);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
         }
 
         .phase-item::before {
             content: '';
             position: absolute;
-            left: -34px;
-            top: 25px;
-            width: 12px;
-            height: 12px;
-            background: var(--accent-warm);
+            left: calc(-1 * var(--space-8) + 9px);
+            top: var(--space-4);
+            width: 8px;
+            height: 8px;
+            background: var(--accent);
             border-radius: 50%;
-            border: 3px solid var(--bg-primary);
+            border: 2px solid var(--bg-main);
         }
 
         .phase-date {
-            font-size: 0.9rem;
-            color: var(--accent-gold);
-            font-weight: 600;
-            margin-bottom: 5px;
+            font-family: var(--font-mono);
+            font-size: 12px;
+            color: var(--accent);
+            margin-bottom: var(--space-1);
         }
 
         .phase-title {
-            font-size: 1.2rem;
+            font-family: var(--font-display);
+            font-size: 1.1rem;
             font-weight: 700;
-            margin-bottom: 10px;
+            color: var(--text);
+            margin-bottom: var(--space-2);
         }
 
         .phase-desc {
-            color: var(--text-secondary);
-            font-size: 0.95rem;
+            color: var(--text-2);
+            line-height: 1.6;
+            margin-bottom: var(--space-3);
         }
 
-        .phase-stats {
+        .phase-badges {
             display: flex;
-            gap: 15px;
-            margin-top: 10px;
             flex-wrap: wrap;
+            gap: var(--space-2);
         }
 
-        .phase-badge {
-            background: rgba(42, 157, 143, 0.2);
-            color: var(--accent-teal);
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            font-weight: 600;
+        /* ── Domain Items ─────────────────────────────────────────── */
+        .domain-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: var(--space-4);
         }
 
-        /* Agent Evidence */
+        .domain-item {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-left: 3px solid var(--accent);
+            border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
+            padding: var(--space-4);
+        }
+
+        .domain-title {
+            font-family: var(--font-display);
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: var(--space-2);
+        }
+
+        .domain-text {
+            color: var(--text-2);
+            line-height: 1.6;
+            margin-bottom: var(--space-3);
+        }
+
+        .domain-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-2);
+        }
+
+        /* ── Agent Evidence ──────────────────────────────────────── */
         .agent-list {
             list-style: none;
         }
 
         .agent-item {
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 15px;
+            background: var(--bg-card-alt);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: var(--space-3) var(--space-4);
+            margin-bottom: var(--space-2);
             display: flex;
             align-items: center;
-            gap: 15px;
-            transition: all 0.3s;
-        }
-
-        .agent-item:hover {
-            border-color: var(--accent-teal);
-            transform: translateX(5px);
+            gap: var(--space-3);
         }
 
         .agent-icon {
-            width: 50px;
-            height: 50px;
-            background: linear-gradient(135deg, var(--accent-warm), var(--accent-gold));
-            border-radius: 10px;
+            width: 40px;
+            height: 40px;
+            background: var(--accent);
+            border-radius: var(--radius-sm);
             display: flex;
             align-items: center;
             justify-content: center;
+            font-family: var(--font-display);
             font-weight: 700;
-            font-size: 1.2rem;
+            color: var(--bg-main);
             flex-shrink: 0;
         }
 
         .agent-info h4 {
-            margin-bottom: 5px;
-            color: var(--accent-gold);
+            font-family: var(--font-mono);
+            font-size: 13px;
+            color: var(--accent);
+            margin-bottom: 2px;
         }
 
         .agent-info p {
-            color: var(--text-secondary);
-            font-size: 0.9rem;
+            font-size: 14px;
+            color: var(--text-2);
         }
 
-        /* Domain Deep Dive */
-        .domain-item {
-            background: var(--bg-secondary);
-            border-left: 4px solid var(--accent-warm);
-            padding: 20px;
-            margin-bottom: 15px;
-            border-radius: 0 10px 10px 0;
-            transition: all 0.3s;
-        }
-
-        .domain-item:hover {
-            border-left-color: var(--accent-gold);
-            transform: translateX(5px);
-        }
-
-        .domain-title {
-            font-size: 1.2rem;
-            font-weight: 600;
-            margin-bottom: 10px;
-            color: var(--accent-gold);
-        }
-
-        .domain-text {
-            color: var(--text-secondary);
-            line-height: 1.7;
-        }
-
-        .domain-tags {
-            display: flex;
-            gap: 10px;
-            margin-top: 15px;
-            flex-wrap: wrap;
-        }
-
-        .domain-tag {
-            background: rgba(232, 93, 58, 0.2);
-            color: var(--accent-warm);
-            padding: 5px 12px;
-            border-radius: 15px;
-            font-size: 0.8rem;
-            font-weight: 600;
-        }
-
-        /* Working Hours Chart */
-        .hours-grid {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .hour-bar {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .hour-label {
-            width: 50px;
-            text-align: right;
-            color: var(--text-secondary);
-            font-size: 0.9rem;
-        }
-
-        .hour-track {
-            flex: 1;
-            height: 30px;
-            background: var(--bg-secondary);
-            border-radius: 15px;
-            overflow: hidden;
-            position: relative;
-        }
-
-        .hour-fill {
-            height: 100%;
-            background: linear-gradient(90deg, var(--accent-warm), var(--accent-gold));
-            border-radius: 15px;
-            transition: width 1s ease-out;
-            display: flex;
-            align-items: center;
-            justify-content: flex-end;
-            padding-right: 10px;
-            color: var(--bg-primary);
-            font-weight: 600;
-            font-size: 0.85rem;
-        }
-
-        .hour-fill.peak {
-            background: linear-gradient(90deg, var(--accent-teal), var(--accent-gold));
-        }
-
-        /* Footer */
+        /* ── Footer ──────────────────────────────────────────────── */
         footer {
-            background: var(--bg-secondary);
-            border-top: 1px solid var(--border-color);
-            padding: 40px 0;
+            background: var(--bg-surface);
+            border-top: 1px solid var(--border);
+            padding: var(--space-8) var(--space-4);
             text-align: center;
         }
 
         .footer-content {
-            color: var(--text-secondary);
+            color: var(--text-muted);
+            font-size: 14px;
         }
 
-        .footer-logo {
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin-bottom: 15px;
-            background: linear-gradient(135deg, var(--accent-warm), var(--accent-gold));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        /* Animations */
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
+        /* ── Reduced Motion ───────────────────────────────────────── */
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
             }
         }
 
-        /* Responsive */
+        /* ── Responsive ──────────────────────────────────────────── */
         @media (max-width: 768px) {
-            .hero-title {
-                font-size: 2.5rem;
+            main {
+                padding: var(--space-6) var(--space-3);
             }
 
-            .hero-tagline {
-                font-size: 1.2rem;
-            }
-
-            .grid-2, .grid-3, .grid-4 {
+            .stat-grid, .grid-2, .grid-3, .grid-4 {
                 grid-template-columns: 1fr;
             }
 
-            .nav-links {
-                display: none;
-            }
-
-            .section-title {
-                font-size: 2rem;
-            }
-
             .chart-container {
-                height: 300px;
+                height: 280px;
             }
-        }
 
-        /* Scrollbar */
-        ::-webkit-scrollbar {
-            width: 10px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: var(--bg-primary);
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: var(--accent-warm);
-            border-radius: 5px;
-        }
-
-        ::-webkit-scrollbar-thumb:hover {
-            background: var(--accent-gold);
+            .chart-container.lg {
+                height: 350px;
+            }
         }
     </style>
 </head>
 <body>
-    <!-- Header -->
-    <header>
-        <div class="container">
-            <nav class="nav">
-                <div class="nav-brand">ACHIOTE</div>
-                <ul class="nav-links">
-                    <li><a href="#timeline">Timeline</a></li>
-                    <li><a href="#patterns">Patterns</a></li>
-                    <li><a href="#architecture">Architecture</a></li>
-                    <li><a href="#phases">Phases</a></li>
-                    <li><a href="#metrics">Metrics</a></li>
-                </ul>
-            </nav>
+
+    <!-- Skip to content -->
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <!-- Header with Theme Switcher -->
+    <header role="banner">
+        <div class="header-brand">
+            DevArch<span>.visualize</span>
+        </div>
+        <div class="theme-switcher" role="radiogroup" aria-label="Color theme">
+            <button data-theme="warm" aria-label="Warm theme" title="Warm">W</button>
+            <button data-theme="editorial" aria-label="Editorial theme" title="Editorial">E</button>
+            <button data-theme="modern" aria-label="Modern theme" title="Modern" aria-pressed="true">M</button>
         </div>
     </header>
 
-    <!-- Hero Section -->
-    <section class="hero">
-        <div class="hero-content">
-            <h1 class="hero-title">Achiote Project</h1>
-            <p class="hero-tagline">Culinary Reverse Engineering System — Recreating the sensory triggers of nostalgic dishes using locally available ingredients</p>
-            <div class="hero-stats">
-                <div class="stat-card">
-                    <div class="stat-value" id="stat-commits">0</div>
+    <main id="main">
+
+        <!-- Section 1: Project Overview -->
+        <section aria-labelledby="overview-heading">
+            <p class="section-label">Project Overview</p>
+            <h1 class="section-title" id="overview-heading">Achiote Archaeology Dashboard</h1>
+
+            <div class="stat-grid" role="list" aria-label="Project statistics">
+                <div class="stat-card" role="listitem">
+                    <div class="stat-value">123</div>
                     <div class="stat-label">Total Commits</div>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-value" id="stat-days">0</div>
-                    <div class="stat-label">Active Days</div>
+                <div class="stat-card" role="listitem">
+                    <div class="stat-value">10</div>
+                    <div class="stat-label">Days Span</div>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-value" id="stat-authors">0</div>
+                <div class="stat-card" role="listitem">
+                    <div class="stat-value">2</div>
                     <div class="stat-label">Authors</div>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-value" id="stat-prs">0</div>
-                    <div class="stat-label">PRs Merged</div>
+                <div class="stat-card" role="listitem">
+                    <div class="stat-value">13.7</div>
+                    <div class="stat-label">Commits/Day</div>
                 </div>
             </div>
-        </div>
-    </section>
+        </section>
 
-    <!-- Timeline Section -->
-    <section id="timeline">
-        <div class="container">
-            <h2 class="section-title">Development Timeline</h2>
-            <p class="section-subtitle">10-day sprint from April 18–27, 2026</p>
+        <!-- Section 2: Development Timeline -->
+        <section aria-labelledby="timeline-heading">
+            <p class="section-label">Development Timeline</p>
+            <h2 class="section-title" id="timeline-heading">Commit Activity Timeline</h2>
+
+            <div class="card">
+                <div id="timeline-bars" role="list" aria-label="Daily commit timeline">
+                    <!-- Timeline bars will be generated by JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 3: Development Velocity -->
+        <section aria-labelledby="velocity-heading">
+            <p class="section-label">Development Velocity</p>
+            <h2 class="section-title" id="velocity-heading">Daily Commit Velocity</h2>
+
             <div class="card">
                 <div class="chart-container lg">
-                    <canvas id="timelineChart"></canvas>
+                    <canvas id="velocityChart" role="img" aria-label="Bar chart showing daily commit counts"></canvas>
                 </div>
             </div>
-        </div>
-    </section>
+        </section>
 
-    <!-- Velocity Section -->
-    <section id="velocity">
-        <div class="container">
-            <h2 class="section-title">Development Velocity</h2>
-            <p class="section-subtitle">Cumulative commits over time with daily rate</p>
-            <div class="card">
-                <div class="chart-container lg">
-                    <canvas id="velocityChart"></canvas>
-                </div>
-            </div>
-        </div>
-    </section>
+        <!-- Section 4: Commit Patterns -->
+        <section aria-labelledby="patterns-heading">
+            <p class="section-label">Commit Patterns</p>
+            <h2 class="section-title" id="patterns-heading">Commit Type Breakdown</h2>
 
-    <!-- Patterns Section -->
-    <section id="patterns">
-        <div class="container">
-            <h2 class="section-title">Commit Patterns</h2>
-            <p class="section-subtitle">Understanding development workflow and collaboration</p>
             <div class="grid-2">
                 <div class="card">
-                    <h3 class="card-title">Commit Types</h3>
+                    <h3 style="font-family: var(--font-display); font-size: 1.1rem; margin-bottom: var(--space-4); color: var(--text);">Commit Types</h3>
                     <div class="chart-container">
-                        <canvas id="commitTypesChart"></canvas>
+                        <canvas id="commitTypesChart" role="img" aria-label="Doughnut chart of commit type distribution"></canvas>
                     </div>
-                    <p style="color: var(--text-secondary); text-align: center; margin-top: 15px;">
-                        <strong style="color: var(--accent-gold);">8.1% fix rate</strong> — Healthy balance of features and stability
-                    </p>
                 </div>
                 <div class="card">
-                    <h3 class="card-title">PR vs Direct Commits</h3>
+                    <h3 style="font-family: var(--font-display); font-size: 1.1rem; margin-bottom: var(--space-4); color: var(--text);">Signal Distribution</h3>
                     <div class="chart-container">
-                        <canvas id="prDistributionChart"></canvas>
+                        <canvas id="signalsChart" role="img" aria-label="Doughnut chart of detected signals"></canvas>
                     </div>
-                    <p style="color: var(--text-secondary); text-align: center; margin-top: 15px;">
-                        <strong style="color: var(--accent-gold);">40 PRs merged</strong> — Averaging 3.1 commits per PR
-                    </p>
                 </div>
             </div>
-        </div>
-    </section>
+        </section>
 
-    <!-- Working Hours Section -->
-    <section id="hours">
-        <div class="container">
-            <h2 class="section-title">Working Hours Distribution</h2>
-            <p class="section-subtitle">Peak productivity at midday (11-12) with evening push (17-21)</p>
+        <!-- Section 5: Working Hours -->
+        <section aria-labelledby="hours-heading">
+            <p class="section-label">Working Hours</p>
+            <h2 class="section-title" id="hours-heading">Hourly Commit Distribution</h2>
+
             <div class="card">
-                <div class="hours-grid">
-                    <div class="hour-bar">
-                        <div class="hour-label">12:00</div>
-                        <div class="hour-track">
-                            <div class="hour-fill peak" style="width: 100%;">16 commits</div>
-                        </div>
-                    </div>
-                    <div class="hour-bar">
-                        <div class="hour-label">11:00</div>
-                        <div class="hour-track">
-                            <div class="hour-fill peak" style="width: 81%;">13 commits</div>
-                        </div>
-                    </div>
-                    <div class="hour-bar">
-                        <div class="hour-label">17:00</div>
-                        <div class="hour-track">
-                            <div class="hour-fill" style="width: 62%;">10 commits</div>
-                        </div>
-                    </div>
-                    <div class="hour-bar">
-                        <div class="hour-label">19:00</div>
-                        <div class="hour-track">
-                            <div class="hour-fill" style="width: 62%;">10 commits</div>
-                        </div>
-                    </div>
-                    <div class="hour-bar">
-                        <div class="hour-label">20:00</div>
-                        <div class="hour-track">
-                            <div class="hour-fill" style="width: 56%;">9 commits</div>
-                        </div>
-                    </div>
-                    <div class="hour-bar">
-                        <div class="hour-label">21:00</div>
-                        <div class="hour-track">
-                            <div class="hour-fill" style="width: 56%;">9 commits</div>
-                        </div>
-                    </div>
-                    <div class="hour-bar">
-                        <div class="hour-label">18:00</div>
-                        <div class="hour-track">
-                            <div class="hour-fill" style="width: 56%;">9 commits</div>
-                        </div>
-                    </div>
-                    <div class="hour-bar">
-                        <div class="hour-label">10:00</div>
-                        <div class="hour-track">
-                            <div class="hour-fill" style="width: 56%;">9 commits</div>
-                        </div>
-                    </div>
+                <div class="chart-container">
+                    <canvas id="hoursChart" role="img" aria-label="Bar chart showing commits by hour"></canvas>
                 </div>
-                <p style="color: var(--text-secondary); text-align: center; margin-top: 20px;">
-                    <strong style="color: var(--accent-teal);">Pattern:</strong> Midday primary burst (11-12), secondary evening push (17-21). No late-night work (after 22:00) or early morning (before 06:00).
-                </p>
             </div>
-        </div>
-    </section>
+        </section>
 
-    <!-- Architecture Section -->
-    <section id="architecture">
-        <div class="container">
-            <h2 class="section-title">Architecture Map</h2>
-            <p class="section-subtitle">Core modules and their relationships</p>
+        <!-- Section 6: Architecture Map -->
+        <section aria-labelledby="arch-heading">
+            <p class="section-label">Architecture</p>
+            <h2 class="section-title" id="arch-heading">Architecture Map</h2>
+
             <div class="card">
-                <div class="arch-container">
-                    <div class="arch-box core">recipe-generator</div>
-                    <div class="arch-box core">substitution-engine</div>
-                    <div class="arch-box core">name-resolver</div>
-                    <div class="arch-box core">regional-matcher</div>
-                    <div class="arch-box">memory-workflow</div>
-                    <div class="arch-box">research-provenance</div>
-                    <div class="arch-box">billing-stripe</div>
-                    <div class="arch-box">local-speech</div>
-                    <div class="arch-box">rate-limit</div>
-                    <div class="arch-box">auth</div>
-                    <div class="arch-box">MCP Tools</div>
-                    <div class="arch-box">HTTP Server</div>
-                </div>
-                <div style="margin-top: 30px; padding: 20px; background: var(--bg-secondary); border-radius: 10px;">
-                    <h4 style="color: var(--accent-gold); margin-bottom: 15px;">Source Structure</h4>
-                    <div style="color: var(--text-secondary); font-family: monospace; line-height: 1.8;">
-                        <div>src/</div>
-                        <div style="padding-left: 20px;">├── tools/ (MCP tool registry, results)</div>
-                        <div style="padding-left: 20px;">├── lib/ (10 core modules)</div>
-                        <div style="padding-left: 20px;">├── data/ (6 JSON datasets)</div>
-                        <div style="padding-left: 20px;">├── schemas/ (Tool schemas)</div>
-                        <div style="padding-left: 20px;">└── cli.ts, server.ts, http-server.ts, index.ts</div>
-                    </div>
+                <div class="arch-container" role="list" aria-label="Module architecture">
+                    <div class="arch-box core" role="listitem">recipe-generator</div>
+                    <div class="arch-box core" role="listitem">substitution-engine</div>
+                    <div class="arch-box core" role="listitem">name-resolver</div>
+                    <div class="arch-box core" role="listitem">regional-matcher</div>
+                    <div class="arch-box" role="listitem">memory-workflow</div>
+                    <div class="arch-box" role="listitem">research-provenance</div>
+                    <div class="arch-box" role="listitem">billing-stripe</div>
+                    <div class="arch-box" role="listitem">local-inference</div>
+                    <div class="arch-box" role="listitem">MCP Server</div>
+                    <div class="arch-box" role="listitem">HTTP Server</div>
+                    <div class="arch-box" role="listitem">Rate Limiter</div>
+                    <div class="arch-box" role="listitem">Auth System</div>
                 </div>
             </div>
-        </div>
-    </section>
+        </section>
 
-    <!-- Domain Deep Dive -->
-    <section id="domain">
-        <div class="container">
-            <h2 class="section-title">Domain Deep Dive</h2>
-            <p class="section-subtitle">Achiote-specific capabilities and development focus</p>
-            <div class="grid-2">
+        <!-- Section 7: Domain Deep Dive -->
+        <section aria-labelledby="domain-heading">
+            <p class="section-label">Domain Analysis</p>
+            <h2 class="section-title" id="domain-heading">Domain Deep Dive</h2>
+
+            <div class="domain-grid">
                 <div class="domain-item">
-                    <div class="domain-title">🍳 Culinary AI Core</div>
+                    <div class="domain-title">Culinary AI Core</div>
                     <div class="domain-text">
                         Recipe generation engine with intelligent ingredient substitution based on sensory profiles and regional availability.
-                        Includes dish family classification, food science references, and memory hint systems.
                     </div>
                     <div class="domain-tags">
-                        <span class="domain-tag">recipe-generator</span>
-                        <span class="domain-tag">substitution-engine</span>
-                        <span class="domain-tag">sensory-profiles</span>
-                        <span class="domain-tag">regional-matcher</span>
+                        <span class="badge badge--accent">recipe-generator</span>
+                        <span class="badge badge--accent">substitution-engine</span>
+                        <span class="badge badge--accent">sensory-profiles</span>
                     </div>
                 </div>
                 <div class="domain-item">
-                    <div class="domain-title">🔌 MCP Server</div>
+                    <div class="domain-title">MCP Server</div>
                     <div class="domain-text">
-                        Full Model Context Protocol server implementation with tool registry, HTTP server, and results processing.
-                        8 commits dedicated to MCP infrastructure and tool schemas.
+                        Full Model Context Protocol server implementation with tool registry and HTTP server.
                     </div>
                     <div class="domain-tags">
-                        <span class="domain-tag">MCP tools</span>
-                        <span class="domain-tag">HTTP server</span>
-                        <span class="domain-tag">tool registry</span>
+                        <span class="badge badge--success">MCP tools</span>
+                        <span class="badge badge--success">HTTP server</span>
+                        <span class="badge badge--success">tool registry</span>
                     </div>
                 </div>
                 <div class="domain-item">
-                    <div class="domain-title">🤖 Multi-Model Support</div>
+                    <div class="domain-title">Multi-Model Support</div>
                     <div class="domain-text">
-                        Evidence of Claude, GLM, and local inference support. Tailscale integration for secure local model access.
-                        Flexible model routing architecture for different use cases.
+                        Claude, GLM, and local inference support with Tailscale integration for secure local model access.
                     </div>
                     <div class="domain-tags">
-                        <span class="domain-tag">Claude</span>
-                        <span class="domain-tag">GLM</span>
-                        <span class="domain-tag">local inference</span>
-                        <span class="domain-tag">Tailscale</span>
+                        <span class="badge badge--warning">Claude</span>
+                        <span class="badge badge--warning">GLM</span>
+                        <span class="badge badge--warning">Tailscale</span>
                     </div>
                 </div>
                 <div class="domain-item">
-                    <div class="domain-title">🚀 Launch Trajectory</div>
+                    <div class="domain-title">Launch Trajectory</div>
                     <div class="domain-text">
-                        11 commits focused on launch preparation, viability smoke tests, and paid billing integration via Stripe.
-                        Clear progression from development to production readiness.
+                        11 commits focused on launch preparation, viability tests, and paid billing integration via Stripe.
                     </div>
                     <div class="domain-tags">
-                        <span class="domain-tag">11 launch commits</span>
-                        <span class="domain-tag">viability tests</span>
-                        <span class="domain-tag">Stripe billing</span>
-                        <span class="domain-tag">production ready</span>
-                    </div>
-                </div>
-                <div class="domain-item">
-                    <div class="domain-title">🔒 Security Focus</div>
-                    <div class="domain-text">
-                        2 automated security fixes via repo-pipeline addressing CRITICAL/HIGH severity issues including XSS,
-                        CSP, CORS, and input validation vulnerabilities.
-                    </div>
-                    <div class="domain-tags">
-                        <span class="domain-tag">XSS prevention</span>
-                        <span class="domain-tag">CSP headers</span>
-                        <span class="domain-tag">CORS config</span>
-                        <span class="domain-tag">input validation</span>
-                    </div>
-                </div>
-                <div class="domain-item">
-                    <div class="domain-title">📚 Rich Data Layer</div>
-                    <div class="domain-text">
-                        6 JSON datasets powering the culinary engine: dish families, ingredients database, sensory profiles,
-                        food science references, regional availability maps, and memory hints.
-                    </div>
-                    <div class="domain-tags">
-                        <span class="domain-tag">dish-families</span>
-                        <span class="domain-tag">ingredients</span>
-                        <span class="domain-tag">sensory-profiles</span>
-                        <span class="domain-tag">food-science</span>
+                        <span class="badge badge--danger">launch</span>
+                        <span class="badge badge--danger">Stripe</span>
+                        <span class="badge badge--danger">viability tests</span>
                     </div>
                 </div>
             </div>
-        </div>
-    </section>
+        </section>
 
-    <!-- Development Phases -->
-    <section id="phases">
-        <div class="container">
-            <h2 class="section-title">Development Phases</h2>
-            <p class="section-subtitle">Five distinct phases from scaffolding to launch</p>
-            <div class="phase-timeline">
-                <div class="phase-item">
-                    <div class="phase-date">April 18, 2026 (Day 1)</div>
+        <!-- Section 8: Development Phases -->
+        <section aria-labelledby="phases-heading">
+            <p class="section-label">Development History</p>
+            <h2 class="section-title" id="phases-heading">Development Phases</h2>
+
+            <div class="phase-timeline" role="list" aria-label="Development phase timeline">
+                <div class="phase-item" role="listitem">
+                    <div class="phase-date">April 18, 2026</div>
                     <div class="phase-title">Phase 1: Scaffolding Sprint</div>
                     <div class="phase-desc">
-                        Massive initial burst establishing the entire project skeleton. Core architecture, MCP server foundation,
-                        and all major systems initialized in a single day.
+                        Massive initial burst establishing the entire project skeleton. Core architecture, MCP server foundation, and all major systems initialized.
                     </div>
-                    <div class="phase-stats">
-                        <span class="phase-badge">35 commits</span>
-                        <span class="phase-badge">Project skeleton</span>
-                        <span class="phase-badge">MCP setup</span>
+                    <div class="phase-badges">
+                        <span class="badge badge--accent">35 commits</span>
+                        <span class="badge badge--success">Project skeleton</span>
+                        <span class="badge badge--success">MCP setup</span>
                     </div>
                 </div>
-                <div class="phase-item">
-                    <div class="phase-date">April 19-20, 2026 (Days 2-3)</div>
+                <div class="phase-item" role="listitem">
+                    <div class="phase-date">April 19-20, 2026</div>
                     <div class="phase-title">Phase 2: Core Features</div>
                     <div class="phase-desc">
-                        Recipe generation engine and substitution engine implementation. Regional matcher and sensory profiling
-                        capabilities added.
+                        Recipe generation engine and substitution engine implementation. Regional matcher and sensory profiling capabilities added.
                     </div>
-                    <div class="phase-stats">
-                        <span class="phase-badge">26 commits</span>
-                        <span class="phase-badge">recipe engine</span>
-                        <span class="phase-badge">substitution</span>
-                        <span class="phase-badge">sensory profiles</span>
+                    <div class="phase-badges">
+                        <span class="badge badge--accent">26 commits</span>
+                        <span class="badge badge--warning">recipe engine</span>
+                        <span class="badge badge--warning">substitution</span>
                     </div>
                 </div>
-                <div class="phase-item">
-                    <div class="phase-date">April 21, 2026 (Day 4)</div>
+                <div class="phase-item" role="listitem">
+                    <div class="phase-date">April 21, 2026</div>
                     <div class="phase-title">Phase 3: Feature Burst</div>
                     <div class="phase-desc">
-                        MCP tools expansion, provider system implementation, and enhanced capabilities. Memory workflow and
-                        research provenance systems integrated.
+                        MCP tools expansion, provider system implementation, and enhanced capabilities. Memory workflow and research provenance systems integrated.
                     </div>
-                    <div class="phase-stats">
-                        <span class="phase-badge">24 commits</span>
-                        <span class="phase-badge">MCP tools</span>
-                        <span class="phase-badge">providers</span>
-                        <span class="phase-badge">memory workflow</span>
+                    <div class="phase-badges">
+                        <span class="badge badge--accent">24 commits</span>
+                        <span class="badge badge--danger">MCP tools</span>
+                        <span class="badge badge--danger">providers</span>
                     </div>
                 </div>
-                <div class="phase-item">
-                    <div class="phase-date">April 22-25, 2026 (Days 5-8)</div>
+                <div class="phase-item" role="listitem">
+                    <div class="phase-date">April 22-25, 2026</div>
                     <div class="phase-title">Phase 4: Polish & Hardening</div>
                     <div class="phase-desc">
-                        Security fixes, landing page, documentation, and smoke tests. Infrastructure hardening and launch
-                        preparation. Includes automated security pipeline fixes.
+                        Security fixes, landing page, documentation, and smoke tests. Infrastructure hardening and launch preparation.
                     </div>
-                    <div class="phase-stats">
-                        <span class="phase-badge">14 commits</span>
-                        <span class="phase-badge">security fixes</span>
-                        <span class="phase-badge">landing page</span>
-                        <span class="phase-badge">smoke tests</span>
+                    <div class="phase-badges">
+                        <span class="badge badge--accent">14 commits</span>
+                        <span class="badge badge--success">security fixes</span>
+                        <span class="badge badge--success">smoke tests</span>
                     </div>
                 </div>
-                <div class="phase-item">
-                    <div class="phase-date">April 26-27, 2026 (Days 9-10)</div>
+                <div class="phase-item" role="listitem">
+                    <div class="phase-date">April 26-27, 2026</div>
                     <div class="phase-title">Phase 5: Launch Preparation</div>
                     <div class="phase-desc">
-                        Final viability checks, paid launch configuration, local inference via Tailscale, and production
-                        readiness. GLM model routing and multi-provider support finalized.
+                        Final viability checks, paid launch configuration, local inference via Tailscale, and production readiness.
                     </div>
-                    <div class="phase-stats">
-                        <span class="phase-badge">24 commits</span>
-                        <span class="phase-badge">viability tests</span>
-                        <span class="phase-badge">paid launch</span>
-                        <span class="phase-badge">local inference</span>
+                    <div class="phase-badges">
+                        <span class="badge badge--accent">24 commits</span>
+                        <span class="badge badge--warning">viability tests</span>
+                        <span class="badge badge--warning">paid launch</span>
                     </div>
                 </div>
             </div>
-        </div>
-    </section>
+        </section>
 
-    <!-- Key Metrics -->
-    <section id="metrics">
-        <div class="container">
-            <h2 class="section-title">Key Metrics</h2>
-            <p class="section-subtitle">Project scale and development intensity</p>
+        <!-- Section 9: Key Metrics -->
+        <section aria-labelledby="metrics-heading">
+            <p class="section-label">Project Scale</p>
+            <h2 class="section-title" id="metrics-heading">Key Metrics</h2>
+
             <div class="grid-4">
-                <div class="metric-card">
-                    <div class="metric-value">14,839</div>
-                    <div class="metric-label">Lines of TypeScript</div>
+                <div class="stat-card">
+                    <div class="stat-value">14,839</div>
+                    <div class="stat-label">Lines of TypeScript</div>
                 </div>
-                <div class="metric-card">
-                    <div class="metric-value">70</div>
-                    <div class="metric-label">TypeScript Files</div>
+                <div class="stat-card">
+                    <div class="stat-value">70</div>
+                    <div class="stat-label">TypeScript Files</div>
                 </div>
-                <div class="metric-card">
-                    <div class="metric-value">40</div>
-                    <div class="metric-label">PRs Merged</div>
+                <div class="stat-card">
+                    <div class="stat-value">40</div>
+                    <div class="stat-label">PRs Merged</div>
                 </div>
-                <div class="metric-card">
-                    <div class="metric-value">3.1</div>
-                    <div class="metric-label">Avg Commits per PR</div>
+                <div class="stat-card">
+                    <div class="stat-value">8.1%</div>
+                    <div class="stat-label">Fix Rate</div>
                 </div>
-                <div class="metric-card">
-                    <div class="metric-value">12.3</div>
-                    <div class="metric-label">Commits per Active Day</div>
+                <div class="stat-card">
+                    <div class="stat-value">35</div>
+                    <div class="stat-label">Peak Daily Commits</div>
                 </div>
-                <div class="metric-card">
-                    <div class="metric-value">8.1%</div>
-                    <div class="metric-label">Fix Rate</div>
+                <div class="stat-card">
+                    <div class="stat-value">11</div>
+                    <div class="stat-label">Launch Commits</div>
                 </div>
-                <div class="metric-card">
-                    <div class="metric-value">35</div>
-                    <div class="metric-label">Peak Commits (Day 1)</div>
+                <div class="stat-card">
+                    <div class="stat-value">33</div>
+                    <div class="stat-label">Signals Detected</div>
                 </div>
-                <div class="metric-card">
-                    <div class="metric-value">11</div>
-                    <div class="metric-label">Launch Commits</div>
+                <div class="stat-card">
+                    <div class="stat-value">6</div>
+                    <div class="stat-label">JSON Datasets</div>
                 </div>
             </div>
-        </div>
-    </section>
+        </section>
 
-    <!-- Agent Evidence -->
-    <section id="agents">
-        <div class="container">
-            <h2 class="section-title">Agent Evidence</h2>
-            <p class="section-subtitle">Branches and commits indicating AI agent collaboration</p>
+        <!-- Section 10: Agent Evidence -->
+        <section aria-labelledby="agents-heading">
+            <p class="section-label">Collaboration</p>
+            <h2 class="section-title" id="agents-heading">Agent Evidence</h2>
+
             <div class="card">
-                <ul class="agent-list">
+                <ul class="agent-list" aria-label="AI agents detected in commit history">
                     <li class="agent-item">
-                        <div class="agent-icon">K</div>
+                        <div class="agent-icon" aria-hidden="true">K</div>
                         <div class="agent-info">
                             <h4>agent/kilocode/local-inference-tailscale</h4>
-                            <p>Local model integration via Tailscale VPN for secure inference</p>
+                            <p>Local model integration via Tailscale VPN</p>
                         </div>
                     </li>
                     <li class="agent-item">
-                        <div class="agent-icon">C</div>
+                        <div class="agent-icon" aria-hidden="true">C</div>
                         <div class="agent-info">
                             <h4>codex/p0-launch-blockers</h4>
-                            <p>OpenAI Codex agent addressing launch-critical issues</p>
+                            <p>Addressing launch-critical issues</p>
                         </div>
                     </li>
                     <li class="agent-item">
-                        <div class="agent-icon">G</div>
+                        <div class="agent-icon" aria-hidden="true">G</div>
                         <div class="agent-info">
                             <h4>glm-model-routing-and-inference</h4>
-                            <p>GLM model integration and routing logic implementation</p>
+                            <p>GLM model integration and routing logic</p>
                         </div>
                     </li>
                     <li class="agent-item">
-                        <div class="agent-icon">P</div>
+                        <div class="agent-icon" aria-hidden="true">P</div>
                         <div class="agent-info">
                             <h4>repo-pipeline security fixes</h4>
-                            <p>Automated pipeline addressing XSS, CSP, CORS vulnerabilities</p>
+                            <p>Automated security fixes for XSS, CSP, CORS</p>
                         </div>
                     </li>
                 </ul>
             </div>
-        </div>
-    </section>
+        </section>
 
-    <!-- Footer -->
-    <footer>
-        <div class="container">
-            <div class="footer-content">
-                <div class="footer-logo">DevArch Framework</div>
-                <p>Generated on April 27, 2026</p>
-                <p style="margin-top: 10px; font-size: 0.9rem;">
-                    Methodology: Git repository archaeology analyzing commit patterns, author attribution,
-                    temporal distribution, and code structure. All data sourced from git history.
-                </p>
-                <p style="margin-top: 15px; color: var(--accent-teal);">
-                    Achiote v0.2.0 — Culinary Reverse Engineering System
-                </p>
-            </div>
+    </main>
+
+    <footer role="contentinfo">
+        <div class="footer-content">
+            <p>Generated by DevArch Framework on April 27, 2026</p>
+            <p style="margin-top: var(--space-2);">Achiote v0.2.0 — Culinary Reverse Engineering System</p>
         </div>
     </footer>
 
     <script>
-        // Animate stat counters
-        function animateCounter(elementId, target, duration = 2000) {
-            const element = document.getElementById(elementId);
-            const start = 0;
-            const increment = target / (duration / 16);
-            let current = start;
+        // ── Theme Management ────────────────────────────────────────
+        (function() {
+            const savedTheme = localStorage.getItem('devarch-theme') || 'editorial';
+            document.documentElement.setAttribute('data-theme', savedTheme);
 
-            const timer = setInterval(() => {
-                current += increment;
-                if (current >= target) {
-                    element.textContent = target;
-                    clearInterval(timer);
-                } else {
-                    element.textContent = Math.floor(current);
-                }
-            }, 16);
+            document.querySelectorAll('button[data-theme]').forEach(btn => {
+                btn.setAttribute('aria-pressed', btn.getAttribute('data-theme') === savedTheme);
+                btn.addEventListener('click', () => {
+                    const theme = btn.getAttribute('data-theme');
+                    document.documentElement.setAttribute('data-theme', theme);
+                    localStorage.setItem('devarch-theme', theme);
+                    document.querySelectorAll('button[data-theme]').forEach(b => {
+                        b.setAttribute('aria-pressed', b.getAttribute('data-theme') === theme);
+                    });
+                    // Recreate all charts with new theme colors
+                    recreateAllCharts();
+                });
+            });
+        })();
+
+        // ── Chart Data (Embedded) ───────────────────────────────────
+        const CHART_DATA = {
+            dailyCommits: [35, 15, 11, 24, 5, 0, 8, 1, 13, 11],
+            dates: ['Apr 18', 'Apr 19', 'Apr 20', 'Apr 21', 'Apr 22', 'Apr 23', 'Apr 24', 'Apr 25', 'Apr 26', 'Apr 27'],
+            commitTypes: {
+                labels: ['Feature', 'Fix', 'Other', 'Docs', 'Test', 'Chore', 'CI'],
+                data: [15, 10, 90, 3, 2, 2, 1]
+            },
+            signals: {
+                labels: ['Velocity Shift', 'Author Change', 'Scope Change'],
+                data: [5, 25, 3]
+            },
+            hourlyDistribution: {
+                labels: ['06:00', '08:00', '10:00', '11:00', '12:00', '14:00', '17:00', '18:00', '19:00', '20:00', '21:00'],
+                data: [1, 3, 9, 13, 16, 7, 10, 9, 10, 9, 9]
+            }
+        };
+
+        // ── Get Theme Colors for Charts ───────────────────────────────
+        function getThemeColors() {
+            const s = getComputedStyle(document.documentElement);
+            return {
+                accent:     s.getPropertyValue('--accent').trim(),
+                secondary:  s.getPropertyValue('--secondary').trim(),
+                success:    s.getPropertyValue('--success').trim(),
+                warning:    s.getPropertyValue('--warning').trim(),
+                danger:     s.getPropertyValue('--danger').trim(),
+                text:       s.getPropertyValue('--text').trim(),
+                text2:      s.getPropertyValue('--text-2').trim(),
+                muted:      s.getPropertyValue('--text-muted').trim(),
+                border:     s.getPropertyValue('--border').trim(),
+                bgCard:     s.getPropertyValue('--bg-card').trim(),
+                bgCardAlt:  s.getPropertyValue('--bg-card-alt').trim(),
+            };
         }
 
-        // Start animations when page loads
-        window.addEventListener('load', () => {
-            setTimeout(() => {
-                animateCounter('stat-commits', 123);
-                animateCounter('stat-days', 9);
-                animateCounter('stat-authors', 2);
-                animateCounter('stat-prs', 40);
-            }, 500);
-        });
+        // ── Chart Instances ──────────────────────────────────────────
+        let charts = {};
 
-        // Chart.js default config
-        Chart.defaults.color = '#a1a1aa';
-        Chart.defaults.borderColor = '#2a2a3a';
+        // ── Create Velocity Chart ────────────────────────────────────
+        function createVelocityChart() {
+            const ctx = document.getElementById('velocityChart').getContext('2d');
+            const colors = getThemeColors();
 
-        // Timeline Chart
-        const timelineCtx = document.getElementById('timelineChart').getContext('2d');
-        new Chart(timelineCtx, {
-            type: 'bar',
-            data: {
-                labels: ['Apr 18', 'Apr 19', 'Apr 20', 'Apr 21', 'Apr 22', 'Apr 23', 'Apr 24', 'Apr 25', 'Apr 26', 'Apr 27'],
-                datasets: [{
-                    label: 'Commits',
-                    data: [35, 15, 11, 24, 5, 0, 8, 1, 13, 11],
-                    backgroundColor: (context) => {
-                        const value = context.raw;
-                        if (value === 0) return 'rgba(161, 161, 170, 0.2)';
-                        const intensity = value / 35;
-                        return `rgba(232, 93, 58, ${0.4 + intensity * 0.6})`;
+            return new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: CHART_DATA.dates,
+                    datasets: [{
+                        label: 'Commits',
+                        data: CHART_DATA.dailyCommits,
+                        backgroundColor: CHART_DATA.dailyCommits.map(v =>
+                            v === 0 ? colors.muted : colors.accent
+                        ),
+                        borderColor: colors.border,
+                        borderWidth: 1,
+                        borderRadius: 6,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        title: {
+                            display: true,
+                            text: 'Daily Commit Volume',
+                            color: colors.text,
+                            font: { family: getComputedStyle(document.body).fontFamily, size: 14, weight: '600' }
+                        }
                     },
-                    borderColor: '#e85d3a',
-                    borderWidth: 2,
-                    borderRadius: 8,
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false },
-                    title: {
-                        display: true,
-                        text: 'Daily Commit Volume',
-                        color: '#f4a261',
-                        font: { size: 16, weight: 'bold' }
-                    },
-                    annotation: {
-                        annotations: {
-                            quietDay: {
-                                type: 'box',
-                                xMin: 5,
-                                xMax: 5,
-                                backgroundColor: 'rgba(161, 161, 170, 0.1)',
-                                borderColor: 'rgba(161, 161, 170, 0.3)',
-                                borderWidth: 1,
-                            }
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: colors.border },
+                            ticks: { color: colors.muted }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: colors.muted }
                         }
                     }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        grid: { color: 'rgba(42, 42, 58, 0.5)' },
-                        ticks: { color: '#a1a1aa' }
-                    },
-                    x: {
-                        grid: { display: false },
-                        ticks: { color: '#a1a1aa' }
-                    }
-                }
-            }
-        });
-
-        // Velocity Chart
-        const velocityCtx = document.getElementById('velocityChart').getContext('2d');
-        new Chart(velocityCtx, {
-            type: 'line',
-            data: {
-                labels: ['Apr 18', 'Apr 19', 'Apr 20', 'Apr 21', 'Apr 22', 'Apr 23', 'Apr 24', 'Apr 25', 'Apr 26', 'Apr 27'],
-                datasets: [{
-                    label: 'Cumulative Commits',
-                    data: [35, 50, 61, 85, 90, 90, 98, 99, 112, 123],
-                    borderColor: '#f4a261',
-                    backgroundColor: 'rgba(244, 162, 97, 0.1)',
-                    fill: true,
-                    tension: 0.4,
-                    yAxisID: 'y',
-                }, {
-                    label: 'Daily Rate',
-                    data: [35, 15, 11, 24, 5, 0, 8, 1, 13, 11],
-                    borderColor: '#2a9d8f',
-                    backgroundColor: 'rgba(42, 157, 143, 0.1)',
-                    fill: false,
-                    tension: 0.4,
-                    yAxisID: 'y1',
-                    borderDash: [5, 5],
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    title: {
-                        display: true,
-                        text: 'Cumulative Progress & Daily Velocity',
-                        color: '#f4a261',
-                        font: { size: 16, weight: 'bold' }
-                    },
-                    legend: {
-                        position: 'top',
-                        labels: { color: '#a1a1aa' }
-                    }
-                },
-                scales: {
-                    y: {
-                        type: 'linear',
-                        display: true,
-                        position: 'left',
-                        title: { display: true, text: 'Cumulative', color: '#f4a261' },
-                        grid: { color: 'rgba(42, 42, 58, 0.5)' }
-                    },
-                    y1: {
-                        type: 'linear',
-                        display: true,
-                        position: 'right',
-                        title: { display: true, text: 'Daily Rate', color: '#2a9d8f' },
-                        grid: { drawOnChartArea: false }
-                    },
-                    x: {
-                        grid: { display: false }
-                    }
-                }
-            }
-        });
-
-        // Commit Types Chart
-        const commitTypesCtx = document.getElementById('commitTypesChart').getContext('2d');
-        new Chart(commitTypesCtx, {
-            type: 'doughnut',
-            data: {
-                labels: ['Feature', 'Fix', 'Other', 'Docs', 'Test', 'Chore', 'CI'],
-                datasets: [{
-                    data: [15, 10, 90, 3, 2, 2, 1],
-                    backgroundColor: [
-                        '#e85d3a',
-                        '#f4a261',
-                        'rgba(161, 161, 170, 0.3)',
-                        '#2a9d8f',
-                        '#264653',
-                        'rgba(244, 162, 97, 0.5)',
-                        'rgba(42, 157, 143, 0.5)'
-                    ],
-                    borderColor: '#1a1a24',
-                    borderWidth: 2
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'right',
-                        labels: { color: '#a1a1aa', padding: 15 }
-                    }
-                }
-            }
-        });
-
-        // PR Distribution Chart
-        const prDistCtx = document.getElementById('prDistributionChart').getContext('2d');
-        new Chart(prDistCtx, {
-            type: 'pie',
-            data: {
-                labels: ['Direct Commits', 'PR Merges'],
-                datasets: [{
-                    data: [83, 40],
-                    backgroundColor: ['#2a9d8f', '#e85d3a'],
-                    borderColor: '#1a1a24',
-                    borderWidth: 2
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'right',
-                        labels: { color: '#a1a1aa', padding: 15 }
-                    }
-                }
-            }
-        });
-
-        // Smooth scroll
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function (e) {
-                e.preventDefault();
-                const target = document.querySelector(this.getAttribute('href'));
-                if (target) {
-                    target.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'start'
-                    });
                 }
             });
+        }
+
+        // ── Create Commit Types Chart ────────────────────────────────
+        function createCommitTypesChart() {
+            const ctx = document.getElementById('commitTypesChart').getContext('2d');
+            const colors = getThemeColors();
+
+            return new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: CHART_DATA.commitTypes.labels,
+                    datasets: [{
+                        data: CHART_DATA.commitTypes.data,
+                        backgroundColor: [
+                            colors.accent,
+                            colors.warning,
+                            colors.muted,
+                            colors.secondary,
+                            colors.success,
+                            colors.danger,
+                            colors.text2
+                        ],
+                        borderColor: colors.bgCard,
+                        borderWidth: 3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '60%',
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: { color: colors.text2, padding: 12 }
+                        }
+                    }
+                }
+            });
+        }
+
+        // ── Create Signals Chart ─────────────────────────────────────
+        function createSignalsChart() {
+            const ctx = document.getElementById('signalsChart').getContext('2d');
+            const colors = getThemeColors();
+
+            return new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: CHART_DATA.signals.labels,
+                    datasets: [{
+                        data: CHART_DATA.signals.data,
+                        backgroundColor: [
+                            colors.secondary,
+                            colors.success,
+                            colors.warning
+                        ],
+                        borderColor: colors.bgCard,
+                        borderWidth: 3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '60%',
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: { color: colors.text2, padding: 12 }
+                        }
+                    }
+                }
+            });
+        }
+
+        // ── Create Hours Chart ───────────────────────────────────────
+        function createHoursChart() {
+            const ctx = document.getElementById('hoursChart').getContext('2d');
+            const colors = getThemeColors();
+
+            return new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: CHART_DATA.hourlyDistribution.labels,
+                    datasets: [{
+                        label: 'Commits',
+                        data: CHART_DATA.hourlyDistribution.data,
+                        backgroundColor: colors.accent,
+                        borderColor: colors.border,
+                        borderWidth: 1,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        title: {
+                            display: true,
+                            text: 'Commits by Hour of Day',
+                            color: colors.text,
+                            font: { family: getComputedStyle(document.body).fontFamily, size: 14, weight: '600' }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: colors.border },
+                            ticks: { color: colors.muted }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: colors.muted }
+                        }
+                    }
+                }
+            });
+        }
+
+        // ── Create All Charts ─────────────────────────────────────────
+        function createAllCharts() {
+            charts.velocity = createVelocityChart();
+            charts.commitTypes = createCommitTypesChart();
+            charts.signals = createSignalsChart();
+            charts.hours = createHoursChart();
+        }
+
+        // ── Recreate All Charts (Theme Change) ───────────────────────
+        function recreateAllCharts() {
+            Object.values(charts).forEach(chart => chart.destroy());
+            createAllCharts();
+        }
+
+        // ── Generate Timeline Bars ───────────────────────────────────
+        function generateTimelineBars() {
+            const container = document.getElementById('timeline-bars');
+            const maxCommits = Math.max(...CHART_DATA.dailyCommits);
+
+            container.innerHTML = CHART_DATA.dates.map((date, i) => {
+                const commits = CHART_DATA.dailyCommits[i];
+                const width = commits > 0 ? (commits / maxCommits) * 100 : 0;
+                return `
+                    <div class="timeline-bar">
+                        <div class="timeline-date">${date}</div>
+                        <div class="timeline-track">
+                            <div class="timeline-fill" style="width: ${width}%">
+                                ${commits > 0 ? commits + ' commits' : 'No activity'}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // ── Initialize ────────────────────────────────────────────────
+        document.addEventListener('DOMContentLoaded', () => {
+            generateTimelineBars();
+            createAllCharts();
         });
     </script>
 </body>

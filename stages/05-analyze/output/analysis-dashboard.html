@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="editorial">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Analysis Dashboard — Achiote</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&family=Lora:wght@400;600;700&family=Source+Sans+3:wght@300;400;500;600&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    :root, [data-theme="warm"] {
+      --bg-main:     #1f1a14;
+      --bg-surface:  #2b241b;
+      --bg-card:     #383020;
+      --bg-card-alt: #453a28;
+      --bg-hover:    #504230;
+
+      --accent:      #d4a017;
+      --accent-dim:  rgba(212, 160, 23, 0.12);
+      --accent-mid:  rgba(212, 160, 23, 0.25);
+      --secondary:   #b87333;
+      --secondary-dim: rgba(184, 115, 51, 0.12);
+      --success:     #4caf70;
+      --success-dim: rgba(76, 175, 112, 0.12);
+      --warning:     #e8a830;
+      --warning-dim: rgba(232, 168, 48, 0.12);
+      --danger:      #c0392b;
+      --danger-dim:  rgba(192, 57, 43, 0.12);
+
+      --text:        #f5e8c8;
+      --text-2:      #c8b898;
+      --text-muted:  #9d8f78;
+      --text-faint:  #6b5f4e;
+
+      --border:      rgba(212, 160, 23, 0.15);
+      --border-subtle: rgba(255, 255, 255, 0.05);
+
+      --font-display: 'DM Serif Display', Georgia, serif;
+      --font-body:    'DM Sans', system-ui, sans-serif;
+      --font-mono:    'JetBrains Mono', 'Courier New', monospace;
+    }
+
+    [data-theme="editorial"] {
+      --bg-main:     #faf9f7;
+      --bg-surface:  #ffffff;
+      --bg-card:     #ffffff;
+      --bg-card-alt: #f5f4f2;
+      --bg-hover:    #efeeec;
+
+      --accent:      #1a5c3a;
+      --accent-dim:  rgba(26, 92, 58, 0.08);
+      --accent-mid:  rgba(26, 92, 58, 0.18);
+      --secondary:   #2c5aa0;
+      --secondary-dim: rgba(44, 90, 160, 0.08);
+      --success:     #1a5c3a;
+      --success-dim: rgba(26, 92, 58, 0.08);
+      --warning:     #8a6d2b;
+      --warning-dim: rgba(138, 109, 43, 0.08);
+      --danger:      #a8282d;
+      --danger-dim:  rgba(168, 40, 45, 0.08);
+
+      --text:        #1a1a1a;
+      --text-2:      #3d3d3d;
+      --text-muted:  #6b6b6b;
+      --text-faint:  #9d9d9d;
+
+      --border:      rgba(0, 0, 0, 0.10);
+      --border-subtle: rgba(0, 0, 0, 0.05);
+
+      --font-display: 'Lora', Georgia, serif;
+      --font-body:    'Source Sans 3', system-ui, sans-serif;
+      --font-mono:    'IBM Plex Mono', 'Courier New', monospace;
+    }
+
+    [data-theme="modern"] {
+      --bg-main:     #09090b;
+      --bg-surface:  #0f0f12;
+      --bg-card:     #16161a;
+      --bg-card-alt: #1c1c21;
+      --bg-hover:    #222228;
+
+      --accent:      #3b82f6;
+      --accent-dim:  rgba(59, 130, 246, 0.10);
+      --accent-mid:  rgba(59, 130, 246, 0.22);
+      --secondary:   #8b5cf6;
+      --secondary-dim: rgba(139, 92, 246, 0.10);
+      --success:     #10b981;
+      --success-dim: rgba(16, 185, 129, 0.10);
+      --warning:     #f59e0b;
+      --warning-dim: rgba(245, 158, 11, 0.10);
+      --danger:      #ef4444;
+      --danger-dim:  rgba(239, 68, 68, 0.10);
+
+      --text:        #edf0f7;
+      --text-2:      #b4bccf;
+      --text-muted:  #6b7a9a;
+      --text-faint:  #3d4c6a;
+
+      --border:      rgba(255, 255, 255, 0.08);
+      --border-subtle: rgba(255, 255, 255, 0.04);
+
+      --font-display: 'Inter', system-ui, sans-serif;
+      --font-body:    'Inter', system-ui, sans-serif;
+      --font-mono:    'JetBrains Mono', 'Courier New', monospace;
+    }
+
+    :root {
+      --space-1:  4px;
+      --space-2:  8px;
+      --space-3:  12px;
+      --space-4:  16px;
+      --space-5:  20px;
+      --space-6:  24px;
+      --space-8:  32px;
+      --space-10: 40px;
+      --space-12: 48px;
+      --space-16: 64px;
+      --space-20: 80px;
+
+      --radius-sm: 6px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --radius-xl: 16px;
+
+      --max-width: 1200px;
+
+      --shadow-sm:  0 1px 2px rgba(0,0,0,0.08);
+      --shadow-md:  0 4px 12px rgba(0,0,0,0.10);
+      --shadow-lg:  0 8px 24px rgba(0,0,0,0.14);
+
+      --transition: 180ms ease;
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--bg-main);
+      color: var(--text);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    .skip-link {
+      position: absolute;
+      top: -40px;
+      left: 0;
+      background: var(--accent);
+      color: var(--bg-main);
+      padding: var(--space-2) var(--space-4);
+      z-index: 100;
+      transition: top var(--transition);
+    }
+    .skip-link:focus {
+      top: 0;
+    }
+
+    .header {
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border);
+      padding: var(--space-6) var(--space-8);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: var(--space-4);
+    }
+
+    .header-title {
+      flex: 1;
+      min-width: 280px;
+    }
+
+    .stage-marker {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--secondary);
+      margin-bottom: var(--space-2);
+    }
+
+    .stage-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--secondary);
+    }
+
+    .header h1 {
+      font-family: var(--font-display);
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1.2;
+      margin-bottom: var(--space-2);
+    }
+
+    .header-subtitle {
+      font-size: 14px;
+      color: var(--text-muted);
+    }
+
+    .theme-switcher {
+      display: flex;
+      gap: var(--space-2);
+    }
+
+    .theme-btn {
+      width: 40px;
+      height: 40px;
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      color: var(--text-muted);
+      border-radius: var(--radius-md);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+
+    .theme-btn:hover {
+      background: var(--bg-hover);
+      color: var(--text);
+      border-color: var(--accent-mid);
+    }
+
+    .theme-btn[aria-pressed="true"] {
+      background: var(--accent);
+      color: var(--bg-main);
+      border-color: var(--accent);
+    }
+
+    .theme-btn:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    main {
+      max-width: var(--max-width);
+      margin: 0 auto;
+      padding: var(--space-8) var(--space-6);
+    }
+
+    .tabs {
+      display: flex;
+      gap: var(--space-2);
+      border-bottom: 1px solid var(--border);
+      margin-bottom: var(--space-8);
+      overflow-x: auto;
+    }
+
+    .tab {
+      padding: var(--space-3) var(--space-5);
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid transparent;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all var(--transition);
+      white-space: nowrap;
+    }
+
+    .tab:hover {
+      color: var(--text);
+      background: var(--bg-hover);
+    }
+
+    .tab[aria-selected="true"] {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+
+    .tab:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: -2px;
+    }
+
+    .tabpanel {
+      display: none;
+    }
+
+    .tabpanel[aria-hidden="false"] {
+      display: block;
+    }
+
+    .findings-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: var(--space-5);
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-6);
+      transition: background var(--transition), border-color var(--transition);
+    }
+
+    .card:hover {
+      background: var(--bg-hover);
+      border-color: var(--accent-mid);
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: var(--space-3);
+      margin-bottom: var(--space-4);
+    }
+
+    .card-type {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+    }
+
+    .card-title {
+      font-family: var(--font-display);
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1.3;
+      margin-bottom: var(--space-3);
+    }
+
+    .card-description {
+      font-size: 14px;
+      color: var(--text-2);
+      line-height: 1.5;
+      margin-bottom: var(--space-4);
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-1) var(--space-3);
+      border-radius: var(--radius-sm);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .badge--success {
+      background: var(--success-dim);
+      color: var(--success);
+    }
+
+    .badge--warning {
+      background: var(--warning-dim);
+      color: var(--warning);
+    }
+
+    .badge--danger {
+      background: var(--danger-dim);
+      color: var(--danger);
+    }
+
+    .badge--accent {
+      background: var(--accent-dim);
+      color: var(--accent);
+    }
+
+    .badge--secondary {
+      background: var(--secondary-dim);
+      color: var(--secondary);
+    }
+
+    .mapping-card {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-4);
+      align-items: center;
+    }
+
+    .mapping-informal {
+      font-size: 13px;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+    }
+
+    .mapping-arrow {
+      color: var(--accent);
+      text-align: center;
+    }
+
+    .mapping-formal {
+      font-size: 15px;
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    .mapping-occurrences {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: var(--space-2);
+    }
+
+    .chart-container {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-6);
+      margin-bottom: var(--space-6);
+    }
+
+    .chart-title {
+      font-family: var(--font-display);
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: var(--space-5);
+    }
+
+    canvas {
+      max-height: 280px;
+    }
+
+    .evidence-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-2) var(--space-3);
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all var(--transition);
+      margin-top: var(--space-3);
+    }
+
+    .evidence-toggle:hover {
+      background: var(--bg-hover);
+      color: var(--text);
+      border-color: var(--accent-mid);
+    }
+
+    .evidence-toggle[aria-expanded="true"] {
+      background: var(--accent-dim);
+      color: var(--accent);
+      border-color: var(--accent-mid);
+    }
+
+    .evidence-toggle:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    .evidence-list {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 300ms ease;
+      margin-top: 0;
+    }
+
+    .evidence-list[aria-hidden="false"] {
+      max-height: 500px;
+      margin-top: var(--space-4);
+    }
+
+    .evidence-item {
+      padding: var(--space-3) var(--space-4);
+      background: var(--bg-card-alt);
+      border-left: 2px solid var(--accent);
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      color: var(--text-2);
+      margin-bottom: var(--space-2);
+      font-family: var(--font-mono);
+      line-height: 1.5;
+    }
+
+    .evidence-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: var(--space-16) var(--space-8);
+      color: var(--text-muted);
+    }
+
+    .empty-state-icon {
+      font-size: 48px;
+      margin-bottom: var(--space-4);
+      opacity: 0.5;
+    }
+
+    @media (max-width: 768px) {
+      .header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .header h1 {
+        font-size: 24px;
+      }
+
+      .findings-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .mapping-card {
+        grid-template-columns: 1fr;
+      }
+
+      .mapping-arrow {
+        transform: rotate(90deg);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
+    :focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+  </style>
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Skip to content</a>
+
+  <header class="header">
+    <div class="header-title">
+      <div class="stage-marker">
+        <span class="stage-dot"></span>
+        Stage 05 — Analysis
+      </div>
+      <h1>Analysis Dashboard — Achiote</h1>
+      <p class="header-subtitle">4 Analysis Vectors · 30 Total Findings</p>
+    </div>
+    <div class="theme-switcher" role="radiogroup" aria-label="Color theme">
+      <button type="button" class="theme-btn" data-theme="warm" aria-label="Warm theme" title="Warm">W</button>
+      <button type="button" class="theme-btn" data-theme="editorial" aria-label="Editorial theme" title="Editorial">E</button>
+      <button type="button" class="theme-btn" data-theme="modern" aria-label="Modern theme" title="Modern">M</button>
+    </div>
+  </header>
+
+  <main id="main-content">
+    <div class="tabs" role="tablist" aria-label="Analysis vectors">
+      <button type="button" class="tab" id="tab-formal" role="tab" aria-selected="true" aria-controls="panel-formal" tabindex="0">
+        Formal Terms (11)
+      </button>
+      <button type="button" class="tab" id="tab-ml" role="tab" aria-selected="false" aria-controls="panel-ml" tabindex="-1">
+        ML Patterns (10)
+      </button>
+      <button type="button" class="tab" id="tab-sdlc" role="tab" aria-selected="false" aria-controls="panel-sdlc" tabindex="-1">
+        SDLC Assessment (6)
+      </button>
+      <button type="button" class="tab" id="tab-source" role="tab" aria-selected="false" aria-controls="panel-source" tabindex="-1">
+        Source Archaeology (3)
+      </button>
+    </div>
+
+    <div class="tabpanel" id="panel-formal" role="tabpanel" aria-labelledby="tab-formal" aria-hidden="false">
+      <div class="findings-grid" id="formal-findings"></div>
+    </div>
+
+    <div class="tabpanel" id="panel-ml" role="tabpanel" aria-labelledby="tab-ml" aria-hidden="true">
+      <div class="chart-container">
+        <h2 class="chart-title">ML Pattern Commit Distribution</h2>
+        <canvas id="ml-chart" role="img" aria-label="Bar chart showing commit counts for each ML pattern"></canvas>
+      </div>
+      <div class="findings-grid" id="ml-findings"></div>
+    </div>
+
+    <div class="tabpanel" id="panel-sdlc" role="tabpanel" aria-labelledby="tab-sdlc" aria-hidden="true">
+      <div class="findings-grid" id="sdlc-findings"></div>
+    </div>
+
+    <div class="tabpanel" id="panel-source" role="tabpanel" aria-labelledby="tab-source" aria-hidden="true">
+      <div class="findings-grid" id="source-findings"></div>
+    </div>
+  </main>
+
+  <script>
+    const data = {
+      formal: {"vector_name":"Formal Terms Mapper","findings":[{"type":"Terminology Mapping","description":"\"recipe\" maps to formal term: \"structured data model\"","evidence":["Final polish: regional matcher fix, structured recipe inputs, HTTP tests (#44)","Add trust checks for constrained recipe handoffs"],"confidence":"high","mapping":{"informal":"recipe","formal":"structured data model","occurrences":2}},{"type":"Terminology Mapping","description":"\"ingredient\" maps to formal term: \"data entity\"","evidence":["feat: add ingredient compound and sensory profile data","feat: add US regional ingredient availability data","Rename to Achiote, expand data: 40 families, 82 ingredients, 15 regions (#34)"],"confidence":"high","mapping":{"informal":"ingredient","formal":"data entity","occurrences":4}},{"type":"Terminology Mapping","description":"\"dish\" maps to formal term: \"domain entity\"","evidence":["feat: add dish families with aliases and transliteration mappings","feat: add SQLite research cache for storing looked-up dish data","Add ambiguity-aware dish resolution"],"confidence":"high","mapping":{"informal":"dish","formal":"domain entity","occurrences":5}},{"type":"Terminology Mapping","description":"\"substitution\" maps to formal term: \"algorithmic transformation\"","evidence":["feat: add chemistry-aware substitution engine","feat: wire ResearchCache, SubstitutionEngine, and data files into MCP tools"],"confidence":"high","mapping":{"informal":"substitution","formal":"algorithmic transformation","occurrences":2}},{"type":"Terminology Mapping","description":"\"research cache\" maps to formal term: \"data persistence layer\"","evidence":["feat: add SQLite research cache for storing looked-up dish data"],"confidence":"high","mapping":{"informal":"research cache","formal":"data persistence layer","occurrences":1}},{"type":"Terminology Mapping","description":"\"MCP\" maps to formal term: \"Model Context Protocol server\"","evidence":["feat: add MCP server with 6 tools","feat: wire ResearchCache, SubstitutionEngine, and data files into MCP tools","test: add integration tests for all 6 MCP tools"],"confidence":"high","mapping":{"informal":"MCP","formal":"Model Context Protocol server","occurrences":8}},{"type":"Terminology Mapping","description":"\"fuzzy matching\" maps to formal term: \"approximate string matching algorithm\"","evidence":["feat: add name resolver with fuzzy matching and transliteration support"],"confidence":"high","mapping":{"informal":"fuzzy matching","formal":"approximate string matching algorithm","occurrences":1}},{"type":"Terminology Mapping","description":"\"transliteration\" maps to formal term: \"text normalization\"","evidence":["feat: add dish families with aliases and transliteration mappings","feat: add name resolver with fuzzy matching and transliteration support"],"confidence":"high","mapping":{"informal":"transliteration","formal":"text normalization","occurrences":2}},{"type":"Terminology Mapping","description":"\"chemistry-aware\" maps to formal term: \"domain-specific logic\"","evidence":["feat: add chemistry-aware substitution engine"],"confidence":"high","mapping":{"informal":"chemistry-aware","formal":"domain-specific logic","occurrences":1}},{"type":"Formal Convention","description":"Project uses Conventional Commits specification","evidence":["chore: scaffold member-berries project","feat: add shared type definitions","feat: add ingredient compound and sensory profile data"],"confidence":"high","mapping":{"informal":"various commit message styles","formal":"Conventional Commits (ConCommits)","occurrences":31}},{"type":"Formal Convention","description":"Project implements MCP (Model Context Protocol) architecture","evidence":["feat: add MCP server with 6 tools","feat: wire ResearchCache, SubstitutionEngine, and data files into MCP tools","test: add integration tests for all 6 MCP tools"],"confidence":"high","mapping":{"informal":"server/tool integration","formal":"Model Context Protocol (MCP) server","occurrences":8}}],"summary":{"total_findings":11,"by_type":{"Terminology Mapping":1,"Formal Convention":1}}},
+      ml: {"vector_name":"ML Pattern Mapper","findings":[{"type":"ML Pattern: inference","description":"Detected 6 commits related to inference","evidence":["feat: GLM model-aware endpoint routing + inference engine enhancement","feat: GLM model-aware endpoint routing + inference engine enhancement","feat: add local inference support via Tailscale"],"confidence":"high"},{"type":"ML Pattern: model","description":"Detected 7 commits related to model","evidence":["Recover from malformed model research plans","Recover from partial local-model tool inputs","feat: GLM model-aware endpoint routing + inference engine enhancement"],"confidence":"high"},{"type":"ML Pattern: feature_extraction","description":"Detected 3 commits related to feature_extraction","evidence":["feat: add ingredient compound and sensory profile data","Avoid connector words in memory name extraction","Broaden elicitation: geography-first question, 90+ region patterns, expanded sensory/occasion extraction (#25)"],"confidence":"high"},{"type":"ML Pattern: preprocessing","description":"Detected 5 commits related to preprocessing","evidence":["chore: clean integration debt (#43)","Production hardening: clean prompts, health metrics, /ask tests, load script (#45)","fix: force memory-probe cue when input is too sparse; remove family assumptions"],"confidence":"high"},{"type":"ML Pattern: evaluation","description":"Detected 9 commits related to evaluation","evidence":["test: add integration tests for all 6 MCP tools","Final polish: regional matcher fix, structured recipe inputs, HTTP tests (#44)","Production hardening: clean prompts, health metrics, /ask tests, load script (#45)"],"confidence":"high"},{"type":"ML Pattern: deployment","description":"Detected 15 commits related to deployment","evidence":["feat: add MCP server with 6 tools","feat: wire ResearchCache, SubstitutionEngine, and data files into MCP tools","test: add integration tests for all 6 MCP tools"],"confidence":"high"},{"type":"Architecture: data_pipeline","description":"Detected 3 commits implementing data_pipeline","evidence":["feat: add SQLite research cache for storing looked-up dish data","feat: wire ResearchCache, SubstitutionEngine, and data files into MCP tools","Avoid setup-node cache hangs on self-hosted CI"],"confidence":"high"},{"type":"Architecture: api_design","description":"Detected 21 commits implementing api_design","evidence":["feat: add MCP server with 6 tools","feat: wire ResearchCache, SubstitutionEngine, and data files into MCP tools","test: add integration tests for all 6 MCP tools"],"confidence":"high"},{"type":"Architecture: mcp_server","description":"Detected 18 commits implementing mcp_server","evidence":["feat: add MCP server with 6 tools","feat: add Claude Code skill definition","feat: wire ResearchCache, SubstitutionEngine, and data files into MCP tools"],"confidence":"high"},{"type":"Architecture: data_modeling","description":"Detected 3 commits implementing data_modeling","evidence":["feat: add shared type definitions","feat: add ingredient compound and sensory profile data","fix: add 'confectionery' to cueComponentSchema role enum"],"confidence":"high"}],"summary":{"total_findings":10,"by_type":{"ML Pattern: inference":1,"ML Pattern: model":1,"ML Pattern: feature_extraction":1,"ML Pattern: preprocessing":1,"ML Pattern: evaluation":1,"ML Pattern: deployment":1,"Architecture: data_pipeline":1,"Architecture: api_design":1,"Architecture: mcp_server":1,"Architecture: data_modeling":1}}},
+      sdlc: {"vector_name":"SDLC Gap Finder","findings":[{"type":"CI/CD Present","description":"Found 21 commits related to CI/CD infrastructure","evidence":["Avoid setup-node cache hangs on self-hosted CI","Update GitHub Actions to Node 24 runtime releases","Add research-first food memory workflow tools (#6)"],"confidence":"high"},{"type":"Testing Limited","description":"Only 3 test-related commits found","evidence":["test: add integration tests for all 6 MCP tools","Respect dietary constraints in minimum nostalgia cues","test: add local inference provider resolution tests (19 tests)"],"confidence":"medium"},{"type":"Code Review Present","description":"Found 7 commits indicating code review/PR activity","evidence":["Address package smoke and prompt-coverage review","Merge pull request #2 from Pastorsimon1798/next-foundation-20260418","Deploy preview user fixes (#81)"],"confidence":"high"},{"type":"Documentation Present","description":"Found 4 documentation-related commits","evidence":["docs: add README and MIT license","Refresh documentation for current provenance workflow","docs: update documentation for HTTP server and remove stale plans (#46)"],"confidence":"high"},{"type":"Security Considered","description":"Found 4 security-related commits","evidence":["[repo-pipeline] Fix CRITICAL/HIGH security issues: XSS, CSP, input validation (#36)","[repo-pipeline] Fix CRITICAL/HIGH security issues: CSP, inline handlers, CORS (#37)","Make persistent rate limits authoritative across instances"],"confidence":"high"},{"type":"Commit Hygiene Fair","description":"Only 26.0% of commits follow conventional commit format","evidence":["chore: scaffold member-berries project","feat: add shared type definitions","feat: add ingredient compound and sensory profile data"],"confidence":"medium"}],"summary":{"total_findings":6,"by_type":{"CI/CD Present":1,"Testing Limited":1,"Code Review Present":1,"Documentation Present":1,"Security Considered":1,"Commit Hygiene Fair":1}}},
+      source: {"vector_name":"Source Archaeologist","findings":[{"type":"Bug Fix Pattern","description":"Moderate bug fix activity: 7.3% fix commits","evidence":["fix: harden production server against crashes, injection, and path disclosure (#33)","fix: remediate 59 failure modes across 5 ROI tiers (#39)","fix: handle NaN in maxEffortMinutes fallback (#40)"],"confidence":"high"},{"type":"Testing Present","description":"Testing present but limited: 1.6% test commits","evidence":["test: add integration tests for all 6 MCP tools","test: add local inference provider resolution tests (19 tests)"],"confidence":"medium"},{"type":"Development Velocity","description":"High velocity: 12.3 commits/day over 10 days","evidence":[],"confidence":"high"}],"summary":{"total_findings":3,"by_type":{"Bug Fix Pattern":1,"Testing Present":1,"Development Velocity":1}}}
+    };
+
+    function getThemeColors() {
+      const s = getComputedStyle(document.documentElement);
+      return {
+        accent: s.getPropertyValue('--accent').trim(),
+        secondary: s.getPropertyValue('--secondary').trim(),
+        success: s.getPropertyValue('--success').trim(),
+        warning: s.getPropertyValue('--warning').trim(),
+        danger: s.getPropertyValue('--danger').trim(),
+        text: s.getPropertyValue('--text').trim(),
+        muted: s.getPropertyValue('--text-muted').trim(),
+        border: s.getPropertyValue('--border').trim(),
+        bg: s.getPropertyValue('--bg-card').trim(),
+      };
+    }
+
+    function createBadge(confidence) {
+      const className = confidence === 'high' ? 'badge--success' : 'badge--warning';
+      return `<span class="badge ${className}">${confidence}</span>`;
+    }
+
+    function createEvidenceList(evidence) {
+      if (!evidence || evidence.length === 0) {
+        return '<p style="font-size:13px;color:var(--text-muted);margin-top:var(--space-3);">No evidence available</p>';
+      }
+      const items = evidence.map(item => `<div class="evidence-item">${item}</div>`).join('');
+      return `
+        <button type="button" class="evidence-toggle" aria-expanded="false">
+          <span>▶</span> View Evidence (${evidence.length})
+        </button>
+        <div class="evidence-list" aria-hidden="true">${items}</div>
+      `;
+    }
+
+    function renderFormalFindings() {
+      const container = document.getElementById('formal-findings');
+      container.innerHTML = data.formal.findings.map(finding => `
+        <div class="card">
+          <div class="card-header">
+            <span class="card-type">${finding.type}</span>
+            ${createBadge(finding.confidence)}
+          </div>
+          <div class="mapping-card">
+            <div class="mapping-informal">${finding.mapping.informal}</div>
+            <div class="mapping-arrow">→</div>
+            <div class="mapping-formal">${finding.mapping.formal}</div>
+            <div class="mapping-occurrences">
+              <span>●</span> ${finding.mapping.occurrences} occurrence${finding.mapping.occurrences > 1 ? 's' : ''}
+            </div>
+          </div>
+          ${createEvidenceList(finding.evidence)}
+        </div>
+      `).join('');
+
+      container.querySelectorAll('.evidence-toggle').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const expanded = btn.getAttribute('aria-expanded') === 'true';
+          btn.setAttribute('aria-expanded', !expanded);
+          btn.querySelector('span').textContent = expanded ? '▶' : '▼';
+          btn.nextElementSibling.setAttribute('aria-hidden', expanded);
+        });
+      });
+    }
+
+    function renderMLFindings() {
+      const container = document.getElementById('ml-findings');
+      container.innerHTML = data.ml.findings.map(finding => `
+        <div class="card">
+          <div class="card-header">
+            <span class="card-type">${finding.type}</span>
+            ${createBadge(finding.confidence)}
+          </div>
+          <h3 class="card-title">${finding.type}</h3>
+          <p class="card-description">${finding.description}</p>
+          ${createEvidenceList(finding.evidence)}
+        </div>
+      `).join('');
+
+      container.querySelectorAll('.evidence-toggle').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const expanded = btn.getAttribute('aria-expanded') === 'true';
+          btn.setAttribute('aria-expanded', !expanded);
+          btn.querySelector('span').textContent = expanded ? '▶' : '▼';
+          btn.nextElementSibling.setAttribute('aria-hidden', expanded);
+        });
+      });
+    }
+
+    let mlChart = null;
+
+    function createMLChart() {
+      const ctx = document.getElementById('ml-chart').getContext('2d');
+      const colors = getThemeColors();
+
+      const labels = data.ml.findings.map(f => f.type.replace(/^(ML Pattern|Architecture): /, ''));
+      const commitCounts = data.ml.findings.map(f => {
+        const match = f.description.match(/Detected (\d+) commits/);
+        return match ? parseInt(match[1]) : 0;
+      });
+
+      if (mlChart) {
+        mlChart.destroy();
+      }
+
+      mlChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Commits',
+            data: commitCounts,
+            backgroundColor: colors.accent,
+            borderColor: colors.accent,
+            borderWidth: 1,
+            borderRadius: 4,
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          indexAxis: 'y',
+          plugins: {
+            legend: {
+              display: false
+            },
+            tooltip: {
+              backgroundColor: colors.bg,
+              titleColor: colors.text,
+              bodyColor: colors.text,
+              borderColor: colors.border,
+              borderWidth: 1,
+              padding: 12,
+              displayColors: false,
+            }
+          },
+          scales: {
+            x: {
+              beginAtZero: true,
+              grid: {
+                color: colors.border,
+              },
+              ticks: {
+                color: colors.muted,
+                font: {
+                  family: 'var(--font-mono)',
+                  size: 11
+                }
+              }
+            },
+            y: {
+              grid: {
+                display: false
+              },
+              ticks: {
+                color: colors.text,
+                font: {
+                  family: 'var(--font-body)',
+                  size: 12
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function renderSDLCFindings() {
+      const container = document.getElementById('sdlc-findings');
+      container.innerHTML = data.sdlc.findings.map(finding => `
+        <div class="card">
+          <div class="card-header">
+            <span class="card-type">${finding.type}</span>
+            ${createBadge(finding.confidence)}
+          </div>
+          <h3 class="card-title">${finding.type}</h3>
+          <p class="card-description">${finding.description}</p>
+          ${createEvidenceList(finding.evidence)}
+        </div>
+      `).join('');
+
+      container.querySelectorAll('.evidence-toggle').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const expanded = btn.getAttribute('aria-expanded') === 'true';
+          btn.setAttribute('aria-expanded', !expanded);
+          btn.querySelector('span').textContent = expanded ? '▶' : '▼';
+          btn.nextElementSibling.setAttribute('aria-hidden', expanded);
+        });
+      });
+    }
+
+    function renderSourceFindings() {
+      const container = document.getElementById('source-findings');
+      container.innerHTML = data.source.findings.map(finding => `
+        <div class="card">
+          <div class="card-header">
+            <span class="card-type">${finding.type}</span>
+            ${createBadge(finding.confidence)}
+          </div>
+          <h3 class="card-title">${finding.type}</h3>
+          <p class="card-description">${finding.description}</p>
+          ${createEvidenceList(finding.evidence)}
+        </div>
+      `).join('');
+
+      container.querySelectorAll('.evidence-toggle').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const expanded = btn.getAttribute('aria-expanded') === 'true';
+          btn.setAttribute('aria-expanded', !expanded);
+          btn.querySelector('span').textContent = expanded ? '▶' : '▼';
+          btn.nextElementSibling.setAttribute('aria-hidden', expanded);
+        });
+      });
+    }
+
+    function initTabs() {
+      const tabs = document.querySelectorAll('[role="tab"]');
+      const tabpanels = document.querySelectorAll('[role="tabpanel"]');
+
+      tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+          tabs.forEach(t => {
+            t.setAttribute('aria-selected', 'false');
+            t.setAttribute('tabindex', '-1');
+          });
+          tab.setAttribute('aria-selected', 'true');
+          tab.setAttribute('tabindex', '0');
+
+          const controls = tab.getAttribute('aria-controls');
+          tabpanels.forEach(panel => {
+            if (panel.getAttribute('id') === controls) {
+              panel.setAttribute('aria-hidden', 'false');
+            } else {
+              panel.setAttribute('aria-hidden', 'true');
+            }
+          });
+
+          if (controls === 'panel-ml') {
+            setTimeout(createMLChart, 50);
+          }
+        });
+
+        tab.addEventListener('keydown', (e) => {
+          const tabsArray = Array.from(tabs);
+          const currentIndex = tabsArray.indexOf(tab);
+          let nextIndex = null;
+
+          if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+            e.preventDefault();
+            const direction = e.key === 'ArrowRight' ? 1 : -1;
+            nextIndex = (currentIndex + direction + tabsArray.length) % tabsArray.length;
+          } else if (e.key === 'Home') {
+            e.preventDefault();
+            nextIndex = 0;
+          } else if (e.key === 'End') {
+            e.preventDefault();
+            nextIndex = tabsArray.length - 1;
+          }
+
+          if (nextIndex !== null) {
+            tabsArray[nextIndex].focus();
+            tabsArray[nextIndex].click();
+          }
+        });
+      });
+    }
+
+    function initThemeSwitcher() {
+      const saved = localStorage.getItem('devarch-theme') || 'editorial';
+      document.documentElement.setAttribute('data-theme', saved);
+
+      document.querySelectorAll('button[data-theme]').forEach(btn => {
+        if (btn.getAttribute('data-theme') === saved) {
+          btn.setAttribute('aria-pressed', 'true');
+        }
+        btn.addEventListener('click', () => {
+          const theme = btn.getAttribute('data-theme');
+          document.documentElement.setAttribute('data-theme', theme);
+          localStorage.setItem('devarch-theme', theme);
+          document.querySelectorAll('button[data-theme]').forEach(b => {
+            b.setAttribute('aria-pressed', b.getAttribute('data-theme') === theme ? 'true' : 'false');
+          });
+          if (mlChart) {
+            createMLChart();
+          }
+        });
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      initThemeSwitcher();
+      initTabs();
+      renderFormalFindings();
+      renderMLFindings();
+      renderSDLCFindings();
+      renderSourceFindings();
+      setTimeout(createMLChart, 100);
+    });
+  </script>
+</body>
+</html>
