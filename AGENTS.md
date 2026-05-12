@@ -10,7 +10,21 @@ See KyaniteLabs/.github for org-wide rules. Project-specific rules below:
 
 ## Project-Specific Context
 
-This is the **devarch-framework** repository. It is Forensic repository archaeology framework for git history analysis, development signals, and engineering narrative reports..
+This is the **devarch-framework** repository. Forensic archaeology framework for git repositories.
+
+### ICM Layer Map
+
+- **L0**: CLAUDE.md — Pure map (identity, folder structure, routing table, naming, token management)
+- **L1**: CONTEXT.md — Workspace router (extraction, analysis, reporting, multi-project, setup)
+- **L2**: stages/*/CONTEXT.md — Stage contracts with Inputs/Process/Outputs and L3/L4 loading guidance
+- **L3**: shared/concepts.md, shared/sync-rules.md, analysis-vectors/*.md — Reference material
+- **L4**: stages/*/output/ — Working artifacts per stage
+
+### Key References
+
+- Architecture decisions: `docs/decisions.md`
+- Sync rules and verification: `shared/sync-rules.md`
+- Core concepts (signals, vectors, eras): `shared/concepts.md`
 
 # KyaniteLabs Engineering Rules
 

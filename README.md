@@ -225,13 +225,17 @@ Configure supplementary sources in your project configuration or via analysis ve
 
 ## ICM Compliance
 
-This framework follows ICM (Interpretable Context Methodology) conventions:
+This framework follows ICM (Interpretable Context Methodology) conventions with full 5-layer separation:
 
-- **Layer 0**: CLAUDE.md (identity + folder map + trigger keywords)
-- **Layer 1**: CONTEXT.md (task routing)
-- **Layer 2**: Stage CONTEXT.md files (input/process/output contracts)
-- **Layer 3**: references/ and shared/ folders
-- **Layer 4**: output/ folders with .gitkeep
+| Layer | File | Purpose |
+|-------|------|---------|
+| L0 | `CLAUDE.md` | Identity, folder map, routing table, naming conventions |
+| L1 | `CONTEXT.md` | Workspace router with 5 siloed workspaces |
+| L2 | `stages/*/CONTEXT.md` | Stage contracts with L3/L4 loading guidance |
+| L3 | `shared/`, `analysis-vectors/`, `stages/*/references/` | Reference material loaded selectively |
+| L4 | `stages/*/output/` | Working artifacts per stage |
+
+Architecture decisions documented in `docs/decisions.md`.
 
 ## Requirements
 
@@ -269,7 +273,9 @@ scripts/              -- Utility scripts
 setup/                -- Project setup questionnaire
 shared/               -- Framework-wide reference docs
 skills/               -- Bundled skill for CLI usage
-stages/               -- Stage-based pipeline (legacy)
+stages/               -- 9-stage pipeline contracts (ICM L2)
+docs/                 -- Architecture decisions
+_config/              -- Developer profile templates
 ```
 
 ## License

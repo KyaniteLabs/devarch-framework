@@ -19,7 +19,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-DELIVERABLES = ROOT / "projects/liminal/deliverables"
+DELIVERABLES = ROOT / "projects/demo-project/deliverables"
 
 
 def screenshot(url: str, output: Path, *, full_page: bool = False) -> None:

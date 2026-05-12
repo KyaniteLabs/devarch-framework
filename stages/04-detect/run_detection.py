@@ -7,9 +7,10 @@ from datetime import datetime, timedelta
 from collections import defaultdict
 from pathlib import Path
 
-# Database path
-DB_PATH = Path("/Users/simongonzalezdecruz/workspaces/devarch-framework/stages/03-build/output/archaeology.db")
-OUTPUT_PATH = Path("/Users/simongonzalezdecruz/workspaces/devarch-framework/stages/04-detect/output/detected-signals.json")
+# Database path - using relative paths from script location
+STAGES_DIR = Path(__file__).resolve().parent.parent.parent
+DB_PATH = STAGES_DIR / "stages" / "03-build" / "output" / "archaeology.db"
+OUTPUT_PATH = Path(__file__).resolve().parent / "output" / "detected-signals.json"
 
 # Ensure output directory exists
 OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -214,7 +215,7 @@ def analyze_commits():
 
     # Build output
     output = {
-        'project': 'Achiote',
+        'project': 'demo-project',
         'total_commits': total_commits,
         'active_days': active_days,
         'span_days': span_days,

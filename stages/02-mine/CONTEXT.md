@@ -2,6 +2,13 @@
 
 Extract git history from repository.
 
+## Context Loading
+
+| Layer | Load | Skip |
+|-------|------|------|
+| L3 (reference) | None needed | analysis-vectors/, shared/ |
+| L4 (working) | project.json | stages/03+ outputs |
+
 ## Inputs
 
 - project.json with repo_path

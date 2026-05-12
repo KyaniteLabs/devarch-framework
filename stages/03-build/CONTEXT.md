@@ -2,6 +2,13 @@
 
 Build SQLite database from extracted CSV data.
 
+## Context Loading
+
+| Layer | Load | Skip |
+|-------|------|------|
+| L3 (reference) | references/table-registry.md | analysis-vectors/, shared/ |
+| L4 (working) | ../02-mine/output/github-commits.csv | stages/04+ outputs |
+
 ## Inputs
 
 - stages/02-mine/output/github-commits.csv

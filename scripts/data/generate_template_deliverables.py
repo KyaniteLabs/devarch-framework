@@ -1763,7 +1763,7 @@ def main():
 
     total = 0
     if sys.argv[1] == "--all":
-        for name in ["Achiote", "DECLuTTER-AI", "DialectOS", "Epoch", "Fugax", "mcp-video", "openglaze", "liminal"]:
+        for name in ["Achiote", "DECLuTTER-AI", "DialectOS", "Epoch", "Fugax", "mcp-video", "openglaze", "demo-project"]:
             total += generate_for_project(name)
     else:
         total += generate_for_project(sys.argv[1])

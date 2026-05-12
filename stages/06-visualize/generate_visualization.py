@@ -6,10 +6,11 @@ from pathlib import Path
 from datetime import datetime
 from collections import defaultdict
 
-# Paths
-SIGNALS_PATH = Path("/Users/simongonzalezdecruz/workspaces/devarch-framework/stages/04-detect/output/detected-signals.json")
-ANALYSIS_DIR = Path("/Users/simongonzalezdecruz/workspaces/devarch-framework/stages/05-analyze/output")
-OUTPUT_PATH = Path("/Users/simongonzalezdecruz/workspaces/devarch-framework/stages/06-visualize/output/archaeology.html")
+# Paths - using relative paths from script location
+STAGES_DIR = Path(__file__).resolve().parent.parent.parent
+SIGNALS_PATH = STAGES_DIR / "stages" / "04-detect" / "output" / "detected-signals.json"
+ANALYSIS_DIR = STAGES_DIR / "stages" / "05-analyze" / "output"
+OUTPUT_PATH = Path(__file__).resolve().parent / "output" / "archaeology.html"
 
 # Ensure output directory exists
 OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -71,7 +72,7 @@ def prepare_chart_data(signals, analyses):
 
     # We need to parse commit messages - let's get them from the database
     import sqlite3
-    DB_PATH = Path("/Users/simongonzalezdecruz/workspaces/devarch-framework/stages/03-build/output/archaeology.db")
+    DB_PATH = STAGES_DIR / "stages" / "03-build" / "output" / "archaeology.db"
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
@@ -149,7 +150,7 @@ def generate_html(signals, analyses, chart_data):
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Achiote - Archaeology Report</title>
+    <title>demo-project - Archaeology Report</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
         * {{
@@ -329,8 +330,8 @@ def generate_html(signals, analyses, chart_data):
 <body>
     <div class="container">
         <header>
-            <h1>Achiote</h1>
-            <p class="subtitle">TypeScript Culinary Reverse Engineering App - Archaeology Report</p>
+            <h1>demo-project</h1>
+            <p class="subtitle">Archaeology Report</p>
         </header>
 
         <div class="metrics-grid">

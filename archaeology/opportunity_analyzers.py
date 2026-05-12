@@ -875,7 +875,7 @@ class OpportunityAnalyzer:
         # Identify R&D labs (repos that feed into the main project)
         rd_labs = []
         for repo in concurrent:
-            overlap = repo.get("overlap_with_liminal_era", "")
+            overlap = repo.get("overlap_with_demo_project_era", "")
             rel = repo.get("relationship", "")
             if "R&D" in rel or "research" in rel.lower() or "experiment" in rel.lower():
                 rd_labs.append({
@@ -908,12 +908,12 @@ class OpportunityAnalyzer:
         # Cross-repo timeline for learning transfer detection
         transfer_events = []
         for row in cross_timeline:
-            liminal_commits = row.get("liminal_commits", 0)
+            demo_project_commits = row.get("demo_project_commits", 0)
             other_commits = row.get("other_repos", 0)
-            if liminal_commits and other_commits:
+            if demo_project_commits and other_commits:
                 transfer_events.append({
                     "period": row.get("_key"),
-                    "liminal_commits": liminal_commits,
+                    "demo_project_commits": demo_project_commits,
                     "other_repo_commits": other_commits,
                     "note": row.get("note", ""),
                 })
@@ -925,7 +925,7 @@ class OpportunityAnalyzer:
             "language_evolution": lang_evo,
             "transfer_events": transfer_events[:20],
             "concurrent_repos": [
-                {"repo": r.get("repo"), "commits": r.get("commit_count"), "overlap": r.get("overlap_with_liminal_era")}
+                {"repo": r.get("repo"), "commits": r.get("commit_count"), "overlap": r.get("overlap_with_demo_project_era")}
                 for r in concurrent[:10]
             ],
             "summary": {

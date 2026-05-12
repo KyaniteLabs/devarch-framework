@@ -14,7 +14,7 @@ Thank you for your interest in contributing to DevArch! This document provides g
 
 ```bash
 # Clone the repository
-git clone https://github.com/Pastorsimon1798/devarch-framework.git
+git clone https://github.com/KyaniteLabs/devarch-framework.git
 cd devarch-framework
 
 # Create a virtual environment
@@ -192,6 +192,9 @@ archaeology/          # Main package
 
 analysis-vectors/     # Vector definitions
 config/               # Configuration schemas
+shared/               # L3 reference material (concepts, sync rules)
+stages/               # 9-stage pipeline contracts with L3/L4 loading
+docs/                 # Architecture decision records
 tests/                # Test suite
 ```
 

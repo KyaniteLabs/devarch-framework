@@ -134,8 +134,8 @@ def analyze_agent_benchmarks(db_path: str) -> Dict[str, Any]:
             return "KimiCode"
         elif author_lower == "codex":
             return "Codex"
-        elif author_lower == "liminal":
-            return "Liminal"
+        elif author_lower == "demo-project":
+            return "demo-project"
         else:
             return author
 
@@ -310,7 +310,7 @@ def generate_benchmark_html(benchmark_data: Dict[str, Any], project_name: str) -
   --border:#1a2232;--border-hover:#2a3a52;
   --text:#e8ecf2;--text2:#8d99aa;--text3:#6a7888;
   --kai:#ff6b6b;--cursor:#ffa94d;--claude:#51cf66;--unknown:#495057;
-  --kimicode:#a78bfa;--codex:#60a5fa;--liminal:#34d399;--simon:#fbbf24;
+  --kimicode:#a78bfa;--codex:#60a5fa;--demo-project:#34d399;--simon:#fbbf24;
   --font-display:'Space Grotesk',sans-serif;--font-body:'DM Sans',sans-serif;
   --font-mono:'JetBrains Mono',monospace;
   --radius-sm:6px;--radius-md:10px;--radius-lg:16px;
@@ -643,7 +643,7 @@ def run_benchmark_analysis(project_dir: str) -> str:
     """Run complete benchmark analysis and generate HTML.
 
     Args:
-        project_dir: Path to project directory (e.g., "projects/liminal")
+        project_dir: Path to project directory (e.g., "projects/demo-project")
 
     Returns:
         Path to generated HTML file

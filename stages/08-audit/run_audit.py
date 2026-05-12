@@ -6,14 +6,15 @@ import sqlite3
 from pathlib import Path
 from datetime import datetime
 
-# Paths
-DB_PATH = Path("/Users/simongonzalezdecruz/workspaces/devarch-framework/stages/03-build/output/archaeology.db")
-SIGNALS_PATH = Path("/Users/simongonzalezdecruz/workspaces/devarch-framework/stages/04-detect/output/detected-signals.json")
-ANALYSIS_DIR = Path("/Users/simongonzalezdecruz/workspaces/devarch-framework/stages/05-analyze/output")
-VISUALIZATION_PATH = Path("/Users/simongonzalezdecruz/workspaces/devarch-framework/stages/06-visualize/output/archaeology.html")
-REPORT_MD = Path("/Users/simongonzalezdecruz/workspaces/devarch-framework/stages/07-report/output/ARCHAEOLOGY-REPORT.md")
-REPORT_HTML = Path("/Users/simongonzalezdecruz/workspaces/devarch-framework/stages/07-report/output/ARCHAEOLOGY-REPORT.html")
-OUTPUT_AUDIT = Path("/Users/simongonzalezdecruz/workspaces/devarch-framework/stages/08-audit/output/audit-result.md")
+# Paths - using relative paths from script location
+STAGES_DIR = Path(__file__).resolve().parent.parent.parent
+DB_PATH = STAGES_DIR / "stages" / "03-build" / "output" / "archaeology.db"
+SIGNALS_PATH = STAGES_DIR / "stages" / "04-detect" / "output" / "detected-signals.json"
+ANALYSIS_DIR = STAGES_DIR / "stages" / "05-analyze" / "output"
+VISUALIZATION_PATH = STAGES_DIR / "stages" / "06-visualize" / "output" / "archaeology.html"
+REPORT_MD = STAGES_DIR / "stages" / "07-report" / "output" / "ARCHAEOLOGY-REPORT.md"
+REPORT_HTML = STAGES_DIR / "stages" / "07-report" / "output" / "ARCHAEOLOGY-REPORT.html"
+OUTPUT_AUDIT = Path(__file__).resolve().parent / "output" / "audit-result.md"
 
 # Ensure output directory exists
 OUTPUT_AUDIT.parent.mkdir(parents=True, exist_ok=True)
@@ -48,7 +49,7 @@ class AuditChecker:
         """Generate audit report"""
         report = f"""# DevArch ICM Pipeline - Audit Report
 
-**Project:** Achiote
+**Project:** demo-project
 **Generated:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 **Stage:** 08-Audit
 
@@ -98,7 +99,7 @@ The following failures must be addressed:
         if self.failed == 0:
             report += """✓ **All audit checks passed successfully.**
 
-The Achiote archaeology analysis is complete and ready for delivery.
+The demo-project archaeology analysis is complete and ready for delivery.
 
 All outputs have been validated:
 - Number reconciliation verified

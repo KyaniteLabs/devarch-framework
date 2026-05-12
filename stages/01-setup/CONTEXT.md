@@ -2,6 +2,13 @@
 
 Initialize project configuration from questionnaire answers.
 
+## Context Loading
+
+| Layer | Load | Skip |
+|-------|------|------|
+| L3 (reference) | setup/questionnaire.md | shared/, analysis-vectors/ |
+| L4 (working) | None (first stage) | All other stage outputs |
+
 ## Inputs
 
 - Questionnaire responses from setup/questionnaire.md
