@@ -5,7 +5,7 @@ set -euo pipefail
 
 # Use Homebrew Python (system Python 3.9 doesn't support union types)
 PYTHON=/opt/homebrew/bin/python3
-REPO=/Users/simongonzalezdecruz/workspaces/dev-archaeology
+REPO="$(cd "$(dirname "$0")/.." && pwd)"
 LOG="/tmp/dev-arch-pipeline-$(date +%Y%m%d-%H%M%S).log"
 
 cd "$REPO"
