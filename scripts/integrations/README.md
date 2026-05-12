@@ -1,6 +1,6 @@
 # Dev-Archaeology Integration Hooks
 
-This directory contains integration hooks for external tools to trigger dev-archaeology analysis.
+This directory contains integration hooks for external tools to trigger DevArch analysis.
 
 ## Scout Hook
 
@@ -153,7 +153,7 @@ If research-scout supports webhook or script execution, configure it to call the
 # research-scout config example
 on_repo_discovered:
   trigger_archaeology:
-    script: "/path/to/dev-archaeology/scripts/integrations/scout_hook.py"
+    script: "/path/to/devarch-framework/scripts/integrations/scout_hook.py"
     args:
       - "--repo-url"
       - "{{repo_url}}"
@@ -183,7 +183,7 @@ def analyze_repo(repo_url: str, project_name: str) -> dict:
         cmd,
         capture_output=True,
         text=True,
-        cwd="/path/to/dev-archaeology",
+        cwd="/path/to/devarch-framework",
     )
     return json.loads(result.stdout)
 
@@ -213,10 +213,10 @@ jobs:
   archaeology:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout dev-archaeology
+      - name: Checkout devarch-framework
         uses: actions/checkout@v3
         with:
-          path: dev-archaeology
+          path: devarch-framework
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -225,7 +225,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          cd dev-archaeology
+          cd devarch-framework
           pip install -e .
 
       - name: Run archaeology analysis
@@ -238,7 +238,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: archaeology-results
-          path: dev-archaeology/projects/*/deliverables/
+          path: devarch-framework/projects/*/deliverables/
 ```
 
 #### GitLab CI Example
@@ -350,6 +350,6 @@ When adding new integration hooks:
 ## Support
 
 For issues or questions:
-- Open an issue on the dev-archaeology repository
-- Check the main dev-archaeology documentation
+- Open an issue on the devarch-framework repository
+- Check the main devarch-framework documentation
 - Review the CLI help: `archaeology --help`

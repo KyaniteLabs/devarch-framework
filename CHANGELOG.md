@@ -5,6 +5,30 @@ All notable changes to DevArch Framework will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-05-11
+
+### Changed
+- **ICM refactoring**: CLAUDE.md reduced from 192 to 92 lines (pure L0 map)
+- **Workspace siloing**: CONTEXT.md now routes to 5 workspaces (extraction, analysis, reporting, multi-project, setup)
+- **Token management**: Explicit "When doing X, skip Y" guidance in routing tables
+- **L3/L4 separation**: All 9 stage contracts now distinguish reference material from working artifacts
+- **Handoff documentation**: Added `docs/decisions.md` with 7 architecture decision records
+- **Reference extraction**: Moved Core Concepts to `shared/concepts.md`, Sync Rules to `shared/sync-rules.md`
+
+### Added
+- `docs/decisions.md` — Architecture decision records (7 ADRs)
+- `shared/concepts.md` — L3 reference for core framework concepts
+- `shared/sync-rules.md` — L3 reference for sync parity and git hygiene
+- `stages/09-strategy/references/strategy-sections.md` — Strategy report section definitions
+- `.gitkeep` files in all 9 stage output/ directories
+- ICM layer declaration table in CLAUDE.md
+
+### Removed
+- Core Concepts section from CLAUDE.md (moved to shared/concepts.md)
+- Sync Rules section from CLAUDE.md (moved to shared/sync-rules.md)
+- Epoch Data Tracking section from CLAUDE.md (moved to shared/sync-rules.md)
+- ICM Compliance meta-section from CLAUDE.md (replaced by ICM layer table)
+
 ## [0.2.0] - 2026-05-03
 
 ### Added
@@ -49,6 +73,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Analysis vector system
 - CLI scaffolding
 
-[Unreleased]: https://github.com/Pastorsimon1798/devarch-framework/compare/v0.2.0...HEAD
-[0.2.0]: https://github.com/Pastorsimon1798/devarch-framework/compare/v0.1.0...v0.2.0
-[0.1.0]: https://github.com/Pastorsimon1798/devarch-framework/releases/tag/v0.1.0
+[Unreleased]: https://github.com/KyaniteLabs/devarch-framework/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/KyaniteLabs/devarch-framework/compare/v0.2.0...v0.3.0
+[0.2.0]: https://github.com/KyaniteLabs/devarch-framework/compare/v0.1.0...v0.2.0
+[0.1.0]: https://github.com/KyaniteLabs/devarch-framework/releases/tag/v0.1.0

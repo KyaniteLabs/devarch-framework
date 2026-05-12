@@ -2,6 +2,13 @@
 
 Generate HTML visualization from analysis outputs.
 
+## Context Loading
+
+| Layer | Load | Skip |
+|-------|------|------|
+| L3 (reference) | references/html-template-spec.md, references/chart-types.md, shared/visualization-themes.md | analysis-vectors/, shared/concepts.md |
+| L4 (working) | ../04-detect/output/detected-signals.json, ../05-analyze/output/analysis-*.json | stages/01-03 outputs |
+
 ## Inputs
 
 - stages/04-detect/output/detected-signals.json

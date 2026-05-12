@@ -2,9 +2,16 @@
 
 Compile markdown and HTML text reports from all outputs.
 
+## Context Loading
+
+| Layer | Load | Skip |
+|-------|------|------|
+| L3 (reference) | references/report-structure.md, _config/developer-profile.md | analysis-vectors/, shared/concepts.md |
+| L4 (working) | ../04-detect/output/*, ../05-analyze/output/*, ../06-visualize/output/* | stages/01-03 outputs |
+
 ## Inputs
 
-- All outputs from stages 02-06
+- All outputs from stages 04-06
 - stages/07-report/references/report-structure.md
 - _config/developer-profile.md
 

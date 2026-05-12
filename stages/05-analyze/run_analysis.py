@@ -8,10 +8,11 @@ from pathlib import Path
 from datetime import datetime
 from collections import defaultdict, Counter
 
-# Paths
-DB_PATH = Path("/Users/simongonzalezdecruz/workspaces/devarch-framework/stages/03-build/output/archaeology.db")
-SIGNALS_PATH = Path("/Users/simongonzalezdecruz/workspaces/devarch-framework/stages/04-detect/output/detected-signals.json")
-OUTPUT_DIR = Path("/Users/simongonzalezdecruz/workspaces/devarch-framework/stages/05-analyze/output")
+# Paths - using relative paths from script location
+STAGES_DIR = Path(__file__).resolve().parent.parent.parent
+DB_PATH = STAGES_DIR / "stages" / "03-build" / "output" / "archaeology.db"
+SIGNALS_PATH = STAGES_DIR / "stages" / "04-detect" / "output" / "detected-signals.json"
+OUTPUT_DIR = Path(__file__).resolve().parent / "output"
 
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 

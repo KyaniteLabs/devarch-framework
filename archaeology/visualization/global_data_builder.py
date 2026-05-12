@@ -38,7 +38,7 @@ def _repo_color(name, index=0):
     """Generate a consistent color for a repository name."""
     # Fixed palette for known repos
     _KNOWN = {
-        "liminal": "#51cf66",
+        "demo-project": "#51cf66",
         "dev-archaeology": "#74c0fc",
         "github-pipeline": "#ffa94d",
         "voice-to-sculpture": "#cc5de8",

@@ -2,24 +2,24 @@
 """Mine private conversation/session exports into archaeology data files.
 
 This replaces the earlier one-off root scripts (`mine_sessions*.py`,
-`mine_liminal_sessions.py`, and `mine_gpt_conversations.py`) with a single
+`mine_demo_project_sessions.py`, and `mine_gpt_conversations.py`) with a single
 configurable CLI.
 
 Examples:
 
   python3 scripts/mine_conversations.py claude \
     --sessions-dir ~/.claude/projects/-Users-simongonzalezdecruz-Desktop-OMC \
-    --output-dir projects/liminal/data \
+    --output-dir projects/demo-project/data \
     --prefix sessions
 
   python3 scripts/mine_conversations.py claude \
-    --sessions-dir ~/.claude/projects/-Users-simongonzalezdecruz-workspaces-liminal \
-    --output-dir projects/liminal/data \
-    --prefix liminal
+    --sessions-dir ~/.claude/projects/-Users-simongonzalezdecruz-workspaces-demo-project \
+    --output-dir projects/demo-project/data \
+    --prefix demo-project
 
   python3 scripts/mine_conversations.py chatgpt \
     --input ~/Desktop/MyStuff/Documents/ToReview/conversations.json \
-    --output-dir projects/liminal/data
+    --output-dir projects/demo-project/data
 
 Private inputs are intentionally not required by `regenerate_all.py` unless
 `--mine-private-sessions` is passed.
@@ -37,14 +37,14 @@ from pathlib import Path
 from typing import Any, Iterable
 
 ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_OUTPUT = ROOT / "projects/liminal/data"
+DEFAULT_OUTPUT = ROOT / "projects/demo-project/data"
 DEFAULT_OMC_SESSIONS = Path(os.environ.get(
     "ARCHAEOLOGY_OMC_SESSIONS",
     "~/.claude/projects/-Users-simongonzalezdecruz-Desktop-OMC",
 )).expanduser()
-DEFAULT_LIMINAL_SESSIONS = Path(os.environ.get(
-    "ARCHAEOLOGY_LIMINAL_SESSIONS",
-    "~/.claude/projects/-Users-simongonzalezdecruz-workspaces-liminal",
+DEFAULT_DEMO_PROJECT_SESSIONS = Path(os.environ.get(
+    "ARCHAEOLOGY_DEMO_PROJECT_SESSIONS",
+    "~/.claude/projects/-Users-simongonzalezdecruz-workspaces-demo-project",
 )).expanduser()
 DEFAULT_CHATGPT_EXPORT = Path(os.environ.get(
     "ARCHAEOLOGY_CHATGPT_EXPORT",
@@ -278,7 +278,7 @@ def main() -> int:
     claude = sub.add_parser("claude", help="Mine Claude Code JSONL sessions")
     claude.add_argument("--sessions-dir", type=Path, default=DEFAULT_OMC_SESSIONS)
     claude.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT)
-    claude.add_argument("--prefix", default="sessions", help="Output prefix, e.g. sessions or liminal")
+    claude.add_argument("--prefix", default="sessions", help="Output prefix, e.g. sessions or demo-project")
     claude.add_argument("--dry-run", action="store_true")
 
     chatgpt = sub.add_parser("chatgpt", help="Mine ChatGPT conversations.json export")

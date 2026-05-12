@@ -5,11 +5,12 @@ import json
 from pathlib import Path
 from datetime import datetime
 
-# Paths
-SIGNALS_PATH = Path("/Users/simongonzalezdecruz/workspaces/devarch-framework/stages/04-detect/output/detected-signals.json")
-ANALYSIS_DIR = Path("/Users/simongonzalezdecruz/workspaces/devarch-framework/stages/05-analyze/output")
-OUTPUT_MD = Path("/Users/simongonzalezdecruz/workspaces/devarch-framework/stages/07-report/output/ARCHAEOLOGY-REPORT.md")
-OUTPUT_HTML = Path("/Users/simongonzalezdecruz/workspaces/devarch-framework/stages/07-report/output/ARCHAEOLOGY-REPORT.html")
+# Paths - using relative paths from script location
+STAGES_DIR = Path(__file__).resolve().parent.parent.parent
+SIGNALS_PATH = STAGES_DIR / "stages" / "04-detect" / "output" / "detected-signals.json"
+ANALYSIS_DIR = STAGES_DIR / "stages" / "05-analyze" / "output"
+OUTPUT_MD = Path(__file__).resolve().parent / "output" / "ARCHAEOLOGY-REPORT.md"
+OUTPUT_HTML = Path(__file__).resolve().parent / "output" / "ARCHAEOLOGY-REPORT.html"
 
 # Ensure output directory exists
 OUTPUT_MD.parent.mkdir(parents=True, exist_ok=True)
@@ -42,7 +43,7 @@ def generate_markdown_report(signals, analyses):
     signals_list = signals.get('signals', [])
     signals_summary = signals.get('summary', {})
 
-    md = f"""# Archaeology Report: Achiote
+    md = f"""# Archaeology Report: demo-project
 
 **Generated:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 
@@ -206,7 +207,7 @@ def generate_html_report(md_content):
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Achiote - Archaeology Report</title>
+    <title>demo-project - Archaeology Report</title>
     <style>
         * {{
             margin: 0;

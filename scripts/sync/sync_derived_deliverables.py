@@ -26,8 +26,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]  # scripts/sync/ → scripts/ → project root
 DEFAULT_MANIFEST = ROOT / "pipeline/config/derived-deliverables.json"
-DEFAULT_CANONICAL = ROOT / "projects/liminal/deliverables/canonical-metrics.json"
-DEFAULT_ERAS = ROOT / "projects/liminal/data/commit-eras.json"
+DEFAULT_CANONICAL = ROOT / "projects/demo-project/deliverables/canonical-metrics.json"
+DEFAULT_ERAS = ROOT / "projects/demo-project/data/commit-eras.json"
 
 _ROOT_RESOLVED = ROOT.resolve()
 
@@ -82,9 +82,9 @@ def load_canonical(metrics_path: Path, eras_path: Path) -> dict:
     simon = authors.get("Simon", 0)
     sgdc = authors.get("Simon Gonzalez De Cruz", 0)
     pastor = authors.get("Pastorsimon1798", 0)
-    liminal = authors.get("Liminal", 0)
+    demo_project = authors.get("demo-project", 0)
     simon_all = simon + sgdc + pastor
-    simon_liminal = simon_all + liminal
+    simon_demo = simon_all + demo_project
 
     # Era definitions from commit-eras.json
     eras = {}
@@ -123,11 +123,11 @@ def load_canonical(metrics_path: Path, eras_path: Path) -> dict:
             "simon": simon,
             "sgdc": sgdc,
             "pastor": pastor,
-            "liminal": liminal,
+            "demo_project": demo_project,
             "simon_all": simon_all,
-            "simon_liminal": simon_liminal,
+            "simon_demo": simon_demo,
             "simon_all_pct": round(simon_all / total * 100, 1) if total else 0,
-            "simon_liminal_pct": round(simon_liminal / total * 100, 1) if total else 0,
+            "simon_demo_pct": round(simon_demo / total * 100, 1) if total else 0,
         },
         # Fields not available in canonical-metrics.json
         "tracked_ts_loc": m.get("tracked_ts_loc", 0),

@@ -1,243 +1,1242 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="editorial">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Achiote - Archaeology Report</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Archaeology Report: Achiote | DevArch Framework</title>
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-            color: #e4e4e7;
-            line-height: 1.8;
-            padding: 40px 20px;
-        }
+  <!-- Fonts: Load all fonts for all themes -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&family=Lora:wght@400;600;700&family=Source+Sans+3:wght@300;400;500;600&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid #3f3f46;
-            border-radius: 16px;
-            padding: 60px;
-        }
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
-        h1 {
-            font-size: 2.5em;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-bottom: 10px;
-        }
+  <style>
+    /* ===== DESIGN TOKENS ===== */
+    :root {
+      /* Shared spacing & layout */
+      --space-1:  4px;
+      --space-2:  8px;
+      --space-3:  12px;
+      --space-4:  16px;
+      --space-5:  20px;
+      --space-6:  24px;
+      --space-8:  32px;
+      --space-10: 40px;
+      --space-12: 48px;
+      --space-16: 64px;
+      --space-20: 80px;
 
-        h2 {
-            font-size: 1.8em;
-            color: #667eea;
-            margin-top: 40px;
-            margin-bottom: 20px;
-            border-bottom: 2px solid #3f3f46;
-            padding-bottom: 10px;
-        }
+      --radius-sm: 6px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --radius-xl: 16px;
 
-        h3 {
-            font-size: 1.3em;
-            color: #a1a1aa;
-            margin-top: 25px;
-            margin-bottom: 10px;
-        }
+      --max-width: 1200px;
 
-        p {
-            margin-bottom: 15px;
-            color: #e4e4e7;
-        }
+      --shadow-sm:  0 1px 2px rgba(0,0,0,0.08);
+      --shadow-md:  0 4px 12px rgba(0,0,0,0.10);
+      --shadow-lg:  0 8px 24px rgba(0,0,0,0.14);
 
-        strong {
-            color: #667eea;
-            font-weight: 600;
-        }
+      --transition: 180ms ease;
+    }
 
-        ul, ol {
-            margin-left: 25px;
-            margin-bottom: 20px;
-        }
+    /* Theme: Warm */
+    :root, [data-theme="warm"] {
+      --bg-main:     #1f1a14;
+      --bg-surface:  #2b241b;
+      --bg-card:     #383020;
+      --bg-card-alt: #453a28;
+      --bg-hover:    #504230;
 
-        li {
-            margin-bottom: 8px;
-            color: #e4e4e7;
-        }
+      --accent:      #d4a017;
+      --accent-dim:  rgba(212, 160, 23, 0.12);
+      --accent-mid:  rgba(212, 160, 23, 0.25);
+      --secondary:   #b87333;
+      --secondary-dim: rgba(184, 115, 51, 0.12);
+      --success:     #4caf70;
+      --success-dim: rgba(76, 175, 112, 0.12);
+      --warning:     #e8a830;
+      --warning-dim: rgba(232, 168, 48, 0.12);
+      --danger:      #c0392b;
+      --danger-dim:  rgba(192, 57, 43, 0.12);
 
-        code {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-family: 'Courier New', monospace;
-            font-size: 0.9em;
-        }
+      --text:        #f5e8c8;
+      --text-2:      #c8b898;
+      --text-muted:  #9d8f78;
+      --text-faint:  #6b5f4e;
 
-        hr {
-            border: none;
-            border-top: 1px solid #3f3f46;
-            margin: 40px 0;
-        }
+      --border:      rgba(212, 160, 23, 0.15);
+      --border-subtle: rgba(255, 255, 255, 0.05);
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 20px 0;
-        }
+      --font-display: 'DM Serif Display', Georgia, serif;
+      --font-body:    'DM Sans', system-ui, sans-serif;
+      --font-mono:    'JetBrains Mono', 'Courier New', monospace;
+    }
 
-        th, td {
-            border: 1px solid #3f3f46;
-            padding: 12px;
-            text-align: left;
-        }
+    /* Theme: Clean Editorial */
+    [data-theme="editorial"] {
+      --bg-main:     #faf9f7;
+      --bg-surface:  #ffffff;
+      --bg-card:     #ffffff;
+      --bg-card-alt: #f5f4f2;
+      --bg-hover:    #efeeec;
 
-        th {
-            background: rgba(102, 126, 234, 0.2);
-            color: #667eea;
-            font-weight: 600;
-        }
+      --accent:      #1a5c3a;
+      --accent-dim:  rgba(26, 92, 58, 0.08);
+      --accent-mid:  rgba(26, 92, 58, 0.18);
+      --secondary:   #2c5aa0;
+      --secondary-dim: rgba(44, 90, 160, 0.08);
+      --success:     #1a5c3a;
+      --success-dim: rgba(26, 92, 58, 0.08);
+      --warning:     #8a6d2b;
+      --warning-dim: rgba(138, 109, 43, 0.08);
+      --danger:      #a8282d;
+      --danger-dim:  rgba(168, 40, 45, 0.08);
 
-        td {
-            color: #e4e4e7;
-        }
+      --text:        #1a1a1a;
+      --text-2:      #3d3d3d;
+      --text-muted:  #6b6b6b;
+      --text-faint:  #9d9d9d;
 
-        .meta {
-            color: #a1a1aa;
-            font-size: 0.9em;
-            margin-bottom: 30px;
-        }
+      --border:      rgba(0, 0, 0, 0.10);
+      --border-subtle: rgba(0, 0, 0, 0.05);
 
-        .highlight {
-            background: rgba(102, 126, 234, 0.1);
-            border-left: 4px solid #667eea;
-            padding: 15px 20px;
-            margin: 20px 0;
-            border-radius: 0 8px 8px 0;
-        }
-    </style>
+      --font-display: 'Lora', Georgia, serif;
+      --font-body:    'Source Sans 3', system-ui, sans-serif;
+      --font-mono:    'IBM Plex Mono', 'Courier New', monospace;
+    }
+
+    /* Theme: Modern Data */
+    [data-theme="modern"] {
+      --bg-main:     #09090b;
+      --bg-surface:  #0f0f12;
+      --bg-card:     #16161a;
+      --bg-card-alt: #1c1c21;
+      --bg-hover:    #222228;
+
+      --accent:      #3b82f6;
+      --accent-dim:  rgba(59, 130, 246, 0.10);
+      --accent-mid:  rgba(59, 130, 246, 0.22);
+      --secondary:   #8b5cf6;
+      --secondary-dim: rgba(139, 92, 246, 0.10);
+      --success:     #10b981;
+      --success-dim: rgba(16, 185, 129, 0.10);
+      --warning:     #f59e0b;
+      --warning-dim: rgba(245, 158, 11, 0.10);
+      --danger:      #ef4444;
+      --danger-dim:  rgba(239, 68, 68, 0.10);
+
+      --text:        #edf0f7;
+      --text-2:      #b4bccf;
+      --text-muted:  #6b7a9a;
+      --text-faint:  #3d4c6a;
+
+      --border:      rgba(255, 255, 255, 0.08);
+      --border-subtle: rgba(255, 255, 255, 0.04);
+
+      --font-display: 'Inter', system-ui, sans-serif;
+      --font-body:    'Inter', system-ui, sans-serif;
+      --font-mono:    'JetBrains Mono', 'Courier New', monospace;
+    }
+
+    /* ===== BASE STYLES ===== */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--bg-main);
+      color: var(--text);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    /* Skip to content */
+    .skip-link {
+      position: absolute;
+      top: -100%;
+      left: var(--space-4);
+      padding: var(--space-3) var(--space-4);
+      background: var(--accent);
+      color: var(--bg-main);
+      text-decoration: none;
+      border-radius: var(--radius-sm);
+      z-index: 9999;
+      transition: top var(--transition);
+    }
+
+    .skip-link:focus {
+      top: var(--space-4);
+    }
+
+    /* Focus visible */
+    :focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    /* ===== HEADER ===== */
+    .report-header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border);
+      padding: var(--space-4) var(--space-6);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      backdrop-filter: blur(10px);
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: var(--space-4);
+    }
+
+    .stage-badge {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    .stage-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+
+    .report-title {
+      font-family: var(--font-display);
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .theme-switcher {
+      display: flex;
+      gap: var(--space-2);
+    }
+
+    .theme-switcher button {
+      width: 36px;
+      height: 36px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--bg-card);
+      color: var(--text-2);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+
+    .theme-switcher button:hover {
+      background: var(--bg-hover);
+      border-color: var(--accent-mid);
+    }
+
+    .theme-switcher button[aria-pressed="true"] {
+      background: var(--accent);
+      color: var(--bg-main);
+      border-color: var(--accent);
+    }
+
+    /* ===== MAIN CONTENT ===== */
+    .report-container {
+      max-width: var(--max-width);
+      margin: 0 auto;
+      padding: var(--space-12) var(--space-6);
+    }
+
+    /* Section styles */
+    .section-label {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: var(--space-2);
+    }
+
+    .section-title {
+      font-family: var(--font-display);
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1.2;
+      margin-bottom: var(--space-8);
+    }
+
+    .section-subtitle {
+      font-family: var(--font-display);
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1.3;
+      margin-bottom: var(--space-6);
+      margin-top: var(--space-12);
+    }
+
+    .section {
+      margin-bottom: var(--space-16);
+    }
+
+    /* ===== CARDS ===== */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-6);
+      transition: background var(--transition), border-color var(--transition);
+    }
+
+    .card:hover {
+      background: var(--bg-hover);
+      border-color: var(--accent-mid);
+    }
+
+    .card-title {
+      font-family: var(--font-display);
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: var(--space-3);
+    }
+
+    .card-text {
+      color: var(--text-2);
+      font-size: 14px;
+      line-height: 1.6;
+      margin-bottom: var(--space-4);
+    }
+
+    /* ===== BADGES ===== */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-1) var(--space-3);
+      border-radius: var(--radius-sm);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .badge--success { background: var(--success-dim); color: var(--success); }
+    .badge--warning { background: var(--warning-dim); color: var(--warning); }
+    .badge--danger  { background: var(--danger-dim);  color: var(--danger);  }
+    .badge--accent  { background: var(--accent-dim);  color: var(--accent);  }
+
+    /* ===== METRIC GRID ===== */
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: var(--space-4);
+      margin-bottom: var(--space-8);
+    }
+
+    .metric-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-5);
+      text-align: center;
+    }
+
+    .metric-value {
+      font-family: var(--font-display);
+      font-size: 36px;
+      font-weight: 700;
+      color: var(--accent);
+      line-height: 1;
+      margin-bottom: var(--space-2);
+    }
+
+    .metric-label {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    /* ===== CHART CONTAINER ===== */
+    .chart-container {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-6);
+      margin-bottom: var(--space-8);
+      position: relative;
+      height: 300px;
+    }
+
+    .chart-container.wide {
+      height: 400px;
+    }
+
+    /* ===== SIGNAL CARDS ===== */
+    .signal-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: var(--space-4);
+      margin-bottom: var(--space-8);
+    }
+
+    .signal-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-5);
+    }
+
+    .signal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: var(--space-3);
+    }
+
+    .signal-type {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .signal-count {
+      font-family: var(--font-display);
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    /* ===== SDLC CARDS ===== */
+    .sdlc-grid {
+      display: grid;
+      gap: var(--space-4);
+      margin-bottom: var(--space-8);
+    }
+
+    .sdlc-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-6);
+      display: flex;
+      gap: var(--space-4);
+      align-items: flex-start;
+    }
+
+    .sdlc-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: var(--radius-md);
+      background: var(--accent-dim);
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-family: var(--font-display);
+      font-size: 24px;
+    }
+
+    .sdlc-content {
+      flex: 1;
+    }
+
+    .sdlc-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: var(--space-2);
+    }
+
+    .sdlc-title {
+      font-family: var(--font-display);
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    /* ===== RECOMMENDATIONS ===== */
+    .rec-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: var(--space-6);
+      margin-bottom: var(--space-8);
+    }
+
+    .rec-section {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-6);
+    }
+
+    .rec-header {
+      font-family: var(--font-display);
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--accent);
+      margin-bottom: var(--space-4);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .rec-list {
+      list-style: none;
+    }
+
+    .rec-list li {
+      position: relative;
+      padding-left: var(--space-5);
+      margin-bottom: var(--space-3);
+      color: var(--text-2);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .rec-list li::before {
+      content: "→";
+      position: absolute;
+      left: 0;
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    /* ===== TABLE ===== */
+    .table-container {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      margin-bottom: var(--space-8);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    th {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      padding: var(--space-4);
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-card-alt);
+    }
+
+    td {
+      padding: var(--space-4);
+      border-bottom: 1px solid var(--border-subtle);
+      color: var(--text-2);
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    /* ===== FOOTER ===== */
+    .report-footer {
+      text-align: center;
+      padding: var(--space-8) var(--space-6);
+      border-top: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 13px;
+      font-family: var(--font-mono);
+    }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 768px) {
+      .report-header {
+        flex-direction: column;
+        gap: var(--space-4);
+        align-items: flex-start;
+      }
+
+      .theme-switcher {
+        align-self: flex-end;
+      }
+
+      .section-title {
+        font-size: 24px;
+      }
+
+      .metric-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .signal-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .rec-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* ===== PREFERS REDUCED MOTION ===== */
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+
+  <!-- SEO & GEO -->
+    <meta name="description" content="Forensic archaeology report for Achiote: 123 commits across 10 days, 33 signals detected, SDLC assessment, ML pattern analysis, and quality indicators with actionable recommendations.">
+  <meta name="robots" content="index, follow">
+  <meta name="author" content="DevArch Framework">
+  <meta name="generator" content="DevArch ICM Pipeline">
+  <meta property="og:title" content="Achiote Archaeology Report — DevArch">
+  <meta property="og:description" content="Forensic archaeology report for Achiote: 123 commits across 10 days, 33 signals detected, SDLC assessment, ML pattern analysis, and quality indicators with actionable recommendations.">
+  <meta property="og:type" content="article">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Achiote Archaeology Report — DevArch">
+  <meta name="twitter:description" content="Forensic archaeology report for Achiote: 123 commits across 10 days, 33 signals detected, SDLC assessment, ML pattern analysis, and quality indicators with actionable recommendations.">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "name": "Achiote Archaeology Report",
+    "description": "Comprehensive forensic analysis of the Achiote TypeScript project",
+    "author": {
+      "@type": "Organization",
+      "name": "KyaniteLabs"
+    },
+    "about": {
+      "@type": "SoftwareSourceCode",
+      "name": "Achiote",
+      "programmingLanguage": "TypeScript"
+    },
+    "datePublished": "2026-04-27",
+    "isPartOf": {
+      "@type": "SoftwareApplication",
+      "name": "DevArch Framework",
+      "applicationCategory": "DeveloperTool",
+      "operatingSystem": "Any"
+    }
+  }
+  </script>
 </head>
 <body>
-    <div class="container">
-        <h1>Archaeology Report: Achiote</h3></h2></h1><p><strong>Generated:<strong> 2026-04-27 22:20:05</p><p>---</p><h2>Executive Summary</p><p>Achiote is a TypeScript culinary reverse engineering application that was developed over a 10-day period from Apr 18 - Apr 27, 2026. The project demonstrates active development with 123 commits across 9 active days, representing an average velocity of 13.7 commits per day.</p><p><strong>Key Findings:<strong>
-<ul>
-<li>{line[2:]}</li>
-<li>{line[2:]}</li>
-<li>{line[2:]}</li>
-<li>{line[2:]}</li>
-<li>{line[2:]}</li>
-<li>{line[2:]}</li>
-<li>{line[2:]}</li>
-<li>{line[2:]}</li>
-<li>{line[2:]}</li>
-<li>{line[2:]}</li>
-<li>{line[2:]}</li>
-<li>{line[2:]}</li>
-<li>{line[2:]}</li>
-<li>{line[2:]}</li>
-</ul>
-   - Velocity decreased from 35 to 15 commits</p><p>2. <strong>Velocity Shift<strong> (2026-04-21)
-   - Velocity increased from 11 to 24 commits</p><p>3. <strong>Velocity Shift<strong> (2026-04-22)
-   - Velocity decreased from 24 to 5 commits</p><p>4. <strong>Velocity Shift<strong> (2026-04-25)
-   - Velocity decreased from 8 to 1 commits</p><p>5. <strong>Velocity Shift<strong> (2026-04-26)
-   - Velocity increased from 1 to 13 commits</p><p>6. <strong>Author Change<strong> (2026-04-18)
-   - Commit by Simon (non-primary author)</p><p>7. <strong>Author Change<strong> (2026-04-18)
-   - Commit by Simon (non-primary author)</p><p>8. <strong>Author Change<strong> (2026-04-18)
-   - Commit by Simon (non-primary author)</p><p>9. <strong>Author Change<strong> (2026-04-18)
-   - Commit by Simon (non-primary author)</p><p>10. <strong>Author Change<strong> (2026-04-18)
-   - Commit by Simon (non-primary author)</p><p>11. <strong>Author Change<strong> (2026-04-18)
-   - Commit by Simon (non-primary author)</p><p>12. <strong>Author Change<strong> (2026-04-18)
-   - Commit by Simon (non-primary author)</p><p>13. <strong>Author Change<strong> (2026-04-18)
-   - Commit by Simon (non-primary author)</p><p>14. <strong>Author Change<strong> (2026-04-18)
-   - Commit by Simon (non-primary author)</p><p>15. <strong>Author Change<strong> (2026-04-18)
-   - Commit by Simon (non-primary author)</p><p>16. <strong>Author Change<strong> (2026-04-18)
-   - Commit by Simon (non-primary author)</p><p>17. <strong>Author Change<strong> (2026-04-18)
-   - Commit by Simon (non-primary author)</p><p>18. <strong>Author Change<strong> (2026-04-18)
-   - Commit by Simon (non-primary author)</p><p>19. <strong>Author Change<strong> (2026-04-18)
-   - Commit by Simon (non-primary author)</p><p>20. <strong>Author Change<strong> (2026-04-18)
-   - Commit by Simon (non-primary author)</p><p>---</p><h2>SDLC Assessment</p><p><strong>Total Findings:<strong> 6</p><h3>CI/CD Present
-<strong>Description:<strong> Found 21 commits related to CI/CD infrastructure</p><p><strong>Confidence:<strong> HIGH</p><p><strong>Evidence:<strong>
-<ul>
-<li>{line[2:]}</li>
-<li>{line[2:]}</li>
-<li>{line[2:]}</li>
-</ul>
-<strong>Description:<strong> Only 3 test-related commits found</p><p><strong>Confidence:<strong> MEDIUM</p><p><strong>Evidence:<strong>
-<ul>
-<li>{line[2:]}</li>
-<li>{line[2:]}</li>
-<li>{line[2:]}</li>
-</ul>
-<strong>Description:<strong> Found 7 commits indicating code review/PR activity</p><p><strong>Confidence:<strong> HIGH</p><p><strong>Evidence:<strong>
-<ul>
-<li>{line[2:]}</li>
-<li>{line[2:]}</li>
-<li>{line[2:]}</li>
-</ul>
-<strong>Description:<strong> Found 4 documentation-related commits</p><p><strong>Confidence:<strong> HIGH</p><p><strong>Evidence:<strong>
-<ul>
-<li>{line[2:]}</li>
-<li>{line[2:]}</li>
-<li>{line[2:]}</li>
-</ul>
-<strong>Description:<strong> Found 4 security-related commits</p><p><strong>Confidence:<strong> HIGH</p><p><strong>Evidence:<strong>
-<ul>
-<li>{line[2:]}</li>
-<li>{line[2:]}</li>
-<li>{line[2:]}</li>
-</ul>
-<strong>Description:<strong> Only 26.0% of commits follow conventional commit format</p><p><strong>Confidence:<strong> MEDIUM</p><p><strong>Evidence:<strong>
-<ul>
-<li>{line[2:]}</li>
-<li>{line[2:]}</li>
-<li>{line[2:]}</li>
-</ul>
-<strong>Description:<strong> Detected 6 commits related to inference</p><p><strong>Confidence:<strong> HIGH</p><h3>ML Pattern: model
-<strong>Description:<strong> Detected 7 commits related to model</p><p><strong>Confidence:<strong> HIGH</p><h3>ML Pattern: feature_extraction
-<strong>Description:<strong> Detected 3 commits related to feature_extraction</p><p><strong>Confidence:<strong> HIGH</p><h3>ML Pattern: preprocessing
-<strong>Description:<strong> Detected 5 commits related to preprocessing</p><p><strong>Confidence:<strong> HIGH</p><h3>ML Pattern: evaluation
-<strong>Description:<strong> Detected 9 commits related to evaluation</p><p><strong>Confidence:<strong> HIGH</p><h3>ML Pattern: deployment
-<strong>Description:<strong> Detected 15 commits related to deployment</p><p><strong>Confidence:<strong> HIGH</p><h3>Architecture: data_pipeline
-<strong>Description:<strong> Detected 3 commits implementing data_pipeline</p><p><strong>Confidence:<strong> HIGH</p><h3>Architecture: api_design
-<strong>Description:<strong> Detected 21 commits implementing api_design</p><p><strong>Confidence:<strong> HIGH</p><h3>Architecture: mcp_server
-<strong>Description:<strong> Detected 18 commits implementing mcp_server</p><p><strong>Confidence:<strong> HIGH</p><h3>Architecture: data_modeling
-<strong>Description:<strong> Detected 3 commits implementing data_modeling</p><p><strong>Confidence:<strong> HIGH</p><p>---</p><h2>Development Patterns & Quality</p><p><strong>Total Findings:<strong> 3</p><h3>Bug Fix Pattern
-<strong>Description:<strong> Moderate bug fix activity: 7.3% fix commits</p><p><strong>Confidence:<strong> HIGH</p><h3>Testing Present
-<strong>Description:<strong> Testing present but limited: 1.6% test commits</p><p><strong>Confidence:<strong> MEDIUM</p><h3>Development Velocity
-<strong>Description:<strong> High velocity: 12.3 commits/day over 10 days</p><p><strong>Confidence:<strong> HIGH</p><p>---</p><h2>Recommendations</p><h3>Strengths
-1. <strong>Strong Commit Hygiene:<strong> High adherence to conventional commit format provides clear project history
-2. <strong>Active Development:<strong> Consistent commit velocity demonstrates focused development effort
-3. <strong>Multi-Author Collaboration:<strong> Evidence of coordinated development between contributors
-4. <strong>Domain Focus:<strong> Clear specialization in culinary reverse engineering with domain-specific patterns</p><h3>Areas for Improvement
-1. <strong>Testing Coverage:<strong> While present, testing could be expanded to improve code quality assurance
-2. <strong>Documentation:<strong> Consider increasing documentation coverage for better maintainability
-3. <strong>CI/CD Maturity:<strong> Further investment in automation could improve deployment reliability</p><h3>Next Steps
-1. Review and prioritize testing gaps identified in the SDLC analysis
-2. Enhance documentation for critical components
-3. Consider implementing additional automated quality checks
-<table>
-<tr><td>{cell}</td><td>{cell}</td></tr>
-</table>
-|------|--------|
-<table>
-<tr><td>{cell}</td><td>{cell}</td></tr>
-<tr><td>{cell}</td><td>{cell}</td></tr>
-<tr><td>{cell}</td><td>{cell}</td></tr>
-<tr><td>{cell}</td><td>{cell}</td></tr>
-<tr><td>{cell}</td><td>{cell}</td></tr>
-<tr><td>{cell}</td><td>{cell}</td></tr>
-<tr><td>{cell}</td><td>{cell}</td></tr>
-<tr><td>{cell}</td><td>{cell}</td></tr>
-<tr><td>{cell}</td><td>{cell}</td></tr>
-</table>
-</p>
+  <!-- Skip to content -->
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+
+  <!-- Header -->
+  <header class="report-header">
+    <div class="header-left">
+      <div class="stage-badge">
+        <span class="stage-dot"></span>
+        Stage 07 — Report
+      </div>
+      <h1 class="report-title">Archaeology Report: Achiote</h1>
     </div>
+    <div class="theme-switcher" role="radiogroup" aria-label="Color theme">
+      <button data-theme="warm" aria-label="Warm theme" title="Warm">W</button>
+      <button data-theme="editorial" aria-label="Editorial theme" title="Editorial">E</button>
+      <button data-theme="modern" aria-label="Modern theme" title="Modern" aria-pressed="true">M</button>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main id="main-content" class="report-container">
+
+    <!-- Executive Summary -->
+    <section class="section">
+      <div class="section-label">Executive Summary</div>
+      <h2 class="section-title">Achiote: Culinary Reverse Engineering</h2>
+
+      <p style="color: var(--text-2); font-size: 16px; line-height: 1.7; margin-bottom: var(--space-8);">
+        A TypeScript culinary reverse engineering application developed over a 10-day period from Apr 18–Apr 27, 2026.
+        The project demonstrates active development with <strong>123 commits</strong> across 9 active days,
+        representing an average velocity of <strong>13.7 commits per day</strong>.
+      </p>
+
+      <!-- Key Metrics -->
+      <div class="metric-grid">
+        <div class="metric-card">
+          <div class="metric-value">123</div>
+          <div class="metric-label">Total Commits</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-value">10</div>
+          <div class="metric-label">Project Days</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-value">13.7</div>
+          <div class="metric-label">Avg Commits/Day</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-value">35</div>
+          <div class="metric-label">Peak Daily</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-value">2</div>
+          <div class="metric-label">Authors</div>
+        </div>
+      </div>
+
+      <!-- Key Findings -->
+      <div class="card">
+        <h3 class="card-title">Key Findings</h3>
+        <ul class="rec-list">
+          <li><strong>Development Intensity:</strong> Peak activity reached 35 commits in a single day</li>
+          <li><strong>Author Distribution:</strong> Primary development by Simon Gonzalez De Cruz (79.7%) with contributions from Simon (20.3%)</li>
+          <li><strong>Commit Hygiene:</strong> Strong adherence to conventional commit standards</li>
+          <li><strong>Testing:</strong> Present but could be expanded</li>
+          <li><strong>Documentation:</strong> Moderate coverage</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Commit Velocity -->
+    <section class="section">
+      <h3 class="section-subtitle">Commit Velocity</h3>
+      <div class="chart-container wide">
+        <canvas id="velocityChart" role="img" aria-label="Bar chart showing daily commit counts from April 18 to April 27, 2026"></canvas>
+      </div>
+    </section>
+
+    <!-- Signal Detection -->
+    <section class="section">
+      <h3 class="section-subtitle">Signal Detection</h3>
+      <p style="color: var(--text-2); margin-bottom: var(--space-6);">
+        <strong style="color: var(--text);">33 signals detected</strong> across the project timeline
+      </p>
+
+      <div class="signal-grid">
+        <div class="signal-card">
+          <div class="signal-header">
+            <span class="signal-type">Velocity Shift</span>
+            <span class="signal-count">5</span>
+          </div>
+          <p class="card-text">Significant changes in development pace detected</p>
+        </div>
+        <div class="signal-card">
+          <div class="signal-header">
+            <span class="signal-type">Author Change</span>
+            <span class="signal-count">25</span>
+          </div>
+          <p class="card-text">Multiple contributors collaborating</p>
+        </div>
+        <div class="signal-card">
+          <div class="signal-header">
+            <span class="signal-type">Scope Change</span>
+            <span class="signal-count">3</span>
+          </div>
+          <p class="card-text">Project scope adjustments identified</p>
+        </div>
+      </div>
+
+      <!-- Detailed Signals Timeline -->
+      <div class="card">
+        <h4 class="card-title">Detailed Signal Timeline</h4>
+        <div style="display: flex; flex-direction: column; gap: var(--space-3);">
+          <div style="padding: var(--space-3); background: var(--bg-card-alt); border-radius: var(--radius-md);">
+            <div style="font-family: var(--font-mono); font-size: 12px; color: var(--accent); margin-bottom: var(--space-1);">2026-04-19 — Velocity Shift</div>
+            <div style="color: var(--text-2); font-size: 14px;">Velocity decreased from 35 to 15 commits</div>
+          </div>
+          <div style="padding: var(--space-3); background: var(--bg-card-alt); border-radius: var(--radius-md);">
+            <div style="font-family: var(--font-mono); font-size: 12px; color: var(--accent); margin-bottom: var(--space-1);">2026-04-21 — Velocity Shift</div>
+            <div style="color: var(--text-2); font-size: 14px;">Velocity increased from 11 to 24 commits</div>
+          </div>
+          <div style="padding: var(--space-3); background: var(--bg-card-alt); border-radius: var(--radius-md);">
+            <div style="font-family: var(--font-mono); font-size: 12px; color: var(--warning); margin-bottom: var(--space-1);">2026-04-22 — Velocity Shift</div>
+            <div style="color: var(--text-2); font-size: 14px;">Velocity decreased from 24 to 5 commits</div>
+          </div>
+          <div style="padding: var(--space-3); background: var(--bg-card-alt); border-radius: var(--radius-md);">
+            <div style="font-family: var(--font-mono); font-size: 12px; color: var(--warning); margin-bottom: var(--space-1);">2026-04-25 — Velocity Shift</div>
+            <div style="color: var(--text-2); font-size: 14px;">Velocity decreased from 8 to 1 commits</div>
+          </div>
+          <div style="padding: var(--space-3); background: var(--bg-card-alt); border-radius: var(--radius-md);">
+            <div style="font-family: var(--font-mono); font-size: 12px; color: var(--success); margin-bottom: var(--space-1);">2026-04-26 — Velocity Shift</div>
+            <div style="color: var(--text-2); font-size: 14px;">Velocity increased from 1 to 13 commits</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SDLC Assessment -->
+    <section class="section">
+      <h3 class="section-subtitle">SDLC Assessment</h3>
+      <p style="color: var(--text-2); margin-bottom: var(--space-6);">
+        <strong style="color: var(--text);">6 findings</strong> across software development lifecycle practices
+      </p>
+
+      <div class="sdlc-grid">
+        <div class="sdlc-card">
+          <div class="sdlc-icon">CI</div>
+          <div class="sdlc-content">
+            <div class="sdlc-header">
+              <h4 class="sdlc-title">CI/CD Present</h4>
+              <span class="badge badge--success">High Confidence</span>
+            </div>
+            <p class="card-text">Found 21 commits related to CI/CD infrastructure including GitHub Actions workflow updates and deployment automation.</p>
+          </div>
+        </div>
+
+        <div class="sdlc-card">
+          <div class="sdlc-icon">TEST</div>
+          <div class="sdlc-content">
+            <div class="sdlc-header">
+              <h4 class="sdlc-title">Testing Limited</h4>
+              <span class="badge badge--warning">Medium Confidence</span>
+            </div>
+            <p class="card-text">Only 3 test-related commits found. Integration tests present for MCP tools and local inference providers.</p>
+          </div>
+        </div>
+
+        <div class="sdlc-card">
+          <div class="sdlc-icon">CR</div>
+          <div class="sdlc-content">
+            <div class="sdlc-header">
+              <h4 class="sdlc-title">Code Review Present</h4>
+              <span class="badge badge--success">High Confidence</span>
+            </div>
+            <p class="card-text">Found 7 commits indicating code review/PR activity with pull request merges and review-driven fixes.</p>
+          </div>
+        </div>
+
+        <div class="sdlc-card">
+          <div class="sdlc-icon">DOCS</div>
+          <div class="sdlc-content">
+            <div class="sdlc-header">
+              <h4 class="sdlc-title">Documentation Present</h4>
+              <span class="badge badge--success">High Confidence</span>
+            </div>
+            <p class="card-text">Found 4 documentation-related commits including README, license, and workflow documentation updates.</p>
+          </div>
+        </div>
+
+        <div class="sdlc-card">
+          <div class="sdlc-icon">SEC</div>
+          <div class="sdlc-content">
+            <div class="sdlc-header">
+              <h4 class="sdlc-title">Security Considered</h4>
+              <span class="badge badge--success">High Confidence</span>
+            </div>
+            <p class="card-text">Found 4 security-related commits addressing XSS, CSP, input validation, and CORS issues.</p>
+          </div>
+        </div>
+
+        <div class="sdlc-card">
+          <div class="sdlc-icon">HGY</div>
+          <div class="sdlc-content">
+            <div class="sdlc-header">
+              <h4 class="sdlc-title">Commit Hygiene Fair</h4>
+              <span class="badge badge--warning">Medium Confidence</span>
+            </div>
+            <p class="card-text">Only 26.0% of commits follow conventional commit format. Some use conventional format (chore, feat, docs).</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ML Pattern Analysis -->
+    <section class="section">
+      <h3 class="section-subtitle">ML Pattern Analysis</h3>
+      <div class="chart-container wide">
+        <canvas id="mlChart" role="img" aria-label="Horizontal bar chart showing ML and architecture pattern commit frequencies"></canvas>
+      </div>
+    </section>
+
+    <!-- Quality Indicators -->
+    <section class="section">
+      <h3 class="section-subtitle">Quality Indicators</h3>
+      <div class="signal-grid">
+        <div class="signal-card">
+          <div class="signal-header">
+            <span class="signal-type">Bug Fix Pattern</span>
+            <span class="badge badge--success">7.3%</span>
+          </div>
+          <p class="card-text">Moderate bug fix activity indicating active maintenance and issue resolution.</p>
+        </div>
+        <div class="signal-card">
+          <div class="signal-header">
+            <span class="signal-type">Testing Coverage</span>
+            <span class="badge badge--warning">1.6%</span>
+          </div>
+          <p class="card-text">Testing present but limited. Opportunity to improve code quality assurance.</p>
+        </div>
+        <div class="signal-card">
+          <div class="signal-header">
+            <span class="signal-type">Development Velocity</span>
+            <span class="badge badge--accent">12.3/day</span>
+          </div>
+          <p class="card-text">High velocity demonstrating focused development effort over 10-day period.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Recommendations -->
+    <section class="section">
+      <h3 class="section-subtitle">Recommendations</h3>
+
+      <div class="rec-grid">
+        <div class="rec-section">
+          <div class="rec-header">Strengths</div>
+          <ul class="rec-list">
+            <li>Strong commit hygiene with conventional commit format providing clear project history</li>
+            <li>Active development with consistent commit velocity demonstrating focused effort</li>
+            <li>Multi-author collaboration showing coordinated development between contributors</li>
+            <li>Clear domain focus in culinary reverse engineering with specialized patterns</li>
+          </ul>
+        </div>
+
+        <div class="rec-section">
+          <div class="rec-header">Improvement Areas</div>
+          <ul class="rec-list">
+            <li>Testing coverage could be expanded to improve code quality assurance</li>
+            <li>Documentation coverage should increase for better maintainability</li>
+            <li>CI/CD maturity could be improved with additional automation investments</li>
+          </ul>
+        </div>
+
+        <div class="rec-section">
+          <div class="rec-header">Next Steps</div>
+          <ul class="rec-list">
+            <li>Review and prioritize testing gaps identified in the SDLC analysis</li>
+            <li>Enhance documentation for critical components</li>
+            <li>Consider implementing additional automated quality checks</li>
+            <li>Continue maintaining strong commit practices</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Appendix -->
+    <section class="section">
+      <h3 class="section-subtitle">Appendix: Daily Commit Breakdown</h3>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Commits</th>
+              <th>Day of Week</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>2026-04-18</td>
+              <td><strong>35</strong></td>
+              <td>Saturday</td>
+            </tr>
+            <tr>
+              <td>2026-04-19</td>
+              <td><strong>15</strong></td>
+              <td>Sunday</td>
+            </tr>
+            <tr>
+              <td>2026-04-20</td>
+              <td><strong>11</strong></td>
+              <td>Monday</td>
+            </tr>
+            <tr>
+              <td>2026-04-21</td>
+              <td><strong>24</strong></td>
+              <td>Tuesday</td>
+            </tr>
+            <tr>
+              <td>2026-04-22</td>
+              <td><strong>5</strong></td>
+              <td>Wednesday</td>
+            </tr>
+            <tr>
+              <td>2026-04-24</td>
+              <td><strong>8</strong></td>
+              <td>Friday</td>
+            </tr>
+            <tr>
+              <td>2026-04-25</td>
+              <td><strong>1</strong></td>
+              <td>Saturday</td>
+            </tr>
+            <tr>
+              <td>2026-04-26</td>
+              <td><strong>13</strong></td>
+              <td>Sunday</td>
+            </tr>
+            <tr>
+              <td>2026-04-27</td>
+              <td><strong>11</strong></td>
+              <td>Monday</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="report-footer">
+    Generated 2026-04-27 22:20:05 · DevArch ICM Pipeline · Forensic Archaeology Framework
+  </footer>
+
+  <!-- Scripts -->
+  <script>
+    // ===== THEME SWITCHER =====
+    (function() {
+      const saved = localStorage.getItem('devarch-theme') || 'editorial';
+      document.documentElement.setAttribute('data-theme', saved);
+
+      document.querySelectorAll('button[data-theme]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const theme = btn.getAttribute('data-theme');
+          document.documentElement.setAttribute('data-theme', theme);
+          localStorage.setItem('devarch-theme', theme);
+
+          // Update active state
+          document.querySelectorAll('button[data-theme]').forEach(b => {
+            b.setAttribute('aria-pressed', b === btn ? 'true' : 'false');
+          });
+
+          // Recreate charts with new theme
+          updateCharts();
+        });
+      });
+
+      // Set initial active state
+      document.querySelectorAll('button[data-theme]').forEach(btn => {
+        if (btn.getAttribute('data-theme') === saved) {
+          btn.setAttribute('aria-pressed', 'true');
+        }
+      });
+    })();
+
+    // ===== CHART.JS THEME COLORS =====
+    function getThemeColors() {
+      const s = getComputedStyle(document.documentElement);
+      return {
+        accent:     s.getPropertyValue('--accent').trim(),
+        secondary:  s.getPropertyValue('--secondary').trim(),
+        success:    s.getPropertyValue('--success').trim(),
+        warning:    s.getPropertyValue('--warning').trim(),
+        danger:     s.getPropertyValue('--danger').trim(),
+        text:       s.getPropertyValue('--text').trim(),
+        textMuted:  s.getPropertyValue('--text-muted').trim(),
+        border:     s.getPropertyValue('--border').trim(),
+        bgCard:     s.getPropertyValue('--bg-card').trim(),
+      };
+    }
+
+    // ===== CHART INSTANCES =====
+    let velocityChart = null;
+    let mlChart = null;
+
+    function createVelocityChart(colors) {
+      const ctx = document.getElementById('velocityChart').getContext('2d');
+
+      if (velocityChart) {
+        velocityChart.destroy();
+      }
+
+      velocityChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: ['Apr 18', 'Apr 19', 'Apr 20', 'Apr 21', 'Apr 22', 'Apr 24', 'Apr 25', 'Apr 26', 'Apr 27'],
+          datasets: [{
+            label: 'Commits',
+            data: [35, 15, 11, 24, 5, 8, 1, 13, 11],
+            backgroundColor: colors.accent,
+            borderColor: colors.accent,
+            borderWidth: 0,
+            borderRadius: 6,
+            barThickness: 40,
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: false
+            },
+            tooltip: {
+              backgroundColor: colors.bgCard,
+              titleColor: colors.text,
+              bodyColor: colors.text,
+              borderColor: colors.border,
+              borderWidth: 1,
+              padding: 12,
+              displayColors: false,
+              titleFont: {
+                family: getComputedStyle(document.documentElement).getPropertyValue('--font-mono').trim(),
+                size: 11
+              },
+              bodyFont: {
+                family: getComputedStyle(document.documentElement).getPropertyValue('--font-body').trim(),
+                size: 13
+              }
+            }
+          },
+          scales: {
+            x: {
+              grid: {
+                display: false
+              },
+              ticks: {
+                color: colors.textMuted,
+                font: {
+                  family: getComputedStyle(document.documentElement).getPropertyValue('--font-mono').trim(),
+                  size: 11
+                }
+              }
+            },
+            y: {
+              beginAtZero: true,
+              grid: {
+                color: colors.border,
+                drawBorder: false
+              },
+              ticks: {
+                color: colors.textMuted,
+                font: {
+                  family: getComputedStyle(document.documentElement).getPropertyValue('--font-mono').trim(),
+                  size: 11
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function createMLChart(colors) {
+      const ctx = document.getElementById('mlChart').getContext('2d');
+
+      if (mlChart) {
+        mlChart.destroy();
+      }
+
+      mlChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: [
+            'API Design', 'MCP Server', 'Deployment', 'Evaluation', 'Model',
+            'Inference', 'Preprocessing', 'Feature Extraction', 'Data Pipeline', 'Data Modeling'
+          ],
+          datasets: [{
+            label: 'Commits',
+            data: [21, 18, 15, 9, 7, 6, 5, 3, 3, 3],
+            backgroundColor: [
+              colors.accent,
+              colors.secondary,
+              colors.success,
+              colors.warning,
+              colors.danger,
+              colors.accent,
+              colors.secondary,
+              colors.success,
+              colors.warning,
+              colors.danger
+            ],
+            borderWidth: 0,
+            borderRadius: 4,
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: false
+            },
+            tooltip: {
+              backgroundColor: colors.bgCard,
+              titleColor: colors.text,
+              bodyColor: colors.text,
+              borderColor: colors.border,
+              borderWidth: 1,
+              padding: 12,
+              displayColors: false,
+              titleFont: {
+                family: getComputedStyle(document.documentElement).getPropertyValue('--font-mono').trim(),
+                size: 11
+              },
+              bodyFont: {
+                family: getComputedStyle(document.documentElement).getPropertyValue('--font-body').trim(),
+                size: 13
+              }
+            }
+          },
+          scales: {
+            x: {
+              beginAtZero: true,
+              grid: {
+                color: colors.border,
+                drawBorder: false
+              },
+              ticks: {
+                color: colors.textMuted,
+                font: {
+                  family: getComputedStyle(document.documentElement).getPropertyValue('--font-mono').trim(),
+                  size: 11
+                }
+              }
+            },
+            y: {
+              grid: {
+                display: false
+              },
+              ticks: {
+                color: colors.text,
+                font: {
+                  family: getComputedStyle(document.documentElement).getPropertyValue('--font-body').trim(),
+                  size: 13
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function updateCharts() {
+      const colors = getThemeColors();
+      createVelocityChart(colors);
+      createMLChart(colors);
+    }
+
+    // ===== INITIALIZE =====
+    document.addEventListener('DOMContentLoaded', () => {
+      updateCharts();
+    });
+  </script>
 </body>
 </html>

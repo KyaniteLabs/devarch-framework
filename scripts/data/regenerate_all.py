@@ -11,7 +11,7 @@ This is the repeatable "do everything" entrypoint:
 6. Validate metrics, claims, and HTML.
 7. Optionally regenerate PNG screenshots.
 
-The canonical commit scope is archival: `projects/liminal/data/github-commits.csv` union current `git log --all`. This prevents upstream-deleted remote PR refs from erasing historical archaeology.
+The canonical commit scope is archival: `projects/demo-project/data/github-commits.csv` union current `git log --all`. This prevents upstream-deleted remote PR refs from erasing historical archaeology.
 """
 
 from __future__ import annotations
@@ -38,10 +38,10 @@ def _get_source_repo() -> Path:
     )
 
 DEFAULT_SOURCE_REPO = _get_source_repo()
-DATA_JSON = ROOT / "projects/liminal/deliverables/data.json"
-DATA_JS = ROOT / "projects/liminal/deliverables/data.js"
-VERIFIED_STATS = ROOT / "projects/liminal/data/VERIFIED-STATS.md"
-PROJECT_JSON = ROOT / "projects/liminal/project.json"
+DATA_JSON = ROOT / "projects/demo-project/deliverables/data.json"
+DATA_JS = ROOT / "projects/demo-project/deliverables/data.js"
+VERIFIED_STATS = ROOT / "projects/demo-project/data/VERIFIED-STATS.md"
+PROJECT_JSON = ROOT / "projects/demo-project/project.json"
 
 
 def run(cmd: list[str], *, cwd: Path = ROOT, capture: bool = False) -> str:
@@ -136,7 +136,7 @@ def compute(repo: Path, *, fetch: bool) -> dict[str, Any]:
         run(["git", "-C", str(repo), "fetch", "--all", "--tags"])
 
     known_commits: dict[str, dict[str, str]] = {}
-    archive_path = ROOT / "projects/liminal/data/github-commits.csv"
+    archive_path = ROOT / "projects/demo-project/data/github-commits.csv"
     if archive_path.exists():
         import csv
         with archive_path.open(newline="", encoding="utf-8") as f:
@@ -177,18 +177,18 @@ def compute(repo: Path, *, fetch: bool) -> dict[str, Any]:
     simon = authors.get("Simon", 0)
     sgdc = authors.get("Simon Gonzalez De Cruz", 0)
     pastor = authors.get("Pastorsimon1798", 0)
-    liminal = authors.get("Liminal", 0)
+    demo_project = authors.get("demo-project", 0)
     claude = authors.get("Claude", 0)
     dependabot = authors.get("dependabot[bot]", 0)
     coauth = len(git_lines(repo, "log", "--all", "--grep=Co-Authored-By", "-i", "--oneline"))
-    ai_involved = coauth + liminal + claude
+    ai_involved = coauth + demo_project + claude
 
     origin_files = len(git_lines(repo, "ls-tree", "-r", "--name-only", "origin/main"))
     loc = ts_loc(repo)
     tests = test_count(repo)
     deps = dep_count(repo)
     remote_pr = len(git_lines(repo, "branch", "-r", "--list", "origin/pr/*"))
-    local_sessions = len(git_lines(repo, "branch", "--list", "liminal/sess-*"))
+    local_sessions = len(git_lines(repo, "branch", "--list", "demo-project/sess-*"))
 
     cluster4 = sum(count for day, count in daily.items() if day >= "2026-03-28")
 
@@ -222,13 +222,13 @@ def compute(repo: Path, *, fetch: bool) -> dict[str, Any]:
         "simon_commits": simon,
         "sgdc_commits": sgdc,
         "pastorsimon1798_commits": pastor,
-        "liminal_commits": liminal,
+        "demo_project_commits": demo_project,
         "claude_commits": claude,
         "dependabot_commits": dependabot,
         "simon_all": simon + sgdc + pastor,
         "simon_all_pct": round((simon + sgdc + pastor) / total * 100, 1) if total > 0 else 0,
-        "simon_liminal": simon + sgdc + pastor + liminal,
-        "simon_liminal_pct": round((simon + sgdc + pastor + liminal) / total * 100, 1) if total > 0 else 0,
+        "simon_demo": simon + sgdc + pastor + demo_project,
+        "simon_demo_pct": round((simon + sgdc + pastor + demo_project) / total * 100, 1) if total > 0 else 0,
         "coauth_commits": coauth,
         "coauth_pct": round(coauth / total * 100, 1) if total > 0 else 0,
         "ai_involved_commits": ai_involved,
@@ -298,7 +298,7 @@ Computed from git source on {stats['generated']}
 | Simon | {stats['simon_commits']:,} |
 | Simon Gonzalez De Cruz | {stats['sgdc_commits']:,} |
 | Pastorsimon1798 | {stats['pastorsimon1798_commits']:,} |
-| Liminal | {stats['liminal_commits']:,} |
+| demo-project | {stats['demo_project_commits']:,} |
 | Claude | {stats['claude_commits']:,} |
 | dependabot[bot] | {stats['dependabot_commits']:,} |
 
@@ -306,7 +306,7 @@ Computed from git source on {stats['generated']}
 | Category | Commits | Percentage |
 |----------|---------|-----------|
 | Simon (all identities) | {stats['simon_all']:,} | {stats['simon_all_pct']}% |
-| Simon + Liminal | {stats['simon_liminal']:,} | {stats['simon_liminal_pct']}% |
+| Simon + demo-project | {stats['simon_demo']:,} | {stats['simon_demo_pct']}% |
 
 ## Commit Type Distribution
 | Type | Count | Percentage |
@@ -344,7 +344,7 @@ Computed from git source on {stats['generated']}
 | Category | Count |
 |----------|-------|
 | Remote PR branches (origin/pr/*) | {stats['remote_pr_branches']} |
-| Local session branches (liminal/sess-*) | {stats['local_session_branches']} |
+| Local session branches (demo-project/sess-*) | {stats['local_session_branches']} |
 """
     VERIFIED_STATS.write_text(content)
 
@@ -380,13 +380,13 @@ def update_structured_files(stats: dict[str, Any]) -> None:
         "fix_ratio_pct": stats["fix_ratio_pct"],
         "feat_fix_ratio": stats["feat_fix_ratio"],
         "simon_commits": stats["simon_commits"],
-        "liminal_commits": stats["liminal_commits"],
+        "demo_project_commits": stats["demo_project_commits"],
         "pastorsimon1798_commits": stats["pastorsimon1798_commits"],
         "sgdc_commits": stats["sgdc_commits"],
         "claude_commits": stats["claude_commits"],
         "dependabot_commits": stats["dependabot_commits"],
         "simon_all_pct": stats["simon_all_pct"],
-        "simon_liminal_pct": stats["simon_liminal_pct"],
+        "simon_demo_pct": stats["simon_demo_pct"],
         "co_authored_commits": stats["coauth_commits"],
         "co_author_rate_pct": stats["coauth_pct"],
         "ai_involved_commits": stats["ai_involved_commits"],
@@ -431,7 +431,7 @@ def update_structured_files(stats: dict[str, Any]) -> None:
     ct["loc_growth"]["data"][stats["last_date"]] = stats["tracked_ts_loc"]
     ct["test_growth"]["data"][stats["last_date"]] = stats["test_files"]
     ct["dependency_growth"]["data"][stats["last_date"]] = stats["dependencies"]
-    data["total_commits_by_repo"]["liminal"] = stats["total_commits"]
+    data["total_commits_by_repo"]["demo-project"] = stats["total_commits"]
     data.setdefault("codebase", {})["total_commits"] = stats["total_commits"]
     data.setdefault("codebase", {})["lifespan"] = f"{stats['span_days']} days ({stats['first_date']} - {stats['last_date']})"
     data["cluster_dominance"] = {
@@ -479,7 +479,7 @@ def write_canonical_metrics(stats: dict[str, Any]) -> None:
     - dogfood_tests: Run dogfood campaign and count test runs
     - dogfood_success_rate: Calculate from dogfood results
     """
-    data_dir = ROOT / "projects/liminal/data"
+    data_dir = ROOT / "projects/demo-project/data"
     canonical = {
         "generated": stats["generated"],
         "source_scope": stats["scope"],
@@ -504,8 +504,8 @@ def write_canonical_metrics(stats: dict[str, Any]) -> None:
         "dogfood_tests": 0,  # No dogfood data available
         "dogfood_success_rate": 0.0,  # No dogfood data available
     }
-    metrics_json = ROOT / "projects/liminal/deliverables/canonical-metrics.json"
-    metrics_js = ROOT / "projects/liminal/deliverables/canonical-metrics.js"
+    metrics_json = ROOT / "projects/demo-project/deliverables/canonical-metrics.json"
+    metrics_js = ROOT / "projects/demo-project/deliverables/canonical-metrics.js"
     write_json(metrics_json, canonical)
     metrics_js.write_text("window.CANONICAL_METRICS = " + json.dumps(canonical, separators=(",", ":"), ensure_ascii=False) + ";")
 
@@ -518,8 +518,8 @@ def validate(skip_screenshots: bool) -> None:
     run([sys.executable, "pipeline/core/validate.py", "--strict"])
     run([sys.executable, "pipeline/core/run.py", "--validate"])
     run([sys.executable, "scripts/sync/audit_claims.py"])
-    run(["node", "archaeology/validators/validate_html.cjs", "projects/liminal/deliverables/playbook.html", "--project-dir", "projects/liminal"])
-    run([sys.executable, "-m", "archaeology.cli", "validate", "liminal"])
+    run(["node", "archaeology/validators/validate_html.cjs", "projects/demo-project/deliverables/playbook.html", "--project-dir", "projects/demo-project"])
+    run([sys.executable, "-m", "archaeology.cli", "validate", "demo-project"])
     run([sys.executable, "-m", "py_compile", "pipeline/core/validate.py", "pipeline/core/run.py", "scripts/sync/audit_claims.py", "scripts/data/regenerate_all.py", "scripts/data/capture_playbook.py", "scripts/sync/sync_derived_deliverables.py", "scripts/data/refresh_data.py", "archaeology/cli.py"])
     if not skip_screenshots:
         run([sys.executable, "scripts/data/capture_playbook.py"])
@@ -542,9 +542,9 @@ def mine_private_sessions(source_repo: Path) -> None:
             "scripts/data/mine_conversations.py",
             "claude",
             "--sessions-dir",
-            str(Path("~/.claude/projects/-Users-simongonzalezdecruz-workspaces-liminal").expanduser()),
+            str(Path("~/.claude/projects/-Users-simongonzalezdecruz-workspaces-demo-project").expanduser()),
             "--prefix",
-            "liminal",
+            "demo-project",
         ],
         [
             sys.executable,

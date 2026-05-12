@@ -1,101 +1,81 @@
 # DevArch Task Routing
 
-Map user intent to the appropriate CLI command or action.
+Route user intent to the appropriate workspace. Each workspace loads only its own context.
 
-## Routing Table
+## Workspaces
 
-| User Intent                                          | CLI Command                    | Action                              |
-|------------------------------------------------------|--------------------------------|-------------------------------------|
-| "Start a new archaeology project"                    | `devarch init <name>`          | Initialize project configuration    |
-| "Create a demo project"                              | `devarch demo [--build-db]`    | Generate synthetic project          |
-| "Analyze this repository"                            | `devarch mine <path>`          | Extract git history                 |
-| "Build the database"                                 | `devarch build-db <project>`   | Create SQLite database              |
-| "Find gaps or patterns in commits"                   | `devarch signals <project>`    | Run signal detection                |
-| "Detect eras in the codebase"                        | `devarch cascade <project>`    | Scan and cascade era labels         |
-| "What changed in the codebase?"                      | `devarch analyze <project>`    | Run source archaeology vector       |
-| "Show ML patterns or SDLC gaps"                      | `devarch analyze -v <vector>`  | Run ML or SDLC vectors              |
-| "Create HTML visualization"                          | `devarch visualize <project>`  | Generate charts and HTML            |
-| "Generate full report"                               | `devarch export-report`        | Export markdown/HTML report         |
-| "Check if results are accurate"                      | `devarch audit <project>`      | Run validation checks               |
-| "Inspect the database"                               | `devarch serve <project>`      | Start Datasette server              |
-| "Sync multiple projects"                             | `devarch sync`                 | Aggregate multi-project data        |
-| "Create global visualization"                        | `devarch global-viz`           | Generate cross-project charts       |
-| "Add fitness/YouTube/calendar data"                  | Configure in project.json      | Add supplementary data source       |
-| "Show current project status"                        | `devarch status` (coming soon) | Check project state                 |
+| Workspace | Commands | Mental Mode |
+|-----------|----------|-------------|
+| **Extraction** | `mine`, `build-db`, `serve`, `ingest-pipeline` | Get raw data from git repos |
+| **Analysis** | `signals`, `analyze`, `cascade`, `extract-sessions` | Find patterns and insights |
+| **Reporting** | `visualize`, `export-report`, `audit`, `validate`, `public-case-study` | Generate human-readable output |
+| **Multi-Project** | `sync`, `global-viz`, `fetch-github`, `benchmark` | Aggregate across repos |
+| **Setup** | `init`, `demo`, `status` | Configure new projects |
 
-## Command Dependencies
+## Task Routing
 
-Commands must execute in order. Each command consumes outputs from the previous command.
+| Your Task | Go Here | Read | You'll Also Need |
+|-----------|---------|------|------------------|
+| **Mine a repo** | stages/02-mine/CONTEXT.md | Stage contract | — |
+| **Build the database** | stages/03-build/CONTEXT.md | Stage contract | — |
+| **Run signal detection** | stages/04-detect/CONTEXT.md | Stage contract | shared/signal-heuristics.md |
+| **Run analysis vectors** | stages/05-analyze/CONTEXT.md | Stage contract | analysis-vectors/<vector>.md |
+| **Detect eras** | stages/04-detect/CONTEXT.md | Stage contract | shared/concepts.md (Era System) |
+| **Generate visualization** | stages/06-visualize/CONTEXT.md | Stage contract | — |
+| **Export report** | stages/07-report/CONTEXT.md | Stage contract | — |
+| **Run audit** | stages/08-audit/CONTEXT.md | Stage contract | — |
+| **Sync multiple projects** | Multi-project section below | config/profile.json | — |
+| **Create demo** | stages/01-setup/CONTEXT.md | Stage contract | setup/questionnaire.md |
 
-init → mine → build-db → signals → analyze → visualize → export-report → audit
+## Pipeline Flow
 
-Optional commands at any stage:
-- `cascade` -- Era detection and propagation
-- `serve` -- Database inspection (after build-db)
-- `public-case-study` -- Create sanitized demo
-- `sync` -- Multi-project aggregation
-- `global-viz` -- Cross-project visualization
+```
+setup → mine → build-db → signals → analyze → visualize → report → audit
+                                                                    ↓
+                                                              strategy (optional)
 
-## Analysis Vectors
+Optional at any point:
+  cascade, serve, public-case-study, sync, global-viz
+```
 
-The `devarch analyze` command supports 6 analysis vectors:
+## Cross-Workspace Flow
 
-- `sdlc-gap-finder` -- Identify gaps in SDLC practices
-- `ml-pattern-mapper` -- Detect ML patterns and practices
-- `agentic-workflow` -- Identify AI/agent-based workflows
-- `formal-terms-mapper` -- Track formal methods terminology
-- `source-archaeologist` -- Deep code archaeology
-- `youtube-correlator` -- Correlate with YouTube watch history
+```
+Setup (init, demo)
+    ↓ project.json created
+Extraction (mine → build-db)
+    ↓ archaeology.db created
+Analysis (signals → cascade → analyze)
+    ↓ detected-signals.json + analysis-*.json created
+Reporting (visualize → report → audit)
+    ↓ HTML + markdown reports + audit result
+Strategy (optional GTM from archaeology data)
+```
 
-Run all vectors: `devarch analyze <project>`
-Run specific vectors: `devarch analyze <project> -v sdlc-gap-finder -v ml-pattern-mapper`
+Each workspace consumes output from the previous workspace. An agent in extraction never needs analysis vectors. An agent in analysis never needs visualization templates.
 
 ## Checkpoints
 
-Review checkpoints are manual steps in the workflow:
-
-- **After signals**: Review detected signals before running analysis vectors
-- **After analyze**: Review analysis findings before generating visualizations
+- **After signals**: Review detected signals before running analysis. Human checks threshold values.
+- **After analyze**: Review findings before generating visualizations. Human checks for meaningful results.
+- **After audit**: Review severity issues before considering pipeline complete. Human addresses CRITICAL/HIGH.
 
 ## Supplementary Data
 
-Any external data with dates can be added at any time. Correlation runs automatically during analysis.
+Any external data with timestamps can be added at any stage. Configure in `project.json` under `supplementary_sources`. Correlation runs automatically during signal detection (stage 04) and analysis (stage 05).
 
-To add supplementary data: Edit project.json and add to `supplementary_sources` array.
+Supported: fitness data, YouTube history, calendar events, weather, lunar phases, any timestamped CSV/JSON.
 
-Supported types:
-- Fitness tracker data (CSV/JSON)
-- YouTube watch history (JSON)
-- Calendar events (CSV/JSON)
-- Weather data (CSV)
-- Lunar phases (JSON)
-- Any timestamped data
+## Multi-Project
 
-## Multi-Project Sync
+For multi-project analysis, configure `config/profile.json` with project paths, then run `devarch sync` or `devarch global-viz`.
 
-For multi-project analysis, configure `config/profile.json`:
+## Analysis Vectors
 
-```json
-{
-  "projects": [
-    {"name": "project-one", "path": "/path/to/project-one"},
-    {"name": "project-two", "path": "/path/to/project-two"}
-  ],
-  "developer": {
-    "name": "Your Name",
-    "github_username": "yourusername"
-  }
-}
-```
-
-Then run: `devarch sync` or `devarch sync --project project-one --project project-two`
-
-## Database Inspection
-
-Start a Datasette server to inspect your archaeology database:
-
-```bash
-devarch serve my-project --port 8001
-```
-
-Visit http://localhost:8001 to explore commits, signals, eras, and analysis results with full-text search.
+`devarch analyze` supports 6 vectors (run all or specify with `-v`):
+- `sdlc-gap-finder` — SDLC practice gaps
+- `ml-pattern-mapper` — ML pattern detection
+- `agentic-workflow` — AI/agent workflow identification
+- `formal-terms-mapper` — Formal methods terminology
+- `source-archaeologist` — Deep code archaeology
+- `youtube-correlator` — YouTube watch history correlation

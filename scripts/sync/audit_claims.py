@@ -19,8 +19,8 @@ ROOT = Path(__file__).resolve().parents[2]  # scripts/sync/ → scripts/ → pro
 
 CURRENT_SURFACE = [
     ROOT / "README.md",
-    ROOT / "projects/liminal/project.json",
-    ROOT / "projects/liminal/deliverables",
+    ROOT / "projects/demo-project/project.json",
+    ROOT / "projects/demo-project/deliverables",
     ROOT / "pipeline/templates",
 ]
 

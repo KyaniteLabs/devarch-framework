@@ -2,6 +2,13 @@
 
 Run analysis vectors on database and detected signals.
 
+## Context Loading
+
+| Layer | Load | Skip |
+|-------|------|------|
+| L3 (reference) | analysis-vectors/<vector>.md (only vectors being run) | shared/concepts.md, shared/sync-rules.md |
+| L4 (working) | ../03-build/output/archaeology.db, ../04-detect/output/detected-signals.json | stages/01-02 outputs |
+
 ## Inputs
 
 - stages/03-build/output/archaeology.db

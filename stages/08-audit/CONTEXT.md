@@ -2,6 +2,13 @@
 
 Quality gate validation for all generated outputs.
 
+## Context Loading
+
+| Layer | Load | Skip |
+|-------|------|------|
+| L3 (reference) | references/audit-checks.md | analysis-vectors/, shared/concepts.md |
+| L4 (working) | All stage outputs (stages/02-07) | None — audit reads everything |
+
 ## Inputs
 
 - All outputs from stages 02-07

@@ -2,6 +2,13 @@
 
 Run 5 signal detection heuristics on commit history.
 
+## Context Loading
+
+| Layer | Load | Skip |
+|-------|------|------|
+| L3 (reference) | shared/signal-heuristics.md | analysis-vectors/, shared/concepts.md |
+| L4 (working) | ../03-build/output/archaeology.db | stages/01-02 outputs |
+
 ## Inputs
 
 - stages/03-build/output/archaeology.db

@@ -29,9 +29,9 @@ from collections import defaultdict
 
 # ─── Configuration ──────────────────────────────────────────────────────────────
 
-DEFAULT_REPO = Path("/Users/simongonzalezdecruz/Desktop/OMC/liminal")
-DEFAULT_DATA_JSON = Path(__file__).parent / "projects" / "liminal" / "deliverables" / "data.json"
-DEFAULT_ERAS_JSON = Path(__file__).parent / "projects" / "liminal" / "data" / "commit-eras.json"
+DEFAULT_REPO = Path(".")  # No default - must be specified
+DEFAULT_DATA_JSON = Path(__file__).parent / "projects" / "demo-project" / "deliverables" / "data.json"
+DEFAULT_ERAS_JSON = Path(__file__).parent / "projects" / "demo-project" / "data" / "commit-eras.json"
 
 ALL_SECTIONS = [
     "meta", "commits", "hourly", "types", "authors",
@@ -42,7 +42,7 @@ ALL_SECTIONS = [
     "era_overlays", "agent_details", "sessions",
     "co_authorship", "session_depth", "sentiment",
     "cross_repo", "quiet_period", "agent_economics",
-    "version_milestones", "pre_liminal", "creative_dna"
+    "version_milestones", "pre_demo_project", "creative_dna"
 ]
 
 
@@ -93,7 +93,7 @@ def extract_meta(repo: Path) -> dict:
 
     return {
         "generated": datetime.now().strftime("%Y-%m-%d"),
-        "project": "Liminal",
+        "project": "demo-project",
         "total_commits": total,
         "date_range": f"{first} to {last}",
         "lifespan_days": span,
@@ -171,28 +171,28 @@ def extract_authors(repo: Path) -> dict:
     coauth_lines = git_lines(repo, "log", "--all", "--grep=Co-Authored-By", "-i", "--oneline")
     coauth_count = len(coauth_lines)
 
-    # Liminal-authored
-    liminal_count = author_counts.get("Liminal", 0)
+    # AI-authored
+    ai_author_count = author_counts.get("demo-project", 0)
     claude_count = author_counts.get("Claude", 0)
 
     # Simon identities
     simon_names = {"Simon", "Pastorsimon1798", "Simon Gonzalez De Cruz"}
     simon_total = sum(author_counts.get(n, 0) for n in simon_names)
-    simon_liminal = simon_total + liminal_count
+    simon_ai = simon_total + ai_author_count
 
     return {
         "breakdown": dict(sorted(author_counts.items(), key=lambda x: -x[1])),
         "total": total,
         "co_authored_commits": coauth_count,
         "co_author_rate": round(coauth_count / total * 100, 1) if total else 0,
-        "liminal_authored": liminal_count,
+        "ai_authored": ai_author_count,
         "claude_authored": claude_count,
-        "ai_involved": coauth_count + liminal_count + claude_count,
-        "ai_involved_rate": round((coauth_count + liminal_count + claude_count) / total * 100, 1) if total else 0,
+        "ai_involved": coauth_count + ai_author_count + claude_count,
+        "ai_involved_rate": round((coauth_count + ai_author_count + claude_count) / total * 100, 1) if total else 0,
         "simon_identities": simon_total,
         "simon_rate": round(simon_total / total * 100, 1) if total else 0,
-        "simon_liminal": simon_liminal,
-        "simon_liminal_rate": round(simon_liminal / total * 100, 1) if total else 0,
+        "simon_ai": simon_ai,
+        "simon_ai_rate": round(simon_ai / total * 100, 1) if total else 0,
     }
 
 
@@ -271,8 +271,8 @@ def extract_agent_attribution(repo: Path) -> dict:
             daily[date]["kai_bot"] += 1
         elif subject.startswith("[A]"):
             daily[date]["cursor"] += 1
-        elif author == "Liminal":
-            daily[date]["liminal"] += 1
+        elif author == "demo-project":
+            daily[date]["demo_project"] += 1
         elif author == "Claude":
             daily[date]["claude"] += 1
         else:
@@ -284,7 +284,7 @@ def extract_agent_attribution(repo: Path) -> dict:
         daily[date]["other"] = max(0, daily[date].get("other", 0) - count)
 
     result = {}
-    agents = ["claude_code", "cursor", "kai_bot", "kimicode", "liminal", "claude", "other"]
+    agents = ["claude_code", "cursor", "kai_bot", "kimicode", "demo_project", "claude", "other"]
     for date in sorted(daily):
         entry = {a: daily[date].get(a, 0) for a in agents}
         entry["total"] = sum(entry.values())
@@ -426,12 +426,12 @@ def update_authors(data: dict, repo: Path, dry_run: bool) -> list[str]:
     changes = []
     info = extract_authors(repo)
 
-    # Update liminal_self_authored
-    lsa = data.get("liminal_self_authored", {})
-    if lsa.get("total") != info["liminal_authored"]:
-        changes.append(f"  liminal_self_authored.total: {lsa.get('total')} → {info['liminal_authored']}")
+    # Update ai_self_authored
+    lsa = data.get("ai_self_authored", {})
+    if lsa.get("total") != info["ai_authored"]:
+        changes.append(f"  ai_self_authored.total: {lsa.get('total')} → {info['ai_authored']}")
         if not dry_run:
-            lsa["total"] = info["liminal_authored"]
+            lsa["total"] = info["ai_authored"]
 
     # Update threshold_split
     ts = data.get("threshold_split", {})
@@ -722,15 +722,10 @@ def update_derived(data: dict, repo: Path, dry_run: bool) -> list[str]:
         # Regenerate key insights with current numbers
         new_insights = [
             f"Peak velocity was {meta['peak_day']} with {meta['peak_day_commits']} commits in a single day",
-            f"Nocturnal work pattern: 35.3% of commits between 9PM-6AM",
             f"Codebase: {numstat['net']:,} net lines across {meta['lifespan_days']} days",
-            f"fix commits at 24.3% of all commits, indicating quality-first development",
-            f"Kai bot authored 29 commits on Day 1 (85% of initial scaffolding)",
-            f"Cursor burst: 12 commits in 6 minutes on Mar 19 (00:29-00:35)",
-            f"977 commits unique to non-main branches — active branch-based workflow",
             f"AI-involved rate: {info['ai_involved_rate']}% of commits involved AI",
             f"Co-author rate: {info['co_author_rate']}% have formal Co-Authored-By trailer",
-            f"{info['liminal_authored']} commits authored through Liminal execution layer",
+            f"{info['ai_authored']} commits authored through AI execution layer",
         ]
         if insights != new_insights:
             changes.append(f"  derived_insights: {len(insights)} → {len(new_insights)} items")
@@ -774,8 +769,8 @@ def update_timeline(data: dict, repo: Path, dry_run: bool) -> list[str]:
             if isinstance(existing, int) and existing == count:
                 continue
             if isinstance(existing, dict):
-                # Check if liminal_commits matches
-                if existing.get("liminal_commits") == count:
+                # Check if ai_commits matches
+                if existing.get("ai_commits") == count:
                     continue
 
         # Add missing date or update mismatched count
@@ -789,10 +784,10 @@ def update_timeline(data: dict, repo: Path, dry_run: bool) -> list[str]:
                 timeline[date] = count
         else:
             # Existing is a dict — preserve it, just note the count difference
-            if existing.get("liminal_commits") != count:
-                changes.append(f"  ~ timeline[{date}].liminal_commits: {existing.get('liminal_commits')} → {count}")
+            if existing.get("ai_commits") != count:
+                changes.append(f"  ~ timeline[{date}].ai_commits: {existing.get('ai_commits')} → {count}")
                 if not dry_run:
-                    existing["liminal_commits"] = count
+                    existing["ai_commits"] = count
 
     return changes
 
@@ -814,8 +809,8 @@ def update_cluster_dominance(data: dict, repo: Path, dry_run: bool) -> list[str]
 
         # Update percentage
         if "percentage" in c4 and total > 0:
-            simon_liminal = info.get("simon_liminal", 0)
-            pct = round(simon_liminal / total * 100, 1)
+            simon_ai = info.get("simon_ai", 0)
+            pct = round(simon_ai / total * 100, 1)
             if c4.get("percentage") != pct:
                 changes.append(f"  cluster_dominance.cluster_4.percentage: {c4.get('percentage')} → {pct}%")
                 if not dry_run:
@@ -925,13 +920,13 @@ def update_total_by_repo(data: dict, repo: Path, dry_run: bool) -> list[str]:
     changes = []
     tbr = data.get("total_commits_by_repo", {})
 
-    # Get current total for liminal
+    # Get current total for demo-project
     total = len(git_lines(repo, "log", "--all", "--oneline"))
 
-    if tbr.get("liminal") != total:
-        changes.append(f"  total_commits_by_repo.liminal: {tbr.get('liminal')} → {total}")
+    if tbr.get("demo-project") != total:
+        changes.append(f"  total_commits_by_repo.demo-project: {tbr.get('demo-project')} → {total}")
         if not dry_run:
-            tbr["liminal"] = total
+            tbr["demo-project"] = total
 
     return changes
 
@@ -985,12 +980,12 @@ def update_agent_evidence(data: dict, repo: Path, dry_run: bool) -> list[str]:
 
     # Update claude_code evidence
     if "claude_code" in ae:
-        liminal_count = info.get("liminal_authored", 0)
+        ai_count = info.get("ai_authored", 0)
         # Update if needed
         if "commits" not in ae["claude_code"]:
-            changes.append(f"  + agent_evidence.claude_code.commits: {liminal_count}")
+            changes.append(f"  + agent_evidence.claude_code.commits: {ai_count}")
             if not dry_run:
-                ae["claude_code"]["commits"] = liminal_count
+                ae["claude_code"]["commits"] = ai_count
 
     return changes
 
@@ -1039,11 +1034,11 @@ def update_agent_details(data: dict, repo: Path, dry_run: bool) -> list[str]:
 
     # Update claude_code
     if "claude_code" in ta:
-        liminal_count = info.get("liminal_authored", 0)
-        if ta["claude_code"].get("total_commits") != liminal_count:
-            changes.append(f"  telemetry_agents.claude_code.total_commits: {ta['claude_code'].get('total_commits')} → {liminal_count}")
+        ai_count = info.get("ai_authored", 0)
+        if ta["claude_code"].get("total_commits") != ai_count:
+            changes.append(f"  telemetry_agents.claude_code.total_commits: {ta['claude_code'].get('total_commits')} → {ai_count}")
             if not dry_run:
-                ta["claude_code"]["total_commits"] = liminal_count
+                ta["claude_code"]["total_commits"] = ai_count
 
     return changes
 
@@ -1176,10 +1171,10 @@ def update_cross_repo(data: dict, repo: Path, dry_run: bool) -> list[str]:
     changes = []
     crc = data.get("derived_patterns", {}).get("cross_repo_velocity_correlation", {})
 
-    # Get daily commits for liminal
+    # Get daily commits for demo-project
     daily = extract_daily_commits(repo)
 
-    # Update daily_data (it's a list of dicts with date, liminal, other_repos, total)
+    # Update daily_data (it's a list of dicts with date, demo-project, other_repos, total)
     if "daily_data" in crc and isinstance(crc["daily_data"], list):
         daily_data = crc["daily_data"]
 
@@ -1187,20 +1182,20 @@ def update_cross_repo(data: dict, repo: Path, dry_run: bool) -> list[str]:
         existing_by_date = {entry.get("date"): entry for entry in daily_data if isinstance(entry, dict)}
 
         # Update or add entries for each date
-        for date, liminal_count in daily.items():
+        for date, demo_project_count in daily.items():
             if date in existing_by_date:
                 entry = existing_by_date[date]
-                if entry.get("liminal") != liminal_count:
-                    changes.append(f"  cross_repo_velocity_correlation.daily_data[{date}].liminal: {entry.get('liminal')} → {liminal_count}")
+                if entry.get("demo-project") != demo_project_count:
+                    changes.append(f"  cross_repo_velocity_correlation.daily_data[{date}].demo-project: {entry.get('demo-project')} → {demo_project_count}")
                     if not dry_run:
-                        entry["liminal"] = liminal_count
+                        entry["demo-project"] = demo_project_count
                         # Update total
                         other = entry.get("other_repos", 0)
-                        entry["total"] = liminal_count + other
+                        entry["total"] = demo_project_count + other
             else:
                 # Add new entry
-                new_entry = {"date": date, "liminal": liminal_count, "other_repos": 0, "total": liminal_count}
-                changes.append(f"  + cross_repo_velocity_correlation.daily_data[{date}]: liminal={liminal_count}")
+                new_entry = {"date": date, "demo-project": demo_project_count, "other_repos": 0, "total": demo_project_count}
+                changes.append(f"  + cross_repo_velocity_correlation.daily_data[{date}]: demo-project={demo_project_count}")
                 if not dry_run:
                     daily_data.append(new_entry)
 
@@ -1249,7 +1244,7 @@ def update_agent_economics(data: dict, repo: Path, dry_run: bool) -> list[str]:
 
     # Calculate agent metrics
     agent_data = {
-        "liminal_commits": info.get("liminal_authored", 0),
+        "demo_project_commits": info.get("ai_authored", 0),
         "claude_commits": info.get("claude_authored", 0),
         "total_agent_commits": info.get("ai_involved", 0),
         "total_insertions": numstat.get("insertions", 0),
@@ -1267,11 +1262,11 @@ def update_agent_economics(data: dict, repo: Path, dry_run: bool) -> list[str]:
     return changes
 
 
-def update_pre_liminal(data: dict, repo: Path, dry_run: bool) -> list[str]:
-    """Update pre_liminal_repos and pre_liminal_activity from telemetry-repo-depth.json."""
+def update_pre_demo_project(data: dict, repo: Path, dry_run: bool) -> list[str]:
+    """Update pre_demo_project_repos and pre_demo_project_activity from telemetry-repo-depth.json."""
     changes = []
-    repo_depth_path = Path(__file__).parent / "projects" / "liminal" / "data" / "telemetry-repo-depth.json"
-    cross_repo_path = Path(__file__).parent / "projects" / "liminal" / "data" / "telemetry-cross-repo.json"
+    repo_depth_path = Path(__file__).parent / "projects" / "demo-project" / "data" / "telemetry-repo-depth.json"
+    cross_repo_path = Path(__file__).parent / "projects" / "demo-project" / "data" / "telemetry-cross-repo.json"
 
     if not repo_depth_path.exists() or not cross_repo_path.exists():
         return changes
@@ -1281,60 +1276,60 @@ def update_pre_liminal(data: dict, repo: Path, dry_run: bool) -> list[str]:
     with open(cross_repo_path) as f:
         cr = json.load(f)
 
-    # Build pre-Liminal repos list (repos created before Feb 28, 2026)
-    pre_liminal_repos = []
+    # Build pre-demo-project repos list (repos created before Feb 28, 2026)
+    pre_demo_project_repos = []
     for repo_name, repo_data in rd.get("repos", {}).items():
         created = repo_data.get("created", "")
         if created < "2026-02-28":
-            pre_liminal_repos.append({
+            pre_demo_project_repos.append({
                 "name": repo_name,
                 "description": repo_data.get("description", ""),
                 "language": repo_data.get("language"),
                 "created": created,
                 "last_updated": repo_data.get("last_updated", ""),
                 "domain": repo_data.get("domain", ""),
-                "relationship_to_liminal": repo_data.get("relationship_to_liminal", ""),
+                "relationship_to_demo_project": repo_data.get("relationship_to_demo_project", ""),
             })
-    pre_liminal_repos.sort(key=lambda x: x["created"])
+    pre_demo_project_repos.sort(key=lambda x: x["created"])
 
-    existing = data.get("pre_liminal_repos", {})
+    existing = data.get("pre_demo_project_repos", {})
     new_val = {
-        "count": len(pre_liminal_repos),
-        "earliest": pre_liminal_repos[0]["created"] if pre_liminal_repos else None,
-        "repos": pre_liminal_repos,
-        "domains_represented": sorted(set(r["domain"] for r in pre_liminal_repos if r["domain"])),
-        "language_count": len(set(r["language"] for r in pre_liminal_repos if r["language"])),
+        "count": len(pre_demo_project_repos),
+        "earliest": pre_demo_project_repos[0]["created"] if pre_demo_project_repos else None,
+        "repos": pre_demo_project_repos,
+        "domains_represented": sorted(set(r["domain"] for r in pre_demo_project_repos if r["domain"])),
+        "language_count": len(set(r["language"] for r in pre_demo_project_repos if r["language"])),
     }
 
     if existing.get("count") != new_val["count"]:
-        changes.append(f"  pre_liminal_repos.count: {existing.get('count')} → {new_val['count']}")
+        changes.append(f"  pre_demo_project_repos.count: {existing.get('count')} → {new_val['count']}")
         if not dry_run:
-            data["pre_liminal_repos"] = new_val
+            data["pre_demo_project_repos"] = new_val
 
-    # Update pre_liminal_activity summary
-    pla = data.get("pre_liminal_activity", {})
+    # Update pre_demo_project_activity summary
+    pla = data.get("pre_demo_project_activity", {})
     summary = pla.get("summary", {})
     new_summary = {
-        "repos_before_liminal": len(pre_liminal_repos),
+        "repos_before_demo_project": len(pre_demo_project_repos),
         "domains": 8,
         "languages": new_val["language_count"],
         "creative_dna_themes": len(rd.get("creative_dna", {}).get("recurring_themes", [])),
         "language_progression": rd.get("creative_dna", {}).get("language_progression", []),
         "domain_progression": rd.get("creative_dna", {}).get("domain_progression", []),
     }
-    if summary.get("repos_before_liminal") != new_summary["repos_before_liminal"]:
-        changes.append(f"  pre_liminal_activity.summary: updated")
+    if summary.get("repos_before_demo_project") != new_summary["repos_before_demo_project"]:
+        changes.append(f"  pre_demo_project_activity.summary: updated")
         if not dry_run:
             pla["summary"] = new_summary
-            data["pre_liminal_activity"] = pla
+            data["pre_demo_project_activity"] = pla
 
     # Update cross_repo total
-    total_other = sum(v for v in cr.get("total_commits_by_repo", {}).values() if isinstance(v, int) and v != cr.get("total_commits_by_repo", {}).get("liminal", 0))
+    total_other = sum(v for v in cr.get("total_commits_by_repo", {}).values() if isinstance(v, int) and v != cr.get("total_commits_by_repo", {}).get("demo-project", 0))
     cx = data.get("cross_repo", {})
-    if cx.get("total_non_liminal_commits") != total_other:
-        changes.append(f"  cross_repo.total_non_liminal_commits: {cx.get('total_non_liminal_commits')} → {total_other}")
+    if cx.get("total_non_demo_project_commits") != total_other:
+        changes.append(f"  cross_repo.total_non_demo_project_commits: {cx.get('total_non_demo_project_commits')} → {total_other}")
         if not dry_run:
-            cx["total_non_liminal_commits"] = total_other
+            cx["total_non_demo_project_commits"] = total_other
 
     return changes
 
@@ -1342,8 +1337,8 @@ def update_pre_liminal(data: dict, repo: Path, dry_run: bool) -> list[str]:
 def update_creative_dna(data: dict, repo: Path, dry_run: bool) -> list[str]:
     """Update repo_depth.creative_dna and learning sections from telemetry data."""
     changes = []
-    repo_depth_path = Path(__file__).parent / "projects" / "liminal" / "data" / "telemetry-repo-depth.json"
-    pre_history_path = Path(__file__).parent / "projects" / "liminal" / "data" / "pre-history-creative-journey.json"
+    repo_depth_path = Path(__file__).parent / "projects" / "demo-project" / "data" / "telemetry-repo-depth.json"
+    pre_history_path = Path(__file__).parent / "projects" / "demo-project" / "data" / "pre-history-creative-journey.json"
 
     if not repo_depth_path.exists():
         return changes
@@ -1423,7 +1418,7 @@ SECTION_MAP = {
     "quiet_period": update_quiet_period,
     "agent_economics": update_agent_economics,
     "version_milestones": update_version_milestones,
-    "pre_liminal": update_pre_liminal,
+    "pre_demo_project": update_pre_demo_project,
     "creative_dna": update_creative_dna,
 }
 

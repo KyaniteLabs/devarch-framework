@@ -169,7 +169,7 @@ def test_audit_as_int_handles_string_numbers():
 
 def test_repo_color_returns_known_colors():
     from archaeology.visualization.global_data_builder import _repo_color
-    assert _repo_color("liminal") == "#51cf66"
+    assert _repo_color("demo-project") == "#51cf66"
     assert _repo_color("dev-archaeology") == "#74c0fc"
 
 

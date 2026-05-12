@@ -4,6 +4,13 @@ Generate go-to-market and business strategy from archaeology outputs.
 
 This is an optional extension stage. Not every archaeology project needs a GTM strategy, but projects heading to market benefit from evidence-based strategic planning grounded in development data.
 
+## Context Loading
+
+| Layer | Load | Skip |
+|-------|------|------|
+| L3 (reference) | references/strategy-sections.md | shared/concepts.md, shared/sync-rules.md |
+| L4 (working) | ../05-analyze/output/analysis-*.json, ../04-detect/output/detected-signals.json, ../07-report/output/ARCHAEOLOGY-REPORT.md | stages/01-03 outputs |
+
 ## Inputs
 
 | Source | File/Location | Section/Scope | Why |

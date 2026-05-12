@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="editorial">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DevArch Audit Report - Achiote</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&family=Lora:wght@400;600;700&family=Source+Sans+3:wght@300;400;500;600&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    /* Theme: Warm (default) */
+    :root, [data-theme="warm"] {
+      --bg-main:     #1f1a14;
+      --bg-surface:  #2b241b;
+      --bg-card:     #383020;
+      --bg-card-alt: #453a28;
+      --bg-hover:    #504230;
+
+      --accent:      #d4a017;
+      --accent-dim:  rgba(212, 160, 23, 0.12);
+      --accent-mid:  rgba(212, 160, 23, 0.25);
+      --secondary:   #b87333;
+      --secondary-dim: rgba(184, 115, 51, 0.12);
+      --success:     #4caf70;
+      --success-dim: rgba(76, 175, 112, 0.12);
+      --warning:     #e8a830;
+      --warning-dim: rgba(232, 168, 48, 0.12);
+      --danger:      #c0392b;
+      --danger-dim:  rgba(192, 57, 43, 0.12);
+
+      --text:        #f5e8c8;
+      --text-2:      #c8b898;
+      --text-muted:  #9d8f78;
+      --text-faint:  #6b5f4e;
+
+      --border:      rgba(212, 160, 23, 0.15);
+      --border-subtle: rgba(255, 255, 255, 0.05);
+
+      --font-display: 'DM Serif Display', Georgia, serif;
+      --font-body:    'DM Sans', system-ui, sans-serif;
+      --font-mono:    'JetBrains Mono', 'Courier New', monospace;
+    }
+
+    /* Theme: Clean Editorial */
+    [data-theme="editorial"] {
+      --bg-main:     #faf9f7;
+      --bg-surface:  #ffffff;
+      --bg-card:     #ffffff;
+      --bg-card-alt: #f5f4f2;
+      --bg-hover:    #efeeec;
+
+      --accent:      #1a5c3a;
+      --accent-dim:  rgba(26, 92, 58, 0.08);
+      --accent-mid:  rgba(26, 92, 58, 0.18);
+      --secondary:   #2c5aa0;
+      --secondary-dim: rgba(44, 90, 160, 0.08);
+      --success:     #1a5c3a;
+      --success-dim: rgba(26, 92, 58, 0.08);
+      --warning:     #8a6d2b;
+      --warning-dim: rgba(138, 109, 43, 0.08);
+      --danger:      #a8282d;
+      --danger-dim:  rgba(168, 40, 45, 0.08);
+
+      --text:        #1a1a1a;
+      --text-2:      #3d3d3d;
+      --text-muted:  #6b6b6b;
+      --text-faint:  #9d9d9d;
+
+      --border:      rgba(0, 0, 0, 0.10);
+      --border-subtle: rgba(0, 0, 0, 0.05);
+
+      --font-display: 'Lora', Georgia, serif;
+      --font-body:    'Source Sans 3', system-ui, sans-serif;
+      --font-mono:    'IBM Plex Mono', 'Courier New', monospace;
+    }
+
+    /* Theme: Modern Data */
+    [data-theme="modern"] {
+      --bg-main:     #09090b;
+      --bg-surface:  #0f0f12;
+      --bg-card:     #16161a;
+      --bg-card-alt: #1c1c21;
+      --bg-hover:    #222228;
+
+      --accent:      #3b82f6;
+      --accent-dim:  rgba(59, 130, 246, 0.10);
+      --accent-mid:  rgba(59, 130, 246, 0.22);
+      --secondary:   #8b5cf6;
+      --secondary-dim: rgba(139, 92, 246, 0.10);
+      --success:     #10b981;
+      --success-dim: rgba(16, 185, 129, 0.10);
+      --warning:     #f59e0b;
+      --warning-dim: rgba(245, 158, 11, 0.10);
+      --danger:      #ef4444;
+      --danger-dim:  rgba(239, 68, 68, 0.10);
+
+      --text:        #edf0f7;
+      --text-2:      #b4bccf;
+      --text-muted:  #6b7a9a;
+      --text-faint:  #3d4c6a;
+
+      --border:      rgba(255, 255, 255, 0.08);
+      --border-subtle: rgba(255, 255, 255, 0.04);
+
+      --font-display: 'Inter', system-ui, sans-serif;
+      --font-body:    'Inter', system-ui, sans-serif;
+      --font-mono:    'JetBrains Mono', 'Courier New', monospace;
+    }
+
+    /* Shared tokens */
+    :root {
+      --space-1:  4px;
+      --space-2:  8px;
+      --space-3:  12px;
+      --space-4:  16px;
+      --space-5:  20px;
+      --space-6:  24px;
+      --space-8:  32px;
+      --space-10: 40px;
+      --space-12: 48px;
+      --space-16: 64px;
+      --space-20: 80px;
+
+      --radius-sm: 6px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --radius-xl: 16px;
+      --radius-full: 9999px;
+
+      --max-width: 1000px;
+
+      --shadow-sm:  0 1px 2px rgba(0,0,0,0.08);
+      --shadow-md:  0 4px 12px rgba(0,0,0,0.10);
+      --shadow-lg:  0 8px 24px rgba(0,0,0,0.14);
+
+      --transition: 180ms ease;
+    }
+
+    /* Base styles */
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: var(--font-body);
+      font-size: 15px;
+      line-height: 1.6;
+      color: var(--text);
+      background: var(--bg-main);
+      min-height: 100vh;
+    }
+
+    /* Skip link */
+    .skip-link {
+      position: absolute;
+      top: -100%;
+      left: var(--space-4);
+      padding: var(--space-3) var(--space-4);
+      background: var(--accent);
+      color: var(--bg-main);
+      text-decoration: none;
+      border-radius: var(--radius-sm);
+      z-index: 9999;
+      transition: top var(--transition);
+    }
+    .skip-link:focus {
+      top: var(--space-4);
+    }
+
+    /* Focus visible */
+    :focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    /* Header */
+    .header {
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border);
+      padding: var(--space-4) var(--space-6);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .header__left {
+      display: flex;
+      align-items: center;
+      gap: var(--space-4);
+    }
+
+    .header__identity {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+    }
+
+    .stage-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: var(--radius-full);
+      background: var(--success);
+      box-shadow: 0 0 12px var(--success);
+    }
+
+    .header__title {
+      font-family: var(--font-display);
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .header__subtitle {
+      font-size: 13px;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+    }
+
+    /* Theme switcher */
+    .theme-switcher {
+      display: flex;
+      gap: var(--space-2);
+      background: var(--bg-card);
+      padding: var(--space-2);
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border);
+    }
+
+    .theme-switcher button {
+      width: 32px;
+      height: 32px;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 600;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+
+    .theme-switcher button:hover {
+      background: var(--bg-hover);
+      color: var(--text);
+    }
+
+    .theme-switcher button[aria-pressed="true"] {
+      background: var(--accent);
+      color: var(--bg-main);
+    }
+
+    /* Main content */
+    main {
+      max-width: var(--max-width);
+      margin: 0 auto;
+      padding: var(--space-10) var(--space-6);
+    }
+
+    /* Score section */
+    .score-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: var(--space-12) 0;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: var(--space-12);
+    }
+
+    .score-ring {
+      position: relative;
+      width: 180px;
+      height: 180px;
+      margin-bottom: var(--space-6);
+    }
+
+    .score-ring svg {
+      width: 100%;
+      height: 100%;
+      transform: rotate(-90deg);
+    }
+
+    .score-ring__bg {
+      fill: none;
+      stroke: var(--bg-card-alt);
+      stroke-width: 8;
+    }
+
+    .score-ring__progress {
+      fill: none;
+      stroke: var(--success);
+      stroke-width: 8;
+      stroke-linecap: round;
+      stroke-dasharray: 502;
+      stroke-dashoffset: 502;
+      animation: score-fill 1.2s ease-out forwards;
+    }
+
+    @keyframes score-fill {
+      to { stroke-dashoffset: 0; }
+    }
+
+    .score-ring__inner {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+    }
+
+    .score-ring__fraction {
+      font-family: var(--font-display);
+      font-size: 42px;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1;
+    }
+
+    .score-ring__label {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: var(--space-2);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    .score-status {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-3) var(--space-5);
+      background: var(--success-dim);
+      color: var(--success);
+      border-radius: var(--radius-full);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .score-status::before {
+      content: "✓";
+      font-size: 16px;
+    }
+
+    /* Stats row */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: var(--space-4);
+      margin-bottom: var(--space-12);
+    }
+
+    .stat-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-5);
+      text-align: center;
+      transition: all var(--transition);
+    }
+
+    .stat-card:hover {
+      border-color: var(--accent-mid);
+      background: var(--bg-hover);
+    }
+
+    .stat-card__value {
+      font-family: var(--font-display);
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1;
+      margin-bottom: var(--space-2);
+    }
+
+    .stat-card--success .stat-card__value {
+      color: var(--success);
+    }
+
+    .stat-card--danger .stat-card__value {
+      color: var(--danger);
+    }
+
+    .stat-card__label {
+      font-size: 12px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-family: var(--font-mono);
+    }
+
+    /* Section header */
+    .section-header {
+      margin-bottom: var(--space-8);
+    }
+
+    .section-label {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: var(--space-2);
+    }
+
+    .section-title {
+      font-family: var(--font-display);
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1.3;
+    }
+
+    /* Check list */
+    .check-list {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-3);
+    }
+
+    .check-card {
+      display: flex;
+      align-items: center;
+      gap: var(--space-4);
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-5);
+      transition: all var(--transition);
+    }
+
+    .check-card:hover {
+      border-color: var(--accent-mid);
+      background: var(--bg-hover);
+    }
+
+    .check-number {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      min-width: 48px;
+      text-align: center;
+      padding: var(--space-2) var(--space-3);
+      background: var(--bg-card-alt);
+      border-radius: var(--radius-sm);
+    }
+
+    .check-content {
+      flex: 1;
+    }
+
+    .check-title {
+      font-family: var(--font-body);
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: var(--space-1);
+    }
+
+    .check-message {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .check-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-2) var(--space-4);
+      background: var(--success-dim);
+      color: var(--success);
+      border-radius: var(--radius-sm);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .check-badge::before {
+      content: "✓";
+      font-size: 14px;
+    }
+
+    /* Footer */
+    .footer {
+      margin-top: var(--space-16);
+      padding-top: var(--space-8);
+      border-top: 1px solid var(--border);
+      text-align: center;
+    }
+
+    .footer__message {
+      font-family: var(--font-display);
+      font-size: 18px;
+      color: var(--text);
+      margin-bottom: var(--space-4);
+    }
+
+    .footer__validations {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: var(--space-4);
+      font-size: 13px;
+      color: var(--text-muted);
+      list-style: none;
+    }
+
+    .footer__validations li {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+
+    .footer__validations li::before {
+      content: "✓";
+      color: var(--success);
+      font-weight: 700;
+    }
+
+    .footer__meta {
+      margin-top: var(--space-6);
+      font-size: 12px;
+      color: var(--text-faint);
+      font-family: var(--font-mono);
+    }
+
+    /* Reduced motion */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .header {
+        flex-direction: column;
+        gap: var(--space-4);
+        align-items: flex-start;
+      }
+
+      .theme-switcher {
+        align-self: flex-end;
+      }
+
+      .stats-row {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .score-ring {
+        width: 140px;
+        height: 140px;
+      }
+
+      .score-ring__fraction {
+        font-size: 32px;
+      }
+
+      .section-title {
+        font-size: 22px;
+      }
+
+      .check-card {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-3);
+      }
+
+      .check-number {
+        min-width: auto;
+        align-self: flex-start;
+      }
+    }
+  </style>
+
+  <!-- SEO & GEO -->
+    <meta name="description" content="Quality gate audit report for the Achiote project: 14 of 14 checks passed covering database integrity, signal detection, analysis outputs, visualization, and file validation.">
+  <meta name="robots" content="index, follow">
+  <meta name="author" content="DevArch Framework">
+  <meta name="generator" content="DevArch ICM Pipeline">
+  <meta property="og:title" content="DevArch Audit Report — Achiote">
+  <meta property="og:description" content="Quality gate audit report for the Achiote project: 14 of 14 checks passed covering database integrity, signal detection, analysis outputs, visualization, and file validation.">
+  <meta property="og:type" content="article">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="DevArch Audit Report — Achiote">
+  <meta name="twitter:description" content="Quality gate audit report for the Achiote project: 14 of 14 checks passed covering database integrity, signal detection, analysis outputs, visualization, and file validation.">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "DevArch Audit Report",
+    "description": "Automated quality audit for Achiote forensic archaeology analysis",
+    "author": {
+      "@type": "Organization",
+      "name": "KyaniteLabs"
+    },
+    "about": {
+      "@type": "SoftwareSourceCode",
+      "name": "Achiote",
+      "programmingLanguage": "TypeScript"
+    },
+    "datePublished": "2026-04-27",
+    "isPartOf": {
+      "@type": "SoftwareApplication",
+      "name": "DevArch Framework",
+      "applicationCategory": "DeveloperTool",
+      "operatingSystem": "Any"
+    }
+  }
+  </script>
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Skip to content</a>
+
+  <header class="header">
+    <div class="header__left">
+      <div class="header__identity">
+        <span class="stage-dot" aria-hidden="true"></span>
+        <div>
+          <div class="header__title">Achiote</div>
+          <div class="header__subtitle">ICM Pipeline Stage 08-Audit</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="theme-switcher" role="radiogroup" aria-label="Color theme">
+      <button data-theme="warm" aria-label="Warm theme" title="Warm" aria-pressed="false">W</button>
+      <button data-theme="editorial" aria-label="Editorial theme" title="Editorial" aria-pressed="false">E</button>
+      <button data-theme="modern" aria-label="Modern theme" title="Modern" aria-pressed="true">M</button>
+    </div>
+  </header>
+
+  <main id="main-content">
+    <section class="score-section">
+      <div class="score-ring">
+        <svg role="img" aria-label="Score ring showing 14 out of 14 checks passed">
+          <circle class="score-ring__bg" cx="90" cy="90" r="80"/>
+          <circle class="score-ring__progress" cx="90" cy="90" r="80"/>
+        </svg>
+        <div class="score-ring__inner">
+          <div class="score-ring__fraction">14/14</div>
+          <div class="score-ring__label">Checks Passed</div>
+        </div>
+      </div>
+      <div class="score-status">All Quality Gates Passed</div>
+    </section>
+
+    <section class="stats-row">
+      <div class="stat-card">
+        <div class="stat-card__value">14</div>
+        <div class="stat-card__label">Total Checks</div>
+      </div>
+      <div class="stat-card stat-card--success">
+        <div class="stat-card__value">14</div>
+        <div class="stat-card__label">Passed</div>
+      </div>
+      <div class="stat-card stat-card--danger">
+        <div class="stat-card__value">0</div>
+        <div class="stat-card__label">Failed</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card__value">0</div>
+        <div class="stat-card__label">Warnings</div>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-header">
+        <div class="section-label">Audit Results</div>
+        <h1 class="section-title">Quality Gate Validation</h1>
+      </div>
+
+      <div class="check-list">
+        <div class="check-card">
+          <div class="check-number">01/14</div>
+          <div class="check-content">
+            <div class="check-title">Database Integrity</div>
+            <div class="check-message">Database contains 123 commits</div>
+          </div>
+          <div class="check-badge">PASS</div>
+        </div>
+
+        <div class="check-card">
+          <div class="check-number">02/14</div>
+          <div class="check-content">
+            <div class="check-title">Signal Detection Output</div>
+            <div class="check-message">Signal detection shows 123 commits (matches database)</div>
+          </div>
+          <div class="check-badge">PASS</div>
+        </div>
+
+        <div class="check-card">
+          <div class="check-number">03/14</div>
+          <div class="check-content">
+            <div class="check-title">Placeholder Data Check</div>
+            <div class="check-message">No placeholder data detected in signals</div>
+          </div>
+          <div class="check-badge">PASS</div>
+        </div>
+
+        <div class="check-card">
+          <div class="check-number">04/14</div>
+          <div class="check-content">
+            <div class="check-title">Analysis Output Count</div>
+            <div class="check-message">Found 4 analysis files</div>
+          </div>
+          <div class="check-badge">PASS</div>
+        </div>
+
+        <div class="check-card">
+          <div class="check-number">05/14</div>
+          <div class="check-content">
+            <div class="check-title">Analysis: Formal Terms Mapper</div>
+            <div class="check-message">Formal Terms Mapper contains 11 findings</div>
+          </div>
+          <div class="check-badge">PASS</div>
+        </div>
+
+        <div class="check-card">
+          <div class="check-number">06/14</div>
+          <div class="check-content">
+            <div class="check-title">Analysis: ML Pattern Mapper</div>
+            <div class="check-message">ML Pattern Mapper contains 10 findings</div>
+          </div>
+          <div class="check-badge">PASS</div>
+        </div>
+
+        <div class="check-card">
+          <div class="check-number">07/14</div>
+          <div class="check-content">
+            <div class="check-title">Analysis: Source Archaeologist</div>
+            <div class="check-message">Source Archaeologist contains 3 findings</div>
+          </div>
+          <div class="check-badge">PASS</div>
+        </div>
+
+        <div class="check-card">
+          <div class="check-number">08/14</div>
+          <div class="check-content">
+            <div class="check-title">Analysis: SDLC Gap Finder</div>
+            <div class="check-message">SDLC Gap Finder contains 6 findings</div>
+          </div>
+          <div class="check-badge">PASS</div>
+        </div>
+
+        <div class="check-card">
+          <div class="check-number">09/14</div>
+          <div class="check-content">
+            <div class="check-title">Visualization Output</div>
+            <div class="check-message">HTML visualization generated (23477 bytes)</div>
+          </div>
+          <div class="check-badge">PASS</div>
+        </div>
+
+        <div class="check-card">
+          <div class="check-number">10/14</div>
+          <div class="check-content">
+            <div class="check-title">Markdown Report</div>
+            <div class="check-message">Markdown report generated (7507 bytes)</div>
+          </div>
+          <div class="check-badge">PASS</div>
+        </div>
+
+        <div class="check-card">
+          <div class="check-number">11/14</div>
+          <div class="check-content">
+            <div class="check-title">HTML Report</div>
+            <div class="check-message">HTML report generated (10451 bytes)</div>
+          </div>
+          <div class="check-badge">PASS</div>
+        </div>
+
+        <div class="check-card">
+          <div class="check-number">12/14</div>
+          <div class="check-content">
+            <div class="check-title">Number Reconciliation</div>
+            <div class="check-message">All commit counts match: 123</div>
+          </div>
+          <div class="check-badge">PASS</div>
+        </div>
+
+        <div class="check-card">
+          <div class="check-number">13/14</div>
+          <div class="check-content">
+            <div class="check-title">Date Consistency</div>
+            <div class="check-message">Date range consistent: Apr 18 - Apr 27, 2026</div>
+          </div>
+          <div class="check-badge">PASS</div>
+        </div>
+
+        <div class="check-card">
+          <div class="check-number">14/14</div>
+          <div class="check-content">
+            <div class="check-title">File Integrity</div>
+            <div class="check-message">All 5 required files present and non-empty</div>
+          </div>
+          <div class="check-badge">PASS</div>
+        </div>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <div class="footer__message">All audit checks passed successfully</div>
+      <ul class="footer__validations">
+        <li>Number reconciliation verified</li>
+        <li>Data consistency confirmed</li>
+        <li>File integrity checked</li>
+        <li>Quality gates passed</li>
+      </ul>
+      <div class="footer__meta">
+        Generated: 2026-04-27 22:20:54 · DevArch ICM Pipeline v1.0
+      </div>
+    </footer>
+  </main>
+
+  <script>
+    (function() {
+      // Theme switcher with localStorage persistence
+      const saved = localStorage.getItem('devarch-theme') || 'editorial';
+      document.documentElement.setAttribute('data-theme', saved);
+
+      const buttons = document.querySelectorAll('button[data-theme]');
+      buttons.forEach(btn => {
+        const theme = btn.getAttribute('data-theme');
+        if (theme === saved) {
+          btn.setAttribute('aria-pressed', 'true');
+        }
+        btn.addEventListener('click', () => {
+          document.documentElement.setAttribute('data-theme', theme);
+          localStorage.setItem('devarch-theme', theme);
+          buttons.forEach(b => b.setAttribute('aria-pressed', b === btn ? 'true' : 'false'));
+        });
+      });
+    })();
+  </script>
+</body>
+</html>

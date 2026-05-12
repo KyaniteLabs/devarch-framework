@@ -1,6 +1,6 @@
 #!/bin/bash
 # Auto-update dev-archaeology dashboard
-cd /Users/simongonzalezdecruz/workspaces/dev-archaeology
+cd "$(dirname "$0")/.."
 
 # Pull latest changes
 git pull --rebase --quiet 2>/dev/null

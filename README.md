@@ -1,14 +1,19 @@
 # DevArch Framework
 
-Forensic archaeology framework for git repositories. Extract commit history, detect signals, run analysis vectors, and generate comprehensive reports.
+[![PyPI version](https://img.shields.io/pypi/v/devarch-framework.svg)](https://pypi.org/project/devarch-framework/)
+[![Python](https://img.shields.io/pypi/pyversions/devarch-framework.svg)](https://pypi.org/project/devarch-framework/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![GitHub stars](https://img.shields.io/github/stars/KyaniteLabs/devarch-framework.svg?style=social)](https://github.com/KyaniteLabs/devarch-framework)
 
-## Public Discovery
+**Git repository archaeology framework.** Mine commit history, detect development signals, run 6 analysis vectors, and generate engineering narrative reports — from any git repository, fully local, no external services.
 
-**DevArch Framework** is a forensic repository archaeology system for understanding how software projects evolved. It mines git history, builds analyzable SQLite datasets, detects development signals, runs specialized analysis vectors, and generates reports for engineering, product, research, and AI-agent review.
+```bash
+pip install devarch-framework
+```
 
-**AI discovery:** [`llms.txt`](llms.txt) provides a compact project summary for AI assistants and search crawlers.
+DevArch treats your git history as structured data. It extracts commits into a queryable SQLite database, runs heuristic signal detection (gaps, velocity shifts, author changes), executes specialized analysis vectors, and generates interactive HTML visualizations and markdown reports. Built for engineers, researchers, and AI agents that need to understand how a codebase evolved.
 
-**Best-fit searches:** repository archaeology, git history analysis, software forensic analysis, development archaeology, agentic codebase review, ICM framework, engineering history reports, commit mining pipeline.
+> **Just want a quick learning diagnostic?** [Dev Learning Archaeologist](https://github.com/KyaniteLabs/dev-learning-archaeologist) is a zero-setup ICM folder — drop it in any project, run through Claude Code, no install required.
 
 ## What It Does
 
@@ -225,13 +230,17 @@ Configure supplementary sources in your project configuration or via analysis ve
 
 ## ICM Compliance
 
-This framework follows ICM (Interpretable Context Methodology) conventions:
+This framework follows ICM (Interpretable Context Methodology) conventions with full 5-layer separation:
 
-- **Layer 0**: CLAUDE.md (identity + folder map + trigger keywords)
-- **Layer 1**: CONTEXT.md (task routing)
-- **Layer 2**: Stage CONTEXT.md files (input/process/output contracts)
-- **Layer 3**: references/ and shared/ folders
-- **Layer 4**: output/ folders with .gitkeep
+| Layer | File | Purpose |
+|-------|------|---------|
+| L0 | `CLAUDE.md` | Identity, folder map, routing table, naming conventions |
+| L1 | `CONTEXT.md` | Workspace router with 5 siloed workspaces |
+| L2 | `stages/*/CONTEXT.md` | Stage contracts with L3/L4 loading guidance |
+| L3 | `shared/`, `analysis-vectors/`, `stages/*/references/` | Reference material loaded selectively |
+| L4 | `stages/*/output/` | Working artifacts per stage |
+
+Architecture decisions documented in `docs/decisions.md`.
 
 ## Requirements
 
@@ -269,7 +278,9 @@ scripts/              -- Utility scripts
 setup/                -- Project setup questionnaire
 shared/               -- Framework-wide reference docs
 skills/               -- Bundled skill for CLI usage
-stages/               -- Stage-based pipeline (legacy)
+stages/               -- 9-stage pipeline contracts (ICM L2)
+docs/                 -- Architecture decisions
+_config/              -- Developer profile templates
 ```
 
 ## License
@@ -285,6 +296,26 @@ For issues or questions:
 3. Run `devarch validate <project>` to check configuration
 4. Run `devarch audit <project>` to validate outputs
 5. Use `devarch serve <project>` for database inspection
+
+## FAQ
+
+**What is repository archaeology?**
+Repository archaeology treats git history as structured evidence. Instead of reading code, you read the sequence of changes — who changed what, when, at what velocity, and in response to what signals. DevArch automates the excavation.
+
+**How is DevArch different from `git log`?**
+`git log` produces raw output. DevArch mines commits into a queryable SQLite database, runs 5 signal-detection heuristics, executes 6 specialized analysis vectors, and produces interactive HTML visualizations and narrative reports. The output is evidence, not a log dump.
+
+**Does DevArch work with any git repository?**
+Yes. Any local git repository with commit history works. No GitHub API key, no cloud service, no configuration beyond pointing it at a path.
+
+**Can AI agents use DevArch autonomously?**
+Yes. The framework is ICM-compliant — it ships with structured context layers (`CLAUDE.md`, stage contracts, `llms.txt`) so Claude Code, Cursor, and other AI coding agents can understand and operate the pipeline without manual instruction. A bundled `skills/` folder enables one-command usage from the Claude Code CLI.
+
+**What size repositories does DevArch handle?**
+Tested on repositories from dozens to tens of thousands of commits. SQLite + FTS5 handles large git histories without any external infrastructure.
+
+**Is my data sent anywhere?**
+No. DevArch runs entirely locally. All mining, analysis, and report generation happens on your machine. No telemetry, no cloud API calls.
 
 ## Related Projects
 

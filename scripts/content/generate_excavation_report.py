@@ -10,7 +10,7 @@ Usage:
     python scripts/content/generate_excavation_report.py <project_name> [start_date] [end_date]
 
 Example:
-    python scripts/content/generate_excavation_report.py liminal 2026-04-23 2026-04-30
+    python scripts/content/generate_excavation_report.py demo-project 2026-04-23 2026-04-30
 """
 
 import argparse
@@ -495,7 +495,7 @@ def main():
     )
     parser.add_argument(
         "project_name",
-        help="Name of the project to analyze (e.g., 'liminal', 'demo-archaeology')"
+        help="Name of the project to analyze (e.g., 'demo-project', 'demo-archaeology')"
     )
     parser.add_argument(
         "start_date",
