@@ -1,24 +1,110 @@
 # DevArch Framework
 
-> Forensic archaeology framework for git repositories.
+> Git repository archaeology framework — mine commit history, detect signals, run 6 analysis vectors, and generate engineering reports.
 
-DevArch Framework turns repository history into structured evidence. It mines commits, builds a SQLite analysis database, detects signals like gaps or velocity shifts, runs specialized analysis vectors, visualizes findings, and generates markdown/HTML reports.
+## What is DevArch?
 
-## Use cases
-- Git history analysis
-- Engineering archaeology
-- Codebase due diligence
-- AI-agent repository review
-- SDLC gap discovery
-- Development narrative reports
-- Correlating commits with external timeline data
+DevArch Framework is a Python CLI tool that treats git history as a primary data source. It mines commits into a structured SQLite database, detects development signals (velocity shifts, gaps, scope changes), runs specialized analysis vectors, and generates markdown/HTML reports. It is designed for engineers, researchers, and AI agents that need to understand how a codebase evolved.
 
-## Key paths
-- `README.md`: public-facing overview and quick start
-- `stages/`: 8-stage archaeology pipeline
-- `shared/`: framework references
-- `skills/`: bundled CLI/agent skill
-- `setup/`: project questionnaire
+## Who is it for?
 
-## Keywords
-repository archaeology, git history analysis, software forensic analysis, commit mining, ICM framework, agentic code review, engineering history, development analytics, SDLC gap analysis.
+- **Engineers** auditing a codebase before joining or acquiring a project
+- **Researchers** studying software development patterns
+- **AI agents** running repository reviews with structured context
+- **Teams** wanting to understand their own development history
+
+## How do I install DevArch?
+
+```bash
+pip install devarch-framework
+```
+
+Or from source:
+
+```bash
+git clone https://github.com/KyaniteLabs/devarch-framework.git
+cd devarch-framework
+pip install -e .
+```
+
+## How do I use DevArch?
+
+```bash
+# Initialize a project
+devarch init my-project --repo-url https://github.com/user/repo
+
+# Mine git history
+devarch mine /path/to/repo --project my-project
+
+# Build SQLite database
+devarch build-db my-project
+
+# Detect development signals
+devarch signals my-project
+
+# Run all 6 analysis vectors
+devarch analyze my-project
+
+# Generate HTML visualization
+devarch visualize my-project
+
+# Export full report
+devarch export-report my-project --format markdown
+```
+
+## What are the 6 analysis vectors?
+
+1. **SDLC Gap Finder** — identify gaps in software development lifecycle practices
+2. **ML Pattern Mapper** — detect machine learning patterns and adoption
+3. **Agentic Workflow Analyzer** — identify AI-agent and automation workflows
+4. **Formal Terms Mapper** — track formal methods and terminology usage
+5. **Source Archaeologist** — deep code evolution and change tracking
+6. **YouTube Correlator** — correlate commit patterns with external timeline data
+
+## What signals does DevArch detect?
+
+- Commit velocity shifts (sudden acceleration or slowdown)
+- Long gaps in development activity
+- Author changes and contributor patterns
+- Scope changes (file-count jumps, language additions)
+- Supplementary data correlations
+
+## What is the era system?
+
+DevArch can scan commits for distinct development phases ("eras") — periods where the project's character changed significantly. It cascades era labels across files and maps era boundaries, giving you a timeline of the project's life.
+
+## What output does DevArch produce?
+
+- SQLite database (`archaeology.db`) — queryable via Datasette
+- `detected-signals.json` — structured signal findings
+- `analysis-<vector>.json` — per-vector analysis results
+- Interactive HTML visualization with Chart.js charts
+- Markdown and HTML reports
+- Public case study export (sanitized for sharing)
+
+## Key files
+
+- `README.md` — full documentation and quick start
+- `archaeology/cli.py` — CLI entry point (20+ commands)
+- `analysis-vectors/` — 6 analysis vector definitions (markdown prompts)
+- `stages/` — 9-stage pipeline contracts (ICM L2)
+- `shared/concepts.md` — framework concepts (signals, vectors, eras)
+- `docs/decisions.md` — architecture decision records
+- `setup.py` — package metadata
+
+## Requirements
+
+- Python 3.10+
+- A git repository with commit history
+- No external services required — fully local
+
+## License
+
+MIT — https://github.com/KyaniteLabs/devarch-framework/blob/main/LICENSE
+
+## Links
+
+- GitHub: https://github.com/KyaniteLabs/devarch-framework
+- PyPI: https://pypi.org/project/devarch-framework/
+- Homepage: https://kyanitelabs.tech
+- Related: https://github.com/KyaniteLabs/dev-learning-archaeologist
