@@ -8,8 +8,7 @@ from __future__ import annotations
 
 import json
 import os
-import subprocess
-import sys
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 
@@ -21,6 +20,17 @@ from .project_utils import (
     list_projects,
     read_json,
 )
+
+
+@contextmanager
+def _in_workspace():
+    """Temporarily chdir to the workspace root for CWD-relative function calls."""
+    saved = os.getcwd()
+    os.chdir(str(get_workspace_root()))
+    try:
+        yield
+    finally:
+        os.chdir(saved)
 
 
 # ── Project tools ────────────────────────────────────────────────────────
@@ -110,14 +120,21 @@ def devarch_mine(repo_path: str, project_name: str) -> dict[str, Any]:
 
 def devarch_build_db(project_name: str) -> dict[str, Any]:
     """Build SQLite database from extracted git data."""
+    from archaeology.db.builder import build_db
+
     project_dir = get_project_dir(project_name)
     db_path = project_dir / "data" / "archaeology.db"
 
-    cmd = [sys.executable, "-m", "archaeology.db.builder",
-           "--project-root", str(project_dir)]
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
+    try:
+        build_db(project_root=project_dir, verbose=False)
+    except Exception as e:
+        return {
+            "status": "failed",
+            "project": project_name,
+            "error": str(e),
+        }
 
-    if result.returncode == 0 and db_path.exists():
+    if db_path.exists():
         return {
             "status": "complete",
             "project": project_name,
@@ -126,7 +143,7 @@ def devarch_build_db(project_name: str) -> dict[str, Any]:
     return {
         "status": "failed",
         "project": project_name,
-        "error": result.stderr[-500:] if result.stderr else "Unknown error",
+        "error": "Database file not created after build",
     }
 
 
@@ -137,22 +154,21 @@ def devarch_signals(project_name: str, min_gap_days: int | None = None) -> dict[
     project_dir = get_project_dir(project_name)
     db_path = project_dir / "data" / "archaeology.db"
     if not db_path.exists():
-        return {"error": f"Database not found. Run build-db first."}
+        return {"error": "Database not found. Run build-db first."}
 
-    kwargs = {}
+    config = {}
     if min_gap_days is not None:
-        kwargs["min_gap_days"] = min_gap_days
+        config["min_gap_days"] = min_gap_days
 
-    signals = detect_signals(str(db_path), **kwargs)
+    with _in_workspace():
+        signals = detect_signals(project_name, config=config or None)
 
-    output_path = project_dir / "data" / "detected-signals.json"
-    output_path.write_text(json.dumps(signals, indent=2, default=str), encoding="utf-8")
-
+    signal_list = signals.get("signals", []) if isinstance(signals, dict) else signals
     return {
         "status": "complete",
         "project": project_name,
-        "signal_count": len(signals) if isinstance(signals, list) else 0,
-        "output_path": str(output_path),
+        "signal_count": len(signal_list),
+        "output_path": str(project_dir / "data" / "detected-signals.json"),
     }
 
 
@@ -160,11 +176,12 @@ def devarch_analyze(project_name: str, vectors: list[str] | None = None) -> dict
     """Run analysis vectors on a project's data."""
     from archaeology.analysis_runner import run_analysis_vectors
 
-    result = run_analysis_vectors(
-        project_name,
-        verbose=False,
-        vectors=vectors,
-    )
+    with _in_workspace():
+        result = run_analysis_vectors(
+            project_name,
+            verbose=False,
+            vectors=vectors,
+        )
 
     return {
         "status": "complete",
@@ -299,7 +316,7 @@ def devarch_audit(project_name: str, fail_on: str = "HIGH") -> dict[str, Any]:
         "passed": passed,
         "failed": failed,
         "findings": [
-            {"check": f.check_name, "severity": f.severity, "message": f.message}
+            {"check": f.code, "severity": f.severity, "message": f.message}
             for f in findings
         ],
     }
@@ -313,7 +330,7 @@ def devarch_query_metrics(project_name: str) -> dict[str, Any]:
     project_dir = get_project_dir(project_name)
     metrics = read_json(project_dir / "deliverables" / "canonical-metrics.json")
     if metrics is None:
-        return {"error": f"Metrics not found. Run the pipeline first."}
+        return {"error": "Metrics not found. Run the pipeline first."}
     return metrics
 
 
@@ -322,7 +339,7 @@ def devarch_query_eras(project_name: str) -> dict[str, Any]:
     project_dir = get_project_dir(project_name)
     eras = read_json(project_dir / "data" / "commit-eras.json")
     if eras is None:
-        return {"error": f"Era data not found. Run signals first."}
+        return {"error": "Era data not found. Run signals first."}
     return eras
 
 

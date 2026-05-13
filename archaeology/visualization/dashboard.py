@@ -462,15 +462,6 @@ def generate_master_dashboard(projects: list[dict[str, Any]], api_section_html: 
 )}
 <style>
 *,*::before,*::after{{box-sizing:border-box;margin:0;padding:0}}
-:root{{
-  --bg:#06090f;--surface:#0c1018;--surface2:#141a24;--surface3:#1c2432;
-  --border:#1a2232;--border-hover:#2a3a52;
-  --text:#e8ecf2;--text2:#8d99aa;--text3:#6a7888;
-  --accent:#34d399;
-  --font-display:'Space Grotesk',sans-serif;--font-body:'DM Sans',sans-serif;
-  --font-mono:'JetBrains Mono',monospace;
-  --radius-sm:6px;--radius-md:10px;--radius-lg:16px;
-}}
 html{{scroll-behavior:smooth;-webkit-font-smoothing:antialiased}}
 body{{background:var(--bg);color:var(--text);font-family:var(--font-body);line-height:1.65;min-height:100vh}}
 
@@ -1285,15 +1276,6 @@ def generate_project_index(project: dict[str, Any]) -> str:
 )}
 <style>
 *,*::before,*::after{{box-sizing:border-box;margin:0;padding:0}}
-:root{{
-  --bg:#06090f;--surface:#0c1018;--surface2:#141a24;--surface3:#1c2432;
-  --border:#1a2232;--border-hover:#2a3a52;
-  --text:#e8ecf2;--text2:#8d99aa;--text3:#6a7888;
-  --accent:#34d399;
-  --font-display:'Space Grotesk',sans-serif;--font-body:'DM Sans',sans-serif;
-  --font-mono:'JetBrains Mono',monospace;
-  --radius-sm:6px;--radius-md:10px;--radius-lg:16px;
-}}
 html{{scroll-behavior:smooth;-webkit-font-smoothing:antialiased}}
 body{{background:var(--bg);color:var(--text);font-family:var(--font-body);line-height:1.65}}
 
