@@ -254,6 +254,18 @@ Architecture decisions documented in `docs/decisions.md`.
 - `sqlite-utils>=3.0` -- Database utilities
 - `datasette>=0.64.0` -- Database inspection server
 
+## Third-Party Acknowledgments
+
+DevArch Framework integrates several excellent open-source libraries:
+
+- **Click** (BSD License) — Elegant CLI framework for command-line interfaces
+- **SQLite** (Public Domain) — Embedded SQL database engine with FTS5 full-text search
+- **Chart.js** (MIT License) — Responsive JavaScript charting library
+- **D3.js** (BSD License) — Document-driven data visualization framework
+- **Google Fonts** (OFL License) — Open-source typography (Inter, JetBrains Mono)
+
+We gratefully acknowledge the work of their respective authors and maintainers.
+
 ## Project Structure
 
 ```

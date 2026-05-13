@@ -336,8 +336,9 @@ def seo_meta(
     url: str = "",
     og_type: str = "website",
     json_ld: dict[str, Any] | None = None,
+    image: str = "",
 ) -> str:
-    """Generate OG, Twitter Card, and optional JSON-LD meta tags.
+    """Generate meta description, OG, Twitter Card, robots, and JSON-LD tags.
 
     Args:
         title: Page title.
@@ -345,6 +346,7 @@ def seo_meta(
         url: Canonical URL (optional, for deployed sites).
         og_type: Open Graph type (website, article).
         json_ld: Optional Schema.org structured data dict.
+        image: OG/Twitter image URL (optional, for social sharing previews).
 
     Returns:
         HTML string with meta tags.
@@ -353,6 +355,7 @@ def seo_meta(
 
     tags = f"""\
 <meta name="description" content="{description}">
+<meta name="robots" content="index, follow">
 <meta property="og:title" content="{title}">
 <meta property="og:description" content="{description}">
 <meta property="og:type" content="{og_type}">
@@ -361,17 +364,20 @@ def seo_meta(
 <meta name="twitter:description" content="{description}">"""
     if url:
         tags += f'\n<link rel="canonical" href="{url}">\n<meta property="og:url" content="{url}">'
+    if image:
+        tags += f'\n<meta property="og:image" content="{image}">\n<meta name="twitter:image" content="{image}">'
     if json_ld:
         tags += f'\n<script type="application/ld+json">{json.dumps(json_ld, indent=2)}</script>'
     return tags
 
 
-def seo_software_application(name: str, description: str, version: str = "", url: str = "") -> str:
+def seo_software_application(name: str, description: str, version: str = "", url: str = "", image: str = "") -> str:
     """Shorthand for SoftwareApplication JSON-LD (common in DevArch outputs)."""
     return seo_meta(
         title=f"{name} — DevArch Analysis",
         description=description,
         url=url,
+        image=image,
         json_ld={
             "@context": "https://schema.org",
             "@type": "SoftwareApplication",

@@ -1,4 +1,4 @@
-"""Sanitized demo project generation for dev-archaeology."""
+"""Sanitized demo project generation for DevArch Framework."""
 
 from __future__ import annotations
 

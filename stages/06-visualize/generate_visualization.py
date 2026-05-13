@@ -1,622 +1,364 @@
 #!/usr/bin/env python3
-"""Stage 06-Visualize: Generate HTML Visualization"""
+"""Stage 06-Visualize: Generate HTML Visualization using DevArch design system."""
 
 import json
+import sys
 from pathlib import Path
-from datetime import datetime
 from collections import defaultdict
 
-# Paths - using relative paths from script location
-STAGES_DIR = Path(__file__).resolve().parent.parent.parent
-SIGNALS_PATH = STAGES_DIR / "stages" / "04-detect" / "output" / "detected-signals.json"
-ANALYSIS_DIR = STAGES_DIR / "stages" / "05-analyze" / "output"
+# Resolve repo root: stages/06-visualize/generate_visualization.py -> repo root
+REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+SIGNALS_PATH = REPO_ROOT / "stages" / "04-detect" / "output" / "detected-signals.json"
+ANALYSIS_DIR = REPO_ROOT / "stages" / "05-analyze" / "output"
 OUTPUT_PATH = Path(__file__).resolve().parent / "output" / "archaeology.html"
 
-# Ensure output directory exists
+# Add repo root to path so we can import the design system
+sys.path.insert(0, str(REPO_ROOT))
+
 OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
 
+
 def load_data():
-    """Load all analysis data"""
-    with open(SIGNALS_PATH, 'r') as f:
+    """Load all analysis data."""
+    with open(SIGNALS_PATH, "r") as f:
         signals = json.load(f)
 
     analyses = {}
-    for analysis_file in ANALYSIS_DIR.glob('analysis-*.json'):
-        with open(analysis_file, 'r') as f:
+    for analysis_file in ANALYSIS_DIR.glob("analysis-*.json"):
+        with open(analysis_file, "r") as f:
             analyses[analysis_file.stem] = json.load(f)
 
     return signals, analyses
 
-def prepare_chart_data(signals, analyses):
-    """Prepare data for all charts"""
 
-    # Timeline chart data
-    daily_breakdown = signals.get('daily_breakdown', {})
+def prepare_chart_data(signals, analyses):
+    """Prepare data for all charts."""
+    daily_breakdown = signals.get("daily_breakdown", {})
     sorted_days = sorted(daily_breakdown.keys())
 
     timeline_data = {
-        'type': 'timeline',
-        'data': {
-            'dates': sorted_days,
-            'commits': [daily_breakdown[day] for day in sorted_days],
-            'signals': [
+        "type": "timeline",
+        "data": {
+            "dates": sorted_days,
+            "commits": [daily_breakdown[day] for day in sorted_days],
+            "signals": [
                 {
-                    'date': s['date'],
-                    'type': s['type'],
-                    'label': s.get('metadata', {}).get('description', s['type'])
+                    "date": s["date"],
+                    "type": s["type"],
+                    "label": s.get("metadata", {}).get("description", s["type"]),
                 }
-                for s in signals.get('signals', [])
-                if s['type'] in ['gap', 'velocity_shift']
-            ]
-        }
+                for s in signals.get("signals", [])
+                if s["type"] in ["gap", "velocity_shift"]
+            ],
+        },
     }
 
-    # Author distribution data
-    author_data = {
-        'type': 'author_distribution',
-        'data': {
-            'authors': ['Simon Gonzalez De Cruz', 'Simon'],
-            'commits': [98, 25],
-            'percentages': [79.7, 20.3]
-        }
-    }
-
-    # Commit type pie chart (from commit messages in signals)
-    commit_type_data = {
-        'type': 'commit_type_distribution',
-        'data': {
-            'types': ['feat', 'fix', 'test', 'docs', 'chore', 'refactor', 'other'],
-            'counts': [0, 0, 0, 0, 0, 0, 0]  # Will be calculated
-        }
-    }
-
-    # We need to parse commit messages - let's get them from the database
+    # Author distribution — computed from database, not hardcoded
     import sqlite3
-    DB_PATH = STAGES_DIR / "stages" / "03-build" / "output" / "archaeology.db"
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
 
-    cursor.execute("SELECT message FROM commits")
-    commit_messages = [row[0] for row in cursor.fetchall()]
-    conn.close()
+    DB_PATH = REPO_ROOT / "stages" / "03-build" / "output" / "archaeology.db"
+    if DB_PATH.exists():
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute("SELECT author, COUNT(*) as cnt FROM commits GROUP BY author ORDER BY cnt DESC")
+        author_rows = cursor.fetchall()
+        cursor.execute("SELECT message FROM commits")
+        commit_messages = [row[0] for row in cursor.fetchall()]
+        conn.close()
+    else:
+        author_rows = []
+        commit_messages = []
 
+    authors = [row[0] for row in author_rows]
+    author_counts = [row[1] for row in author_rows]
+    total_author_commits = sum(author_counts) or 1
+    author_percentages = [round(c / total_author_commits * 100, 1) for c in author_counts]
+
+    author_data = {
+        "type": "author_distribution",
+        "data": {
+            "authors": authors,
+            "commits": author_counts,
+            "percentages": author_percentages,
+        },
+    }
+
+    # Commit type distribution
     type_counts = defaultdict(int)
     for msg in commit_messages:
         msg_lower = msg.lower()
-        if msg_lower.startswith('feat:'):
-            type_counts['feat'] += 1
-        elif msg_lower.startswith('fix:'):
-            type_counts['fix'] += 1
-        elif msg_lower.startswith('test:'):
-            type_counts['test'] += 1
-        elif msg_lower.startswith('docs:'):
-            type_counts['docs'] += 1
-        elif msg_lower.startswith('chore:'):
-            type_counts['chore'] += 1
-        elif msg_lower.startswith('refactor:'):
-            type_counts['refactor'] += 1
+        for prefix in ("feat:", "fix:", "test:", "docs:", "chore:", "refactor:"):
+            if msg_lower.startswith(prefix):
+                type_counts[prefix.rstrip(":")] += 1
+                break
         else:
-            type_counts['other'] += 1
+            type_counts["other"] += 1
 
-    commit_type_data['data']['counts'] = [
-        type_counts['feat'],
-        type_counts['fix'],
-        type_counts['test'],
-        type_counts['docs'],
-        type_counts['chore'],
-        type_counts['refactor'],
-        type_counts['other']
-    ]
+    commit_type_data = {
+        "type": "commit_type_distribution",
+        "data": {
+            "types": ["feat", "fix", "test", "docs", "chore", "refactor", "other"],
+            "counts": [
+                type_counts["feat"],
+                type_counts["fix"],
+                type_counts["test"],
+                type_counts["docs"],
+                type_counts["chore"],
+                type_counts["refactor"],
+                type_counts["other"],
+            ],
+        },
+    }
 
-    # Signal summary chart
     signal_summary = {
-        'type': 'signal_summary',
-        'data': signals.get('summary', {}).get('by_type', {})
+        "type": "signal_summary",
+        "data": signals.get("summary", {}).get("by_type", {}),
     }
 
     return {
-        'timeline': timeline_data,
-        'author_distribution': author_data,
-        'commit_type': commit_type_data,
-        'signal_summary': signal_summary
+        "timeline": timeline_data,
+        "author_distribution": author_data,
+        "commit_type": commit_type_data,
+        "signal_summary": signal_summary,
     }
 
+
 def generate_html(signals, analyses, chart_data):
-    """Generate the complete HTML visualization"""
+    """Generate the complete HTML visualization using the DevArch design system."""
+    from archaeology.visualization.design_system import (
+        ACCESSIBILITY_CSS,
+        CHART_THEME_JS,
+        FAVICON,
+        GOOGLE_FONTS_LINK,
+        THEME_CSS,
+        THEME_SWITCHER_CSS,
+        THEME_SWITCHER_HTML,
+        THEME_SWITCHER_JS,
+        head_bundle,
+        seo_meta,
+    )
 
     # Extract key metrics
-    total_commits = signals.get('total_commits', 0)
-    active_days = signals.get('active_days', 0)
-    span_days = signals.get('span_days', 0)
-    date_range = signals.get('date_range', '')
+    total_commits = signals.get("total_commits", 0)
+    active_days = signals.get("active_days", 0)
+    span_days = signals.get("span_days", 0)
+    date_range = signals.get("date_range", "")
 
-    # Calculate peak day
-    daily_breakdown = signals.get('daily_breakdown', {})
-    peak_day = max(daily_breakdown.items(), key=lambda x: x[1]) if daily_breakdown else ('N/A', 0)
+    daily_breakdown = signals.get("daily_breakdown", {})
+    peak_day = max(daily_breakdown.items(), key=lambda x: x[1]) if daily_breakdown else ("N/A", 0)
+    signals_by_type = signals.get("summary", {}).get("by_type", {})
 
-    # Get summary statistics
-    signals_by_type = signals.get('summary', {}).get('by_type', {})
-
-    # Calculate commit type distribution
-    commit_type_counts = chart_data['commit_type']['data']['counts']
-    total_type_commits = sum(commit_type_counts)
+    commit_type_counts = chart_data["commit_type"]["data"]["counts"]
+    total_type_commits = sum(commit_type_counts) or 1
     commit_type_percentages = [
-        round((c / total_type_commits * 100) if total_type_commits > 0 else 0, 1)
-        for c in commit_type_counts
+        round(c / total_type_commits * 100, 1) for c in commit_type_counts
     ]
 
+    author_labels = json.dumps(chart_data["author_distribution"]["data"]["authors"])
+    author_values = json.dumps(chart_data["author_distribution"]["data"]["commits"])
+
+    project_name = "Achiote"
+    page_title = f"{project_name} - Archaeology Visualization"
+    page_description = f"Forensic archaeology visualization for {project_name}: {total_commits} commits across {active_days} active days over a {span_days}-day span."
+    structured_data = {
+        "@context": "https://schema.org",
+        "@type": "Dataset",
+        "name": f"{project_name} Git Archaeology",
+        "description": page_description,
+    }
+
+    head = head_bundle(
+        title=page_title,
+        description=page_description,
+        include_charts=True,
+        json_ld=structured_data,
+    )
+
     html = f"""<!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="editorial">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>demo-project - Archaeology Report</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <style>
-        * {{
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }}
-
-        body {{
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-            color: #e4e4e7;
-            line-height: 1.6;
-            padding: 20px;
-        }}
-
-        .container {{
-            max-width: 1200px;
-            margin: 0 auto;
-        }}
-
-        header {{
-            text-align: center;
-            padding: 40px 0;
-            border-bottom: 1px solid #3f3f46;
-            margin-bottom: 40px;
-        }}
-
-        h1 {{
-            font-size: 3em;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-bottom: 10px;
-        }}
-
-        .subtitle {{
-            font-size: 1.2em;
-            color: #a1a1aa;
-        }}
-
-        .metrics-grid {{
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin-bottom: 40px;
-        }}
-
-        .metric-card {{
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid #3f3f46;
-            border-radius: 12px;
-            padding: 20px;
-            text-align: center;
-            transition: transform 0.2s, box-shadow 0.2s;
-        }}
-
-        .metric-card:hover {{
-            transform: translateY(-5px);
-            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.2);
-        }}
-
-        .metric-value {{
-            font-size: 2.5em;
-            font-weight: bold;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }}
-
-        .metric-label {{
-            color: #a1a1aa;
-            font-size: 0.9em;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-top: 5px;
-        }}
-
-        .chart-container {{
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid #3f3f46;
-            border-radius: 12px;
-            padding: 30px;
-            margin-bottom: 30px;
-        }}
-
-        .chart-title {{
-            font-size: 1.5em;
-            margin-bottom: 20px;
-            color: #e4e4e7;
-        }}
-
-        .signals-list {{
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 15px;
-        }}
-
-        .signal-item {{
-            background: rgba(255, 255, 255, 0.03);
-            border-left: 4px solid #667eea;
-            padding: 15px;
-            border-radius: 0 8px 8px 0;
-        }}
-
-        .signal-type {{
-            font-weight: bold;
-            color: #667eea;
-            margin-bottom: 5px;
-        }}
-
-        .signal-date {{
-            color: #a1a1aa;
-            font-size: 0.9em;
-        }}
-
-        .signal-description {{
-            color: #e4e4e7;
-            margin-top: 5px;
-        }}
-
-        .findings-section {{
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid #3f3f46;
-            border-radius: 12px;
-            padding: 30px;
-            margin-bottom: 30px;
-        }}
-
-        .finding-item {{
-            margin-bottom: 15px;
-            padding-bottom: 15px;
-            border-bottom: 1px solid #3f3f46;
-        }}
-
-        .finding-item:last-child {{
-            border-bottom: none;
-        }}
-
-        .finding-type {{
-            font-weight: bold;
-            color: #667eea;
-            margin-bottom: 5px;
-        }}
-
-        .finding-description {{
-            color: #e4e4e7;
-            margin-bottom: 5px;
-        }}
-
-        .finding-confidence {{
-            display: inline-block;
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-size: 0.8em;
-            font-weight: bold;
-        }}
-
-        .confidence-high {{
-            background: rgba(34, 197, 94, 0.2);
-            color: #22c55e;
-        }}
-
-        .confidence-medium {{
-            background: rgba(234, 179, 8, 0.2);
-            color: #eab308;
-        }}
-
-        .confidence-low {{
-            background: rgba(239, 68, 68, 0.2);
-            color: #ef4444;
-        }}
-    </style>
+{head}
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>demo-project</h1>
-            <p class="subtitle">Archaeology Report</p>
-        </header>
+<a href="#main-content" class="skip-link">Skip to content</a>
 
-        <div class="metrics-grid">
-            <div class="metric-card">
-                <div class="metric-value">{total_commits}</div>
-                <div class="metric-label">Total Commits</div>
-            </div>
-            <div class="metric-card">
-                <div class="metric-value">{active_days}</div>
-                <div class="metric-label">Active Days</div>
-            </div>
-            <div class="metric-card">
-                <div class="metric-value">{span_days}</div>
-                <div class="metric-label">Project Span</div>
-            </div>
-            <div class="metric-card">
-                <div class="metric-value">{peak_day[1]}</div>
-                <div class="metric-label">Peak Day (Commits)</div>
-            </div>
-            <div class="metric-card">
-                <div class="metric-value">{round(total_commits / active_days, 1) if active_days > 0 else 0}</div>
-                <div class="metric-label">Avg Commits/Day</div>
-            </div>
-            <div class="metric-card">
-                <div class="metric-value">{date_range}</div>
-                <div class="metric-label">Date Range</div>
-            </div>
-        </div>
+<header style="padding: var(--space-10) var(--space-6); border-bottom: 1px solid var(--border);">
+  <div style="max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: var(--space-4);">
+    <div>
+      <h1 style="font-family: var(--font-display); font-size: clamp(1.8rem, 4vw, 2.8rem); margin: 0;">
+        {project_name}
+      </h1>
+      <p style="color: var(--text-2); font-size: var(--text-lg); margin-top: var(--space-1);">
+        Archaeology Visualization
+      </p>
+    </div>
+    {THEME_SWITCHER_HTML}
+  </div>
+</header>
 
-        <div class="chart-container">
-            <h2 class="chart-title">Daily Commit Activity</h2>
-            <canvas id="timelineChart"></canvas>
-        </div>
+<main id="main-content" style="max-width: 1200px; margin: 0 auto; padding: var(--space-8) var(--space-6);">
+  <section aria-label="Key Metrics" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--space-4); margin-bottom: var(--space-10);">
+    <div class="metric-card" style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: var(--space-5); text-align: center;">
+      <div style="font-size: 2.2rem; font-weight: 700; color: var(--accent);">{total_commits}</div>
+      <div style="color: var(--text-2); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; margin-top: var(--space-1);">Total Commits</div>
+    </div>
+    <div class="metric-card" style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: var(--space-5); text-align: center;">
+      <div style="font-size: 2.2rem; font-weight: 700; color: var(--accent);">{active_days}</div>
+      <div style="color: var(--text-2); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; margin-top: var(--space-1);">Active Days</div>
+    </div>
+    <div class="metric-card" style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: var(--space-5); text-align: center;">
+      <div style="font-size: 2.2rem; font-weight: 700; color: var(--accent);">{span_days}</div>
+      <div style="color: var(--text-2); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; margin-top: var(--space-1);">Project Span (days)</div>
+    </div>
+    <div class="metric-card" style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: var(--space-5); text-align: center;">
+      <div style="font-size: 2.2rem; font-weight: 700; color: var(--accent);">{peak_day[1]}</div>
+      <div style="color: var(--text-2); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; margin-top: var(--space-1);">Peak Day Commits</div>
+    </div>
+    <div class="metric-card" style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: var(--space-5); text-align: center;">
+      <div style="font-size: 2.2rem; font-weight: 700; color: var(--accent);">{round(total_commits / active_days, 1) if active_days > 0 else 0}</div>
+      <div style="color: var(--text-2); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; margin-top: var(--space-1);">Avg Commits/Day</div>
+    </div>
+    <div class="metric-card" style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: var(--space-5); text-align: center;">
+      <div style="font-size: 2.2rem; font-weight: 700; color: var(--accent);">{date_range}</div>
+      <div style="color: var(--text-2); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; margin-top: var(--space-1);">Date Range</div>
+    </div>
+  </section>
 
-        <div class="chart-container">
-            <h2 class="chart-title">Author Distribution</h2>
-            <canvas id="authorChart"></canvas>
-        </div>
-
-        <div class="chart-container">
-            <h2 class="chart-title">Commit Type Distribution</h2>
-            <canvas id="typeChart"></canvas>
-        </div>
-
-        <div class="chart-container">
-            <h2 class="chart-title">Signal Detection Summary</h2>
-            <canvas id="signalChart"></canvas>
-        </div>
-
-        <div class="findings-section">
-            <h2 class="chart-title">Detected Signals</h2>
-            <div class="signals-list">
-                {generate_signals_html(signals.get('signals', [])[:20])}
-            </div>
-        </div>
-
-        <div class="findings-section">
-            <h2 class="chart-title">Key Analysis Findings</h2>
-            {generate_findings_html(analyses)}
-        </div>
+  <section aria-label="Charts" style="display: grid; gap: var(--space-6);">
+    <div style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: var(--space-6);">
+      <h2 style="font-family: var(--font-display); margin-bottom: var(--space-4);">Daily Commit Activity</h2>
+      <canvas id="timelineChart" role="img" aria-label="Bar chart showing daily commit activity"></canvas>
     </div>
 
-    <script>
-        // Timeline Chart
-        const timelineCtx = document.getElementById('timelineChart').getContext('2d');
-        new Chart(timelineCtx, {{
-            type: 'bar',
-            data: {{
-                labels: {json.dumps(sorted(daily_breakdown.keys()))},
-                datasets: [{{
-                    label: 'Commits',
-                    data: {json.dumps([daily_breakdown[day] for day in sorted(daily_breakdown.keys())])},
-                    backgroundColor: 'rgba(102, 126, 234, 0.8)',
-                    borderColor: 'rgba(102, 126, 234, 1)',
-                    borderWidth: 1
-                }}]
-            }},
-            options: {{
-                responsive: true,
-                plugins: {{
-                    legend: {{
-                        display: false
-                    }}
-                }},
-                scales: {{
-                    y: {{
-                        beginAtZero: true,
-                        ticks: {{
-                            color: '#a1a1aa'
-                        }},
-                        grid: {{
-                            color: 'rgba(255, 255, 255, 0.1)'
-                        }}
-                    }},
-                    x: {{
-                        ticks: {{
-                            color: '#a1a1aa'
-                        }},
-                        grid: {{
-                            color: 'rgba(255, 255, 255, 0.1)'
-                        }}
-                    }}
-                }}
-            }}
-        }});
+    <div style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: var(--space-6);">
+      <h2 style="font-family: var(--font-display); margin-bottom: var(--space-4);">Author Distribution</h2>
+      <canvas id="authorChart" role="img" aria-label="Doughnut chart showing commit distribution by author"></canvas>
+    </div>
 
-        // Author Distribution Chart
-        const authorCtx = document.getElementById('authorChart').getContext('2d');
-        new Chart(authorCtx, {{
-            type: 'doughnut',
-            data: {{
-                labels: ['Simon Gonzalez De Cruz', 'Simon'],
-                datasets: [{{
-                    data: [98, 25],
-                    backgroundColor: [
-                        'rgba(102, 126, 234, 0.8)',
-                        'rgba(118, 75, 162, 0.8)'
-                    ],
-                    borderColor: [
-                        'rgba(102, 126, 234, 1)',
-                        'rgba(118, 75, 162, 1)'
-                    ],
-                    borderWidth: 2
-                }}]
-            }},
-            options: {{
-                responsive: true,
-                plugins: {{
-                    legend: {{
-                        position: 'bottom',
-                        labels: {{
-                            color: '#e4e4e7',
-                            padding: 20
-                        }}
-                    }}
-                }}
-            }}
-        }});
+    <div style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: var(--space-6);">
+      <h2 style="font-family: var(--font-display); margin-bottom: var(--space-4);">Commit Type Distribution</h2>
+      <canvas id="typeChart" role="img" aria-label="Pie chart showing commit types"></canvas>
+    </div>
 
-        // Commit Type Chart
-        const typeCtx = document.getElementById('typeChart').getContext('2d');
-        new Chart(typeCtx, {{
-            type: 'pie',
-            data: {{
-                labels: ['feat', 'fix', 'test', 'docs', 'chore', 'refactor', 'other'],
-                datasets: [{{
-                    data: {json.dumps(commit_type_counts)},
-                    backgroundColor: [
-                        'rgba(34, 197, 94, 0.8)',
-                        'rgba(239, 68, 68, 0.8)',
-                        'rgba(102, 126, 234, 0.8)',
-                        'rgba(234, 179, 8, 0.8)',
-                        'rgba(168, 85, 247, 0.8)',
-                        'rgba(20, 184, 166, 0.8)',
-                        'rgba(113, 113, 122, 0.8)'
-                    ],
-                    borderColor: [
-                        'rgba(34, 197, 94, 1)',
-                        'rgba(239, 68, 68, 1)',
-                        'rgba(102, 126, 234, 1)',
-                        'rgba(234, 179, 8, 1)',
-                        'rgba(168, 85, 247, 1)',
-                        'rgba(20, 184, 166, 1)',
-                        'rgba(113, 113, 122, 1)'
-                    ],
-                    borderWidth: 2
-                }}]
-            }},
-            options: {{
-                responsive: true,
-                plugins: {{
-                    legend: {{
-                        position: 'bottom',
-                        labels: {{
-                            color: '#e4e4e7',
-                            padding: 15,
-                            generateLabels: function(chart) {{
-                                const data = chart.data;
-                                return data.labels.map((label, i) => ({{
-                                    text: label + ' (' + {json.dumps(commit_type_percentages)}[i] + '%)',
-                                    fillStyle: data.datasets[0].backgroundColor[i],
-                                    hidden: false,
-                                    index: i
-                                }}));
-                            }}
-                        }}
-                    }}
-                }}
-            }}
-        }});
+    <div style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: var(--space-6);">
+      <h2 style="font-family: var(--font-display); margin-bottom: var(--space-4);">Signal Detection Summary</h2>
+      <canvas id="signalChart" role="img" aria-label="Horizontal bar chart showing detected signals by type"></canvas>
+    </div>
+  </section>
 
-        // Signal Summary Chart
-        const signalCtx = document.getElementById('signalChart').getContext('2d');
-        new Chart(signalCtx, {{
-            type: 'bar',
-            data: {{
-                labels: {json.dumps(list(signals_by_type.keys()))},
-                datasets: [{{
-                    label: 'Signals',
-                    data: {json.dumps(list(signals_by_type.values()))},
-                    backgroundColor: 'rgba(118, 75, 162, 0.8)',
-                    borderColor: 'rgba(118, 75, 162, 1)',
-                    borderWidth: 1
-                }}]
-            }},
-            options: {{
-                responsive: true,
-                indexAxis: 'y',
-                plugins: {{
-                    legend: {{
-                        display: false
-                    }}
-                }},
-                scales: {{
-                    x: {{
-                        beginAtZero: true,
-                        ticks: {{
-                            color: '#a1a1aa'
-                        }},
-                        grid: {{
-                            color: 'rgba(255, 255, 255, 0.1)'
-                        }}
-                    }},
-                    y: {{
-                        ticks: {{
-                            color: '#a1a1aa'
-                        }},
-                        grid: {{
-                            color: 'rgba(255, 255, 255, 0.1)'
-                        }}
-                    }}
-                }}
-            }}
-        }});
-    </script>
+  <section aria-label="Detected Signals" style="margin-top: var(--space-10);">
+    <div style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: var(--space-6);">
+      <h2 style="font-family: var(--font-display); margin-bottom: var(--space-4);">Detected Signals</h2>
+      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: var(--space-3);">
+        {generate_signals_html(signals.get("signals", [])[:20])}
+      </div>
+    </div>
+  </section>
+
+  <section aria-label="Key Analysis Findings" style="margin-top: var(--space-6);">
+    <div style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: var(--space-6);">
+      <h2 style="font-family: var(--font-display); margin-bottom: var(--space-4);">Key Analysis Findings</h2>
+      {generate_findings_html(analyses)}
+    </div>
+  </section>
+</main>
+
+<footer style="padding: var(--space-6); text-align: center; color: var(--text-2); font-size: var(--text-sm); border-top: 1px solid var(--border); margin-top: var(--space-12);">
+  Generated by <strong>DevArch Framework</strong> &mdash; Forensic Repository Archaeology
+</footer>
+
+<script>
+  // Timeline Chart
+  new Chart(document.getElementById('timelineChart').getContext('2d'), {{
+    type: 'bar',
+    data: {{
+      labels: {json.dumps(sorted(daily_breakdown.keys()))},
+      datasets: [{{label: 'Commits', data: {json.dumps([daily_breakdown[day] for day in sorted(daily_breakdown.keys())])}, backgroundColor: 'rgba(102, 126, 234, 0.8)', borderColor: 'rgba(102, 126, 234, 1)', borderWidth: 1}}]
+    }},
+    options: {{responsive: true, plugins: {{legend: {{display: false}}}}, scales: {{y: {{beginAtZero: true}}, x: {{}}}}}}
+  }});
+
+  // Author Distribution
+  new Chart(document.getElementById('authorChart').getContext('2d'), {{
+    type: 'doughnut',
+    data: {{
+      labels: {author_labels},
+      datasets: [{{data: {author_values}, borderWidth: 2}}]
+    }},
+    options: {{responsive: true, plugins: {{legend: {{position: 'bottom'}}}}}}
+  }});
+
+  // Commit Type Distribution
+  new Chart(document.getElementById('typeChart').getContext('2d'), {{
+    type: 'pie',
+    data: {{
+      labels: ['feat', 'fix', 'test', 'docs', 'chore', 'refactor', 'other'],
+      datasets: [{{data: {json.dumps(commit_type_counts)}, borderWidth: 2}}]
+    }},
+    options: {{responsive: true, plugins: {{legend: {{position: 'bottom', labels: {{generateLabels: function(chart) {{const data = chart.data; return data.labels.map((label, i) => ({{text: label + ' (' + {json.dumps(commit_type_percentages)}[i] + '%)', fillStyle: data.datasets[0].backgroundColor[i], hidden: false, index: i}}));}}}}}}}}}}
+  }});
+
+  // Signal Summary
+  new Chart(document.getElementById('signalChart').getContext('2d'), {{
+    type: 'bar',
+    data: {{
+      labels: {json.dumps(list(signals_by_type.keys()))},
+      datasets: [{{label: 'Signals', data: {json.dumps(list(signals_by_type.values()))}, borderWidth: 1}}]
+    }},
+    options: {{responsive: true, indexAxis: 'y', plugins: {{legend: {{display: false}}}}, scales: {{x: {{beginAtZero: true}}}}}}
+  }});
+</script>
+{THEME_SWITCHER_JS}
 </body>
 </html>"""
 
     return html
 
+
 def generate_signals_html(signals):
-    """Generate HTML for signals list"""
+    """Generate HTML for signals list."""
     html = []
     for signal in signals:
-        signal_type = signal.get('type', 'unknown')
-        date = signal.get('date', 'N/A')
-        description = signal.get('metadata', {}).get('description', signal_type)
+        signal_type = signal.get("type", "unknown")
+        date = signal.get("date", "N/A")
+        description = signal.get("metadata", {}).get("description", signal_type)
 
         html.append(f"""
-                <div class="signal-item">
-                    <div class="signal-type">{signal_type.replace('_', ' ').title()}</div>
-                    <div class="signal-date">{date}</div>
-                    <div class="signal-description">{description}</div>
-                </div>
-        """)
+        <div style="background: var(--bg-main); border-left: 3px solid var(--accent); padding: var(--space-3) var(--space-4); border-radius: 0 var(--radius-sm) var(--radius-sm) 0;">
+          <div style="font-weight: 600; color: var(--accent); margin-bottom: var(--space-1);">{signal_type.replace('_', ' ').title()}</div>
+          <div style="color: var(--text-2); font-size: var(--text-sm);">{date}</div>
+          <div style="margin-top: var(--space-1);">{description}</div>
+        </div>""")
 
-    return ''.join(html)
+    return "".join(html)
+
 
 def generate_findings_html(analyses):
-    """Generate HTML for key findings"""
+    """Generate HTML for key findings."""
     html = []
-
-    # Show top findings from each analysis
     for analysis_name, analysis_data in analyses.items():
-        vector_name = analysis_data.get('vector_name', analysis_name)
-        findings = analysis_data.get('findings', [])[:3]  # Top 3 findings
+        vector_name = analysis_data.get("vector_name", analysis_name)
+        findings = analysis_data.get("findings", [])[:3]
 
-        html.append(f"<h3 style='color: #667eea; margin-top: 20px;'>{vector_name}</h3>")
+        html.append(f'<h3 style="font-family: var(--font-display); margin-top: var(--space-5); margin-bottom: var(--space-3);">{vector_name}</h3>')
 
         for finding in findings:
-            finding_type = finding.get('type', 'Unknown')
-            description = finding.get('description', '')
-            confidence = finding.get('confidence', 'low')
+            finding_type = finding.get("type", "Unknown")
+            description = finding.get("description", "")
+            confidence = finding.get("confidence", "low")
+            conf_color = {"high": "#22c55e", "medium": "#eab308", "low": "#ef4444"}.get(confidence, "#a1a1aa")
 
             html.append(f"""
-                <div class="finding-item">
-                    <div class="finding-type">{finding_type}</div>
-                    <div class="finding-description">{description}</div>
-                    <span class="finding-confidence confidence-{confidence}">{confidence.upper()}</span>
-                </div>
-            """)
+        <div style="padding: var(--space-3) 0; border-bottom: 1px solid var(--border);">
+          <div style="font-weight: 600; color: var(--accent); margin-bottom: var(--space-1);">{finding_type}</div>
+          <div style="margin-bottom: var(--space-1);">{description}</div>
+          <span style="display: inline-block; padding: 2px 8px; border-radius: var(--radius-sm); font-size: 0.8em; font-weight: 600; background: {conf_color}22; color: {conf_color};">{confidence.upper()}</span>
+        </div>""")
 
-    return ''.join(html)
+    return "".join(html)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     print("Loading analysis data...")
     signals, analyses = load_data()
 
@@ -626,8 +368,8 @@ if __name__ == '__main__':
     print("Generating HTML visualization...")
     html = generate_html(signals, analyses, chart_data)
 
-    with open(OUTPUT_PATH, 'w') as f:
+    with open(OUTPUT_PATH, "w") as f:
         f.write(html)
 
-    print(f"✓ Stage 06-Visualize completed")
+    print(f"Stage 06-Visualize completed")
     print(f"  Output written to: {OUTPUT_PATH}")

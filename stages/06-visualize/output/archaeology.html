@@ -1,616 +1,601 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="editorial">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Achiote - Archaeology Report</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Achiote - Archaeology Visualization</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x26CF;</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&family=Lora:wght@400;600;700&family=Source+Sans+3:wght@300;400;500;600&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<meta name="description" content="Forensic archaeology visualization for Achiote: 123 commits across 9 active days over a 10-day span.">
+<meta name="robots" content="index, follow">
+<meta property="og:title" content="Achiote - Archaeology Visualization">
+<meta property="og:description" content="Forensic archaeology visualization for Achiote: 123 commits across 9 active days over a 10-day span.">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Achiote - Archaeology Visualization">
+<meta name="twitter:description" content="Forensic archaeology visualization for Achiote: 123 commits across 9 active days over a 10-day span.">
+<script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "Dataset",
+  "name": "Achiote Git Archaeology",
+  "description": "Forensic archaeology visualization for Achiote: 123 commits across 9 active days over a 10-day span."
+}</script>
+<style>
+/* ── DevArch Unified Design System ── */
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-            color: #e4e4e7;
-            line-height: 1.6;
-            padding: 20px;
-        }
+/* ── Theme: Warm ── */
+:root, [data-theme="warm"] {
+  --bg-main:     #1f1a14;
+  --bg-surface:  #2b241b;
+  --bg-card:     #383020;
+  --bg-card-alt: #453a28;
+  --bg-hover:    #504230;
 
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
+  --accent:      #d4a017;
+  --accent-dim:  rgba(212, 160, 23, 0.12);
+  --accent-mid:  rgba(212, 160, 23, 0.25);
+  --secondary:   #b87333;
+  --secondary-dim: rgba(184, 115, 51, 0.12);
+  --success:     #4caf70;
+  --success-dim: rgba(76, 175, 112, 0.12);
+  --warning:     #e8a830;
+  --warning-dim: rgba(232, 168, 48, 0.12);
+  --danger:      #c0392b;
+  --danger-dim:  rgba(192, 57, 43, 0.12);
 
-        header {
-            text-align: center;
-            padding: 40px 0;
-            border-bottom: 1px solid #3f3f46;
-            margin-bottom: 40px;
-        }
+  --text:        #f5e8c8;
+  --text-2:      #c8b898;
+  --text-muted:  #9d8f78;
+  --text-faint:  #6b5f4e;
 
-        h1 {
-            font-size: 3em;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-bottom: 10px;
-        }
+  --border:      rgba(212, 160, 23, 0.15);
+  --border-subtle: rgba(255, 255, 255, 0.05);
 
-        .subtitle {
-            font-size: 1.2em;
-            color: #a1a1aa;
-        }
+  --font-display: 'DM Serif Display', Georgia, serif;
+  --font-body:    'DM Sans', system-ui, sans-serif;
+  --font-mono:    'JetBrains Mono', 'Courier New', monospace;
+}
 
-        .metrics-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin-bottom: 40px;
-        }
+/* ── Theme: Clean Editorial (default) ── */
+[data-theme="editorial"] {
+  --bg-main:     #faf9f7;
+  --bg-surface:  #ffffff;
+  --bg-card:     #ffffff;
+  --bg-card-alt: #f5f4f2;
+  --bg-hover:    #efeeec;
 
-        .metric-card {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid #3f3f46;
-            border-radius: 12px;
-            padding: 20px;
-            text-align: center;
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
+  --accent:      #1a5c3a;
+  --accent-dim:  rgba(26, 92, 58, 0.08);
+  --accent-mid:  rgba(26, 92, 58, 0.18);
+  --secondary:   #2c5aa0;
+  --secondary-dim: rgba(44, 90, 160, 0.08);
+  --success:     #1a5c3a;
+  --success-dim: rgba(26, 92, 58, 0.08);
+  --warning:     #8a6d2b;
+  --warning-dim: rgba(138, 109, 43, 0.08);
+  --danger:      #a8282d;
+  --danger-dim:  rgba(168, 40, 45, 0.08);
 
-        .metric-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.2);
-        }
+  --text:        #1a1a1a;
+  --text-2:      #3d3d3d;
+  --text-muted:  #6b6b6b;
+  --text-faint:  #9d9d9d;
 
-        .metric-value {
-            font-size: 2.5em;
-            font-weight: bold;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
+  --border:      rgba(0, 0, 0, 0.10);
+  --border-subtle: rgba(0, 0, 0, 0.05);
 
-        .metric-label {
-            color: #a1a1aa;
-            font-size: 0.9em;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-top: 5px;
-        }
+  --font-display: 'Lora', Georgia, serif;
+  --font-body:    'Source Sans 3', system-ui, sans-serif;
+  --font-mono:    'IBM Plex Mono', 'Courier New', monospace;
+}
 
-        .chart-container {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid #3f3f46;
-            border-radius: 12px;
-            padding: 30px;
-            margin-bottom: 30px;
-        }
+/* ── Theme: Modern Data ── */
+[data-theme="modern"] {
+  --bg-main:     #09090b;
+  --bg-surface:  #0f0f12;
+  --bg-card:     #16161a;
+  --bg-card-alt: #1c1c21;
+  --bg-hover:    #222228;
 
-        .chart-title {
-            font-size: 1.5em;
-            margin-bottom: 20px;
-            color: #e4e4e7;
-        }
+  --accent:      #3b82f6;
+  --accent-dim:  rgba(59, 130, 246, 0.10);
+  --accent-mid:  rgba(59, 130, 246, 0.22);
+  --secondary:   #8b5cf6;
+  --secondary-dim: rgba(139, 92, 246, 0.10);
+  --success:     #10b981;
+  --success-dim: rgba(16, 185, 129, 0.10);
+  --warning:     #f59e0b;
+  --warning-dim: rgba(245, 158, 11, 0.10);
+  --danger:      #ef4444;
+  --danger-dim:  rgba(239, 68, 68, 0.10);
 
-        .signals-list {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 15px;
-        }
+  --text:        #edf0f7;
+  --text-2:      #b4bccf;
+  --text-muted:  #6b7a9a;
+  --text-faint:  #3d4c6a;
 
-        .signal-item {
-            background: rgba(255, 255, 255, 0.03);
-            border-left: 4px solid #667eea;
-            padding: 15px;
-            border-radius: 0 8px 8px 0;
-        }
+  --border:      rgba(255, 255, 255, 0.08);
+  --border-subtle: rgba(255, 255, 255, 0.04);
 
-        .signal-type {
-            font-weight: bold;
-            color: #667eea;
-            margin-bottom: 5px;
-        }
+  --font-display: 'Inter', system-ui, sans-serif;
+  --font-body:    'Inter', system-ui, sans-serif;
+  --font-mono:    'JetBrains Mono', 'Courier New', monospace;
+}
 
-        .signal-date {
-            color: #a1a1aa;
-            font-size: 0.9em;
-        }
+/* ── Backward-compatible aliases ── */
+/* Maps old token names (--bg, --surface, etc.) to new design system tokens
+   so existing CSS references continue to work during migration. */
+:root, [data-theme="warm"], [data-theme="editorial"], [data-theme="modern"] {
+  --bg:            var(--bg-main);
+  --surface:       var(--bg-surface);
+  --surface2:      var(--bg-card);
+  --surface3:      var(--bg-card-alt);
+  --border-hover:  var(--accent-mid);
+  --text2:         var(--text-2);
+  --text3:         var(--text-muted);
+}
 
-        .signal-description {
-            color: #e4e4e7;
-            margin-top: 5px;
-        }
+/* ── Shared spacing & layout tokens ── */
+:root {
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-8:  32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
 
-        .findings-section {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid #3f3f46;
-            border-radius: 12px;
-            padding: 30px;
-            margin-bottom: 30px;
-        }
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
 
-        .finding-item {
-            margin-bottom: 15px;
-            padding-bottom: 15px;
-            border-bottom: 1px solid #3f3f46;
-        }
+  --max-width: 1200px;
 
-        .finding-item:last-child {
-            border-bottom: none;
-        }
+  --shadow-sm:  0 1px 2px rgba(0,0,0,0.08);
+  --shadow-md:  0 4px 12px rgba(0,0,0,0.10);
+  --shadow-lg:  0 8px 24px rgba(0,0,0,0.14);
 
-        .finding-type {
-            font-weight: bold;
-            color: #667eea;
-            margin-bottom: 5px;
-        }
+  --transition: 180ms ease;
+}
 
-        .finding-description {
-            color: #e4e4e7;
-            margin-bottom: 5px;
-        }
+/* ── Base reset ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+body {
+  background: var(--bg-main);
+  color: var(--text);
+  font-family: var(--font-body);
+  line-height: 1.65;
+  overflow-x: hidden;
+}
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+</style>
+<style>
+.theme-switcher {
+  display: inline-flex;
+  gap: 2px;
+  background: var(--bg-card-alt);
+  border-radius: var(--radius-sm);
+  padding: 2px;
+  border: 1px solid var(--border-subtle);
+}
+.theme-switcher button {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition);
+}
+.theme-switcher button:hover {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+.theme-switcher button.active {
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+</style>
+<style>
+/* Skip to content */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: var(--accent);
+  color: var(--bg-main);
+  padding: 8px 16px;
+  z-index: 200;
+  font-weight: 600;
+  font-size: 14px;
+  border-radius: 0 0 var(--radius-sm) 0;
+  transition: top var(--transition);
+}
+.skip-link:focus {
+  top: 0;
+  text-decoration: none;
+}
 
-        .finding-confidence {
-            display: inline-block;
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-size: 0.8em;
-            font-weight: bold;
-        }
+/* Focus visible */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
 
-        .confidence-high {
-            background: rgba(34, 197, 94, 0.2);
-            color: #22c55e;
-        }
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
 
-        .confidence-medium {
-            background: rgba(234, 179, 8, 0.2);
-            color: #eab308;
-        }
-
-        .confidence-low {
-            background: rgba(239, 68, 68, 0.2);
-            color: #ef4444;
-        }
-    </style>
+/* High contrast */
+@media (prefers-contrast: more) {
+  :root, [data-theme="editorial"] {
+    --bg-main: #ffffff;
+    --bg-surface: #ffffff;
+    --text: #000000;
+    --text-2: #1a1a1a;
+    --text-muted: #333333;
+    --border: #000000;
+  }
+  [data-theme="warm"], [data-theme="modern"] {
+    --bg-main: #000000;
+    --bg-surface: #0a0a0a;
+    --text: #ffffff;
+    --text-2: #e0e0e0;
+    --text-muted: #cccccc;
+    --border: #ffffff;
+  }
+}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+function getThemeColors() {
+  var s = getComputedStyle(document.documentElement);
+  return {
+    accent:    s.getPropertyValue('--accent').trim(),
+    secondary: s.getPropertyValue('--secondary').trim(),
+    success:   s.getPropertyValue('--success').trim(),
+    warning:   s.getPropertyValue('--warning').trim(),
+    danger:    s.getPropertyValue('--danger').trim(),
+    text:      s.getPropertyValue('--text').trim(),
+    muted:     s.getPropertyValue('--text-muted').trim(),
+    border:    s.getPropertyValue('--border').trim(),
+    bg:        s.getPropertyValue('--bg-card').trim(),
+  };
+}
+</script>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>Achiote</h1>
-            <p class="subtitle">TypeScript Culinary Reverse Engineering App - Archaeology Report</p>
-        </header>
+<a href="#main-content" class="skip-link">Skip to content</a>
 
-        <div class="metrics-grid">
-            <div class="metric-card">
-                <div class="metric-value">123</div>
-                <div class="metric-label">Total Commits</div>
-            </div>
-            <div class="metric-card">
-                <div class="metric-value">9</div>
-                <div class="metric-label">Active Days</div>
-            </div>
-            <div class="metric-card">
-                <div class="metric-value">10</div>
-                <div class="metric-label">Project Span</div>
-            </div>
-            <div class="metric-card">
-                <div class="metric-value">35</div>
-                <div class="metric-label">Peak Day (Commits)</div>
-            </div>
-            <div class="metric-card">
-                <div class="metric-value">13.7</div>
-                <div class="metric-label">Avg Commits/Day</div>
-            </div>
-            <div class="metric-card">
-                <div class="metric-value">Apr 18 - Apr 27, 2026</div>
-                <div class="metric-label">Date Range</div>
-            </div>
-        </div>
+<header style="padding: var(--space-10) var(--space-6); border-bottom: 1px solid var(--border);">
+  <div style="max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: var(--space-4);">
+    <div>
+      <h1 style="font-family: var(--font-display); font-size: clamp(1.8rem, 4vw, 2.8rem); margin: 0;">
+        Achiote
+      </h1>
+      <p style="color: var(--text-2); font-size: var(--text-lg); margin-top: var(--space-1);">
+        Archaeology Visualization
+      </p>
+    </div>
+    <div class="theme-switcher" role="radiogroup" aria-label="Color theme">
+  <button data-theme="warm" aria-label="Warm theme" title="Warm">W</button>
+  <button data-theme="editorial" aria-label="Editorial theme" title="Editorial">E</button>
+  <button data-theme="modern" aria-label="Modern theme" title="Modern">M</button>
+</div>
+  </div>
+</header>
 
-        <div class="chart-container">
-            <h2 class="chart-title">Daily Commit Activity</h2>
-            <canvas id="timelineChart"></canvas>
-        </div>
+<main id="main-content" style="max-width: 1200px; margin: 0 auto; padding: var(--space-8) var(--space-6);">
+  <section aria-label="Key Metrics" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--space-4); margin-bottom: var(--space-10);">
+    <div class="metric-card" style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: var(--space-5); text-align: center;">
+      <div style="font-size: 2.2rem; font-weight: 700; color: var(--accent);">123</div>
+      <div style="color: var(--text-2); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; margin-top: var(--space-1);">Total Commits</div>
+    </div>
+    <div class="metric-card" style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: var(--space-5); text-align: center;">
+      <div style="font-size: 2.2rem; font-weight: 700; color: var(--accent);">9</div>
+      <div style="color: var(--text-2); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; margin-top: var(--space-1);">Active Days</div>
+    </div>
+    <div class="metric-card" style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: var(--space-5); text-align: center;">
+      <div style="font-size: 2.2rem; font-weight: 700; color: var(--accent);">10</div>
+      <div style="color: var(--text-2); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; margin-top: var(--space-1);">Project Span (days)</div>
+    </div>
+    <div class="metric-card" style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: var(--space-5); text-align: center;">
+      <div style="font-size: 2.2rem; font-weight: 700; color: var(--accent);">35</div>
+      <div style="color: var(--text-2); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; margin-top: var(--space-1);">Peak Day Commits</div>
+    </div>
+    <div class="metric-card" style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: var(--space-5); text-align: center;">
+      <div style="font-size: 2.2rem; font-weight: 700; color: var(--accent);">13.7</div>
+      <div style="color: var(--text-2); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; margin-top: var(--space-1);">Avg Commits/Day</div>
+    </div>
+    <div class="metric-card" style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: var(--space-5); text-align: center;">
+      <div style="font-size: 2.2rem; font-weight: 700; color: var(--accent);">Apr 18 - Apr 27, 2026</div>
+      <div style="color: var(--text-2); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; margin-top: var(--space-1);">Date Range</div>
+    </div>
+  </section>
 
-        <div class="chart-container">
-            <h2 class="chart-title">Author Distribution</h2>
-            <canvas id="authorChart"></canvas>
-        </div>
-
-        <div class="chart-container">
-            <h2 class="chart-title">Commit Type Distribution</h2>
-            <canvas id="typeChart"></canvas>
-        </div>
-
-        <div class="chart-container">
-            <h2 class="chart-title">Signal Detection Summary</h2>
-            <canvas id="signalChart"></canvas>
-        </div>
-
-        <div class="findings-section">
-            <h2 class="chart-title">Detected Signals</h2>
-            <div class="signals-list">
-                
-                <div class="signal-item">
-                    <div class="signal-type">Velocity Shift</div>
-                    <div class="signal-date">2026-04-19</div>
-                    <div class="signal-description">Velocity decreased from 35 to 15 commits</div>
-                </div>
-        
-                <div class="signal-item">
-                    <div class="signal-type">Velocity Shift</div>
-                    <div class="signal-date">2026-04-21</div>
-                    <div class="signal-description">Velocity increased from 11 to 24 commits</div>
-                </div>
-        
-                <div class="signal-item">
-                    <div class="signal-type">Velocity Shift</div>
-                    <div class="signal-date">2026-04-22</div>
-                    <div class="signal-description">Velocity decreased from 24 to 5 commits</div>
-                </div>
-        
-                <div class="signal-item">
-                    <div class="signal-type">Velocity Shift</div>
-                    <div class="signal-date">2026-04-25</div>
-                    <div class="signal-description">Velocity decreased from 8 to 1 commits</div>
-                </div>
-        
-                <div class="signal-item">
-                    <div class="signal-type">Velocity Shift</div>
-                    <div class="signal-date">2026-04-26</div>
-                    <div class="signal-description">Velocity increased from 1 to 13 commits</div>
-                </div>
-        
-                <div class="signal-item">
-                    <div class="signal-type">Author Change</div>
-                    <div class="signal-date">2026-04-18</div>
-                    <div class="signal-description">Commit by Simon (non-primary author)</div>
-                </div>
-        
-                <div class="signal-item">
-                    <div class="signal-type">Author Change</div>
-                    <div class="signal-date">2026-04-18</div>
-                    <div class="signal-description">Commit by Simon (non-primary author)</div>
-                </div>
-        
-                <div class="signal-item">
-                    <div class="signal-type">Author Change</div>
-                    <div class="signal-date">2026-04-18</div>
-                    <div class="signal-description">Commit by Simon (non-primary author)</div>
-                </div>
-        
-                <div class="signal-item">
-                    <div class="signal-type">Author Change</div>
-                    <div class="signal-date">2026-04-18</div>
-                    <div class="signal-description">Commit by Simon (non-primary author)</div>
-                </div>
-        
-                <div class="signal-item">
-                    <div class="signal-type">Author Change</div>
-                    <div class="signal-date">2026-04-18</div>
-                    <div class="signal-description">Commit by Simon (non-primary author)</div>
-                </div>
-        
-                <div class="signal-item">
-                    <div class="signal-type">Author Change</div>
-                    <div class="signal-date">2026-04-18</div>
-                    <div class="signal-description">Commit by Simon (non-primary author)</div>
-                </div>
-        
-                <div class="signal-item">
-                    <div class="signal-type">Author Change</div>
-                    <div class="signal-date">2026-04-18</div>
-                    <div class="signal-description">Commit by Simon (non-primary author)</div>
-                </div>
-        
-                <div class="signal-item">
-                    <div class="signal-type">Author Change</div>
-                    <div class="signal-date">2026-04-18</div>
-                    <div class="signal-description">Commit by Simon (non-primary author)</div>
-                </div>
-        
-                <div class="signal-item">
-                    <div class="signal-type">Author Change</div>
-                    <div class="signal-date">2026-04-18</div>
-                    <div class="signal-description">Commit by Simon (non-primary author)</div>
-                </div>
-        
-                <div class="signal-item">
-                    <div class="signal-type">Author Change</div>
-                    <div class="signal-date">2026-04-18</div>
-                    <div class="signal-description">Commit by Simon (non-primary author)</div>
-                </div>
-        
-                <div class="signal-item">
-                    <div class="signal-type">Author Change</div>
-                    <div class="signal-date">2026-04-18</div>
-                    <div class="signal-description">Commit by Simon (non-primary author)</div>
-                </div>
-        
-                <div class="signal-item">
-                    <div class="signal-type">Author Change</div>
-                    <div class="signal-date">2026-04-18</div>
-                    <div class="signal-description">Commit by Simon (non-primary author)</div>
-                </div>
-        
-                <div class="signal-item">
-                    <div class="signal-type">Author Change</div>
-                    <div class="signal-date">2026-04-18</div>
-                    <div class="signal-description">Commit by Simon (non-primary author)</div>
-                </div>
-        
-                <div class="signal-item">
-                    <div class="signal-type">Author Change</div>
-                    <div class="signal-date">2026-04-18</div>
-                    <div class="signal-description">Commit by Simon (non-primary author)</div>
-                </div>
-        
-                <div class="signal-item">
-                    <div class="signal-type">Author Change</div>
-                    <div class="signal-date">2026-04-18</div>
-                    <div class="signal-description">Commit by Simon (non-primary author)</div>
-                </div>
-        
-            </div>
-        </div>
-
-        <div class="findings-section">
-            <h2 class="chart-title">Key Analysis Findings</h2>
-            <h3 style='color: #667eea; margin-top: 20px;'>Formal Terms Mapper</h3>
-                <div class="finding-item">
-                    <div class="finding-type">Terminology Mapping</div>
-                    <div class="finding-description">"recipe" maps to formal term: "structured data model"</div>
-                    <span class="finding-confidence confidence-high">HIGH</span>
-                </div>
-            
-                <div class="finding-item">
-                    <div class="finding-type">Terminology Mapping</div>
-                    <div class="finding-description">"ingredient" maps to formal term: "data entity"</div>
-                    <span class="finding-confidence confidence-high">HIGH</span>
-                </div>
-            
-                <div class="finding-item">
-                    <div class="finding-type">Terminology Mapping</div>
-                    <div class="finding-description">"dish" maps to formal term: "domain entity"</div>
-                    <span class="finding-confidence confidence-high">HIGH</span>
-                </div>
-            <h3 style='color: #667eea; margin-top: 20px;'>ML Pattern Mapper</h3>
-                <div class="finding-item">
-                    <div class="finding-type">ML Pattern: inference</div>
-                    <div class="finding-description">Detected 6 commits related to inference</div>
-                    <span class="finding-confidence confidence-high">HIGH</span>
-                </div>
-            
-                <div class="finding-item">
-                    <div class="finding-type">ML Pattern: model</div>
-                    <div class="finding-description">Detected 7 commits related to model</div>
-                    <span class="finding-confidence confidence-high">HIGH</span>
-                </div>
-            
-                <div class="finding-item">
-                    <div class="finding-type">ML Pattern: feature_extraction</div>
-                    <div class="finding-description">Detected 3 commits related to feature_extraction</div>
-                    <span class="finding-confidence confidence-high">HIGH</span>
-                </div>
-            <h3 style='color: #667eea; margin-top: 20px;'>Source Archaeologist</h3>
-                <div class="finding-item">
-                    <div class="finding-type">Bug Fix Pattern</div>
-                    <div class="finding-description">Moderate bug fix activity: 7.3% fix commits</div>
-                    <span class="finding-confidence confidence-high">HIGH</span>
-                </div>
-            
-                <div class="finding-item">
-                    <div class="finding-type">Testing Present</div>
-                    <div class="finding-description">Testing present but limited: 1.6% test commits</div>
-                    <span class="finding-confidence confidence-medium">MEDIUM</span>
-                </div>
-            
-                <div class="finding-item">
-                    <div class="finding-type">Development Velocity</div>
-                    <div class="finding-description">High velocity: 12.3 commits/day over 10 days</div>
-                    <span class="finding-confidence confidence-high">HIGH</span>
-                </div>
-            <h3 style='color: #667eea; margin-top: 20px;'>SDLC Gap Finder</h3>
-                <div class="finding-item">
-                    <div class="finding-type">CI/CD Present</div>
-                    <div class="finding-description">Found 21 commits related to CI/CD infrastructure</div>
-                    <span class="finding-confidence confidence-high">HIGH</span>
-                </div>
-            
-                <div class="finding-item">
-                    <div class="finding-type">Testing Limited</div>
-                    <div class="finding-description">Only 3 test-related commits found</div>
-                    <span class="finding-confidence confidence-medium">MEDIUM</span>
-                </div>
-            
-                <div class="finding-item">
-                    <div class="finding-type">Code Review Present</div>
-                    <div class="finding-description">Found 7 commits indicating code review/PR activity</div>
-                    <span class="finding-confidence confidence-high">HIGH</span>
-                </div>
-            
-        </div>
+  <section aria-label="Charts" style="display: grid; gap: var(--space-6);">
+    <div style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: var(--space-6);">
+      <h2 style="font-family: var(--font-display); margin-bottom: var(--space-4);">Daily Commit Activity</h2>
+      <canvas id="timelineChart" role="img" aria-label="Bar chart showing daily commit activity"></canvas>
     </div>
 
-    <script>
-        // Timeline Chart
-        const timelineCtx = document.getElementById('timelineChart').getContext('2d');
-        new Chart(timelineCtx, {
-            type: 'bar',
-            data: {
-                labels: ["2026-04-18", "2026-04-19", "2026-04-20", "2026-04-21", "2026-04-22", "2026-04-24", "2026-04-25", "2026-04-26", "2026-04-27"],
-                datasets: [{
-                    label: 'Commits',
-                    data: [35, 15, 11, 24, 5, 8, 1, 13, 11],
-                    backgroundColor: 'rgba(102, 126, 234, 0.8)',
-                    borderColor: 'rgba(102, 126, 234, 1)',
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: {
-                        display: false
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            color: '#a1a1aa'
-                        },
-                        grid: {
-                            color: 'rgba(255, 255, 255, 0.1)'
-                        }
-                    },
-                    x: {
-                        ticks: {
-                            color: '#a1a1aa'
-                        },
-                        grid: {
-                            color: 'rgba(255, 255, 255, 0.1)'
-                        }
-                    }
-                }
-            }
-        });
+    <div style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: var(--space-6);">
+      <h2 style="font-family: var(--font-display); margin-bottom: var(--space-4);">Author Distribution</h2>
+      <canvas id="authorChart" role="img" aria-label="Doughnut chart showing commit distribution by author"></canvas>
+    </div>
 
-        // Author Distribution Chart
-        const authorCtx = document.getElementById('authorChart').getContext('2d');
-        new Chart(authorCtx, {
-            type: 'doughnut',
-            data: {
-                labels: ['Simon Gonzalez De Cruz', 'Simon'],
-                datasets: [{
-                    data: [98, 25],
-                    backgroundColor: [
-                        'rgba(102, 126, 234, 0.8)',
-                        'rgba(118, 75, 162, 0.8)'
-                    ],
-                    borderColor: [
-                        'rgba(102, 126, 234, 1)',
-                        'rgba(118, 75, 162, 1)'
-                    ],
-                    borderWidth: 2
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: {
-                        position: 'bottom',
-                        labels: {
-                            color: '#e4e4e7',
-                            padding: 20
-                        }
-                    }
-                }
-            }
-        });
+    <div style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: var(--space-6);">
+      <h2 style="font-family: var(--font-display); margin-bottom: var(--space-4);">Commit Type Distribution</h2>
+      <canvas id="typeChart" role="img" aria-label="Pie chart showing commit types"></canvas>
+    </div>
 
-        // Commit Type Chart
-        const typeCtx = document.getElementById('typeChart').getContext('2d');
-        new Chart(typeCtx, {
-            type: 'pie',
-            data: {
-                labels: ['feat', 'fix', 'test', 'docs', 'chore', 'refactor', 'other'],
-                datasets: [{
-                    data: [15, 9, 2, 3, 2, 0, 92],
-                    backgroundColor: [
-                        'rgba(34, 197, 94, 0.8)',
-                        'rgba(239, 68, 68, 0.8)',
-                        'rgba(102, 126, 234, 0.8)',
-                        'rgba(234, 179, 8, 0.8)',
-                        'rgba(168, 85, 247, 0.8)',
-                        'rgba(20, 184, 166, 0.8)',
-                        'rgba(113, 113, 122, 0.8)'
-                    ],
-                    borderColor: [
-                        'rgba(34, 197, 94, 1)',
-                        'rgba(239, 68, 68, 1)',
-                        'rgba(102, 126, 234, 1)',
-                        'rgba(234, 179, 8, 1)',
-                        'rgba(168, 85, 247, 1)',
-                        'rgba(20, 184, 166, 1)',
-                        'rgba(113, 113, 122, 1)'
-                    ],
-                    borderWidth: 2
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: {
-                        position: 'bottom',
-                        labels: {
-                            color: '#e4e4e7',
-                            padding: 15,
-                            generateLabels: function(chart) {
-                                const data = chart.data;
-                                return data.labels.map((label, i) => ({
-                                    text: label + ' (' + [12.2, 7.3, 1.6, 2.4, 1.6, 0.0, 74.8][i] + '%)',
-                                    fillStyle: data.datasets[0].backgroundColor[i],
-                                    hidden: false,
-                                    index: i
-                                }));
-                            }
-                        }
-                    }
-                }
-            }
-        });
+    <div style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: var(--space-6);">
+      <h2 style="font-family: var(--font-display); margin-bottom: var(--space-4);">Signal Detection Summary</h2>
+      <canvas id="signalChart" role="img" aria-label="Horizontal bar chart showing detected signals by type"></canvas>
+    </div>
+  </section>
 
-        // Signal Summary Chart
-        const signalCtx = document.getElementById('signalChart').getContext('2d');
-        new Chart(signalCtx, {
-            type: 'bar',
-            data: {
-                labels: ["velocity_shift", "author_change", "scope_change"],
-                datasets: [{
-                    label: 'Signals',
-                    data: [5, 25, 3],
-                    backgroundColor: 'rgba(118, 75, 162, 0.8)',
-                    borderColor: 'rgba(118, 75, 162, 1)',
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true,
-                indexAxis: 'y',
-                plugins: {
-                    legend: {
-                        display: false
-                    }
-                },
-                scales: {
-                    x: {
-                        beginAtZero: true,
-                        ticks: {
-                            color: '#a1a1aa'
-                        },
-                        grid: {
-                            color: 'rgba(255, 255, 255, 0.1)'
-                        }
-                    },
-                    y: {
-                        ticks: {
-                            color: '#a1a1aa'
-                        },
-                        grid: {
-                            color: 'rgba(255, 255, 255, 0.1)'
-                        }
-                    }
-                }
-            }
-        });
-    </script>
+  <section aria-label="Detected Signals" style="margin-top: var(--space-10);">
+    <div style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: var(--space-6);">
+      <h2 style="font-family: var(--font-display); margin-bottom: var(--space-4);">Detected Signals</h2>
+      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: var(--space-3);">
+        
+        <div style="background: var(--bg-main); border-left: 3px solid var(--accent); padding: var(--space-3) var(--space-4); border-radius: 0 var(--radius-sm) var(--radius-sm) 0;">
+          <div style="font-weight: 600; color: var(--accent); margin-bottom: var(--space-1);">Velocity Shift</div>
+          <div style="color: var(--text-2); font-size: var(--text-sm);">2026-04-19</div>
+          <div style="margin-top: var(--space-1);">Velocity decreased from 35 to 15 commits</div>
+        </div>
+        <div style="background: var(--bg-main); border-left: 3px solid var(--accent); padding: var(--space-3) var(--space-4); border-radius: 0 var(--radius-sm) var(--radius-sm) 0;">
+          <div style="font-weight: 600; color: var(--accent); margin-bottom: var(--space-1);">Velocity Shift</div>
+          <div style="color: var(--text-2); font-size: var(--text-sm);">2026-04-21</div>
+          <div style="margin-top: var(--space-1);">Velocity increased from 11 to 24 commits</div>
+        </div>
+        <div style="background: var(--bg-main); border-left: 3px solid var(--accent); padding: var(--space-3) var(--space-4); border-radius: 0 var(--radius-sm) var(--radius-sm) 0;">
+          <div style="font-weight: 600; color: var(--accent); margin-bottom: var(--space-1);">Velocity Shift</div>
+          <div style="color: var(--text-2); font-size: var(--text-sm);">2026-04-22</div>
+          <div style="margin-top: var(--space-1);">Velocity decreased from 24 to 5 commits</div>
+        </div>
+        <div style="background: var(--bg-main); border-left: 3px solid var(--accent); padding: var(--space-3) var(--space-4); border-radius: 0 var(--radius-sm) var(--radius-sm) 0;">
+          <div style="font-weight: 600; color: var(--accent); margin-bottom: var(--space-1);">Velocity Shift</div>
+          <div style="color: var(--text-2); font-size: var(--text-sm);">2026-04-25</div>
+          <div style="margin-top: var(--space-1);">Velocity decreased from 8 to 1 commits</div>
+        </div>
+        <div style="background: var(--bg-main); border-left: 3px solid var(--accent); padding: var(--space-3) var(--space-4); border-radius: 0 var(--radius-sm) var(--radius-sm) 0;">
+          <div style="font-weight: 600; color: var(--accent); margin-bottom: var(--space-1);">Velocity Shift</div>
+          <div style="color: var(--text-2); font-size: var(--text-sm);">2026-04-26</div>
+          <div style="margin-top: var(--space-1);">Velocity increased from 1 to 13 commits</div>
+        </div>
+        <div style="background: var(--bg-main); border-left: 3px solid var(--accent); padding: var(--space-3) var(--space-4); border-radius: 0 var(--radius-sm) var(--radius-sm) 0;">
+          <div style="font-weight: 600; color: var(--accent); margin-bottom: var(--space-1);">Author Change</div>
+          <div style="color: var(--text-2); font-size: var(--text-sm);">2026-04-18</div>
+          <div style="margin-top: var(--space-1);">Commit by Simon (non-primary author)</div>
+        </div>
+        <div style="background: var(--bg-main); border-left: 3px solid var(--accent); padding: var(--space-3) var(--space-4); border-radius: 0 var(--radius-sm) var(--radius-sm) 0;">
+          <div style="font-weight: 600; color: var(--accent); margin-bottom: var(--space-1);">Author Change</div>
+          <div style="color: var(--text-2); font-size: var(--text-sm);">2026-04-18</div>
+          <div style="margin-top: var(--space-1);">Commit by Simon (non-primary author)</div>
+        </div>
+        <div style="background: var(--bg-main); border-left: 3px solid var(--accent); padding: var(--space-3) var(--space-4); border-radius: 0 var(--radius-sm) var(--radius-sm) 0;">
+          <div style="font-weight: 600; color: var(--accent); margin-bottom: var(--space-1);">Author Change</div>
+          <div style="color: var(--text-2); font-size: var(--text-sm);">2026-04-18</div>
+          <div style="margin-top: var(--space-1);">Commit by Simon (non-primary author)</div>
+        </div>
+        <div style="background: var(--bg-main); border-left: 3px solid var(--accent); padding: var(--space-3) var(--space-4); border-radius: 0 var(--radius-sm) var(--radius-sm) 0;">
+          <div style="font-weight: 600; color: var(--accent); margin-bottom: var(--space-1);">Author Change</div>
+          <div style="color: var(--text-2); font-size: var(--text-sm);">2026-04-18</div>
+          <div style="margin-top: var(--space-1);">Commit by Simon (non-primary author)</div>
+        </div>
+        <div style="background: var(--bg-main); border-left: 3px solid var(--accent); padding: var(--space-3) var(--space-4); border-radius: 0 var(--radius-sm) var(--radius-sm) 0;">
+          <div style="font-weight: 600; color: var(--accent); margin-bottom: var(--space-1);">Author Change</div>
+          <div style="color: var(--text-2); font-size: var(--text-sm);">2026-04-18</div>
+          <div style="margin-top: var(--space-1);">Commit by Simon (non-primary author)</div>
+        </div>
+        <div style="background: var(--bg-main); border-left: 3px solid var(--accent); padding: var(--space-3) var(--space-4); border-radius: 0 var(--radius-sm) var(--radius-sm) 0;">
+          <div style="font-weight: 600; color: var(--accent); margin-bottom: var(--space-1);">Author Change</div>
+          <div style="color: var(--text-2); font-size: var(--text-sm);">2026-04-18</div>
+          <div style="margin-top: var(--space-1);">Commit by Simon (non-primary author)</div>
+        </div>
+        <div style="background: var(--bg-main); border-left: 3px solid var(--accent); padding: var(--space-3) var(--space-4); border-radius: 0 var(--radius-sm) var(--radius-sm) 0;">
+          <div style="font-weight: 600; color: var(--accent); margin-bottom: var(--space-1);">Author Change</div>
+          <div style="color: var(--text-2); font-size: var(--text-sm);">2026-04-18</div>
+          <div style="margin-top: var(--space-1);">Commit by Simon (non-primary author)</div>
+        </div>
+        <div style="background: var(--bg-main); border-left: 3px solid var(--accent); padding: var(--space-3) var(--space-4); border-radius: 0 var(--radius-sm) var(--radius-sm) 0;">
+          <div style="font-weight: 600; color: var(--accent); margin-bottom: var(--space-1);">Author Change</div>
+          <div style="color: var(--text-2); font-size: var(--text-sm);">2026-04-18</div>
+          <div style="margin-top: var(--space-1);">Commit by Simon (non-primary author)</div>
+        </div>
+        <div style="background: var(--bg-main); border-left: 3px solid var(--accent); padding: var(--space-3) var(--space-4); border-radius: 0 var(--radius-sm) var(--radius-sm) 0;">
+          <div style="font-weight: 600; color: var(--accent); margin-bottom: var(--space-1);">Author Change</div>
+          <div style="color: var(--text-2); font-size: var(--text-sm);">2026-04-18</div>
+          <div style="margin-top: var(--space-1);">Commit by Simon (non-primary author)</div>
+        </div>
+        <div style="background: var(--bg-main); border-left: 3px solid var(--accent); padding: var(--space-3) var(--space-4); border-radius: 0 var(--radius-sm) var(--radius-sm) 0;">
+          <div style="font-weight: 600; color: var(--accent); margin-bottom: var(--space-1);">Author Change</div>
+          <div style="color: var(--text-2); font-size: var(--text-sm);">2026-04-18</div>
+          <div style="margin-top: var(--space-1);">Commit by Simon (non-primary author)</div>
+        </div>
+        <div style="background: var(--bg-main); border-left: 3px solid var(--accent); padding: var(--space-3) var(--space-4); border-radius: 0 var(--radius-sm) var(--radius-sm) 0;">
+          <div style="font-weight: 600; color: var(--accent); margin-bottom: var(--space-1);">Author Change</div>
+          <div style="color: var(--text-2); font-size: var(--text-sm);">2026-04-18</div>
+          <div style="margin-top: var(--space-1);">Commit by Simon (non-primary author)</div>
+        </div>
+        <div style="background: var(--bg-main); border-left: 3px solid var(--accent); padding: var(--space-3) var(--space-4); border-radius: 0 var(--radius-sm) var(--radius-sm) 0;">
+          <div style="font-weight: 600; color: var(--accent); margin-bottom: var(--space-1);">Author Change</div>
+          <div style="color: var(--text-2); font-size: var(--text-sm);">2026-04-18</div>
+          <div style="margin-top: var(--space-1);">Commit by Simon (non-primary author)</div>
+        </div>
+        <div style="background: var(--bg-main); border-left: 3px solid var(--accent); padding: var(--space-3) var(--space-4); border-radius: 0 var(--radius-sm) var(--radius-sm) 0;">
+          <div style="font-weight: 600; color: var(--accent); margin-bottom: var(--space-1);">Author Change</div>
+          <div style="color: var(--text-2); font-size: var(--text-sm);">2026-04-18</div>
+          <div style="margin-top: var(--space-1);">Commit by Simon (non-primary author)</div>
+        </div>
+        <div style="background: var(--bg-main); border-left: 3px solid var(--accent); padding: var(--space-3) var(--space-4); border-radius: 0 var(--radius-sm) var(--radius-sm) 0;">
+          <div style="font-weight: 600; color: var(--accent); margin-bottom: var(--space-1);">Author Change</div>
+          <div style="color: var(--text-2); font-size: var(--text-sm);">2026-04-18</div>
+          <div style="margin-top: var(--space-1);">Commit by Simon (non-primary author)</div>
+        </div>
+        <div style="background: var(--bg-main); border-left: 3px solid var(--accent); padding: var(--space-3) var(--space-4); border-radius: 0 var(--radius-sm) var(--radius-sm) 0;">
+          <div style="font-weight: 600; color: var(--accent); margin-bottom: var(--space-1);">Author Change</div>
+          <div style="color: var(--text-2); font-size: var(--text-sm);">2026-04-18</div>
+          <div style="margin-top: var(--space-1);">Commit by Simon (non-primary author)</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section aria-label="Key Analysis Findings" style="margin-top: var(--space-6);">
+    <div style="background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: var(--space-6);">
+      <h2 style="font-family: var(--font-display); margin-bottom: var(--space-4);">Key Analysis Findings</h2>
+      <h3 style="font-family: var(--font-display); margin-top: var(--space-5); margin-bottom: var(--space-3);">Formal Terms Mapper</h3>
+        <div style="padding: var(--space-3) 0; border-bottom: 1px solid var(--border);">
+          <div style="font-weight: 600; color: var(--accent); margin-bottom: var(--space-1);">Terminology Mapping</div>
+          <div style="margin-bottom: var(--space-1);">"recipe" maps to formal term: "structured data model"</div>
+          <span style="display: inline-block; padding: 2px 8px; border-radius: var(--radius-sm); font-size: 0.8em; font-weight: 600; background: #22c55e22; color: #22c55e;">HIGH</span>
+        </div>
+        <div style="padding: var(--space-3) 0; border-bottom: 1px solid var(--border);">
+          <div style="font-weight: 600; color: var(--accent); margin-bottom: var(--space-1);">Terminology Mapping</div>
+          <div style="margin-bottom: var(--space-1);">"ingredient" maps to formal term: "data entity"</div>
+          <span style="display: inline-block; padding: 2px 8px; border-radius: var(--radius-sm); font-size: 0.8em; font-weight: 600; background: #22c55e22; color: #22c55e;">HIGH</span>
+        </div>
+        <div style="padding: var(--space-3) 0; border-bottom: 1px solid var(--border);">
+          <div style="font-weight: 600; color: var(--accent); margin-bottom: var(--space-1);">Terminology Mapping</div>
+          <div style="margin-bottom: var(--space-1);">"dish" maps to formal term: "domain entity"</div>
+          <span style="display: inline-block; padding: 2px 8px; border-radius: var(--radius-sm); font-size: 0.8em; font-weight: 600; background: #22c55e22; color: #22c55e;">HIGH</span>
+        </div><h3 style="font-family: var(--font-display); margin-top: var(--space-5); margin-bottom: var(--space-3);">ML Pattern Mapper</h3>
+        <div style="padding: var(--space-3) 0; border-bottom: 1px solid var(--border);">
+          <div style="font-weight: 600; color: var(--accent); margin-bottom: var(--space-1);">ML Pattern: inference</div>
+          <div style="margin-bottom: var(--space-1);">Detected 6 commits related to inference</div>
+          <span style="display: inline-block; padding: 2px 8px; border-radius: var(--radius-sm); font-size: 0.8em; font-weight: 600; background: #22c55e22; color: #22c55e;">HIGH</span>
+        </div>
+        <div style="padding: var(--space-3) 0; border-bottom: 1px solid var(--border);">
+          <div style="font-weight: 600; color: var(--accent); margin-bottom: var(--space-1);">ML Pattern: model</div>
+          <div style="margin-bottom: var(--space-1);">Detected 7 commits related to model</div>
+          <span style="display: inline-block; padding: 2px 8px; border-radius: var(--radius-sm); font-size: 0.8em; font-weight: 600; background: #22c55e22; color: #22c55e;">HIGH</span>
+        </div>
+        <div style="padding: var(--space-3) 0; border-bottom: 1px solid var(--border);">
+          <div style="font-weight: 600; color: var(--accent); margin-bottom: var(--space-1);">ML Pattern: feature_extraction</div>
+          <div style="margin-bottom: var(--space-1);">Detected 3 commits related to feature_extraction</div>
+          <span style="display: inline-block; padding: 2px 8px; border-radius: var(--radius-sm); font-size: 0.8em; font-weight: 600; background: #22c55e22; color: #22c55e;">HIGH</span>
+        </div><h3 style="font-family: var(--font-display); margin-top: var(--space-5); margin-bottom: var(--space-3);">Source Archaeologist</h3>
+        <div style="padding: var(--space-3) 0; border-bottom: 1px solid var(--border);">
+          <div style="font-weight: 600; color: var(--accent); margin-bottom: var(--space-1);">Bug Fix Pattern</div>
+          <div style="margin-bottom: var(--space-1);">Moderate bug fix activity: 7.3% fix commits</div>
+          <span style="display: inline-block; padding: 2px 8px; border-radius: var(--radius-sm); font-size: 0.8em; font-weight: 600; background: #22c55e22; color: #22c55e;">HIGH</span>
+        </div>
+        <div style="padding: var(--space-3) 0; border-bottom: 1px solid var(--border);">
+          <div style="font-weight: 600; color: var(--accent); margin-bottom: var(--space-1);">Testing Present</div>
+          <div style="margin-bottom: var(--space-1);">Testing present but limited: 1.6% test commits</div>
+          <span style="display: inline-block; padding: 2px 8px; border-radius: var(--radius-sm); font-size: 0.8em; font-weight: 600; background: #eab30822; color: #eab308;">MEDIUM</span>
+        </div>
+        <div style="padding: var(--space-3) 0; border-bottom: 1px solid var(--border);">
+          <div style="font-weight: 600; color: var(--accent); margin-bottom: var(--space-1);">Development Velocity</div>
+          <div style="margin-bottom: var(--space-1);">High velocity: 12.3 commits/day over 10 days</div>
+          <span style="display: inline-block; padding: 2px 8px; border-radius: var(--radius-sm); font-size: 0.8em; font-weight: 600; background: #22c55e22; color: #22c55e;">HIGH</span>
+        </div><h3 style="font-family: var(--font-display); margin-top: var(--space-5); margin-bottom: var(--space-3);">SDLC Gap Finder</h3>
+        <div style="padding: var(--space-3) 0; border-bottom: 1px solid var(--border);">
+          <div style="font-weight: 600; color: var(--accent); margin-bottom: var(--space-1);">CI/CD Present</div>
+          <div style="margin-bottom: var(--space-1);">Found 21 commits related to CI/CD infrastructure</div>
+          <span style="display: inline-block; padding: 2px 8px; border-radius: var(--radius-sm); font-size: 0.8em; font-weight: 600; background: #22c55e22; color: #22c55e;">HIGH</span>
+        </div>
+        <div style="padding: var(--space-3) 0; border-bottom: 1px solid var(--border);">
+          <div style="font-weight: 600; color: var(--accent); margin-bottom: var(--space-1);">Testing Limited</div>
+          <div style="margin-bottom: var(--space-1);">Only 3 test-related commits found</div>
+          <span style="display: inline-block; padding: 2px 8px; border-radius: var(--radius-sm); font-size: 0.8em; font-weight: 600; background: #eab30822; color: #eab308;">MEDIUM</span>
+        </div>
+        <div style="padding: var(--space-3) 0; border-bottom: 1px solid var(--border);">
+          <div style="font-weight: 600; color: var(--accent); margin-bottom: var(--space-1);">Code Review Present</div>
+          <div style="margin-bottom: var(--space-1);">Found 7 commits indicating code review/PR activity</div>
+          <span style="display: inline-block; padding: 2px 8px; border-radius: var(--radius-sm); font-size: 0.8em; font-weight: 600; background: #22c55e22; color: #22c55e;">HIGH</span>
+        </div>
+    </div>
+  </section>
+</main>
+
+<footer style="padding: var(--space-6); text-align: center; color: var(--text-2); font-size: var(--text-sm); border-top: 1px solid var(--border); margin-top: var(--space-12);">
+  Generated by <strong>DevArch Framework</strong> &mdash; Forensic Repository Archaeology
+</footer>
+
+<script>
+  // Timeline Chart
+  new Chart(document.getElementById('timelineChart').getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: ["2026-04-18", "2026-04-19", "2026-04-20", "2026-04-21", "2026-04-22", "2026-04-24", "2026-04-25", "2026-04-26", "2026-04-27"],
+      datasets: [{label: 'Commits', data: [35, 15, 11, 24, 5, 8, 1, 13, 11], backgroundColor: 'rgba(102, 126, 234, 0.8)', borderColor: 'rgba(102, 126, 234, 1)', borderWidth: 1}]
+    },
+    options: {responsive: true, plugins: {legend: {display: false}}, scales: {y: {beginAtZero: true}, x: {}}}
+  });
+
+  // Author Distribution
+  new Chart(document.getElementById('authorChart').getContext('2d'), {
+    type: 'doughnut',
+    data: {
+      labels: ["Simon Gonzalez De Cruz", "Simon"],
+      datasets: [{data: [98, 25], borderWidth: 2}]
+    },
+    options: {responsive: true, plugins: {legend: {position: 'bottom'}}}
+  });
+
+  // Commit Type Distribution
+  new Chart(document.getElementById('typeChart').getContext('2d'), {
+    type: 'pie',
+    data: {
+      labels: ['feat', 'fix', 'test', 'docs', 'chore', 'refactor', 'other'],
+      datasets: [{data: [15, 9, 2, 3, 2, 0, 92], borderWidth: 2}]
+    },
+    options: {responsive: true, plugins: {legend: {position: 'bottom', labels: {generateLabels: function(chart) {const data = chart.data; return data.labels.map((label, i) => ({text: label + ' (' + [12.2, 7.3, 1.6, 2.4, 1.6, 0.0, 74.8][i] + '%)', fillStyle: data.datasets[0].backgroundColor[i], hidden: false, index: i}));}}}}}
+  });
+
+  // Signal Summary
+  new Chart(document.getElementById('signalChart').getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: ["velocity_shift", "author_change", "scope_change"],
+      datasets: [{label: 'Signals', data: [5, 25, 3], borderWidth: 1}]
+    },
+    options: {responsive: true, indexAxis: 'y', plugins: {legend: {display: false}}, scales: {x: {beginAtZero: true}}}
+  });
+</script>
+<script>
+(function() {
+  var saved = localStorage.getItem('devarch-theme') || 'editorial';
+  document.documentElement.setAttribute('data-theme', saved);
+  function updateActive() {
+    var current = document.documentElement.getAttribute('data-theme') || 'editorial';
+    document.querySelectorAll('.theme-switcher button[data-theme]').forEach(function(btn) {
+      btn.classList.toggle('active', btn.getAttribute('data-theme') === current);
+    });
+  }
+  updateActive();
+  document.querySelectorAll('.theme-switcher button[data-theme]').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var theme = btn.getAttribute('data-theme');
+      document.documentElement.setAttribute('data-theme', theme);
+      localStorage.setItem('devarch-theme', theme);
+      updateActive();
+      if (typeof window._rebuildCharts === 'function') window._rebuildCharts();
+    });
+  });
+})();
+</script>
 </body>
 </html>

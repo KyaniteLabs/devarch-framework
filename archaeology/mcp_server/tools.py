@@ -99,6 +99,8 @@ def devarch_mine(repo_path: str, project_name: str) -> dict[str, Any]:
     expanded = os.path.expanduser(repo_path)
     if not os.path.isdir(expanded):
         return {"error": f"Repository not found: {repo_path}"}
+    if not os.path.isdir(os.path.join(expanded, ".git")):
+        return {"error": f"Not a git repository: {repo_path}"}
 
     project_dir = get_project_dir(project_name)
     data_dir = project_dir / "data"
@@ -274,6 +276,10 @@ def devarch_visualize(project_name: str) -> dict[str, Any]:
 
 def devarch_report(project_name: str, fmt: str = "html") -> dict[str, Any]:
     """Generate a report (html or markdown) for a project."""
+    fmt = fmt.lower().strip()
+    if fmt not in ("html", "markdown"):
+        return {"error": f"Invalid format '{fmt}'. Use 'html' or 'markdown'."}
+
     project_dir = get_project_dir(project_name)
     if not project_dir.exists():
         return {"error": f"Project '{project_name}' not found"}
@@ -345,6 +351,13 @@ def devarch_query_eras(project_name: str) -> dict[str, Any]:
 
 def devarch_query_analysis(project_name: str, vector: str) -> dict[str, Any]:
     """Get results of a specific analysis vector."""
+    from archaeology.analysis_runner import AnalysisRunner
+
+    if vector not in AnalysisRunner.VECTORS:
+        return {
+            "error": f"Unknown vector '{vector}'. Available: {', '.join(AnalysisRunner.VECTORS)}",
+        }
+
     project_dir = get_project_dir(project_name)
     analysis_path = project_dir / "deliverables" / "analysis" / f"analysis-{vector}.json"
     result = read_json(analysis_path)

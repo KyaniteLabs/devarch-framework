@@ -5,6 +5,32 @@ All notable changes to DevArch Framework will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.1] - 2026-05-12
+
+### Security
+- **Path traversal protection**: Added `validate_project_name()` to MCP server — blocks `..`, `/`, and non-alphanumeric characters in project names
+- **Workspace validation**: `DEVARCH_WORKSPACE` env var now verified to exist and be a directory
+- **Vector name validation**: MCP `query_analysis` tool validates vector names against known list, preventing injection
+- **Format parameter validation**: MCP `report` tool validates `fmt` parameter against `html`/`markdown`
+- **Git repo validation**: MCP `mine` tool and CLI `mine` command verify `.git` directory exists before extraction
+- **Silent failure logging**: `read_json()` in MCP server now logs warnings for JSON decode and file read errors
+
+### SEO/GEO
+- **robots meta tag**: `seo_meta()` now includes `<meta name="robots" content="index, follow">` by default
+- **Social sharing images**: Added `image` parameter to `seo_meta()` and `seo_software_application()` for `og:image`/`twitter:image`
+- **Stage 06 visualization rewrite**: `generate_visualization.py` now uses design system with full SEO tags, accessibility, and theme support (was 17% SEO score, now ~95%)
+
+### Error Handling
+- **Git extraction**: Added try-except around `extract_git_log` and `extract_git_log_with_stats` in CLI (8 locations)
+- **JSON parsing**: Added `json.JSONDecodeError` handling in CLI for config/data file reads (8 locations)
+- **Database errors**: Added `sqlite3.Error` logging in `analysis_runner._query_db()` when verbose mode is active
+
+### Changed
+- **Consistent branding**: Standardized to "DevArch Framework" across all 36 references (was mixed with "Development Archaeology")
+- **Author attribution**: Standardized to "Simon Gonzalez De Cruz" across setup.py, LICENSE, and generated HTML
+- **Version in footers**: HTML templates now show "DevArch Framework v0.3.0"
+- **Third-party acknowledgments**: Added dependency attribution section to README.md
+
 ## [0.3.0] - 2026-05-11
 
 ### Changed

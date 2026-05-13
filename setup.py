@@ -34,7 +34,7 @@ setup(
     long_description=README,
     long_description_content_type="text/markdown",
     url="https://github.com/KyaniteLabs/devarch-framework",
-    author="Simon Gonzalez de Cruz",
+    author="Simon Gonzalez De Cruz",
     author_email="simon@puenteworks.com",
     license="MIT",
     keywords=[
