@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DevArch Framework — Forensic Archaeology for Git Repositories</title>
+<meta name="description" content="DevArch Framework uncovers the hidden story in your git history. Mine commits, detect signals, map development eras, and generate stunning visualizations — all from your terminal or CI pipeline.">
+<meta name="robots" content="index, follow">
+<meta property="og:title" content="DevArch Framework — Forensic Archaeology for Git Repositories">
+<meta property="og:description" content="Unearth your codebase's story. Mine commits, detect signals, map eras, and generate stunning visualizations.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://kyanitelabs.github.io/devarch-framework/">
+<meta property="og:image" content="https://kyanitelabs.github.io/devarch-framework/og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="DevArch Framework — Forensic Archaeology for Git Repositories">
+<meta name="twitter:description" content="Unearth your codebase's story. Mine commits, detect signals, map eras, and generate stunning visualizations.">
+<link rel="canonical" href="https://kyanitelabs.github.io/devarch-framework/">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x26CF;</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      fontFamily: {
+        display: ['"DM Serif Display"', 'serif'],
+        sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+      },
+      colors: {
+        void: '#050505',
+        surface: '#0a0a0a',
+        raised: '#111111',
+        accent: '#c084fc',
+        emerald: '#34d399',
+        gold: '#fbbf24',
+      },
+      borderRadius: {
+        '4xl': '2rem',
+        '5xl': '2.5rem',
+      },
+    },
+  },
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "DevArch Framework",
+  "applicationCategory": "DeveloperApplication",
+  "description": "Forensic archaeology framework for git repositories. Mine commits, detect signals, map development eras, and generate stunning visualizations.",
+  "url": "https://github.com/KyaniteLabs/devarch-framework",
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "USD"
+  },
+  "author": {
+    "@type": "Person",
+    "name": "Simon Gonzalez De Cruz"
+  },
+  "programmingLanguage": "Python"
+}
+</script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; background: #050505; color: #f0f0f0; overflow-x: hidden; }
+
+  /* Radial mesh gradient orbs */
+  .orb { position: absolute; border-radius: 50%; filter: blur(120px); pointer-events: none; will-change: transform; }
+  .orb-purple { background: radial-gradient(circle, rgba(139,92,246,0.25) 0%, transparent 70%); }
+  .orb-emerald { background: radial-gradient(circle, rgba(52,211,153,0.2) 0%, transparent 70%); }
+  .orb-gold { background: radial-gradient(circle, rgba(251,191,36,0.15) 0%, transparent 70%); }
+
+  /* Noise overlay */
+  body::after {
+    content: ''; position: fixed; inset: 0; z-index: 100; pointer-events: none; opacity: 0.03;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+    background-repeat: repeat; background-size: 256px 256px;
+  }
+
+  /* Double-bezel card */
+  .card-shell {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    padding: 6px;
+    border-radius: 2rem;
+  }
+  .card-core {
+    background: #0a0a0a;
+    border-radius: calc(2rem - 6px);
+    box-shadow: inset 0 1px 1px rgba(255,255,255,0.08);
+  }
+
+  /* Scroll reveal */
+  .reveal {
+    opacity: 0;
+    transform: translateY(48px);
+    filter: blur(6px);
+    transition: opacity 900ms cubic-bezier(0.32,0.72,0,1), transform 900ms cubic-bezier(0.32,0.72,0,1), filter 900ms cubic-bezier(0.32,0.72,0,1);
+  }
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+
+  /* Stagger children */
+  .reveal-stagger > .reveal:nth-child(1) { transition-delay: 0ms; }
+  .reveal-stagger > .reveal:nth-child(2) { transition-delay: 120ms; }
+  .reveal-stagger > .reveal:nth-child(3) { transition-delay: 240ms; }
+  .reveal-stagger > .reveal:nth-child(4) { transition-delay: 360ms; }
+  .reveal-stagger > .reveal:nth-child(5) { transition-delay: 480ms; }
+  .reveal-stagger > .reveal:nth-child(6) { transition-delay: 600ms; }
+
+  /* Magnetic button */
+  .btn-primary {
+    transition: all 500ms cubic-bezier(0.32,0.72,0,1);
+  }
+  .btn-primary:active { transform: scale(0.97); }
+  .btn-primary .icon-orb {
+    transition: all 400ms cubic-bezier(0.32,0.72,0,1);
+  }
+  .btn-primary:hover .icon-orb {
+    transform: translate(3px, -1px) scale(1.08);
+  }
+
+  /* Pipeline step connector */
+  .pipeline-connector {
+    position: relative;
+  }
+  .pipeline-connector::after {
+    content: '';
+    position: absolute;
+    right: -1.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3rem;
+    height: 2px;
+    background: linear-gradient(90deg, rgba(192,132,252,0.4), transparent);
+  }
+  @media (max-width: 767px) {
+    .pipeline-connector::after { display: none; }
+  }
+
+  /* Code block */
+  .code-block {
+    background: #0a0a0a;
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 1rem;
+    padding: 1.5rem 2rem;
+    font-family: 'Geist Mono', 'SF Mono', monospace;
+    font-size: 0.875rem;
+    color: #a3a3a3;
+    overflow-x: auto;
+  }
+  .code-block .prompt { color: #34d399; }
+  .code-block .flag { color: #c084fc; }
+  .code-block .value { color: #fbbf24; }
+
+  /* Floating nav */
+  .nav-pill {
+    background: rgba(10,10,10,0.7);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 9999px;
+  }
+
+  /* Skip link */
+  .skip-link {
+    position: absolute;
+    top: -100%;
+    left: 1rem;
+    z-index: 200;
+    padding: 0.75rem 1.5rem;
+    background: #c084fc;
+    color: #050505;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    transition: top 200ms;
+  }
+  .skip-link:focus { top: 1rem; }
+
+  /* Responsive */
+  @media (max-width: 767px) {
+    .hero-title { font-size: clamp(2.5rem, 8vw, 4rem) !important; }
+    .section-pad { padding-top: 5rem; padding-bottom: 5rem; }
+    .bento-grid { grid-template-columns: 1fr !important; }
+    .bento-grid > * { grid-column: span 1 !important; grid-row: span 1 !important; }
+    .pipeline-grid { grid-template-columns: 1fr !important; }
+    .pipeline-connector::after { display: none; }
+  }
+
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .reveal { transition: opacity 200ms; transform: none; filter: none; }
+    .reveal.visible { opacity: 1; }
+    .btn-primary, .btn-primary .icon-orb { transition-duration: 100ms; }
+  }
+
+  /* Focus visible */
+  :focus-visible {
+    outline: 2px solid #c084fc;
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+</style>
+</head>
+<body>
+<a href="#main-content" class="skip-link">Skip to content</a>
+
+<!-- Background orbs -->
+<div class="fixed inset-0 z-0 overflow-hidden" aria-hidden="true">
+  <div class="orb orb-purple" style="width:800px;height:800px;top:-200px;left:-200px;"></div>
+  <div class="orb orb-emerald" style="width:600px;height:600px;top:40%;right:-150px;"></div>
+  <div class="orb orb-gold" style="width:500px;height:500px;bottom:-100px;left:30%;"></div>
+</div>
+
+<!-- Floating Nav -->
+<nav class="fixed top-6 left-1/2 -translate-x-1/2 z-50 nav-pill px-2 py-1.5" role="navigation" aria-label="Main navigation">
+  <div class="flex items-center gap-1">
+    <a href="#" class="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold text-white/90 hover:text-white transition-colors duration-300">
+      <span aria-hidden="true">&#x26CF;</span> DevArch
+    </a>
+    <div class="hidden md:flex items-center gap-0.5">
+      <a href="#features" class="px-4 py-2 rounded-full text-sm text-white/50 hover:text-white/90 transition-colors duration-300">Features</a>
+      <a href="#pipeline" class="px-4 py-2 rounded-full text-sm text-white/50 hover:text-white/90 transition-colors duration-300">How it works</a>
+      <a href="#channels" class="px-4 py-2 rounded-full text-sm text-white/50 hover:text-white/90 transition-colors duration-300">Install</a>
+    </div>
+    <a href="https://github.com/KyaniteLabs/devarch-framework" target="_blank" rel="noopener noreferrer" class="px-5 py-2 rounded-full text-sm font-medium bg-white/5 border border-white/10 text-white/80 hover:bg-white/10 hover:text-white transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]">
+      GitHub <span aria-hidden="true" class="inline-block ml-0.5">&#x2197;</span>
+    </a>
+  </div>
+</nav>
+
+<main id="main-content" class="relative z-10">
+
+<!-- Hero -->
+<section class="min-h-[100dvh] flex items-center justify-center px-4 pt-32 pb-24">
+  <div class="max-w-5xl mx-auto text-center">
+    <div class="reveal">
+      <span class="inline-block rounded-full px-4 py-1.5 text-[10px] uppercase tracking-[0.2em] font-medium bg-white/5 border border-white/10 text-white/60 mb-8">
+        Forensic Repository Archaeology
+      </span>
+    </div>
+    <h1 class="hero-title reveal font-display text-[clamp(3rem,7vw,5.5rem)] leading-[0.95] tracking-tight text-white mb-8">
+      Unearth your<br>
+      <span class="bg-gradient-to-r from-purple-400 via-emerald-400 to-amber-300 bg-clip-text text-transparent">codebase's story</span>
+    </h1>
+    <p class="reveal text-lg md:text-xl text-white/40 max-w-2xl mx-auto mb-12 leading-relaxed font-light">
+      Mine git history. Detect development signals. Map eras. Run 6 analysis vectors.
+      Generate stunning visualizations. All from your terminal.
+    </p>
+    <div class="reveal flex flex-col sm:flex-row items-center justify-center gap-4">
+      <a href="#channels" class="btn-primary group inline-flex items-center gap-3 px-7 py-3.5 rounded-full bg-white text-void font-semibold text-sm hover:bg-white/90">
+        Get started
+        <span class="icon-orb w-7 h-7 rounded-full bg-black/10 flex items-center justify-center text-void" aria-hidden="true">&#x2192;</span>
+      </a>
+      <a href="#features" class="inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-white/5 border border-white/10 text-white/70 font-medium text-sm hover:bg-white/10 hover:text-white transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]">
+        Explore features <span aria-hidden="true">&#x2193;</span>
+      </a>
+    </div>
+
+    <!-- Hero code preview -->
+    <div class="reveal mt-20 max-w-xl mx-auto">
+      <div class="card-shell">
+        <div class="card-core p-6 text-left">
+          <div class="flex items-center gap-2 mb-4">
+            <span class="w-3 h-3 rounded-full bg-red-500/60"></span>
+            <span class="w-3 h-3 rounded-full bg-yellow-500/60"></span>
+            <span class="w-3 h-3 rounded-full bg-green-500/60"></span>
+          </div>
+          <code class="block text-sm leading-7">
+            <span class="text-white/30">$</span> <span class="text-emerald-400">pip install</span> devarch-framework<br>
+            <span class="text-white/30">$</span> <span class="text-emerald-400">devarch</span> init my-project<br>
+            <span class="text-white/30">$</span> <span class="text-emerald-400">devarch</span> mine ./my-repo <span class="text-purple-400">-p</span> my-project<br>
+            <span class="text-white/30">$</span> <span class="text-emerald-400">devarch</span> analyze my-project<br>
+            <span class="text-white/30">$</span> <span class="text-emerald-400">devarch</span> visualize my-project<br>
+            <span class="text-white/20 mt-2 block">&#x2728; archaeology.html generated</span>
+          </code>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Features Bento Grid -->
+<section id="features" class="section-pad px-4 py-24 md:py-40">
+  <div class="max-w-6xl mx-auto">
+    <div class="text-center mb-20">
+      <span class="reveal inline-block rounded-full px-4 py-1.5 text-[10px] uppercase tracking-[0.2em] font-medium bg-white/5 border border-white/10 text-white/60 mb-6">Capabilities</span>
+      <h2 class="reveal font-display text-4xl md:text-5xl lg:text-6xl text-white leading-tight">
+        Six analysis vectors.<br>One complete picture.
+      </h2>
+    </div>
+
+    <div class="bento-grid grid grid-cols-1 md:grid-cols-12 gap-4 reveal-stagger">
+
+      <!-- Signal Detection — large card -->
+      <div class="reveal md:col-span-7 md:row-span-2">
+        <div class="card-shell h-full">
+          <div class="card-core p-8 md:p-10 h-full flex flex-col">
+            <div class="flex items-center gap-3 mb-6">
+              <div class="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 text-lg" aria-hidden="true">&#x1F4E1;</div>
+              <span class="text-[10px] uppercase tracking-[0.2em] font-medium text-purple-400/80">Signal Detection</span>
+            </div>
+            <h3 class="font-display text-2xl md:text-3xl text-white mb-4">Find the moments that mattered</h3>
+            <p class="text-white/40 leading-relaxed mb-8">Detect velocity shifts, activity gaps, burst patterns, and team rhythm changes. Every signal tells a story about what was happening in your project.</p>
+            <div class="mt-auto code-block text-xs">
+              <span class="text-emerald-400">devarch</span> signals my-project <span class="text-purple-400">--min-gap-days</span> <span class="text-amber-300">7</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Era Mapping -->
+      <div class="reveal md:col-span-5">
+        <div class="card-shell h-full">
+          <div class="card-core p-8 h-full">
+            <div class="flex items-center gap-3 mb-5">
+              <div class="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 text-lg" aria-hidden="true">&#x1F4C5;</div>
+              <span class="text-[10px] uppercase tracking-[0.2em] font-medium text-emerald-400/80">Era Mapping</span>
+            </div>
+            <h3 class="font-display text-xl text-white mb-3">Map development phases</h3>
+            <p class="text-sm text-white/40 leading-relaxed">Automatically detect era boundaries and label development phases — from greenfield to maintenance.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 6 Analysis Vectors -->
+      <div class="reveal md:col-span-5">
+        <div class="card-shell h-full">
+          <div class="card-core p-8 h-full">
+            <div class="flex items-center gap-3 mb-5">
+              <div class="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 text-lg" aria-hidden="true">&#x1F50D;</div>
+              <span class="text-[10px] uppercase tracking-[0.2em] font-medium text-amber-400/80">6 Vectors</span>
+            </div>
+            <h3 class="font-display text-xl text-white mb-3">Deep analysis out of the box</h3>
+            <div class="flex flex-wrap gap-2 mt-4">
+              <span class="px-3 py-1 rounded-full text-xs bg-white/5 border border-white/10 text-white/50">SDLC Gap Finder</span>
+              <span class="px-3 py-1 rounded-full text-xs bg-white/5 border border-white/10 text-white/50">ML Pattern Mapper</span>
+              <span class="px-3 py-1 rounded-full text-xs bg-white/5 border border-white/10 text-white/50">Agentic Workflow</span>
+              <span class="px-3 py-1 rounded-full text-xs bg-white/5 border border-white/10 text-white/50">Formal Terms</span>
+              <span class="px-3 py-1 rounded-full text-xs bg-white/5 border border-white/10 text-white/50">Source Archaeologist</span>
+              <span class="px-3 py-1 rounded-full text-xs bg-white/5 border border-white/10 text-white/50">YouTube Correlator</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Visualizations — wide card -->
+      <div class="reveal md:col-span-6">
+        <div class="card-shell h-full">
+          <div class="card-core p-8 h-full">
+            <div class="flex items-center gap-3 mb-5">
+              <div class="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 text-lg" aria-hidden="true">&#x1F3A8;</div>
+              <span class="text-[10px] uppercase tracking-[0.2em] font-medium text-blue-400/80">Visualizations</span>
+            </div>
+            <h3 class="font-display text-xl text-white mb-3">3 themes. Zero config.</h3>
+            <p class="text-sm text-white/40 leading-relaxed">Warm, Editorial, and Modern themes with accessible, responsive HTML dashboards — including Chart.js and D3.js integration.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- MCP Server -->
+      <div class="reveal md:col-span-6">
+        <div class="card-shell h-full">
+          <div class="card-core p-8 h-full">
+            <div class="flex items-center gap-3 mb-5">
+              <div class="w-10 h-10 rounded-xl bg-pink-500/10 border border-pink-500/20 flex items-center justify-center text-pink-400 text-lg" aria-hidden="true">&#x1F916;</div>
+              <span class="text-[10px] uppercase tracking-[0.2em] font-medium text-pink-400/80">MCP Server</span>
+            </div>
+            <h3 class="font-display text-xl text-white mb-3">AI-native integration</h3>
+            <p class="text-sm text-white/40 leading-relaxed">14 MCP tools for Claude Code, Cursor, and any AI assistant. Run archaeology directly from your AI coding environment.</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- Pipeline -->
+<section id="pipeline" class="section-pad px-4 py-24 md:py-40">
+  <div class="max-w-5xl mx-auto">
+    <div class="text-center mb-20">
+      <span class="reveal inline-block rounded-full px-4 py-1.5 text-[10px] uppercase tracking-[0.2em] font-medium bg-white/5 border border-white/10 text-white/60 mb-6">Pipeline</span>
+      <h2 class="reveal font-display text-4xl md:text-5xl lg:text-6xl text-white leading-tight">
+        From git log to<br>archaeology report
+      </h2>
+    </div>
+
+    <div class="pipeline-grid grid grid-cols-1 md:grid-cols-6 gap-6 reveal-stagger">
+      <div class="reveal pipeline-connector">
+        <div class="card-shell">
+          <div class="card-core p-6 text-center">
+            <div class="text-3xl mb-3 text-purple-400" aria-hidden="true">&#x26CF;</div>
+            <div class="text-xs uppercase tracking-[0.15em] text-white/30 mb-1">Step 1</div>
+            <h3 class="font-semibold text-white text-sm">Mine</h3>
+            <p class="text-xs text-white/30 mt-2">Extract git commit history with stats</p>
+          </div>
+        </div>
+      </div>
+      <div class="reveal pipeline-connector">
+        <div class="card-shell">
+          <div class="card-core p-6 text-center">
+            <div class="text-3xl mb-3 text-emerald-400" aria-hidden="true">&#x1F5C4;</div>
+            <div class="text-xs uppercase tracking-[0.15em] text-white/30 mb-1">Step 2</div>
+            <h3 class="font-semibold text-white text-sm">Build DB</h3>
+            <p class="text-xs text-white/30 mt-2">SQLite database for fast queries</p>
+          </div>
+        </div>
+      </div>
+      <div class="reveal pipeline-connector">
+        <div class="card-shell">
+          <div class="card-core p-6 text-center">
+            <div class="text-3xl mb-3 text-amber-400" aria-hidden="true">&#x1F4E1;</div>
+            <div class="text-xs uppercase tracking-[0.15em] text-white/30 mb-1">Step 3</div>
+            <h3 class="font-semibold text-white text-sm">Signals</h3>
+            <p class="text-xs text-white/30 mt-2">Detect patterns and anomalies</p>
+          </div>
+        </div>
+      </div>
+      <div class="reveal pipeline-connector">
+        <div class="card-shell">
+          <div class="card-core p-6 text-center">
+            <div class="text-3xl mb-3 text-blue-400" aria-hidden="true">&#x1F50D;</div>
+            <div class="text-xs uppercase tracking-[0.15em] text-white/30 mb-1">Step 4</div>
+            <h3 class="font-semibold text-white text-sm">Analyze</h3>
+            <p class="text-xs text-white/30 mt-2">Run 6 analysis vectors</p>
+          </div>
+        </div>
+      </div>
+      <div class="reveal pipeline-connector">
+        <div class="card-shell">
+          <div class="card-core p-6 text-center">
+            <div class="text-3xl mb-3 text-pink-400" aria-hidden="true">&#x1F3A8;</div>
+            <div class="text-xs uppercase tracking-[0.15em] text-white/30 mb-1">Step 5</div>
+            <h3 class="font-semibold text-white text-sm">Visualize</h3>
+            <p class="text-xs text-white/30 mt-2">HTML dashboard with charts</p>
+          </div>
+        </div>
+      </div>
+      <div class="reveal">
+        <div class="card-shell">
+          <div class="card-core p-6 text-center">
+            <div class="text-3xl mb-3 text-red-400" aria-hidden="true">&#x1F4C4;</div>
+            <div class="text-xs uppercase tracking-[0.15em] text-white/30 mb-1">Step 6</div>
+            <h3 class="font-semibold text-white text-sm">Report</h3>
+            <p class="text-xs text-white/30 mt-2">Full forensic archaeology report</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- One-liner CTA -->
+    <div class="reveal mt-16 text-center">
+      <p class="text-white/30 text-sm mb-6">Or run the full pipeline in one command:</p>
+      <div class="inline-block code-block">
+        <span class="text-emerald-400">devarch</span> run-pipeline ./my-repo <span class="text-purple-400">-p</span> my-project
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Distribution Channels -->
+<section id="channels" class="section-pad px-4 py-24 md:py-40">
+  <div class="max-w-5xl mx-auto">
+    <div class="text-center mb-20">
+      <span class="reveal inline-block rounded-full px-4 py-1.5 text-[10px] uppercase tracking-[0.2em] font-medium bg-white/5 border border-white/10 text-white/60 mb-6">Three ways in</span>
+      <h2 class="reveal font-display text-4xl md:text-5xl lg:text-6xl text-white leading-tight">
+        Use it everywhere
+      </h2>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 reveal-stagger">
+
+      <!-- CLI -->
+      <div class="reveal">
+        <div class="card-shell h-full">
+          <div class="card-core p-8 h-full flex flex-col">
+            <div class="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 text-2xl mb-6" aria-hidden="true">&#x2318;</div>
+            <h3 class="font-display text-xl text-white mb-3">CLI</h3>
+            <p class="text-sm text-white/40 leading-relaxed mb-6">20+ commands for the full pipeline. Install via pip, run from any terminal.</p>
+            <div class="mt-auto code-block text-xs">
+              <span class="text-emerald-400">pip install</span> devarch-framework
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MCP Server -->
+      <div class="reveal">
+        <div class="card-shell h-full">
+          <div class="card-core p-8 h-full flex flex-col">
+            <div class="w-12 h-12 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 text-2xl mb-6" aria-hidden="true">&#x1F916;</div>
+            <h3 class="font-display text-xl text-white mb-3">MCP Server</h3>
+            <p class="text-sm text-white/40 leading-relaxed mb-6">14 tools for Claude Code and Cursor. Run archaeology from your AI coding environment.</p>
+            <div class="mt-auto code-block text-xs">
+              <span class="text-purple-400">pip install</span> devarch-framework<span class="text-white/30">[mcp]</span><br>
+              <span class="text-purple-400">devarch-mcp</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- GitHub Action -->
+      <div class="reveal">
+        <div class="card-shell h-full">
+          <div class="card-core p-8 h-full flex flex-col">
+            <div class="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 text-2xl mb-6" aria-hidden="true">&#x2691;</div>
+            <h3 class="font-display text-xl text-white mb-3">GitHub Action</h3>
+            <p class="text-sm text-white/40 leading-relaxed mb-6">Zero-config CI integration. Weekly reports as downloadable artifacts.</p>
+            <div class="mt-auto code-block text-xs">
+              <span class="text-white/30">- uses:</span> actions/checkout<span class="text-purple-400">@v4</span><br>
+              <span class="text-white/30">&nbsp;&nbsp;with:</span><br>
+              <span class="text-white/30">&nbsp;&nbsp;&nbsp;&nbsp;fetch-depth:</span> <span class="text-amber-300">0</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="px-4 py-24 md:py-40">
+  <div class="max-w-3xl mx-auto text-center">
+    <div class="reveal">
+      <div class="card-shell">
+        <div class="card-core p-12 md:p-16">
+          <h2 class="font-display text-3xl md:text-4xl lg:text-5xl text-white mb-6 leading-tight">
+            Start digging
+          </h2>
+          <p class="text-white/40 text-lg mb-10 max-w-lg mx-auto">
+            Free and open source. MIT licensed. Built for developers who care about their codebase's history.
+          </p>
+          <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <a href="https://github.com/KyaniteLabs/devarch-framework" target="_blank" rel="noopener noreferrer" class="btn-primary group inline-flex items-center gap-3 px-8 py-4 rounded-full bg-white text-void font-semibold text-sm hover:bg-white/90">
+              View on GitHub
+              <span class="icon-orb w-7 h-7 rounded-full bg-black/10 flex items-center justify-center text-void" aria-hidden="true">&#x2197;</span>
+            </a>
+            <a href="https://pypi.org/project/devarch-framework/" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-8 py-4 rounded-full bg-white/5 border border-white/10 text-white/70 font-medium text-sm hover:bg-white/10 hover:text-white transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]">
+              PyPI <span aria-hidden="true">&#x2197;</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- Footer -->
+<footer class="relative z-10 border-t border-white/5 px-4 py-12" role="contentinfo">
+  <div class="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-white/20">
+    <div class="flex items-center gap-2">
+      <span aria-hidden="true">&#x26CF;</span>
+      <span>DevArch Framework</span>
+      <span class="text-white/10">&#x2022;</span>
+      <span>MIT License</span>
+    </div>
+    <div class="flex items-center gap-6">
+      <a href="https://github.com/KyaniteLabs/devarch-framework" target="_blank" rel="noopener noreferrer" class="hover:text-white/50 transition-colors duration-300">GitHub</a>
+      <a href="https://pypi.org/project/devarch-framework/" target="_blank" rel="noopener noreferrer" class="hover:text-white/50 transition-colors duration-300">PyPI</a>
+      <span>by Simon Gonzalez De Cruz</span>
+    </div>
+  </div>
+</footer>
+
+<!-- Scroll reveal observer -->
+<script>
+(function() {
+  const observer = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.1, rootMargin: '0px 0px -60px 0px' });
+
+  document.querySelectorAll('.reveal').forEach(function(el) {
+    observer.observe(el);
+  });
+})();
+</script>
+</body>
+</html>
