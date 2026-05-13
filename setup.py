@@ -5,8 +5,9 @@ README = (Path(__file__).parent / "README.md").read_text(encoding="utf-8")
 
 setup(
     name="devarch-framework",
-    version="0.2.0",
+    version="0.3.0",
     packages=find_packages(exclude=["tests*", "projects*", "analysis-vectors*"]),
+    include_package_data=True,
     install_requires=[
         "click>=8.1",
         "sqlite-utils>=3.0",
@@ -14,10 +15,18 @@ setup(
     ],
     extras_require={
         "dev": ["pytest>=8.0"],
+        "mcp": ["mcp[cli]>=1.0.0"],
     },
     entry_points={
         "console_scripts": [
             "devarch=archaeology.cli:main",
+            "devarch-mcp=archaeology.mcp_server:main",
+        ],
+    },
+    package_data={
+        "archaeology": [
+            "visualization/*.html",
+            "templates/*.html",
         ],
     },
     python_requires=">=3.10",
@@ -31,7 +40,7 @@ setup(
     keywords=[
         "git", "repository", "archaeology", "code-analysis", "static-analysis",
         "commit-history", "software-forensics", "engineering-analytics", "cli",
-        "sdlc", "git-history", "codebase-review", "developer-tools",
+        "sdlc", "git-history", "codebase-review", "developer-tools", "mcp",
     ],
     classifiers=[
         "Development Status :: 4 - Beta",
