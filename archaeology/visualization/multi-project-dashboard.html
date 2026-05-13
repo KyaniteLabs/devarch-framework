@@ -1,30 +1,92 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="editorial">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dev-Archaeology — Multi-Project Dashboard</title>
+
+<!-- OpenGraph / Twitter -->
+<meta name="description" content="Multi-Project Development Overview — Comprehensive repository visualization dashboard">
+<meta property="og:title" content="Dev-Archaeology — Multi-Project Dashboard">
+<meta property="og:description" content="Multi-Project Development Overview — Comprehensive repository visualization dashboard">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Dev-Archaeology — Multi-Project Dashboard">
+<meta name="twitter:description" content="Multi-Project Development Overview — Comprehensive repository visualization dashboard">
+
+<!-- Fonts -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500&family=Playfair+Display:ital,wght@0,400;0,700,1,400&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&family=Lora:wght@400;600;700&family=Source+Sans+3:wght@300;400;500;600&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://d3js.org/d3.v7.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --bg:#06090f;--surface:#0c1018;--surface2:#141a24;--surface3:#1c2432;
-  --border:#1a2232;--border-hover:#2a3a52;
-  --text:#e8ecf2;--text2:#8d99aa;--text3:#6a7888;
-  /* Category Colors */
-  --creative:#ff6b6b;--tools:#51cf66;--infrastructure:#74c0fc;--research:#ffa94d;--personal:#cc5de8;
-  --font-display:'Space Grotesk',sans-serif;--font-body:'DM Sans',sans-serif;
-  --font-mono:'JetBrains Mono',monospace;--font-quote:'Playfair Display',serif;
+
+/* ─── Theme Definitions ─── */
+
+/* Warm Theme (Default) */
+:root,[data-theme="warm"]{
+  --bg-main:#1f1a14;--bg-surface:#2b241b;--bg-card:#383020;--bg-card-alt:#453a28;--bg-hover:#504230;
+  --accent:#d4a017;--accent-dim:rgba(212,160,23,0.12);--accent-mid:rgba(212,160,23,0.25);
+  --secondary:#b87333;--success:#4caf70;--warning:#e8a830;--danger:#c0392b;
+  --text:#f5e8c8;--text-2:#c8b898;--text-muted:#9d8f78;--text-faint:#6b5f4e;
+  --border:rgba(212,160,23,0.15);--border-subtle:rgba(255,255,255,0.05);
+  --font-display:'DM Serif Display',Georgia,serif;--font-body:'DM Sans',system-ui,sans-serif;--font-mono:'JetBrains Mono','Courier New',monospace;
   --radius-sm:6px;--radius-md:10px;--radius-lg:16px;
   --shadow-sm:0 1px 3px rgba(0,0,0,0.3);--shadow-md:0 4px 16px rgba(0,0,0,0.4);--shadow-lg:0 8px 32px rgba(0,0,0,0.5);
   --ease-out:cubic-bezier(0.16,1,0.3,1);--ease-in-out:cubic-bezier(0.65,0,0.35,1);
 }
+
+/* Editorial Theme */
+[data-theme="editorial"]{
+  --bg-main:#faf9f7;--bg-surface:#fff;--bg-card:#fff;--bg-card-alt:#f5f4f2;--bg-hover:#efeeec;
+  --accent:#1a5c3a;--accent-dim:rgba(26,92,58,0.08);--accent-mid:rgba(26,92,58,0.18);
+  --secondary:#2c5aa0;--success:#1a5c3a;--warning:#8a6d2b;--danger:#a8282d;
+  --text:#1a1a1a;--text-2:#3d3d3d;--text-muted:#6b6b6b;--text-faint:#9d9d9d;
+  --border:rgba(0,0,0,0.10);--border-subtle:rgba(0,0,0,0.05);
+  --font-display:'Lora',Georgia,serif;--font-body:'Source Sans 3',system-ui,sans-serif;--font-mono:'IBM Plex Mono','Courier New',monospace;
+  --radius-sm:6px;--radius-md:10px;--radius-lg:16px;
+  --shadow-sm:0 1px 3px rgba(0,0,0,0.08);--shadow-md:0 4px 16px rgba(0,0,0,0.12);--shadow-lg:0 8px 32px rgba(0,0,0,0.15);
+  --ease-out:cubic-bezier(0.16,1,0.3,1);--ease-in-out:cubic-bezier(0.65,0,0.35,1);
+}
+
+/* Modern Theme */
+[data-theme="modern"]{
+  --bg-main:#09090b;--bg-surface:#0f0f12;--bg-card:#16161a;--bg-card-alt:#1c1c21;--bg-hover:#222228;
+  --accent:#3b82f6;--accent-dim:rgba(59,130,246,0.10);--accent-mid:rgba(59,130,246,0.22);
+  --secondary:#8b5cf6;--success:#10b981;--warning:#f59e0b;--danger:#ef4444;
+  --text:#edf0f7;--text-2:#b4bccf;--text-muted:#6b7a9a;--text-faint:#3d4c6a;
+  --border:rgba(255,255,255,0.08);--border-subtle:rgba(255,255,255,0.04);
+  --font-display:'Inter',system-ui,sans-serif;--font-body:'Inter',system-ui,sans-serif;--font-mono:'JetBrains Mono','Courier New',monospace;
+  --radius-sm:6px;--radius-md:10px;--radius-lg:16px;
+  --shadow-sm:0 1px 3px rgba(0,0,0,0.4);--shadow-md:0 4px 16px rgba(0,0,0,0.5);--shadow-lg:0 8px 32px rgba(0,0,0,0.6);
+  --ease-out:cubic-bezier(0.16,1,0.3,1);--ease-in-out:cubic-bezier(0.65,0,0.35,1);
+}
+
+/* ─── Backward-Compatible Aliases ─── */
+:root,[data-theme="warm"],[data-theme="editorial"],[data-theme="modern"]{
+  --bg:var(--bg-main);--surface:var(--bg-surface);--surface2:var(--bg-card);--surface3:var(--bg-card-alt);
+  --border-hover:var(--accent-mid);--text2:var(--text-2);--text3:var(--text-muted);
+  --font-quote:var(--font-display);
+}
+
+/* ─── Domain-Specific Category Colors ─── */
+:root,[data-theme="warm"],[data-theme="editorial"],[data-theme="modern"]{
+  --creative:#ff6b6b;--tools:#51cf66;--infrastructure:#74c0fc;--research:#ffa94d;--personal:#cc5de8;
+}
+
+/* ─── Theme Switcher ─── */
+.theme-switcher{position:fixed;top:1rem;right:1rem;display:flex;gap:0.5rem;z-index:1000}
+.theme-switcher button{
+  background:var(--bg-card);border:1px solid var(--border);color:var(--text-2);
+  padding:0.4rem 0.6rem;border-radius:var(--radius-sm);font-family:var(--font-mono);font-size:0.7rem;
+  cursor:pointer;transition:all 0.2s;font-weight:500;opacity:0.7}
+.theme-switcher button:hover{border-color:var(--accent);color:var(--text);opacity:1}
+.theme-switcher button.active{border-color:var(--accent);background:var(--accent-dim);color:var(--accent);opacity:1}
+
 html{scroll-behavior:smooth;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
-body{background:var(--bg);color:var(--text);font-family:var(--font-body);line-height:1.65;overflow-x:hidden}
+body{background:var(--bg-main);color:var(--text);font-family:var(--font-body);line-height:1.65;overflow-x:hidden}
 
 /* ─── Neurodivergent Accessibility: Reduced Motion ─── */
 @media(prefers-reduced-motion:reduce){
@@ -203,6 +265,13 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
 <body>
 <a href="#main-content" class="skip-link">Skip to main content</a>
 
+<!-- Theme Switcher -->
+<div class="theme-switcher">
+  <button data-theme="warm" title="Warm Theme">W</button>
+  <button data-theme="editorial" title="Editorial Theme">E</button>
+  <button data-theme="modern" title="Modern Theme">M</button>
+</div>
+
 <!-- Hero -->
 <header class="hero reveal">
   <h1>Dev-Archaeology Dashboard</h1>
@@ -345,6 +414,84 @@ window.DASHBOARD_DATA = {};
 <script>
 (function() {
   'use strict';
+
+  // ─── Theme Switcher ───
+  const initThemeSwitcher = () => {
+    const html = document.documentElement;
+    const buttons = document.querySelectorAll('.theme-switcher button');
+
+    // Load saved theme or default to editorial
+    const savedTheme = localStorage.getItem('devarch-theme') || 'editorial';
+    html.setAttribute('data-theme', savedTheme);
+
+    // Update active button
+    buttons.forEach(btn => {
+      if (btn.dataset.theme === savedTheme) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+    });
+
+    // Handle button clicks
+    buttons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const theme = btn.dataset.theme;
+        html.setAttribute('data-theme', theme);
+        localStorage.setItem('devarch-theme', theme);
+
+        // Update active state
+        buttons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        // Rebuild charts with new theme colors
+        rebuildCharts();
+      });
+    });
+  };
+
+  // ─── Theme-Aware Color Getter ───
+  const getThemeColors = () => {
+    const style = getComputedStyle(document.documentElement);
+    return {
+      text: style.getPropertyValue('--text').trim(),
+      text2: style.getPropertyValue('--text-2').trim(),
+      text3: style.getPropertyValue('--text-muted').trim(),
+      bg: style.getPropertyValue('--bg-main').trim(),
+      surface: style.getPropertyValue('--bg-surface').trim(),
+      surface2: style.getPropertyValue('--bg-card').trim(),
+      border: style.getPropertyValue('--border').trim(),
+      borderHover: style.getPropertyValue('--accent-mid').trim(),
+      accent: style.getPropertyValue('--accent').trim(),
+      creative: style.getPropertyValue('--creative').trim(),
+      tools: style.getPropertyValue('--tools').trim(),
+      infrastructure: style.getPropertyValue('--infrastructure').trim(),
+      research: style.getPropertyValue('--research').trim(),
+      personal: style.getPropertyValue('--personal').trim()
+    };
+  };
+
+  // ─── Chart Rebuild on Theme Change ───
+  let chartInstances = [];
+
+  const rebuildCharts = () => {
+    // Destroy all existing Chart.js instances
+    chartInstances.forEach(chart => {
+      if (chart && typeof chart.destroy === 'function') {
+        chart.destroy();
+      }
+    });
+    chartInstances = [];
+
+    // Update D3 charts
+    updateHeatmap();
+
+    // Rebuild Chart.js charts
+    updateLanguageCharts();
+    updateTopRepos();
+    updateCategoryCharts();
+    updateActivityChart();
+  };
 
   const data = window.DASHBOARD_DATA;
   if (!data || !data.meta) {
@@ -506,9 +653,14 @@ window.DASHBOARD_DATA = {};
     });
   });
 
-  // Chart.js defaults
-  Chart.defaults.color = '#8d99aa';
-  Chart.defaults.font.family = "'DM Sans', sans-serif";
+  // Chart.js defaults (theme-aware)
+  const updateChartDefaults = () => {
+    const colors = getThemeColors();
+    Chart.defaults.color = colors.text2;
+    Chart.defaults.font.family = "'DM Sans', sans-serif";
+    Chart.defaults.borderColor = colors.border;
+  };
+  updateChartDefaults();
 
   // 1. Gantt Chart (Repository Timeline)
   const updateGanttChart = () => {
@@ -769,25 +921,25 @@ window.DASHBOARD_DATA = {};
       .sort((a, b) => b[1] - a[1])
       .slice(0, 10);
 
+    const colors = getThemeColors();
+
     // Pie Chart
     const pieContainer = document.getElementById('chart-languages-pie');
-    let pieCanvas = pieContainer.querySelector('canvas');
-    if (!pieCanvas) {
-      pieCanvas = document.createElement('canvas');
-      pieContainer.appendChild(pieCanvas);
-    }
+    pieContainer.innerHTML = '<div class="chart-title">Language Distribution (Pie)</div>';
+    const pieCanvas = document.createElement('canvas');
+    pieContainer.appendChild(pieCanvas);
     pieCanvas.style.maxHeight = '350px';
 
-    const colors = ['#ff6b6b', '#51cf66', '#74c0fc', '#ffa94d', '#cc5de8', '#20c997', '#845ef7', '#ffd43b', '#ff8787', '#63e6be'];
+    const colorPalette = ['#ff6b6b', '#51cf66', '#74c0fc', '#ffa94d', '#cc5de8', '#20c997', '#845ef7', '#ffd43b', '#ff8787', '#63e6be'];
 
-    new Chart(pieCanvas, {
+    const pieChart = new Chart(pieCanvas, {
       type: 'doughnut',
       data: {
         labels: sortedLangs.map(([lang]) => lang),
         datasets: [{
           data: sortedLangs.map(([, count]) => count),
-          backgroundColor: colors,
-          borderColor: '#0c1018',
+          backgroundColor: colorPalette,
+          borderColor: colors.surface,
           borderWidth: 2
         }]
       },
@@ -798,7 +950,7 @@ window.DASHBOARD_DATA = {};
           legend: {
             position: 'right',
             labels: {
-              color: '#8d99aa',
+              color: colors.text2,
               usePointStyle: true,
               pointStyle: 'circle',
               font: { size: 11 }
@@ -816,25 +968,24 @@ window.DASHBOARD_DATA = {};
         }
       }
     });
+    chartInstances.push(pieChart);
 
     // Bar Chart
     const barContainer = document.getElementById('chart-languages-bar');
-    let barCanvas = barContainer.querySelector('canvas');
-    if (!barCanvas) {
-      barCanvas = document.createElement('canvas');
-      barContainer.appendChild(barCanvas);
-    }
+    barContainer.innerHTML = '<div class="chart-title">Top Languages (Bar)</div>';
+    const barCanvas = document.createElement('canvas');
+    barContainer.appendChild(barCanvas);
     barCanvas.style.maxHeight = '350px';
 
-    new Chart(barCanvas, {
+    const barChart = new Chart(barCanvas, {
       type: 'bar',
       data: {
         labels: sortedLangs.map(([lang]) => lang),
         datasets: [{
           label: 'Commits',
           data: sortedLangs.map(([, count]) => count),
-          backgroundColor: colors,
-          borderColor: colors,
+          backgroundColor: colorPalette,
+          borderColor: colorPalette,
           borderWidth: 1
         }]
       },
@@ -844,12 +995,12 @@ window.DASHBOARD_DATA = {};
         maintainAspectRatio: false,
         scales: {
           x: {
-            grid: { color: '#1a2232' },
-            ticks: { color: '#6a7888' }
+            grid: { color: colors.border },
+            ticks: { color: colors.text3 }
           },
           y: {
             grid: { display: false },
-            ticks: { color: '#8d99aa' }
+            ticks: { color: colors.text2 }
           }
         },
         plugins: {
@@ -857,23 +1008,24 @@ window.DASHBOARD_DATA = {};
         }
       }
     });
+    chartInstances.push(barChart);
   };
 
   // 4. Top Repos
   const updateTopRepos = () => {
     const container = document.getElementById('chart-top-repos');
-    let canvas = container.querySelector('canvas');
-    if (!canvas) {
-      canvas = document.createElement('canvas');
-      container.appendChild(canvas);
-    }
+    container.innerHTML = '<div class="chart-title">Top 15 Repositories</div>';
+    const canvas = document.createElement('canvas');
+    container.appendChild(canvas);
     canvas.style.maxHeight = '500px';
 
     const topRepos = filteredRepos
       .sort((a, b) => b.total_commits - a.total_commits)
       .slice(0, 15);
 
-    new Chart(canvas, {
+    const colors = getThemeColors();
+
+    const chart = new Chart(canvas, {
       type: 'bar',
       data: {
         labels: topRepos.map(r => r.name),
@@ -891,13 +1043,13 @@ window.DASHBOARD_DATA = {};
         maintainAspectRatio: false,
         scales: {
           x: {
-            grid: { color: '#1a2232' },
-            ticks: { color: '#6a7888' }
+            grid: { color: colors.border },
+            ticks: { color: colors.text3 }
           },
           y: {
             grid: { display: false },
             ticks: {
-              color: '#8d99aa',
+              color: colors.text2,
               font: { size: 11 }
             }
           }
@@ -920,6 +1072,7 @@ window.DASHBOARD_DATA = {};
         }
       }
     });
+    chartInstances.push(chart);
   };
 
   // 5. Category Breakdown
@@ -933,26 +1086,25 @@ window.DASHBOARD_DATA = {};
       categoryCommits[cat] = (categoryCommits[cat] || 0) + repo.total_commits;
     });
 
-    // Pie Chart (by repo count)
-    const pieContainer = document.getElementById('chart-categories-pie');
-    let pieCanvas = pieContainer.querySelector('canvas');
-    if (!pieCanvas) {
-      pieCanvas = document.createElement('canvas');
-      pieContainer.appendChild(pieCanvas);
-    }
-    pieCanvas.style.maxHeight = '350px';
-
+    const colors = getThemeColors();
     const categories = Object.keys(categoryCounts);
     const categoryColorsList = categories.map(c => getCategoryColor(c));
 
-    new Chart(pieCanvas, {
+    // Pie Chart (by repo count)
+    const pieContainer = document.getElementById('chart-categories-pie');
+    pieContainer.innerHTML = '<div class="chart-title">Repos by Category</div>';
+    const pieCanvas = document.createElement('canvas');
+    pieContainer.appendChild(pieCanvas);
+    pieCanvas.style.maxHeight = '350px';
+
+    const pieChart = new Chart(pieCanvas, {
       type: 'pie',
       data: {
         labels: categories.map(c => c.charAt(0).toUpperCase() + c.slice(1)),
         datasets: [{
           data: categories.map(c => categoryCounts[c]),
           backgroundColor: categoryColorsList,
-          borderColor: '#0c1018',
+          borderColor: colors.surface,
           borderWidth: 2
         }]
       },
@@ -963,7 +1115,7 @@ window.DASHBOARD_DATA = {};
           legend: {
             position: 'right',
             labels: {
-              color: '#8d99aa',
+              color: colors.text2,
               usePointStyle: true,
               pointStyle: 'circle',
               font: { size: 11 }
@@ -981,17 +1133,16 @@ window.DASHBOARD_DATA = {};
         }
       }
     });
+    chartInstances.push(pieChart);
 
     // Bar Chart (by commits)
     const barContainer = document.getElementById('chart-categories-bar');
-    let barCanvas = barContainer.querySelector('canvas');
-    if (!barCanvas) {
-      barCanvas = document.createElement('canvas');
-      barContainer.appendChild(barCanvas);
-    }
+    barContainer.innerHTML = '<div class="chart-title">Commits by Category</div>';
+    const barCanvas = document.createElement('canvas');
+    barContainer.appendChild(barCanvas);
     barCanvas.style.maxHeight = '350px';
 
-    new Chart(barCanvas, {
+    const barChart = new Chart(barCanvas, {
       type: 'bar',
       data: {
         labels: categories.map(c => c.charAt(0).toUpperCase() + c.slice(1)),
@@ -1009,11 +1160,11 @@ window.DASHBOARD_DATA = {};
         scales: {
           x: {
             grid: { display: false },
-            ticks: { color: '#8d99aa' }
+            ticks: { color: colors.text2 }
           },
           y: {
-            grid: { color: '#1a2232' },
-            ticks: { color: '#6a7888' }
+            grid: { color: colors.border },
+            ticks: { color: colors.text3 }
           }
         },
         plugins: {
@@ -1021,16 +1172,15 @@ window.DASHBOARD_DATA = {};
         }
       }
     });
+    chartInstances.push(barChart);
   };
 
   // 6. Activity Over Time
   const updateActivityChart = () => {
     const container = document.getElementById('chart-activity');
-    let canvas = container.querySelector('canvas');
-    if (!canvas) {
-      canvas = document.createElement('canvas');
-      container.appendChild(canvas);
-    }
+    container.innerHTML = '<div class="chart-title">Weekly Commit Activity</div>';
+    const canvas = document.createElement('canvas');
+    container.appendChild(canvas);
     canvas.style.maxHeight = '400px';
 
     // Aggregate commits by week
@@ -1051,16 +1201,17 @@ window.DASHBOARD_DATA = {};
     });
 
     const sortedWeeks = Object.keys(weeklyCommits).sort();
+    const colors = getThemeColors();
 
-    new Chart(canvas, {
+    const chart = new Chart(canvas, {
       type: 'line',
       data: {
         labels: sortedWeeks.map(d => formatDate(d)),
         datasets: [{
           label: 'Weekly Commits',
           data: sortedWeeks.map(w => weeklyCommits[w]),
-          borderColor: '#51cf66',
-          backgroundColor: 'rgba(81, 207, 102, 0.1)',
+          borderColor: colors.tools,
+          backgroundColor: colors.tools + '20',
           fill: true,
           tension: 0.3,
           pointRadius: 2,
@@ -1072,22 +1223,22 @@ window.DASHBOARD_DATA = {};
         maintainAspectRatio: false,
         scales: {
           x: {
-            grid: { color: '#1a2232' },
+            grid: { color: colors.border },
             ticks: {
-              color: '#6a7888',
+              color: colors.text3,
               maxTicksLimit: 10
             }
           },
           y: {
-            grid: { color: '#1a2232' },
-            ticks: { color: '#6a7888' },
+            grid: { color: colors.border },
+            ticks: { color: colors.text3 },
             beginAtZero: true
           }
         },
         plugins: {
           legend: {
             display: true,
-            labels: { color: '#8d99aa' }
+            labels: { color: colors.text2 }
           },
           tooltip: {
             mode: 'index',
@@ -1101,6 +1252,7 @@ window.DASHBOARD_DATA = {};
         }
       }
     });
+    chartInstances.push(chart);
   };
 
   // 7. Repo Health Table
@@ -1124,6 +1276,7 @@ window.DASHBOARD_DATA = {};
   };
 
   // Initial render
+  initThemeSwitcher();
   updateGanttChart();
   updateHeatmap();
   updateLanguageCharts();

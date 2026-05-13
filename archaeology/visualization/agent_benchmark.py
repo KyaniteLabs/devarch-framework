@@ -9,6 +9,10 @@ import sqlite3
 from pathlib import Path
 from typing import Any, Dict, List
 
+from archaeology.visualization.design_system import (
+    head_bundle, body_end_bundle, THEME_SWITCHER_HTML
+)
+
 
 def analyze_agent_benchmarks(db_path: str) -> Dict[str, Any]:
     """Analyze agent performance metrics from archaeology database.
@@ -291,79 +295,466 @@ def generate_benchmark_html(benchmark_data: Dict[str, Any], project_name: str) -
     agents_json = json.dumps(agents)
     eras_json = json.dumps(eras)
 
-    html_template = f"""<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>{project_name.upper()} — Agent Performance Benchmark</title>
-<meta name="description" content="AI agent contribution analysis for {project_name.upper()}">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x26CF;</text></svg>">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://d3js.org/d3.v7.min.js"></script>
+    title = f"{project_name.upper()} — Agent Performance Benchmark"
+    description = f"AI agent contribution analysis for {project_name.upper()}"
+
+    # Custom CSS for benchmark-specific elements
+    custom_css = """
 <style>
-*,:before,:after{{box-sizing:border-box;margin:0;padding:0}}
-:root{{
-  --bg:#06090f;--surface:#0c1018;--surface2:#141a24;--surface3:#1c2432;
-  --border:#1a2232;--border-hover:#2a3a52;
-  --text:#e8ecf2;--text2:#8d99aa;--text3:#6a7888;
-  --kai:#ff6b6b;--cursor:#ffa94d;--claude:#51cf66;--unknown:#495057;
-  --kimicode:#a78bfa;--codex:#60a5fa;--demo-project:#34d399;--simon:#fbbf24;
-  --font-display:'Space Grotesk',sans-serif;--font-body:'DM Sans',sans-serif;
-  --font-mono:'JetBrains Mono',monospace;
-  --radius-sm:6px;--radius-md:10px;--radius-lg:16px;
-}}
-html{{scroll-behavior:smooth;-webkit-font-smoothing:antialiased}}
-body{{background:var(--bg);color:var(--text);font-family:var(--font-body);line-height:1.65}}
-h1,h2,h3{{font-family:var(--font-display);font-weight:600;letter-spacing:-.01em}}
-.mono{{font-family:var(--font-mono)}}
+/* ── Agent-specific color tokens ── */
+:root, [data-theme="warm"], [data-theme="editorial"], [data-theme="modern"] {
+  --kai: #ff6b6b;
+  --cursor: #ffa94d;
+  --claude: #51cf66;
+  --unknown: #495057;
+  --kimicode: #a78bfa;
+  --codex: #60a5fa;
+  --simon: #fbbf24;
+}
 
-.container{{max-width:1200px;margin:0 auto;padding:2rem}}
-.site-nav{{position:sticky;top:0;z-index:100;background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;display:flex;align-items:center;gap:12px;height:52px;font-family:var(--font-display);backdrop-filter:blur(12px)}}
-.site-nav .nav-back{{font-weight:500;font-size:13px;color:var(--text2);text-decoration:none;padding:4px 10px;border-radius:var(--radius-sm);transition:color .15s,background .15s;white-space:nowrap}}
-.site-nav .nav-back:hover{{color:var(--text);background:var(--surface2)}}
-.site-nav .nav-sep{{width:1px;height:24px;background:var(--border)}}
-.site-nav .nav-title{{font-weight:600;font-size:15px;color:var(--text);letter-spacing:-.01em}}
-.header{{margin-bottom:3rem;padding-top:1rem}}
-.header h1{{font-size:2.5rem;margin-bottom:.5rem}}
-.header p{{color:var(--text2);font-size:1.1rem}}
+/* ── Layout ── */
+.container {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: var(--space-8) var(--space-4);
+}
 
-.stats-grid{{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin-bottom:3rem}}
-.stat-card{{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:1.5rem}}
-.stat-value{{font-size:2rem;font-weight:700;font-family:var(--font-display);color:var(--text)}}
-.stat-label{{color:var(--text2);font-size:.875rem;margin-top:.25rem}}
+/* ── Navigation ── */
+.site-nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 var(--space-6);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  height: 52px;
+  font-family: var(--font-display);
+  backdrop-filter: blur(12px);
+}
 
-.chart-section{{margin-bottom:3rem}}
-.chart-container{{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:2rem}}
-.chart-title{{font-size:1.25rem;margin-bottom:1.5rem}}
+.site-nav .nav-back {
+  font-weight: 500;
+  font-size: 13px;
+  color: var(--text-muted);
+  text-decoration: none;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  transition: background var(--transition);
+  white-space: nowrap;
+}
 
-table{{width:100%;border-collapse:collapse;margin-top:1rem}}
-th{{text-align:left;padding:.75rem 1rem;border-bottom:2px solid var(--border);color:var(--text2);font-size:.875rem}}
-td{{padding:.75rem 1rem;border-bottom:1px solid var(--border)}}
-tr:last-child td{{border-bottom:none}}
-tr:hover td{{background:var(--surface2)}}
+.site-nav .nav-back:hover {
+  color: var(--text);
+  background: var(--bg-card);
+}
 
-.bar{{height:24px;border-radius:4px;transition:width .3s ease}}
-.bar-cell{{width:200px}}
+.site-nav .nav-sep {
+  width: 1px;
+  height: 24px;
+  background: var(--border);
+}
 
-.mono{{font-family:var(--font-mono);font-size:.875rem}}
+.site-nav .nav-title {
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
 
-@media(max-width:768px){{
-  .stats-grid{{grid-template-columns:1fr}}
-  .bar-cell{{width:120px}}
-  table{{font-size:.875rem}}
-  th,td{{padding:.5rem}}
-}}
+/* ── Header ── */
+.header {
+  margin-bottom: var(--space-12);
+  padding-top: var(--space-4);
+}
+
+.header h1 {
+  font-size: 2.5rem;
+  margin-bottom: var(--space-2);
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.header p {
+  color: var(--text-muted);
+  font-size: 1.1rem;
+}
+
+/* ── Stats Grid ── */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-4);
+  margin-bottom: var(--space-12);
+}
+
+.stat-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--space-6);
+}
+
+.stat-value {
+  font-size: 2rem;
+  font-weight: 700;
+  font-family: var(--font-display);
+  color: var(--text);
+}
+
+.stat-label {
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  margin-top: var(--space-1);
+}
+
+/* ── Charts ── */
+.chart-section {
+  margin-bottom: var(--space-12);
+}
+
+.chart-container {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--space-8);
+}
+
+.chart-title {
+  font-size: 1.25rem;
+  margin-bottom: var(--space-6);
+  font-family: var(--font-display);
+  font-weight: 600;
+}
+
+/* ── Table ── */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: var(--space-4);
+}
+
+th {
+  text-align: left;
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 2px solid var(--border);
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+td {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border);
+}
+
+tr:last-child td {
+  border-bottom: none;
+}
+
+tr:hover td {
+  background: var(--bg-card);
+}
+
+/* ── Typography ── */
+.mono {
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+}
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  table {
+    font-size: 0.875rem;
+  }
+
+  th, td {
+    padding: var(--space-2);
+  }
+
+  .header h1 {
+    font-size: 1.75rem;
+  }
+}
 </style>
+"""
+
+    # JavaScript with theme-aware colors
+    js_code = f"""
+<script>
+// Data
+const agents = {agents_json};
+const eras = {eras_json};
+
+// Get theme colors from CSS variables
+function getThemeColors() {{
+  const s = getComputedStyle(document.documentElement);
+  return {{
+    accent:    s.getPropertyValue('--accent').trim(),
+    secondary: s.getPropertyValue('--secondary').trim(),
+    text:      s.getPropertyValue('--text').trim(),
+    text2:     s.getPropertyValue('--text-2').trim(),
+    muted:     s.getPropertyValue('--text-muted').trim(),
+    border:    s.getPropertyValue('--border').trim(),
+    bg:        s.getPropertyValue('--bg-card').trim(),
+    // Agent-specific colors
+    kai:       s.getPropertyValue('--kai').trim(),
+    cursor:    s.getPropertyValue('--cursor').trim(),
+    claude:    s.getPropertyValue('--claude').trim(),
+    simon:     s.getPropertyValue('--simon').trim(),
+    kimicode:  s.getPropertyValue('--kimicode').trim(),
+    codex:     s.getPropertyValue('--codex').trim(),
+    unknown:   s.getPropertyValue('--unknown').trim(),
+  }};
+}}
+
+// Agent color mapping using theme colors
+function getAgentColor(name) {{
+  const colors = getThemeColors();
+  const colorMap = {{
+    'Simon': colors.simon || colors.accent,
+    'Claude': colors.claude || colors.secondary,
+    'Kai': colors.kai || colors.text,
+    'Cursor': colors.cursor || colors.text2,
+    'KimiCode': colors.kimicode || colors.accent,
+    'Codex': colors.codex || colors.secondary,
+    'Liminal': colors.text,
+    'Unknown': colors.unknown || colors.muted
+  }};
+  return colorMap[name] || colorMap['Unknown'];
+}}
+
+// Bar chart: commits by agent
+function renderBarChart() {{
+  const margin = {{top: 20, right: 20, bottom: 60, left: 180}};
+  const width = 800 - margin.left - margin.right;
+  const height = 400 - margin.top - margin.bottom;
+
+  const svg = d3.select('#bar-chart')
+    .append('svg')
+    .attr('width', width + margin.left + margin.right)
+    .attr('height', height + margin.top + margin.bottom)
+    .append('g')
+    .attr('transform', `translate(${{margin.left}},${{margin.top}})`);
+
+  const x = d3.scaleLinear()
+    .domain([0, d3.max(agents, d => d.total_commits)])
+    .range([0, width]);
+
+  const y = d3.scaleBand()
+    .domain(agents.map(d => d.name))
+    .range([0, height])
+    .padding(0.2);
+
+  const colors = getThemeColors();
+
+  // Bars
+  svg.selectAll('.bar')
+    .data(agents)
+    .enter()
+    .append('rect')
+    .attr('class', 'bar')
+    .attr('y', d => y(d.name))
+    .attr('height', y.bandwidth())
+    .attr('x', 0)
+    .attr('width', d => x(d.total_commits))
+    .attr('fill', d => getAgentColor(d.name))
+    .attr('rx', 4);
+
+  // Labels
+  svg.selectAll('.label')
+    .data(agents)
+    .enter()
+    .append('text')
+    .attr('class', 'mono')
+    .attr('x', -10)
+    .attr('y', d => y(d.name) + y.bandwidth() / 2)
+    .attr('text-anchor', 'end')
+    .attr('dominant-baseline', 'middle')
+    .style('fill', colors.text)
+    .text(d => d.name);
+
+  // Values
+  svg.selectAll('.value')
+    .data(agents)
+    .enter()
+    .append('text')
+    .attr('class', 'mono')
+    .attr('x', d => x(d.total_commits) + 5)
+    .attr('y', d => y(d.name) + y.bandwidth() / 2)
+    .attr('dominant-baseline', 'middle')
+    .style('fill', colors.text)
+    .style('font-size', '12px')
+    .text(d => d.total_commits);
+}}
+
+// Grouped bar chart: commits per era by agent
+function renderGroupedChart() {{
+  const margin = {{top: 40, right: 120, bottom: 60, left: 180}};
+  const width = 900 - margin.left - margin.right;
+  const height = 500 - margin.top - margin.bottom;
+
+  const svg = d3.select('#grouped-chart')
+    .append('svg')
+    .attr('width', width + margin.left + margin.right)
+    .attr('height', height + margin.top + margin.bottom)
+    .append('g')
+    .attr('transform', `translate(${{margin.left}},${{margin.top}})`);
+
+  // Flatten data for grouped chart
+  const groupedData = [];
+  agents.forEach(agent => {{
+    Object.entries(agent.commits_per_era).forEach(([era, count]) => {{
+      groupedData.push({{
+        agent: agent.name,
+        era: era,
+        commits: count
+      }});
+    }});
+  }});
+
+  // Scales
+  const x0 = d3.scaleBand()
+    .domain(agents.map(d => d.name))
+    .range([0, width])
+    .padding(0.2);
+
+  const x1 = d3.scaleBand()
+    .domain(eras)
+    .range([0, x0.bandwidth()])
+    .padding(0.05);
+
+  const y = d3.scaleLinear()
+    .domain([0, d3.max(groupedData, d => d.commits) || 1])
+    .range([height, 0]);
+
+  const colors = getThemeColors();
+
+  // X axis
+  svg.append('g')
+    .attr('transform', `translate(0,${{height}})`)
+    .call(d3.axisBottom(x0))
+    .selectAll('text')
+    .style('fill', colors.text2)
+    .style('font-size', '12px');
+
+  // Y axis
+  svg.append('g')
+    .call(d3.axisLeft(y).ticks(5))
+    .selectAll('text')
+    .style('fill', colors.text2)
+    .style('font-size', '12px');
+
+  // Groups
+  const groups = svg.selectAll('.g-group')
+    .data(agents)
+    .enter()
+    .append('g')
+    .attr('transform', d => `translate(${{x0(d.name)}},0)`);
+
+  // Bars for each era
+  groups.selectAll('.era-bar')
+    .data(d => eras.map(era => ({{
+      era,
+      commits: d.commits_per_era[era] || 0,
+      agent: d.name
+    }})))
+    .enter()
+    .append('rect')
+    .attr('class', 'era-bar')
+    .attr('x', d => x1(d.era))
+    .attr('y', d => y(d.commits))
+    .attr('width', x1.bandwidth())
+    .attr('height', d => height - y(d.commits))
+    .attr('fill', d => getAgentColor(d.agent))
+    .attr('opacity', 0.8)
+    .attr('rx', 2);
+
+  // Legend
+  const legend = svg.selectAll('.legend')
+    .data(eras)
+    .enter()
+    .append('g')
+    .attr('class', 'legend')
+    .attr('transform', (d, i) => `translate(${{width + 10}},${{i * 20}})`);
+
+  legend.append('rect')
+    .attr('width', 12)
+    .attr('height', 12)
+    .attr('rx', 2)
+    .attr('fill', colors.muted);
+
+  legend.append('text')
+    .attr('x', 18)
+    .attr('y', 10)
+    .style('fill', colors.text2)
+    .style('font-size', '11px')
+    .text(d => d);
+}}
+
+// Metrics table
+function renderMetricsTable() {{
+  const tbody = d3.select('#metrics-table');
+  const colors = getThemeColors();
+
+  agents.forEach(agent => {{
+    const row = tbody.append('tr');
+    row.append('td').text(agent.name).style('font-weight', '600');
+    row.append('td').text(agent.total_commits).classed('mono', true);
+
+    // Rework rate with color coding
+    const reworkCell = row.append('td').classed('mono', true);
+    const reworkRate = agent.rework_rate;
+    const reworkColor = reworkRate > 20 ? colors.kai : reworkRate > 10 ? colors.simon : colors.text;
+    reworkCell.text(reworkRate + '%')
+      .style('color', reworkColor);
+
+    row.append('td').text(agent.avg_message_length + ' chars').classed('mono', true);
+    row.append('td').text(agent.first_commit + ' → ' + agent.last_commit).classed('mono', true);
+  }});
+}}
+
+// Rebuild charts on theme switch
+window._rebuildCharts = function() {{
+  d3.select('#bar-chart').selectAll('*').remove();
+  d3.select('#grouped-chart').selectAll('*').remove();
+  d3.select('#metrics-table').selectAll('*').remove();
+  renderBarChart();
+  renderGroupedChart();
+  renderMetricsTable();
+}};
+
+// Initialize
+renderBarChart();
+renderGroupedChart();
+renderMetricsTable();
+</script>
+"""
+
+    html_template = f"""<!DOCTYPE html>
+<html lang="en" data-theme="editorial">
+<head>
+{head_bundle(title=title, description=description, include_d3=True)}
+{custom_css}
 </head>
 <body>
+<a href="#main-content" class="skip-link">Skip to content</a>
+
 <nav class="site-nav">
   <a href="." class="nav-back">&larr; Back</a>
   <div class="nav-sep"></div>
   <span class="nav-title">{project_name.upper()} Agent Benchmark</span>
+  <div style="margin-left: auto;">{THEME_SWITCHER_HTML}</div>
 </nav>
+
+<main id="main-content">
 <div class="container">
   <div class="header">
     <h1>{project_name.upper()} — Agent Performance Benchmark</h1>
@@ -422,217 +813,10 @@ tr:hover td{{background:var(--surface2)}}
     </div>
   </div>
 </div>
+</main>
 
-<script>
-// Data
-const agents = {agents_json};
-const eras = {eras_json};
-
-// Agent color mapping
-const agentColors = {{
-  'Simon': '#fbbf24',
-  'Claude': '#51cf66',
-  'Kai': '#ff6b6b',
-  'Cursor': '#ffa94d',
-  'KimiCode': '#a78bfa',
-  'Codex': '#60a5fa',
-  'Liminal': '#34d399',
-  'Unknown': '#495057'
-}};
-
-function getAgentColor(name) {{
-  return agentColors[name] || agentColors['Unknown'];
-}}
-
-// Bar chart: commits by agent
-function renderBarChart() {{
-  const margin = {{top: 20, right: 20, bottom: 60, left: 180}};
-  const width = 800 - margin.left - margin.right;
-  const height = 400 - margin.top - margin.bottom;
-
-  const svg = d3.select('#bar-chart')
-    .append('svg')
-    .attr('width', width + margin.left + margin.right)
-    .attr('height', height + margin.top + margin.bottom)
-    .append('g')
-    .attr('transform', `translate(${{margin.left}},${{margin.top}})`);
-
-  const x = d3.scaleLinear()
-    .domain([0, d3.max(agents, d => d.total_commits)])
-    .range([0, width]);
-
-  const y = d3.scaleBand()
-    .domain(agents.map(d => d.name))
-    .range([0, height])
-    .padding(0.2);
-
-  // Bars
-  svg.selectAll('.bar')
-    .data(agents)
-    .enter()
-    .append('rect')
-    .attr('class', 'bar')
-    .attr('y', d => y(d.name))
-    .attr('height', y.bandwidth())
-    .attr('x', 0)
-    .attr('width', d => x(d.total_commits))
-    .attr('fill', d => getAgentColor(d.name))
-    .attr('rx', 4);
-
-  // Labels
-  svg.selectAll('.label')
-    .data(agents)
-    .enter()
-    .append('text')
-    .attr('class', 'mono')
-    .attr('x', -10)
-    .attr('y', d => y(d.name) + y.bandwidth() / 2)
-    .attr('text-anchor', 'end')
-    .attr('dominant-baseline', 'middle')
-    .style('fill', 'var(--text)')
-    .text(d => d.name);
-
-  // Values
-  svg.selectAll('.value')
-    .data(agents)
-    .enter()
-    .append('text')
-    .attr('class', 'mono')
-    .attr('x', d => x(d.total_commits) + 5)
-    .attr('y', d => y(d.name) + y.bandwidth() / 2)
-    .attr('dominant-baseline', 'middle')
-    .style('fill', 'var(--text)')
-    .style('font-size', '12px')
-    .text(d => d.total_commits);
-}}
-
-// Grouped bar chart: commits per era by agent
-function renderGroupedChart() {{
-  const margin = {{top: 40, right: 120, bottom: 60, left: 180}};
-  const width = 900 - margin.left - margin.right;
-  const height = 500 - margin.top - margin.bottom;
-
-  const svg = d3.select('#grouped-chart')
-    .append('svg')
-    .attr('width', width + margin.left + margin.right)
-    .attr('height', height + margin.top + margin.bottom)
-    .append('g')
-    .attr('transform', `translate(${{margin.left}},${{margin.top}})`);
-
-  // Flatten data for grouped chart
-  const groupedData = [];
-  agents.forEach(agent => {{
-    Object.entries(agent.commits_per_era).forEach(([era, count]) => {{
-      groupedData.push({{
-        agent: agent.name,
-        era: era,
-        commits: count
-      }});
-    }});
-  }});
-
-  // Scales
-  const x0 = d3.scaleBand()
-    .domain(agents.map(d => d.name))
-    .range([0, width])
-    .padding(0.2);
-
-  const x1 = d3.scaleBand()
-    .domain(eras)
-    .range([0, x0.bandwidth()])
-    .padding(0.05);
-
-  const y = d3.scaleLinear()
-    .domain([0, d3.max(groupedData, d => d.commits) || 1])
-    .range([height, 0]);
-
-  // X axis
-  svg.append('g')
-    .attr('transform', `translate(0,${{height}})`)
-    .call(d3.axisBottom(x0))
-    .selectAll('text')
-    .style('fill', 'var(--text2)')
-    .style('font-size', '12px');
-
-  // Y axis
-  svg.append('g')
-    .call(d3.axisLeft(y).ticks(5))
-    .selectAll('text')
-    .style('fill', 'var(--text2)')
-    .style('font-size', '12px');
-
-  // Groups
-  const groups = svg.selectAll('.g-group')
-    .data(agents)
-    .enter()
-    .append('g')
-    .attr('transform', d => `translate(${{x0(d.name)}},0)`);
-
-  // Bars for each era
-  groups.selectAll('.era-bar')
-    .data(d => eras.map(era => ({{
-      era,
-      commits: d.commits_per_era[era] || 0,
-      agent: d.name
-    }})))
-    .enter()
-    .append('rect')
-    .attr('class', 'era-bar')
-    .attr('x', d => x1(d.era))
-    .attr('y', d => y(d.commits))
-    .attr('width', x1.bandwidth())
-    .attr('height', d => height - y(d.commits))
-    .attr('fill', d => getAgentColor(d.agent))
-    .attr('opacity', 0.8)
-    .attr('rx', 2);
-
-  // Legend
-  const legend = svg.selectAll('.legend')
-    .data(eras)
-    .enter()
-    .append('g')
-    .attr('class', 'legend')
-    .attr('transform', (d, i) => `translate(${{width + 10}},${{i * 20}})`);
-
-  legend.append('rect')
-    .attr('width', 12)
-    .attr('height', 12)
-    .attr('rx', 2)
-    .attr('fill', '#8d99aa');
-
-  legend.append('text')
-    .attr('x', 18)
-    .attr('y', 10)
-    .style('fill', 'var(--text2)')
-    .style('font-size', '11px')
-    .text(d => d);
-}}
-
-// Metrics table
-function renderMetricsTable() {{
-  const tbody = d3.select('#metrics-table');
-
-  agents.forEach(agent => {{
-    const row = tbody.append('tr');
-    row.append('td').text(agent.name).style('font-weight', '600');
-    row.append('td').text(agent.total_commits).classed('mono', true);
-
-    // Rework rate with color coding
-    const reworkCell = row.append('td').classed('mono', true);
-    const reworkRate = agent.rework_rate;
-    reworkCell.text(reworkRate + '%')
-      .style('color', reworkRate > 20 ? '#ff6b6b' : reworkRate > 10 ? '#fbbf24' : 'var(--text)');
-
-    row.append('td').text(agent.avg_message_length + ' chars').classed('mono', true);
-    row.append('td').text(agent.first_commit + ' → ' + agent.last_commit).classed('mono', true);
-  }});
-}}
-
-// Initialize
-renderBarChart();
-renderGroupedChart();
-renderMetricsTable();
-</script>
+{js_code}
+{body_end_bundle()}
 </body>
 </html>"""
 

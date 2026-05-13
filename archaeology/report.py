@@ -8,6 +8,12 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from archaeology.visualization.design_system import (
+    head_bundle,
+    body_end_bundle,
+    THEME_SWITCHER_HTML,
+)
+
 
 ANALYSIS_FILES = [
     "analysis-sdlc-gap-finder.json",
@@ -139,7 +145,7 @@ def export_markdown_report(project_name: str, project_root: str | Path, output_p
 
 
 def _markdown_to_html(markdown: str, title: str) -> str:
-    """Render the report's constrained Markdown subset to standalone HTML."""
+    """Render the report's constrained Markdown subset to standalone HTML using the unified design system."""
     body: list[str] = []
     in_list = False
 
@@ -179,57 +185,157 @@ def _markdown_to_html(markdown: str, title: str) -> str:
     close_list()
     body_html = "\n    ".join(body)
     escaped_title = html.escape(title)
+    description = f"Archaeological analysis report for {escaped_title}"
+
+    # Use the unified design system's head_bundle
+    head_content = head_bundle(
+        title=f"{escaped_title}",
+        description=description,
+        include_charts=False,
+        include_d3=False,
+    )
+
     return f"""<!doctype html>
-<html lang="en">
+<html lang="en" data-theme="editorial">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{escaped_title}</title>
-  <meta name="description" content="Archaeological analysis report for {escaped_title}">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x26CF;</text></svg>">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+{head_content}
   <style>
-    :root {{ color-scheme: dark; --bg:#06090f; --surface:#0c1018; --surface2:#141a24; --surface3:#1c2432; --border:#1a2232; --border-hover:#2a3a52; --text:#e8ecf2; --text2:#8d99aa; --text3:#6a7888; --accent:#34d399; --font-display:'Space Grotesk',sans-serif; --font-body:'DM Sans',sans-serif; --font-mono:'JetBrains Mono',monospace; --radius-sm:6px; --radius-md:10px; --radius-lg:16px; }}
-    * {{ box-sizing: border-box; margin:0; padding:0; }}
-    html {{ scroll-behavior:smooth; -webkit-font-smoothing:antialiased; }}
-    body {{ background:var(--bg); color:var(--text); font-family:var(--font-body); line-height:1.65; min-height:100vh; }}
-    h1,h2,h3 {{ font-family:var(--font-display); font-weight:600; letter-spacing:-0.01em; }}
+    /* Report-specific layout and component styles */
+    .site-nav {{
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      height: 52px;
+      font-family: var(--font-display);
+      backdrop-filter: blur(12px);
+    }}
+    .site-nav .nav-back {{
+      font-weight: 500;
+      font-size: 13px;
+      color: var(--text-2);
+      text-decoration: none;
+      padding: 4px 10px;
+      border-radius: var(--radius-sm);
+      transition: background var(--transition);
+      white-space: nowrap;
+    }}
+    .site-nav .nav-back:hover {{
+      color: var(--text);
+      background: var(--bg-card);
+    }}
+    .site-nav .nav-sep {{
+      width: 1px;
+      height: 24px;
+      background: var(--border);
+    }}
+    .site-nav .nav-title {{
+      font-weight: 600;
+      font-size: 15px;
+      color: var(--text);
+      letter-spacing: -0.01em;
+      flex: 1;
+    }}
+    .site-nav .theme-switcher {{
+      margin-left: auto;
+    }}
 
-    .site-nav {{ position:sticky; top:0; z-index:100; background:var(--surface); border-bottom:1px solid var(--border); padding:0 24px; display:flex; align-items:center; gap:12px; height:52px; font-family:var(--font-display); backdrop-filter:blur(12px); }}
-    .site-nav .nav-back {{ font-weight:500; font-size:13px; color:var(--text2); text-decoration:none; padding:4px 10px; border-radius:var(--radius-sm); transition:color .15s,background .15s; white-space:nowrap; }}
-    .site-nav .nav-back:hover {{ color:var(--text); background:var(--surface2); }}
-    .site-nav .nav-sep {{ width:1px; height:24px; background:var(--border); }}
-    .site-nav .nav-title {{ font-weight:600; font-size:15px; color:var(--text); letter-spacing:-0.01em; }}
+    main {{
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 40px 24px 80px;
+    }}
+    h1 {{
+      font-size: clamp(1.75rem, 4vw, 2.5rem);
+      line-height: 1.1;
+      letter-spacing: -0.03em;
+      margin: 0 0 1.5rem;
+      color: var(--text);
+    }}
+    h2 {{
+      font-size: 1.1rem;
+      margin-top: 2.5rem;
+      color: var(--accent);
+      border-top: 1px solid var(--border);
+      padding-top: 1.5rem;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+    }}
+    p {{
+      color: var(--text-2);
+      margin-bottom: 0.75rem;
+    }}
+    ul {{
+      padding: 1rem 1.25rem;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      margin-bottom: 1rem;
+    }}
+    li {{
+      color: var(--text-2);
+      padding: 0.2rem 0;
+    }}
+    li + li {{
+      margin-top: 0.4rem;
+    }}
+    li strong {{
+      color: var(--text);
+      font-weight: 600;
+    }}
+    code {{
+      font-family: var(--font-mono);
+      font-size: 0.85em;
+      background: var(--bg-card);
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: var(--accent);
+    }}
+    .badge {{
+      display: inline-block;
+      margin-bottom: 1.25rem;
+      padding: 0.3rem 0.65rem;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      color: var(--accent);
+      background: var(--accent-dim);
+      font-size: 0.75rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }}
 
-    main {{ max-width:800px; margin:0 auto; padding:40px 24px 80px; }}
-    h1 {{ font-size:clamp(1.75rem,4vw,2.5rem); line-height:1.1; letter-spacing:-0.03em; margin:0 0 1.5rem; color:var(--text); }}
-    h2 {{ font-size:1.1rem; margin-top:2.5rem; color:var(--accent); border-top:1px solid var(--border); padding-top:1.5rem; letter-spacing:0.02em; text-transform:uppercase; }}
-    p {{ color:var(--text2); margin-bottom:0.75rem; }}
-    ul {{ padding:1rem 1.25rem; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md); margin-bottom:1rem; }}
-    li {{ color:var(--text2); padding:0.2rem 0; }}
-    li + li {{ margin-top:0.4rem; }}
-    li strong {{ color:var(--text); font-weight:600; }}
-    code {{ font-family:var(--font-mono); font-size:0.85em; background:var(--surface2); padding:2px 6px; border-radius:4px; color:var(--accent); }}
-    .badge {{ display:inline-block; margin-bottom:1.25rem; padding:0.3rem 0.65rem; border:1px solid var(--border); border-radius:999px; color:var(--accent); background:rgba(52,211,153,0.06); font-size:0.75rem; font-weight:500; text-transform:uppercase; letter-spacing:0.04em; }}
-
-    @media(max-width:768px) {{
-      main {{ padding:28px 16px 60px; }}
-      .site-nav {{ padding:0 16px; }}
+    @media (max-width: 768px) {{
+      main {{
+        padding: 28px 16px 60px;
+      }}
+      .site-nav {{
+        padding: 0 16px;
+      }}
     }}
   </style>
 </head>
 <body>
+  <a href="#main-content" class="skip-link">Skip to content</a>
+
   <nav class="site-nav">
     <a href="." class="nav-back">&larr; Back</a>
     <div class="nav-sep"></div>
     <span class="nav-title">{escaped_title}</span>
+    {THEME_SWITCHER_HTML}
   </nav>
-  <main>
+
+  <main id="main-content">
     <div class="badge">Archaeology Report</div>
     {body_html}
   </main>
+
+  {body_end_bundle()}
 </body>
 </html>
 """

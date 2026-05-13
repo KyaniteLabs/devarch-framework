@@ -1,0 +1,88 @@
+name: DevArch Archaeology Report
+
+on:
+  workflow_dispatch:
+    inputs:
+      project_name:
+        description: 'Project name (defaults to repo name)'
+        required: false
+        type: string
+      run_analysis:
+        description: 'Run analysis vectors'
+        required: false
+        type: boolean
+        default: true
+  schedule:
+    - cron: '0 0 * * 0'  # Weekly on Sunday at midnight UTC
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  archaeology:
+    runs-on: ubuntu-latest
+    environment: github-pages
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full git history required for archaeology
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install DevArch
+        run: pip install devarch-framework
+
+      - name: Initialize project
+        run: |
+          PROJECT_NAME="${{ inputs.project_name || github.event.repository.name }}"
+          devarch init "$PROJECT_NAME"
+          echo "PROJECT_NAME=$PROJECT_NAME" >> $GITHUB_ENV
+
+      - name: Mine git history
+        run: devarch mine . -p "$PROJECT_NAME"
+
+      - name: Build database
+        run: devarch build-db "$PROJECT_NAME"
+
+      - name: Detect signals
+        run: devarch signals "$PROJECT_NAME"
+
+      - name: Run analysis
+        if: ${{ inputs.run_analysis != false }}
+        run: devarch analyze "$PROJECT_NAME"
+
+      - name: Generate visualization
+        run: devarch visualize "$PROJECT_NAME"
+
+      - name: Export report
+        run: devarch export-report "$PROJECT_NAME"
+
+      - name: Run audit
+        run: devarch audit "$PROJECT_NAME" || true
+
+      - name: Upload archaeology report
+        uses: actions/upload-artifact@v4
+        with:
+          name: archaeology-report-${{ env.PROJECT_NAME }}
+          path: |
+            projects/${{ env.PROJECT_NAME }}/deliverables/
+          retention-days: 30
+
+      # Optional: Deploy to GitHub Pages (uncomment to enable)
+      # - name: Setup Pages
+      #   uses: actions/configure-pages@v4
+      # - name: Upload Pages artifact
+      #   uses: actions/upload-pages-artifact@v3
+      #   with:
+      #     path: projects/${{ env.PROJECT_NAME }}/deliverables/visual/
+      # - name: Deploy to GitHub Pages
+      #   id: deployment
+      #   uses: actions/deploy-pages@v4

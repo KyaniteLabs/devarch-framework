@@ -14,6 +14,13 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+# Add project root to path for imports
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
+from archaeology.visualization.design_system import (
+    head_bundle, body_end_bundle, THEME_SWITCHER_HTML
+)
+
 ROOT = Path(__file__).resolve().parents[2]
 
 ERA_COLORS = [
@@ -80,77 +87,71 @@ def generate_playbook(p: dict) -> str:
     daily_values = json.dumps([daily[d] for d in sorted(daily.keys())])
 
     return f"""<!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="editorial">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>{name} — Development Playbook</title>
-<meta name="description" content="Narrative archaeology playbook for {name} — {p['total_commits']} commits across {p['era_count']} eras">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x26CF;</text></svg>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+{head_bundle(
+    title=f"{name} — Development Playbook",
+    description=f"Narrative archaeology playbook for {name} — {p['total_commits']} commits across {p['era_count']} eras",
+    include_charts=True
+)}
 <style>
-*,*::before,*::after{{box-sizing:border-box;margin:0;padding:0}}
-:root{{
-  --bg:#020408;--surface:#080e18;--surface2:#0c1520;--surface3:#121e2c;
-  --border:#1a3355;--border-hover:#2a5080;
-  --text:#e8f0fa;--text2:#a0c0d8;--text3:#6a9abc;
-  --neon-green:#00ff88;
-  --accent-primary:#F59E0B;--accent-secondary:#14B8A6;
-  --font-display:'Plus Jakarta Sans',sans-serif;--font-body:'Plus Jakarta Sans',sans-serif;
-  --font-mono:'JetBrains Mono',monospace;
-  --radius-sm:3px;--radius-md:4px;--radius-lg:6px;
+/* Era-specific colors (domain-specific, defined after theme tokens) */
+:root, [data-theme="warm"], [data-theme="editorial"], [data-theme="modern"] {{
 {era_colors_css}
 }}
-html{{scroll-behavior:smooth;-webkit-font-smoothing:antialiased}}
-body{{background:var(--bg);color:var(--text);font-family:var(--font-body);font-size:16px;line-height:1.7;overflow-x:hidden}}
-h1,h2,h3,h4{{font-family:var(--font-display);font-weight:600;line-height:1.15;letter-spacing:-0.01em}}
-a{{color:var(--accent-secondary);text-decoration:none}}
-a:hover{{color:#66eeff}}
+
+/* Playbook-specific styles */
 .chart-container{{position:relative;height:200px;width:100%}}
 
 /* Hero */
 .hero{{text-align:center;padding:4rem 2rem 2rem;border-bottom:1px solid var(--border)}}
 .hero h1{{font-size:clamp(2rem,5vw,3.5rem);letter-spacing:-0.03em;margin-bottom:0.5rem}}
-.hero .subtitle{{color:var(--text2);font-size:1.1rem;margin-bottom:2rem}}
+.hero .subtitle{{color:var(--text-2);font-size:1.1rem;margin-bottom:2rem}}
 .stats-grid{{display:flex;justify-content:center;gap:2rem;flex-wrap:wrap}}
 .stat{{text-align:center}}
-.stat .value{{font-size:2rem;font-weight:700;font-family:var(--font-mono);color:var(--neon-green)}}
-.stat .label{{font-size:0.8rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em}}
+.stat .value{{font-size:2rem;font-weight:700;font-family:var(--font-mono);color:var(--success)}}
+.stat .label{{font-size:0.8rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em}}
 
 /* Era strip */
 .era-strip{{display:flex;height:48px;border-radius:var(--radius-md);overflow:hidden;border:1px solid var(--border);margin:2rem auto;max-width:900px}}
-.era-strip a{{display:flex;align-items:center;justify-content:center;color:var(--bg);font-size:0.7rem;font-weight:600;font-family:var(--font-mono);text-decoration:none;text-shadow:0 1px 2px rgba(0,0,0,0.5);transition:filter .2s;min-width:40px;padding:0 8px;overflow:hidden;white-space:nowrap}}
+.era-strip a{{display:flex;align-items:center;justify-content:center;color:var(--bg-main);font-size:0.7rem;font-weight:600;font-family:var(--font-mono);text-decoration:none;text-shadow:0 1px 2px rgba(0,0,0,0.5);transition:filter .2s;min-width:40px;padding:0 8px;overflow:hidden;white-space:nowrap}}
 .era-strip a:hover{{filter:brightness(1.2)}}
 
 /* Era sections */
 .era-section{{max-width:900px;margin:0 auto;padding:3rem 2rem;border-bottom:1px solid var(--border)}}
 .era-header{{display:flex;align-items:center;gap:1rem;margin-bottom:1.5rem}}
-.era-badge{{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.2rem;font-weight:700;font-family:var(--font-mono);color:var(--bg);flex-shrink:0}}
+.era-badge{{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.2rem;font-weight:700;font-family:var(--font-mono);color:var(--bg-main);flex-shrink:0}}
 .era-header h2{{font-size:1.5rem;margin:0}}
-.era-header .dates{{color:var(--text3);font-size:0.85rem;font-family:var(--font-mono)}}
+.era-header .dates{{color:var(--text-muted);font-size:0.85rem;font-family:var(--font-mono)}}
 .era-stats{{display:flex;gap:1.5rem;margin:1rem 0;flex-wrap:wrap}}
 .era-stats .stat .value{{font-size:1.3rem}}
-.era-description{{color:var(--text2);margin:1rem 0;line-height:1.8}}
+.era-description{{color:var(--text-2);margin:1rem 0;line-height:1.8}}
 .era-events{{list-style:none;padding:0}}
-.era-events li{{padding:0.4rem 0 0.4rem 1.5rem;position:relative;color:var(--text2);font-size:0.9rem}}
-.era-events li::before{{content:'>';position:absolute;left:0;color:var(--accent-secondary);font-family:var(--font-mono);font-weight:600}}
+.era-events li{{padding:0.4rem 0 0.4rem 1.5rem;position:relative;color:var(--text-2);font-size:0.9rem}}
+.era-events li::before{{content:'>';position:absolute;left:0;color:var(--secondary);font-family:var(--font-mono);font-weight:600}}
 
 /* Charts section */
 .charts-section{{max-width:900px;margin:0 auto;padding:3rem 2rem}}
 .charts-section h2{{margin-bottom:1.5rem}}
 .charts-grid{{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem}}
 @media(max-width:700px){{.charts-grid{{grid-template-columns:1fr}}}}
-.chart-card{{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:1rem}}
-.chart-card h3{{font-size:0.9rem;color:var(--text3);margin-bottom:0.5rem}}
+.chart-card{{background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:1rem}}
+.chart-card h3{{font-size:0.9rem;color:var(--text-muted);margin-bottom:0.5rem}}
 
 /* Footer */
-footer{{text-align:center;padding:2rem;color:var(--text3);font-size:0.8rem;font-family:var(--font-mono);border-top:1px solid var(--border)}}
+footer{{text-align:center;padding:2rem;color:var(--text-muted);font-size:0.8rem;font-family:var(--font-mono);border-top:1px solid var(--border)}}
 </style>
 </head>
 <body>
+
+<a href="#main-content" class="skip-link">Skip to content</a>
+
+<header style="padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border);">
+  <div style="font-family: var(--font-display); font-weight: 600; font-size: 1.2rem;">DevArch Playbook</div>
+  {THEME_SWITCHER_HTML}
+</header>
+
+<main id="main-content">
 
 <div class="hero">
   <h1>{name}</h1>
@@ -183,24 +184,50 @@ footer{{text-align:center;padding:2rem;color:var(--text3);font-size:0.8rem;font-
   </div>
 </div>
 
+</main>
+
 <footer>
   Generated by dev-archaeology &middot; {datetime.now().strftime("%Y-%m-%d")} &middot; {p['total_commits']} commits across {p['era_count']} eras
 </footer>
 
 <script>
+// Rebuild charts with theme colors when theme changes
+window._rebuildCharts = function() {{
+  var colors = getThemeColors();
+
+  // Update timeline chart
+  var timelineChart = Chart.getChart('timeline-chart');
+  if (timelineChart) {{
+    timelineChart.options.scales.x.ticks.color = colors.muted;
+    timelineChart.options.scales.x.ticks.font.color = colors.muted;
+    timelineChart.options.scales.x.grid.color = colors.border;
+    timelineChart.options.scales.y.ticks.color = colors.muted;
+    timelineChart.options.scales.y.ticks.font.color = colors.muted;
+    timelineChart.options.scales.y.grid.color = colors.border;
+    timelineChart.update();
+  }}
+
+  // Update types chart
+  var typesChart = Chart.getChart('types-chart');
+  if (typesChart) {{
+    typesChart.options.plugins.legend.labels.color = colors.text;
+    typesChart.update();
+  }}
+}};
+
 // Timeline chart
 new Chart(document.getElementById('timeline-chart'), {{
   type: 'bar',
   data: {{
     labels: {daily_labels},
-    datasets: [{{label: 'Commits', data: {daily_values}, backgroundColor: '#14B8A688', borderColor: '#14B8A6', borderWidth: 1}}]
+    datasets: [{{label: 'Commits', data: {daily_values}, backgroundColor: 'var(--success)', borderColor: 'var(--success)', borderWidth: 1}}]
   }},
   options: {{
     responsive: true, maintainAspectRatio: false,
     plugins: {{legend: {{display: false}}}},
     scales: {{
-      x: {{ticks: {{color: '#6a9abc', font: {{family: 'JetBrains Mono', size: 9}}}}, grid: {{color: '#1a335530'}}}},
-      y: {{ticks: {{color: '#6a9abc', font: {{family: 'JetBrains Mono'}}}}, grid: {{color: '#1a335530'}}}}
+      x: {{ticks: {{color: getThemeColors().muted, font: {{family: 'var(--font-mono)', size: 9}}}}, grid: {{color: getThemeColors().border}}}},
+      y: {{ticks: {{color: getThemeColors().muted, font: {{family: 'var(--font-mono)'}}}}, grid: {{color: getThemeColors().border}}}}
     }}
   }}
 }});
@@ -214,10 +241,12 @@ new Chart(document.getElementById('types-chart'), {{
   }},
   options: {{
     responsive: true, maintainAspectRatio: false,
-    plugins: {{legend: {{position: 'right', labels: {{color: '#a0c0d8', font: {{family: 'JetBrains Mono', size: 11}}}}}}}}
+    plugins: {{legend: {{position: 'right', labels: {{color: getThemeColors().text, font: {{family: 'var(--font-mono)', size: 11}}}}}}}}
   }}
 }});
 </script>
+
+{body_end_bundle()}
 </body>
 </html>"""
 

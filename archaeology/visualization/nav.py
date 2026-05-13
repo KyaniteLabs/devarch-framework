@@ -24,26 +24,58 @@ POSTHOG_SNIPPET = ""
 
 NAV_CSS = """<style>
 /* ── Site Nav ── */
-.site-nav{position:sticky;top:0;z-index:100;background:var(--surface,#0c1018);border-bottom:1px solid var(--border,#1a2232);padding:0 24px;display:flex;align-items:center;gap:12px;height:52px;font-family:var(--font-display,'Space Grotesk',sans-serif);backdrop-filter:blur(12px)}
-.site-nav .nav-home{font-weight:700;font-size:14px;letter-spacing:.02em;color:var(--text3,#6a7888);text-decoration:none;white-space:nowrap;padding:4px 10px;border-radius:var(--radius-sm,6px);transition:color .15s,background .15s}
-.site-nav .nav-home:hover{color:var(--text,#e8ecf2);background:var(--surface2,#141a24)}
+.site-nav{position:sticky;top:0;z-index:100;background:var(--bg-surface,#0c1018);border-bottom:1px solid var(--border,#1a2232);padding:0 24px;display:flex;align-items:center;gap:12px;height:52px;font-family:var(--font-display,'Space Grotesk',sans-serif);backdrop-filter:blur(12px)}
+.site-nav .nav-home{font-weight:700;font-size:14px;letter-spacing:.02em;color:var(--text-muted,#6a7888);text-decoration:none;white-space:nowrap;padding:4px 10px;border-radius:var(--radius-sm,6px);transition:color .15s,background .15s}
+.site-nav .nav-home:hover{color:var(--text,#e8ecf2);background:var(--bg-card,#141a24)}
 .site-nav .nav-sep{width:1px;height:24px;background:var(--border,#1a2232)}
 .site-nav .nav-project{font-weight:600;font-size:15px;color:var(--text,#e8ecf2);letter-spacing:-.01em;white-space:nowrap}
 .site-nav .nav-links{display:flex;gap:4px;align-items:center;margin-left:auto}
-.site-nav .nav-links a{font-size:13px;font-weight:500;color:var(--text2,#8d99aa);text-decoration:none;padding:6px 12px;border-radius:var(--radius-sm,6px);transition:color .15s,background .15s;white-space:nowrap}
-.site-nav .nav-links a:hover{color:var(--text,#e8ecf2);background:var(--surface2,#141a24)}
-.site-nav .nav-links a.active{color:var(--text,#e8ecf2);background:var(--surface3,#1c2432)}
+.site-nav .nav-links a{font-size:13px;font-weight:500;color:var(--text-2,#8d99aa);text-decoration:none;padding:6px 12px;border-radius:var(--radius-sm,6px);transition:color .15s,background .15s;white-space:nowrap}
+.site-nav .nav-links a:hover{color:var(--text,#e8ecf2);background:var(--bg-card,#141a24)}
+.site-nav .nav-links a.active{color:var(--text,#e8ecf2);background:var(--bg-card-alt,#1c2432)}
 .nav-body{margin-top:0}
+/* ── Theme Switcher ── */
+.theme-switcher{display:inline-flex;gap:2px;background:var(--bg-card-alt,#1c2432);border-radius:var(--radius-sm,6px);padding:2px;border:1px solid var(--border-subtle,rgba(255,255,255,0.04));margin-left:auto;margin-right:8px}
+.theme-switcher button{background:transparent;border:none;color:var(--text-muted,#6a7888);font-family:var(--font-mono,'JetBrains Mono',monospace);font-size:11px;font-weight:600;padding:3px 8px;border-radius:4px;cursor:pointer;transition:background .15s,color .15s}
+.theme-switcher button:hover{background:var(--bg-hover,#222228);color:var(--text,#e8ecf2)}
+.theme-switcher button.active{background:var(--accent-dim,rgba(59,130,246,0.10));color:var(--accent,#3b82f6)}
 /* ── Mobile hamburger ── */
-.nav-hamburger{display:none;background:none;border:none;color:var(--text2,#8d99aa);font-size:22px;cursor:pointer;padding:4px 8px;margin-left:auto}
+.nav-hamburger{display:none;background:none;border:none;color:var(--text-2,#8d99aa);font-size:22px;cursor:pointer;padding:4px 8px;margin-left:auto}
 @media(max-width:768px){
   .site-nav{padding:0 16px;flex-wrap:wrap;height:auto;min-height:52px}
   .site-nav .nav-links{display:none;flex-direction:column;width:100%;padding:8px 0 12px;gap:2px}
   .site-nav .nav-links.open{display:flex}
   .site-nav .nav-links a{padding:10px 12px;font-size:15px}
   .nav-hamburger{display:block}
+  .theme-switcher{margin-left:0;margin-right:auto}
 }
 </style>"""
+
+
+# ── Theme Switcher JavaScript ───────────────────────────────────────────────
+
+NAV_THEME_JS = """<script>
+(function() {
+  var saved = localStorage.getItem('devarch-theme') || 'editorial';
+  document.documentElement.setAttribute('data-theme', saved);
+  function updateActive() {
+    var current = document.documentElement.getAttribute('data-theme') || 'editorial';
+    document.querySelectorAll('.theme-switcher button[data-theme]').forEach(function(btn) {
+      btn.classList.toggle('active', btn.getAttribute('data-theme') === current);
+    });
+  }
+  updateActive();
+  document.querySelectorAll('.theme-switcher button[data-theme]').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var theme = btn.getAttribute('data-theme');
+      document.documentElement.setAttribute('data-theme', theme);
+      localStorage.setItem('devarch-theme', theme);
+      updateActive();
+      if (typeof window._rebuildCharts === 'function') window._rebuildCharts();
+    });
+  });
+})();
+</script>"""
 
 
 def _discover_sibling_pages(current_file: Path, project_deliverables_dir: Path) -> list[dict[str, str]]:
@@ -123,12 +155,18 @@ def generate_nav(
   <a href="{home_url}" class="nav-home">Home</a>
   <div class="nav-sep"></div>
   <span class="nav-project">{project_name.upper()}</span>
+  <div class="theme-switcher" role="radiogroup" aria-label="Color theme">
+    <button data-theme="warm" aria-label="Warm theme" title="Warm">W</button>
+    <button data-theme="editorial" aria-label="Editorial theme" title="Editorial">E</button>
+    <button data-theme="modern" aria-label="Modern theme" title="Modern">M</button>
+  </div>
   <button class="nav-hamburger" onclick="document.querySelector('.nav-links').classList.toggle('open')" aria-label="Menu">&#9776;</button>
   <div class="nav-links">
     <a href="{project_index_href}">Overview</a>
     {page_links}
   </div>
 </nav>
+{NAV_THEME_JS}
 """
     return nav_html
 
@@ -163,11 +201,17 @@ def generate_nav_simple(
   <a href="{home_url}" class="nav-home">Home</a>
   <div class="nav-sep"></div>
   <span class="nav-project">{project_name.upper()}</span>
+  <div class="theme-switcher" role="radiogroup" aria-label="Color theme">
+    <button data-theme="warm" aria-label="Warm theme" title="Warm">W</button>
+    <button data-theme="editorial" aria-label="Editorial theme" title="Editorial">E</button>
+    <button data-theme="modern" aria-label="Modern theme" title="Modern">M</button>
+  </div>
   <button class="nav-hamburger" onclick="document.querySelector('.nav-links').classList.toggle('open')" aria-label="Menu">&#9776;</button>
   <div class="nav-links">
     {page_links}
   </div>
 </nav>
+{NAV_THEME_JS}
 """
     return nav_html
 

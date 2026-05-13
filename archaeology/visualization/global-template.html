@@ -1,33 +1,73 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="editorial">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>The Portfolio — An Archaeology of Multi-Repo Development</title>
 <meta name="description" content="Cross-repo archaeological analysis — 33 repositories, 2,111 commits across 8 months of development">
+<meta property="og:title" content="The Portfolio — An Archaeology of Multi-Repo Development">
+<meta property="og:description" content="Cross-repo archaeological analysis — 33 repositories, 2,111 commits across 8 months of development">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="The Portfolio — An Archaeology of Multi-Repo Development">
+<meta name="twitter:description" content="Cross-repo archaeological analysis — 33 repositories, 2,111 commits across 8 months of development">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x26CF;</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&family=Lora:wght@400;600;700&family=Source+Sans+3:wght@300;400;500;600&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://d3js.org/d3.v7.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --bg:#06090f;--surface:#0c1018;--surface2:#141a24;--surface3:#1c2432;
-  --border:#1a2232;--border-hover:#2a3a52;
-  --text:#e8ecf2;--text2:#8d99aa;--text3:#6a7888;
-  /* AGENT COLORS */
+/* Warm Theme */
+:root, [data-theme="warm"]{
+  --bg-main:#1f1a14;--bg-surface:#2b241b;--bg-card:#383020;--bg-card-alt:#453a28;--bg-hover:#504230;
+  --accent:#d4a017;--accent-dim:rgba(212,160,23,0.12);--accent-mid:rgba(212,160,23,0.25);
+  --secondary:#b87333;--success:#4caf70;--warning:#e8a830;--danger:#c0392b;
+  --text:#f5e8c8;--text-2:#c8b898;--text-muted:#9d8f78;--text-faint:#6b5f4e;
+  --border:rgba(212,160,23,0.15);--border-subtle:rgba(255,255,255,0.05);
+  --font-display:'DM Serif Display',Georgia,serif;--font-body:'DM Sans',system-ui,sans-serif;
+  --font-mono:'JetBrains Mono','Courier New',monospace;
+}
+
+/* Editorial Theme */
+[data-theme="editorial"]{
+  --bg-main:#faf9f7;--bg-surface:#fff;--bg-card:#fff;--bg-card-alt:#f5f4f2;--bg-hover:#efeeec;
+  --accent:#1a5c3a;--accent-dim:rgba(26,92,58,0.08);--accent-mid:rgba(26,92,58,0.18);
+  --secondary:#2c5aa0;--success:#1a5c3a;--warning:#8a6d2b;--danger:#a8282d;
+  --text:#1a1a1a;--text-2:#3d3d3d;--text-muted:#6b6b6b;--text-faint:#9d9d9d;
+  --border:rgba(0,0,0,0.10);--border-subtle:rgba(0,0,0,0.05);
+  --font-display:'Lora',Georgia,serif;--font-body:'Source Sans 3',system-ui,sans-serif;
+  --font-mono:'IBM Plex Mono','Courier New',monospace;
+}
+
+/* Modern Theme */
+[data-theme="modern"]{
+  --bg-main:#09090b;--bg-surface:#0f0f12;--bg-card:#16161a;--bg-card-alt:#1c1c21;--bg-hover:#222228;
+  --accent:#3b82f6;--accent-dim:rgba(59,130,246,0.10);--accent-mid:rgba(59,130,246,0.22);
+  --secondary:#8b5cf6;--success:#10b981;--warning:#f59e0b;--danger:#ef4444;
+  --text:#edf0f7;--text-2:#b4bccf;--text-muted:#6b7a9a;--text-faint:#3d4c6a;
+  --border:rgba(255,255,255,0.08);--border-subtle:rgba(255,255,255,0.04);
+  --font-display:'Inter',system-ui,sans-serif;--font-body:'Inter',system-ui,sans-serif;
+  --font-mono:'JetBrains Mono','Courier New',monospace;
+}
+
+/* Backward-compatible aliases */
+:root, [data-theme="warm"], [data-theme="editorial"], [data-theme="modern"]{
+  --bg:var(--bg-main);--surface:var(--bg-surface);--surface2:var(--bg-card);--surface3:var(--bg-card-alt);
+  --border-hover:var(--accent-mid);--text2:var(--text-2);--text3:var(--text-muted);
+}
+
+/* Agent Colors */
+:root, [data-theme="warm"], [data-theme="editorial"], [data-theme="modern"]{
   --kai:#ff6b6b;--cursor:#ffa94d;--claude:#51cf66;--unknown:#495057;
   --glow-kai:rgba(255,107,107,0.08);--glow-cursor:rgba(255,169,77,0.08);--glow-claude:rgba(81,207,102,0.08);
-  --font-display:'Space Grotesk',sans-serif;--font-body:'DM Sans',sans-serif;
-  --font-mono:'JetBrains Mono',monospace;--font-quote:'Playfair Display',serif;
   --radius-sm:6px;--radius-md:10px;--radius-lg:16px;
   --shadow-sm:0 1px 3px rgba(0,0,0,0.3);--shadow-md:0 4px 16px rgba(0,0,0,0.4);--shadow-lg:0 8px 32px rgba(0,0,0,0.5);
   --ease-out:cubic-bezier(0.16,1,0.3,1);--ease-in-out:cubic-bezier(0.65,0,0.35,1);
 }
 html{scroll-behavior:smooth;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
-body{background:var(--bg);color:var(--text);font-family:var(--font-body);line-height:1.65;overflow-x:hidden}
+body{background:var(--bg-main);color:var(--text);font-family:var(--font-body);line-height:1.65;overflow-x:hidden}
 
 /* ─── Neurodivergent Accessibility: Reduced Motion ─── */
 @media(prefers-reduced-motion:reduce){
@@ -188,10 +228,26 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
 ::-webkit-scrollbar-track{background:var(--bg)}
 ::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:4px}
 ::-webkit-scrollbar-thumb:hover{background:var(--border-hover)}
+
+/* Theme Switcher */
+.theme-switcher{position:fixed;top:1rem;right:1rem;z-index:100;display:flex;gap:0.5rem;background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:0.375rem;box-shadow:var(--shadow-sm)}
+.theme-btn{width:2.25rem;height:2.25rem;border:2px solid transparent;border-radius:var(--radius-sm);cursor:pointer;font-family:var(--font-body);font-size:0.75rem;font-weight:600;color:var(--text);background:var(--bg-card);transition:all .2s var(--ease-out);display:flex;align-items:center;justify-content:center}
+.theme-btn:hover{background:var(--bg-hover);border-color:var(--border)}
+.theme-btn.active{border-color:var(--accent);background:var(--accent-dim);color:var(--accent)}
+@media(max-width:768px){
+  .theme-switcher{top:0.5rem;right:0.5rem}
+  .theme-btn{width:2rem;height:2rem;font-size:0.7rem}
+}
 </style>
 </head>
 <body>
 <a href="#main-content" class="skip-link">Skip to main content</a>
+
+<div class="theme-switcher" role="group" aria-label="Theme selector">
+  <button class="theme-btn" data-theme="warm" aria-label="Switch to Warm theme" title="Warm Theme">W</button>
+  <button class="theme-btn active" data-theme="editorial" aria-label="Switch to Editorial theme" title="Editorial Theme">E</button>
+  <button class="theme-btn" data-theme="modern" aria-label="Switch to Modern theme" title="Modern Theme">M</button>
+</div>
 
 <!-- Hero -->
 <header class="hero reveal">
@@ -305,8 +361,41 @@ window.GLOBAL_DATA = {};
 </script>
 
 <script>
+// Theme Switcher with localStorage persistence and chart rebuild
+(function(){
+  const saved=localStorage.getItem('devarch-theme')||'editorial';
+  const btns=document.querySelectorAll('.theme-btn');
+  btns.forEach(b=>{
+    b.classList.toggle('active',b.dataset.theme===saved);
+    b.addEventListener('click',()=>{
+      const t=b.dataset.theme;
+      document.documentElement.setAttribute('data-theme',t);
+      localStorage.setItem('devarch-theme',t);
+      btns.forEach(x=>x.classList.toggle('active',x.dataset.theme===t));
+      if(typeof _rebuildCharts==='function')_rebuildCharts();
+    });
+  });
+  if(saved!=='editorial')document.documentElement.setAttribute('data-theme',saved);
+})();
+</script>
+
+<script>
 (function() {
   'use strict';
+
+  // Theme color helper for charts
+  function getThemeColors(){
+    const style=getComputedStyle(document.documentElement);
+    return {
+      bg:style.getPropertyValue('--bg-main').trim(),
+      surface:style.getPropertyValue('--bg-surface').trim(),
+      text:style.getPropertyValue('--text').trim(),
+      text2:style.getPropertyValue('--text-2').trim(),
+      text3:style.getPropertyValue('--text-muted').trim(),
+      border:style.getPropertyValue('--border').trim(),
+      accent:style.getPropertyValue('--accent').trim()
+    };
+  }
 
   const data = window.GLOBAL_DATA;
   if (!data || !data.meta) {
