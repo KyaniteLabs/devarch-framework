@@ -1,4 +1,4 @@
-"""Shared utility functions for dev-archaeology modules."""
+"""Shared utility functions for DevArch Framework modules."""
 
 from __future__ import annotations
 

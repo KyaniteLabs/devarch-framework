@@ -1,4 +1,4 @@
-"""Development Archaeology CLI."""
+"""DevArch Framework CLI."""
 
 import json
 import os
@@ -27,7 +27,7 @@ def _project_dir(project_name):
 
 @click.group()
 def main():
-    """Development Archaeology - forensic mining of software development history."""
+    """DevArch Framework - forensic mining of software development history."""
     pass
 
 
@@ -101,14 +101,26 @@ def mine(repo_path, project, verbose):
         click.echo(f"Repository not found: {repo_path}", err=True)
         sys.exit(1)
 
+    if not os.path.isdir(os.path.join(os.path.expanduser(repo_path), '.git')):
+        click.echo(f"Error: Not a git repository: {repo_path}", err=True)
+        sys.exit(1)
+
     click.echo(f"Extracting git log from {repo_path}...")
 
     csv_path = os.path.join(data_dir, "github-commits.csv")
-    count = extract_git_log(repo_path, csv_path, verbose=verbose)
-    click.echo(f"  Extracted {count} commits to {csv_path}")
+    try:
+        count = extract_git_log(repo_path, csv_path, verbose=verbose)
+        click.echo(f"  Extracted {count} commits to {csv_path}")
+    except (RuntimeError, Exception) as e:
+        click.echo(f"Error: Git extraction failed: {e}", err=True)
+        sys.exit(1)
 
     stats_path = os.path.join(data_dir, "github-commits-with-stats.txt")
-    extract_git_log_with_stats(repo_path, stats_path, verbose=verbose)
+    try:
+        extract_git_log_with_stats(repo_path, stats_path, verbose=verbose)
+    except (RuntimeError, Exception) as e:
+        click.echo(f"Error: Git stats extraction failed: {e}", err=True)
+        sys.exit(1)
 
     click.echo(f"Phase 1 complete for '{project}'.")
 
@@ -151,8 +163,12 @@ def serve(project_name, port, unsafe_cors):
     project_config = {}
     config_path = os.path.join(project_dir, "project.json")
     if os.path.exists(config_path):
-        with open(config_path, encoding="utf-8") as f:
-            project_config = json.load(f)
+        try:
+            with open(config_path, encoding="utf-8") as f:
+                project_config = json.load(f)
+        except json.JSONDecodeError as e:
+            click.echo(f"Error: Invalid JSON in {config_path}: {e}", err=True)
+            sys.exit(1)
 
     display_name = project_config.get("visualization", {}).get(
         "title", project_name.upper()
@@ -210,8 +226,12 @@ def signals(project_name, config_path, min_gap_days, verbose):
 
     config = {}
     if config_path:
-        with open(config_path) as f:
-            config = json.load(f)
+        try:
+            with open(config_path) as f:
+                config = json.load(f)
+        except json.JSONDecodeError as e:
+            click.echo(f"Error: Invalid JSON in {config_path}: {e}", err=True)
+            sys.exit(1)
     if min_gap_days is not None:
         config["min_gap_days"] = min_gap_days
 
@@ -398,8 +418,12 @@ def visualize(project_name):
     config_path = os.path.join(project_dir, "project.json")
     project_config = {}
     if os.path.exists(config_path):
-        with open(config_path, encoding="utf-8") as f:
-            project_config = json.load(f)
+        try:
+            with open(config_path, encoding="utf-8") as f:
+                project_config = json.load(f)
+        except json.JSONDecodeError as e:
+            click.echo(f"Error: Invalid JSON in {config_path}: {e}", err=True)
+            sys.exit(1)
 
     vis = project_config.get("visualization", {})
     overrides = project_config.get("overrides", {})
@@ -416,8 +440,12 @@ def visualize(project_name):
     agent_count = 0
     eras_json = os.path.join(project_dir, "data", "commit-eras.json")
     if os.path.exists(eras_json):
-        with open(eras_json, encoding="utf-8") as f:
-            eras_data = json.load(f)
+        try:
+            with open(eras_json, encoding="utf-8") as f:
+                eras_data = json.load(f)
+        except json.JSONDecodeError as e:
+            click.echo(f"Error: Invalid JSON in {eras_json}: {e}", err=True)
+            sys.exit(1)
         total_commits = eras_data.get("total_commits", 0)
         lifespan = eras_data.get("lifespan", "")
         # Parse "43 days (Feb 28 - Apr 11, 2026)" format
@@ -436,9 +464,13 @@ def visualize(project_name):
         if growth:
             total_lines = growth[-1].get("files", 0)
     elif os.path.exists(data_json):
-        with open(data_json, encoding="utf-8") as f:
-            pdata = json.load(f)
-        total_commits = pdata.get("total_commits", 0)
+        try:
+            with open(data_json, encoding="utf-8") as f:
+                pdata = json.load(f)
+            total_commits = pdata.get("total_commits", 0)
+        except json.JSONDecodeError as e:
+            click.echo(f"Error: Invalid JSON in {data_json}: {e}", err=True)
+            sys.exit(1)
 
     # Hydrate template variables
     title = vis.get("title", project_name.upper())
@@ -454,8 +486,8 @@ def visualize(project_name):
 
     # Also update <title> tag if it still has the old format
     html = html.replace(
-        "<title>Development Archaeology</title>",
-        f"<title>{title} — Development Archaeology</title>",
+        "<title>DevArch Framework</title>",
+        f"<title>{title} — DevArch Framework</title>",
     )
 
     # Generate era color CSS variables from config
@@ -566,10 +598,14 @@ def cascade(project_name, dry_run, skip_mine):
     # Load project config for repo path
     repo_path = None
     if project_json_path.exists():
-        pj = json.loads(project_json_path.read_text())
-        repo_path = pj.get("repo_path")
-        if repo_path:
-            repo_path = os.path.expanduser(repo_path)
+        try:
+            pj = json.loads(project_json_path.read_text())
+            repo_path = pj.get("repo_path")
+            if repo_path:
+                repo_path = os.path.expanduser(repo_path)
+        except json.JSONDecodeError as e:
+            click.echo(f"Error: Invalid JSON in {project_json_path}: {e}", err=True)
+            sys.exit(1)
 
     # ── Step 1: Mine fresh git data ──
     if not skip_mine:
@@ -578,10 +614,18 @@ def cascade(project_name, dry_run, skip_mine):
         else:
             click.echo(f"\n[1/7] Mining git data from {repo_path}...")
             csv_path = data_dir / "github-commits.csv"
-            count = extract_git_log(repo_path, str(csv_path))
-            click.echo(f"  Extracted {count} commits")
+            try:
+                count = extract_git_log(repo_path, str(csv_path))
+                click.echo(f"  Extracted {count} commits")
+            except (RuntimeError, Exception) as e:
+                click.echo(f"  Error: Git extraction failed: {e}", err=True)
+                sys.exit(1)
             stats_path = data_dir / "github-commits-with-stats.txt"
-            extract_git_log_with_stats(repo_path, str(stats_path))
+            try:
+                extract_git_log_with_stats(repo_path, str(stats_path))
+            except (RuntimeError, Exception) as e:
+                click.echo(f"  Error: Git stats extraction failed: {e}", err=True)
+                sys.exit(1)
     else:
         click.echo(f"\n[1/7] Mining — SKIPPED (--skip-mine)")
 
@@ -731,10 +775,14 @@ def _aggregate_global(targets, profile, verbose=False):
         # Collect signals from detected-signals.json
         signals_path = os.path.join(proj_dir, "data", "detected-signals.json")
         if os.path.exists(signals_path):
-            with open(signals_path, encoding="utf-8") as f:
-                proj_signals = json.load(f)
-            proj_signals["_project"] = proj_name
-            all_eras.append(proj_signals)
+            try:
+                with open(signals_path, encoding="utf-8") as f:
+                    proj_signals = json.load(f)
+                proj_signals["_project"] = proj_name
+                all_eras.append(proj_signals)
+            except json.JSONDecodeError as e:
+                click.echo(f"Warning: Invalid JSON in {signals_path}: {e}", err=True)
+                continue
 
         # Build per-project summary from DB
         if os.path.exists(db_path):
@@ -832,8 +880,12 @@ def sync(projects, skip_mine, skip_signals, verbose):
         click.echo("No profile.json found. Create one at config/profile.json with your project list.", err=True)
         sys.exit(1)
 
-    with open(profile_path, encoding="utf-8") as f:
-        profile = json.load(f)
+    try:
+        with open(profile_path, encoding="utf-8") as f:
+            profile = json.load(f)
+    except json.JSONDecodeError as e:
+        click.echo(f"Error: Invalid JSON in {profile_path}: {e}", err=True)
+        sys.exit(1)
 
     registered = profile.get("projects", [])
     sync_cfg = profile.get("sync", {})
@@ -889,11 +941,19 @@ def sync(projects, skip_mine, skip_signals, verbose):
 
             data_dir = os.path.join("projects", proj["name"], "data")
             csv_path = os.path.join(data_dir, "github-commits.csv")
-            count = extract_git_log(repo_path, csv_path, verbose=verbose)
-            click.echo(f"    {count} commits extracted")
+            try:
+                count = extract_git_log(repo_path, csv_path, verbose=verbose)
+                click.echo(f"    {count} commits extracted")
+            except (RuntimeError, Exception) as e:
+                click.echo(f"    Error: Git extraction failed: {e}", err=True)
+                continue
 
             stats_path = os.path.join(data_dir, "github-commits-with-stats.txt")
-            extract_git_log_with_stats(repo_path, stats_path, verbose=verbose)
+            try:
+                extract_git_log_with_stats(repo_path, stats_path, verbose=verbose)
+            except (RuntimeError, Exception) as e:
+                click.echo(f"    Error: Git stats extraction failed: {e}", err=True)
+                continue
 
     # Phase 1.5: Build DBs
     for proj in targets:

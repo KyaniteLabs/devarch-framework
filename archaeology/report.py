@@ -1,4 +1,4 @@
-"""Report export utilities for dev-archaeology."""
+"""Report export utilities for DevArch Framework."""
 
 from __future__ import annotations
 

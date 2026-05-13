@@ -1,4 +1,4 @@
-"""Automated analysis vector execution for dev-archaeology.
+"""Automated analysis vector execution for DevArch Framework.
 
 This module executes the six built-in analysis vectors against a project's
 SQLite database and local JSON artifacts. The outputs are deterministic,
@@ -51,6 +51,10 @@ class AnalysisRunner:
         try:
             cursor = conn.execute(query, params)
             return [dict(row) for row in cursor.fetchall()]
+        except sqlite3.Error as e:
+            if self.verbose:
+                print(f"  [analysis] Database query error: {e}")
+            return []
         finally:
             conn.close()
 

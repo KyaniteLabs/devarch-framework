@@ -1,4 +1,4 @@
-"""14 missed-opportunity analyzers for dev-archaeology.
+"""14 missed-opportunity analyzers for DevArch Framework.
 
 Each analyzer mines existing data (SQLite DB + JSON artifacts) to produce
 structured insights that the original pipeline didn't extract.
