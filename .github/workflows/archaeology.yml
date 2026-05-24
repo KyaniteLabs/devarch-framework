@@ -36,6 +36,7 @@ jobs:
         with:
           python-version: '3.12'
           cache: 'pip'
+          cache-dependency-path: setup.py
 
       - name: Install DevArch
         run: pip install devarch-framework
@@ -44,7 +45,7 @@ jobs:
         run: |
           PROJECT_NAME="${{ inputs.project_name || github.event.repository.name }}"
           devarch init "$PROJECT_NAME"
-          echo "PROJECT_NAME=$PROJECT_NAME" >> $GITHUB_ENV
+          echo "PROJECT_NAME=$PROJECT_NAME" >> "$GITHUB_ENV"
 
       - name: Mine git history
         run: devarch mine . -p "$PROJECT_NAME"
