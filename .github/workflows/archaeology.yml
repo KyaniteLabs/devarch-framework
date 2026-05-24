@@ -22,7 +22,7 @@ permissions:
 
 jobs:
   archaeology:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     environment: github-pages
 
     steps:
@@ -39,7 +39,7 @@ jobs:
           cache-dependency-path: setup.py
 
       - name: Install DevArch
-        run: pip install devarch-framework
+        run: pip install -e .
 
       - name: Initialize project
         run: |
