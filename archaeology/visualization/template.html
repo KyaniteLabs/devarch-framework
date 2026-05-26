@@ -567,6 +567,11 @@ const TOOLTIP_OFFSET_X = 12; // px offset from cursor
 const TOOLTIP_OFFSET_Y = -12; // px offset from cursor
 let _ttInsightTimeout = null;
 
+function noData(el, msg, height) {
+  el.style.cssText = `display:flex;align-items:center;justify-content:center;height:${height||160}px;color:var(--text3);font-size:13px;font-style:italic`;
+  el.textContent = msg || 'No data available for this project';
+}
+
 function showTooltip(event, titleOrObj, detail, quote) {
   const tt = document.getElementById('tooltip');
   const titleEl = tt.querySelector('.tt-title');
@@ -812,6 +817,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!el) return;
     const rawData = tv.commit_timeline.loc_growth.data;
     const data = Object.entries(rawData).map(([d, v]) => ({ date: d, value: v })).sort((a,b) => a.date.localeCompare(b.date));
+    if (!data.length) { noData(el, 'Lines-of-code growth data not mined for this project'); return; }
     const maxVal = Math.max(...data.map(d => d.value), 1);
     const margin = {top: 20, right: 20, bottom: 30, left: 55};
     const width = el.clientWidth - margin.left - margin.right;
@@ -1132,6 +1138,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const tg = tv.commit_timeline.test_growth.data;
     const fileData = Object.entries(fg).map(([d, v]) => ({ date: d, files: v }));
     const testData = Object.entries(tg).map(([d, v]) => ({ date: d, tests: v }));
+    if (!fileData.length && !testData.length) { noData(el, 'File and test growth data not mined for this project'); return; }
     const allDates = [...new Set([...fileData.map(d => d.date), ...testData.map(d => d.date)])].sort();
     const maxF = Math.max(...fileData.map(d => d.files), 1);
     const maxT = Math.max(...testData.map(d => d.tests), 1);
@@ -1201,7 +1208,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!el) return;
     const raw = tv.commit_timeline.dependency_growth.data;
     const data = Object.entries(raw).map(([d, v]) => ({ date: d, value: v })).sort((a,b) => a.date.localeCompare(b.date));
-    if (!data.length) return;
+    if (!data.length) { noData(el, 'Dependency growth data not mined for this project'); return; }
     const maxVal = Math.max(...data.map(d => d.value), 1);
     const margin = {top: 20, right: 20, bottom: 30, left: 40};
     const width = el.clientWidth - margin.left - margin.right;
@@ -1251,7 +1258,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return 2;
     };
     const data = Object.entries(arc).map(([era, val]) => ({ era, value: scoreText(val), label: val })).filter(d => d.era);
-    if (!data.length) return;
+    if (!data.length) { noData(el, 'Frustration arc not available — no session narrative data'); return; }
     const maxVal = Math.max(...data.map(d => d.value), 1);
     const margin = {top: 20, right: 20, bottom: 45, left: 45};
     const width = el.clientWidth - margin.left - margin.right;
@@ -1381,7 +1388,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const el = document.getElementById('chart-lunar');
     if (!el) return;
     const lunar = dp.lunar_phase_correlation;
-    if (!lunar || !lunar.daily_illumination) return;
+    if (!lunar || !lunar.daily_illumination) { noData(el, 'Lunar phase correlation data not available', 280); return; }
     const data = lunar.daily_illumination;
     const margin = {top: 30, right: 50, bottom: 30, left: 45};
     const width = el.clientWidth - margin.left - margin.right;
@@ -1442,7 +1449,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const el = document.getElementById('chart-sentiment');
     if (!el) return;
     const sent = dp.commit_message_sentiment;
-    if (!sent || !sent.era_breakdown) return;
+    if (!sent || !sent.era_breakdown) { noData(el, 'Commit sentiment analysis not available for this project'); return; }
     const data = sent.era_breakdown.filter(d => d.total > 1);
     const categories = ['directive', 'corrective', 'reflective', 'celebratory'];
     const catColors = { directive: COLORS.claude, corrective: COLORS.kai, reflective: COLORS.cursor, celebratory: '#ffd43b' };
@@ -1490,7 +1497,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const el = document.getElementById('chart-agent-econ');
     if (!el) return;
     const agentData = dp.agent_handoff_economics;
-    if (!agentData || !agentData.agents) return;
+    if (!agentData || !agentData.agents) { noData(el, 'Agent economics data not available for this project'); return; }
     const agents = agentData.agents;
     const entries = Object.entries(agents);
     const cardW = Math.min(220, (el.clientWidth - 20) / entries.length);
@@ -1535,7 +1542,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const yScale = i => 30 + (i / Math.max(months.length - 1, 1)) * (H - 60);
 
     // Phase background bands
-    if (months.length === 0) return;
+    if (months.length === 0) { noData(el, 'Learning arc data not available — no YouTube / build correlation data', 320); return; }
     (LEARNING.phases || []).forEach(ph => {
       const startIdx = months.findIndex(m => m.month >= ph.range[0]);
       const endIdx = months.findIndex(m => m.month >= ph.range[1]);
@@ -1703,7 +1710,7 @@ document.addEventListener('DOMContentLoaded', () => {
     svg.style.cssText = 'width:100%;height:100%';
 
     const clusters = LEARNING.creatorClusters || [];
-    if (!clusters.length) return;
+    if (!clusters.length) { noData(el, 'Creator cluster data not available', 300); return; }
     const rowH = H / clusters.length;
 
     clusters.forEach((cl, ci) => {
@@ -1784,7 +1791,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const bp = LEARNING.buildPeriod || {};
     const days = bp.daily ? Object.entries(bp.daily).sort((a,b) => a[0].localeCompare(b[0])) : [];
-    if (!days.length) return;
+    if (!days.length) { noData(el, 'Learning / build period data not available', 300); return; }
     const maxC = Math.max(...days.map(d => d[1].commits));
     const maxV = Math.max(...days.map(d => d[1].aiVids));
     const barW = (W - 80) / days.length;
@@ -1877,7 +1884,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!el) return;
     const searches = LEARNING.searchTimeline || [];
     const phases = LEARNING.searchPhases || [];
-    if (!searches.length) return;
+    if (!searches.length) { noData(el, 'Search timeline data not available — no YouTube history data', 340); return; }
 
     const W = el.clientWidth || 900, H = 340;
     const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
@@ -2023,7 +2030,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const el = document.getElementById('chart-intent');
     if (!el) return;
     const intent = ts.intent_analysis;
-    if (!intent || !intent.keyword_counts) return;
+    if (!intent || !intent.keyword_counts) { noData(el, 'Intent keyword analysis not available — no session data'); return; }
     const catMap = {
       execution: { keys: ['run','test','build','fix'], color: COLORS.claude },
       creation: { keys: ['generate','create','add','implement'], color: COLORS.cursor },
@@ -2065,7 +2072,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const el = document.getElementById('chart-session-depth');
     if (!el) return;
     const gradient = dp.session_depth_gradient;
-    if (!gradient || !gradient.gradient) return;
+    if (!gradient || !gradient.gradient) { noData(el, 'Session depth gradient not available — no session data', 280); return; }
     const data = gradient.gradient.filter(d => d.autonomy_score !== null && d.name);
     const fmtName = n => (n || '').replace('era','').replace('-',' ');
     const margin = {top: 20, right: 20, bottom: 30, left: 80};
@@ -2114,7 +2121,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const el = document.getElementById('chart-comm-style');
     if (!el) return;
     const intent = ts.intent_analysis;
-    if (!intent || !intent.intent_categories) return;
+    if (!intent || !intent.intent_categories) { noData(el, 'Communication style data not available — no session data'); return; }
     const cats = intent.intent_categories;
     const data = Object.entries(cats).map(([key, val]) => ({
       label: key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
