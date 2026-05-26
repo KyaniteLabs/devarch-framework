@@ -241,12 +241,17 @@ def signals(project_name, config_path, min_gap_days, verbose):
     if min_gap_days is not None:
         config["min_gap_days"] = min_gap_days
 
+    db_path = os.path.join(_project_dir(project_name), "data", "archaeology.db")
+    if not os.path.exists(db_path):
+        click.echo(f"No database found. Run 'archaeology build-db {project_name}' first.", err=True)
+        sys.exit(1)
+
     result = detect_signals(project_name, config=config or None)
     if result.get("signals"):
         click.echo(f"Detected {len(result['signals'])} signals "
                    f"across {len(result['cluster_summary'])} clusters.")
     else:
-        click.echo("No signals detected. Build the database first.")
+        click.echo("No significant patterns detected in the commit history.")
 
 
 @main.command()
@@ -444,6 +449,7 @@ def visualize(project_name):
     first_date = ""
     last_date = ""
     agent_count = 0
+    eras_data = None
     eras_json = os.path.join(project_dir, "data", "commit-eras.json")
     if os.path.exists(eras_json):
         try:
@@ -524,7 +530,17 @@ def visualize(project_name):
     # Inline data.json so the HTML works from file:// (no CORS issues)
     if os.path.exists(data_json):
         with open(data_json, encoding="utf-8") as f:
-            data_content = f.read()
+            data_payload = json.load(f)
+
+        # Merge commit_eras and top-level fields from commit-eras.json into PROJECT_DATA
+        # so the era timeline visualization has real data to render.
+        if eras_data is not None:
+            data_payload.setdefault("commit_eras", eras_data.get("eras", []))
+            data_payload.setdefault("total_commits", eras_data.get("total_commits", 0))
+            data_payload.setdefault("first_commit_date", eras_data.get("first_commit_date", ""))
+            data_payload.setdefault("last_commit_date", eras_data.get("last_commit_date", ""))
+
+        data_content = json.dumps(data_payload)
         safe_data_content = data_content.replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026")
         inline_script = f'<script>window.PROJECT_DATA = {safe_data_content}; window.dispatchEvent(new Event("data-loaded"));</script>'
         html = html.replace(

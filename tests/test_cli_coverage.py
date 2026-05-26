@@ -81,13 +81,13 @@ def test_serve_project_fails_when_db_missing(tmp_path, monkeypatch):
 
 # ── signals ───────────────────────────────────────────────────────────────────
 
-def test_signals_reports_nothing_without_db(tmp_path, monkeypatch):
+def test_signals_exits_without_db(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
     _make_project(tmp_path, "no-data-proj")
     runner = CliRunner()
     result = runner.invoke(main, ["signals", "no-data-proj"])
-    assert result.exit_code == 0
-    assert "No signals detected" in result.output or "signals" in result.output.lower()
+    assert result.exit_code != 0
+    assert "build-db" in result.output.lower() or "database" in result.output.lower()
 
 
 def test_signals_rejects_bad_config_json(tmp_path, monkeypatch):
