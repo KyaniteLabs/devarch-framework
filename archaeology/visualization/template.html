@@ -1105,6 +1105,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }));
     const width = el.clientWidth, height = 320;
     const svg = d3.select(el).append('svg').attr('role','img').attr('viewBox', `0 0 ${width} ${height}`);
+    if (!modules.length) {
+      svg.append('text').attr('x', width/2).attr('y', height/2).attr('text-anchor','middle').attr('fill',COLORS.text2).text('No source structure data available');
+      return;
+    }
     const root = d3.hierarchy({ children: modules }).sum(d => d.value);
     d3.treemap().size([width, height]).padding(2).round(true)(root);
     const leaves = root.leaves();
@@ -2206,8 +2210,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!el) return;
     const dna = D.derived_patterns.creative_dna_flow_map;
     if (!dna) return;
-    const sourceDomains = dna.source_domains || [];
-    const targetModules = dna.target_modules || [];
+    const sourceDomains = (dna.source_domains || []).map(d =>
+      typeof d === 'string' ? { domain: d, repo_count: 0, total_files: 0 } : d
+    );
+    const targetModules = (dna.target_modules || []).map(m =>
+      typeof m === 'string' ? { label: m, domain: m } : m
+    );
     const flows = dna.flows || [];
     if (!sourceDomains.length || !targetModules.length) {
       const width = el.clientWidth, height = 180;
