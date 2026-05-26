@@ -1,0 +1,15 @@
+{
+  "analysis_type": "knowledge-gap",
+  "reinvention_gaps": [],
+  "term_mapping_gaps": [],
+  "prioritized_curriculum": [],
+  "skill_timeline": [],
+  "summary": {
+    "total_gaps": 0,
+    "high_severity": 0,
+    "estimated_token_waste": 0,
+    "curriculum_items": 0
+  },
+  "generated_at": "2026-05-26T12:44:00.095998",
+  "project": "demo-project"
+}

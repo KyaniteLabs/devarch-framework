@@ -1,0 +1,64 @@
+{
+  "analysis_type": "model-selection-advisor",
+  "recommendation_matrix": [
+    {
+      "task_type": "Code generation",
+      "recommended": "Claude Code / Cursor",
+      "confidence": 0.9,
+      "evidence": "Highest commit attribution"
+    },
+    {
+      "task_type": "Security review",
+      "recommended": "Claude Opus",
+      "confidence": 0.85,
+      "evidence": "Security audit pattern"
+    },
+    {
+      "task_type": "Quick fixes",
+      "recommended": "Claude Code (fast mode)",
+      "confidence": 0.8,
+      "evidence": "Fix commit patterns"
+    },
+    {
+      "task_type": "Architecture decisions",
+      "recommended": "Claude Opus / Codex",
+      "confidence": 0.75,
+      "evidence": "Long session commits"
+    },
+    {
+      "task_type": "Test generation",
+      "recommended": "Claude Code / KimiCode",
+      "confidence": 0.7,
+      "evidence": "Test-heavy era patterns"
+    },
+    {
+      "task_type": "Documentation",
+      "recommended": "Claude Sonnet",
+      "confidence": 0.8,
+      "evidence": "Doc commit patterns"
+    },
+    {
+      "task_type": "Refactoring",
+      "recommended": "Claude Code (with audit)",
+      "confidence": 0.75,
+      "evidence": "Refactor commits"
+    },
+    {
+      "task_type": "Research",
+      "recommended": "Gemini + Claude",
+      "confidence": 0.6,
+      "evidence": "Model adoption timeline"
+    }
+  ],
+  "tool_capabilities": {},
+  "adoption_lag": [],
+  "model_insights": [],
+  "summary": {
+    "tools_evaluated": 0,
+    "recommendations": 8,
+    "avg_adoption_lag_months": 0.0,
+    "fastest_adopter": null
+  },
+  "generated_at": "2026-05-26T12:44:00.097204",
+  "project": "demo-project"
+}

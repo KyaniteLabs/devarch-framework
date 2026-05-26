@@ -74,7 +74,7 @@ def run_local_pipeline(
             "PIPELINE_REVIEW_DAYS": str(review_days),
         }
     )
-    subprocess.run(cmd, cwd=pipeline_dir, env=env, check=True)
+    subprocess.run(cmd, cwd=pipeline_dir, env=env, check=True, timeout=300)
 
 
 def read_local_pipeline_status(pipeline_dir: str | Path, repo_name: str) -> LocalPipelineStatus:

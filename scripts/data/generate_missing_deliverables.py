@@ -19,7 +19,7 @@ from pathlib import Path
 from datetime import datetime
 
 ROOT = Path(__file__).resolve().parents[2]
-LM_STUDIO_URL = os.environ.get("LM_STUDIO_URL", "http://100.66.225.85:1234")
+LM_STUDIO_URL = os.environ.get("LM_STUDIO_URL", "http://localhost:1234")
 MODEL = os.environ.get("LM_MODEL", "qwen3.6-27b")
 
 

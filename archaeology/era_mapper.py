@@ -46,31 +46,55 @@ def _infer_year(raw: dict) -> int:
     return datetime.now().year
 
 
+def _parse_era_date(date_str: str, year: int, reference: datetime | None = None) -> datetime | None:
+    """Parse a single date string supporting multiple formats."""
+    s = date_str.strip()
+    # ISO: 2026-01-15
+    for fmt in ("%Y-%m-%d", "%Y-%m", "%b %d %Y", "%b %d"):
+        try:
+            if fmt == "%b %d":
+                dt = datetime.strptime(f"{s} {year}", "%b %d %Y")
+            else:
+                dt = datetime.strptime(s, fmt)
+            return dt
+        except ValueError:
+            continue
+    return None
+
+
 def load_eras(eras_path: Path) -> list[EraDef]:
-    """Load era definitions from commit-eras.json."""
+    """Load era definitions from commit-eras.json.
+
+    Handles date formats: "Jan 1 - Jan 5", "2026-01-01 to 2026-01-05",
+    ISO single dates (era spans to next day), and month-only ranges.
+    """
     if not eras_path.exists():
         return []
+    import re as _re
     raw = json.loads(eras_path.read_text())
-    # Infer year from the first commit date in the data
     year = _infer_year(raw)
     eras = []
     for era in raw.get("eras", []):
         dates = era.get("dates", "")
-        parts = dates.split(" - ") if " - " in dates else dates.split(" – ")
-        if len(parts) != 2:
+        # Split on " - ", " – ", " to " (ISO range), or handle single dates
+        for sep in (" - ", " – ", " to "):
+            if sep in dates:
+                parts = dates.split(sep, 1)
+                break
+        else:
+            parts = [dates, dates]  # single date → era spans that day
+
+        start = _parse_era_date(parts[0], year)
+        end = _parse_era_date(parts[1], year) if len(parts) > 1 else start
+        if start is None or end is None:
             continue
-        try:
-            start = datetime.strptime(f"{parts[0].strip()} {year}", "%b %d %Y")
-            # If end date month is earlier than start, it's next year
-            end = datetime.strptime(f"{parts[1].strip()} {year}", "%b %d %Y")
-            if end < start:
-                end = datetime.strptime(f"{parts[1].strip()} {year + 1}", "%b %d %Y")
-        except (ValueError, IndexError):
-            continue
+        # If end is earlier than start, assume it wraps to next year
+        if end < start:
+            end = _parse_era_date(parts[1], year + 1) or end
+
         commits = era.get("commits", 0)
         if isinstance(commits, str):
-            import re
-            m = re.search(r"(\d+)", commits)
+            m = _re.search(r"(\d+)", commits)
             commits = int(m.group(1)) if m else 0
         eras.append(EraDef(
             id=era["id"],

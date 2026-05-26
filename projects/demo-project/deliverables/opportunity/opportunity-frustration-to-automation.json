@@ -1,0 +1,21 @@
+{
+  "analysis_type": "frustration-to-automation",
+  "conversion_patterns": [],
+  "latency_stats": {
+    "avg_hours_to_automation": null,
+    "min_hours": null,
+    "max_hours": null,
+    "total_frustrations": 0,
+    "converted_to_hooks": 0,
+    "conversion_rate": 0
+  },
+  "frustration_timeline": [],
+  "summary": {
+    "total_patterns": 0,
+    "automation_rate": "0/0",
+    "avg_cycle_hours": null,
+    "fastest_conversion": null
+  },
+  "generated_at": "2026-05-26T12:44:00.095820",
+  "project": "demo-project"
+}

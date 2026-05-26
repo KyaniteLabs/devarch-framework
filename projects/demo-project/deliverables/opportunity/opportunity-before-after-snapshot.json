@@ -1,0 +1,36 @@
+{
+  "analysis_type": "before-after-snapshot",
+  "before": {
+    "era": "Intent",
+    "dates": "2026-01-01",
+    "commits": 1,
+    "active_days": 1,
+    "velocity": 1.0,
+    "authors": ""
+  },
+  "after": {
+    "era": "Hardening",
+    "dates": "2026-01-03 to 2026-01-05",
+    "commits": 3,
+    "active_days": 1,
+    "velocity": 3.0,
+    "authors": ""
+  },
+  "growth": {
+    "velocity_multiplier": 3.0,
+    "commit_multiplier": 3.0,
+    "frustration_to_automation_rate": "0/0",
+    "attribution_improvement": {
+      "early_gap_pct": null,
+      "late_gap_pct": null
+    }
+  },
+  "narrative": "From Intent (2026-01-01) to Hardening (2026-01-03 to 2026-01-05): velocity multiplied by 3.0x, commits by 3.0x. 0 of 0 frustrations converted to automation.",
+  "summary": {
+    "velocity_change": "3.0x",
+    "commit_change": "3.0x",
+    "growth_direction": "accelerating"
+  },
+  "generated_at": "2026-05-26T12:44:00.097480",
+  "project": "demo-project"
+}

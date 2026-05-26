@@ -1,0 +1,17 @@
+{
+  "analysis_type": "session-quality",
+  "sessions": [],
+  "type_distribution": {},
+  "summary": {
+    "total_sessions": 0,
+    "avg_quality": 0,
+    "top_quarter_avg": 0,
+    "dominant_type": null,
+    "quality_range": {
+      "min": 0,
+      "max": 0
+    }
+  },
+  "generated_at": "2026-05-26T12:44:00.096373",
+  "project": "demo-project"
+}

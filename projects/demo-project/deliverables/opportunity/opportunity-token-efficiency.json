@@ -1,0 +1,35 @@
+{
+  "analysis_type": "token-efficiency",
+  "era_efficiency": [
+    {
+      "era": "Intent",
+      "commits": 1,
+      "estimated_messages": 0,
+      "messages_per_commit": 0.0
+    },
+    {
+      "era": "Prototype",
+      "commits": 2,
+      "estimated_messages": 0,
+      "messages_per_commit": 0.0
+    },
+    {
+      "era": "Hardening",
+      "commits": 3,
+      "estimated_messages": 0,
+      "messages_per_commit": 0.0
+    }
+  ],
+  "context_management_trajectory": {},
+  "tool_usage_analysis": {},
+  "commit_message_sentiment": {},
+  "summary": {
+    "efficiency_trend": "improving",
+    "best_era": null,
+    "total_sessions": 0,
+    "total_commits": 6,
+    "global_ratio": 0.0
+  },
+  "generated_at": "2026-05-26T12:44:00.096205",
+  "project": "demo-project"
+}

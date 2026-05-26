@@ -1,0 +1,107 @@
+{
+  "analysis_type": "commit-cognitive-load",
+  "load_distribution": {
+    "ROUTINE": 3,
+    "TRIVIAL": 3
+  },
+  "work_type_distribution": {
+    "DOCS": 2,
+    "FEATURE": 2,
+    "FIX": 1,
+    "REFACTOR": 1
+  },
+  "load_by_hour": [
+    {
+      "hour": 9,
+      "avg_message_length": 34.0,
+      "high_cognitive_pct": 0.0
+    },
+    {
+      "hour": 10,
+      "avg_message_length": 25.0,
+      "high_cognitive_pct": 0.0
+    },
+    {
+      "hour": 11,
+      "avg_message_length": 24.0,
+      "high_cognitive_pct": 0.0
+    },
+    {
+      "hour": 13,
+      "avg_message_length": 32.0,
+      "high_cognitive_pct": 0.0
+    },
+    {
+      "hour": 15,
+      "avg_message_length": 26.0,
+      "high_cognitive_pct": 0.0
+    },
+    {
+      "hour": 16,
+      "avg_message_length": 31.0,
+      "high_cognitive_pct": 0.0
+    }
+  ],
+  "peak_cognitive_hours": [
+    {
+      "hour": 9,
+      "avg_message_length": 34.0,
+      "high_cognitive_pct": 0.0
+    },
+    {
+      "hour": 10,
+      "avg_message_length": 25.0,
+      "high_cognitive_pct": 0.0
+    },
+    {
+      "hour": 11,
+      "avg_message_length": 24.0,
+      "high_cognitive_pct": 0.0
+    },
+    {
+      "hour": 13,
+      "avg_message_length": 32.0,
+      "high_cognitive_pct": 0.0
+    },
+    {
+      "hour": 15,
+      "avg_message_length": 26.0,
+      "high_cognitive_pct": 0.0
+    }
+  ],
+  "load_definitions": {
+    "TRIVIAL": {
+      "max_len": 30,
+      "description": "Quick fixes, typos, config tweaks"
+    },
+    "ROUTINE": {
+      "min_len": 31,
+      "max_len": 80,
+      "description": "Standard features, small changes"
+    },
+    "MODERATE": {
+      "min_len": 81,
+      "max_len": 150,
+      "description": "Feature implementation, refactoring"
+    },
+    "HIGH": {
+      "min_len": 151,
+      "max_len": 300,
+      "description": "Architecture decisions, complex features"
+    },
+    "INTENSE": {
+      "min_len": 301,
+      "description": "Major rewrites, deep architectural work"
+    }
+  },
+  "summary": {
+    "total_commits": 6,
+    "avg_message_length": 28.7,
+    "high_cognitive_pct": 0.0,
+    "dominant_work_type": "DOCS",
+    "peak_cognitive_hour": 9,
+    "insight": "Longer commit messages correlate with architecture decisions. Peak cognitive hours suggest when complex work happens."
+  },
+  "generated_at": "2026-05-26T12:44:00.098497",
+  "project": "demo-project"
+}

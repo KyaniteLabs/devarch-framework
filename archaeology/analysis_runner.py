@@ -167,10 +167,53 @@ class AnalysisRunner:
             },
         }
 
+    def _approximate_sessions(self) -> list[dict]:
+        """Approximate sessions from commits when sessions table is absent.
+
+        Groups commits into sessions using a 2-hour inactivity gap heuristic.
+        Falls back to daily grouping if timestamps lack time components.
+        """
+        tables = {r["name"] for r in self._query_db("SELECT name FROM sqlite_master WHERE type='table'")}
+        if "sessions" in tables:
+            return self._query_db("SELECT session_id, timestamp FROM sessions ORDER BY timestamp")
+
+        commits = self._query_db("SELECT date FROM commits ORDER BY date")
+        if not commits:
+            return []
+
+        from datetime import datetime as dt
+        GAP_HOURS = 2
+        sessions: list[dict] = []
+        session_start = None
+        prev_ts = None
+
+        for row in commits:
+            raw = row.get("date", "")
+            try:
+                ts = dt.fromisoformat(raw[:19])
+            except (ValueError, TypeError):
+                ts = None
+
+            if ts is None:
+                day = raw[:10]
+                if day != (prev_ts or ""):
+                    sessions.append({"session_id": day, "timestamp": day})
+                prev_ts = day
+                continue
+
+            if prev_ts is None or (ts - prev_ts).total_seconds() > GAP_HOURS * 3600:
+                session_id = ts.strftime("%Y%m%d-%H%M%S")
+                sessions.append({"session_id": session_id, "timestamp": ts.isoformat()})
+                session_start = ts
+
+            prev_ts = ts
+
+        return sessions
+
     def run_agentic_workflow(self) -> dict[str, Any]:
         """Analyze AI agent interaction patterns."""
         self._log("Running Agentic Workflow Analyzer...")
-        sessions = self._query_db("SELECT session_id, timestamp FROM sessions ORDER BY timestamp")
+        sessions = self._approximate_sessions()
         hooks = self._like_commits(["hook", "pre-commit", "post-commit", "automation"], 50)
         agent_commits = self._query_db("SELECT author, COUNT(*) as cnt FROM commits GROUP BY author ORDER BY cnt DESC")
         return {
@@ -237,19 +280,78 @@ class AnalysisRunner:
             date = str(row.get("date", ""))[:7]
             if date:
                 by_month[date] += 1
-        improvements = [
-            {"rank": 1, "title": "Keep audit gate as release blocker", "effort": "M", "impact": "HIGH"},
-            {"rank": 2, "title": "Replace placeholder analytics with derived joins", "effort": "M", "impact": "HIGH"},
-            {"rank": 3, "title": "Continue splitting large evaluator/router surfaces", "effort": "L", "impact": "MEDIUM"},
-        ]
+        hotspots = self._query_db("SELECT message, COUNT(*) as cnt FROM commits GROUP BY message ORDER BY cnt DESC LIMIT 10")
+        improvements = self._derive_improvements(quality, large_change, todo, hotspots)
         return {
             "analysis_metadata": {"timestamp": datetime.now().isoformat(), "analyst": "Automated Source Code Archaeologist", "project": self.project_name, "commit_count": self._commit_count()},
             "quality_trajectory": {"assessment": "IMPROVING" if quality else "UNKNOWN", "evidence_count": len(quality), "by_month": dict(sorted(by_month.items()))},
             "architecture_drift": {"large_change_signals": large_change[:10], "todo_or_stub_signals": todo[:10]},
-            "hotspots": self._query_db("SELECT message, COUNT(*) as cnt FROM commits GROUP BY message ORDER BY cnt DESC LIMIT 10"),
+            "hotspots": hotspots,
             "improvements": improvements,
             "summary": {"quality_signal_count": len(quality), "large_change_signal_count": len(large_change), "todo_signal_count": len(todo)},
         }
+
+    def _derive_improvements(
+        self,
+        quality: list[dict],
+        large_change: list[dict],
+        todo: list[dict],
+        hotspots: list[dict],
+    ) -> list[dict]:
+        """Derive prioritized remediation recommendations from actual commit data."""
+        items: list[tuple[int, str, str, str]] = []  # (score, title, effort, impact)
+
+        # Flapping issues: repeated commit messages signal unresolved root causes
+        flapping = [h for h in hotspots if h.get("cnt", 0) >= 3]
+        if flapping:
+            top_msg = str(flapping[0].get("message", ""))[:60]
+            items.append((
+                100,
+                f"Fix recurring issue: {top_msg}",
+                "M", "HIGH",
+            ))
+
+        # Unresolved stubs / TODOs
+        if todo:
+            items.append((
+                90 if len(todo) >= 5 else 70,
+                f"Resolve {len(todo)} stub or placeholder commit(s)",
+                "S", "HIGH" if len(todo) >= 5 else "MEDIUM",
+            ))
+
+        # Decomposition momentum: carry it through
+        if large_change:
+            items.append((
+                60,
+                f"Continue decomposition — {len(large_change)} large-change signal(s) detected",
+                "L", "MEDIUM",
+            ))
+
+        # Quality signal density: low fix/test ratio suggests coverage gaps
+        commit_count = self._commit_count() or 1
+        quality_ratio = len(quality) / commit_count
+        if quality_ratio < 0.10:
+            items.append((
+                80,
+                f"Boost quality signal density — fix/test ratio at {quality_ratio:.0%} (target ≥10%)",
+                "M", "HIGH",
+            ))
+        elif quality_ratio < 0.20:
+            items.append((
+                50,
+                f"Maintain quality signal density — currently at {quality_ratio:.0%}",
+                "S", "LOW",
+            ))
+
+        # No issues found: project is healthy
+        if not items:
+            items.append((10, "No critical remediation items — maintain current trajectory", "S", "LOW"))
+
+        items.sort(key=lambda x: x[0], reverse=True)
+        return [
+            {"rank": i + 1, "title": title, "effort": effort, "impact": impact}
+            for i, (_, title, effort, impact) in enumerate(items)
+        ]
 
     def run_youtube_correlator(self) -> dict[str, Any]:
         """Summarize YouTube/watch-history correlation artifacts when available."""

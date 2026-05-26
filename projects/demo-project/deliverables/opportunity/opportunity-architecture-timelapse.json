@@ -1,0 +1,46 @@
+{
+  "analysis_type": "architecture-timelapse",
+  "era_snapshots": [
+    {
+      "era": "Intent",
+      "dates": "2026-01-01",
+      "commits": 1,
+      "active_days": 0,
+      "restructuring_signals": 1,
+      "naming_changes": 0,
+      "key_events": [],
+      "narrative": "A clear intent appears before code."
+    },
+    {
+      "era": "Prototype",
+      "dates": "2026-01-01 to 2026-01-02",
+      "commits": 2,
+      "active_days": 0,
+      "restructuring_signals": 1,
+      "naming_changes": 0,
+      "key_events": [],
+      "narrative": "Implementation pressure exposes the first integration gap."
+    },
+    {
+      "era": "Hardening",
+      "dates": "2026-01-03 to 2026-01-05",
+      "commits": 3,
+      "active_days": 0,
+      "restructuring_signals": 1,
+      "naming_changes": 0,
+      "key_events": [],
+      "narrative": "The project shifts from making claims to proving them."
+    }
+  ],
+  "module_emergence": [],
+  "file_growth": [],
+  "language_evolution": [],
+  "summary": {
+    "total_eras": 3,
+    "restructuring_events": 3,
+    "naming_changes": 0,
+    "growth_trajectory": "linear"
+  },
+  "generated_at": "2026-05-26T12:44:00.098279",
+  "project": "demo-project"
+}

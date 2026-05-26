@@ -81,7 +81,10 @@ def demo(project_name, force, build_db):
     click.echo(f"Then: archaeology audit {project_name} --fail-on HIGH")
     if build_db:
         cmd = [sys.executable, "-m", "archaeology.db.builder", "--project-root", str(project_root)]
-        result = subprocess.run(cmd, check=True, timeout=300)
+        _env = os.environ.copy()
+        _pkg_root = str(Path(__file__).parent.parent)
+        _env["PYTHONPATH"] = _pkg_root + ((":" + _env["PYTHONPATH"]) if _env.get("PYTHONPATH") else "")
+        result = subprocess.run(cmd, check=True, timeout=300, env=_env)
         if result.returncode != 0:
             raise click.exceptions.Exit(result.returncode)
 
@@ -138,7 +141,10 @@ def build_db(project_name, verbose):
     if verbose:
         cmd.append("--verbose")
 
-    result = subprocess.run(cmd, check=True, timeout=300)
+    _env = os.environ.copy()
+    _pkg_root = str(Path(__file__).parent.parent)
+    _env["PYTHONPATH"] = _pkg_root + ((":" + _env["PYTHONPATH"]) if _env.get("PYTHONPATH") else "")
+    result = subprocess.run(cmd, check=True, timeout=300, env=_env)
     if result.returncode == 0 and os.path.exists(db_path):
         click.echo(f"Database built at {db_path}")
     else:
@@ -235,12 +241,17 @@ def signals(project_name, config_path, min_gap_days, verbose):
     if min_gap_days is not None:
         config["min_gap_days"] = min_gap_days
 
+    db_path = os.path.join(_project_dir(project_name), "data", "archaeology.db")
+    if not os.path.exists(db_path):
+        click.echo(f"No database found. Run 'archaeology build-db {project_name}' first.", err=True)
+        sys.exit(1)
+
     result = detect_signals(project_name, config=config or None)
     if result.get("signals"):
         click.echo(f"Detected {len(result['signals'])} signals "
                    f"across {len(result['cluster_summary'])} clusters.")
     else:
-        click.echo("No signals detected. Build the database first.")
+        click.echo("No significant patterns detected in the commit history.")
 
 
 @main.command()
@@ -438,6 +449,7 @@ def visualize(project_name):
     first_date = ""
     last_date = ""
     agent_count = 0
+    eras_data = None
     eras_json = os.path.join(project_dir, "data", "commit-eras.json")
     if os.path.exists(eras_json):
         try:
@@ -518,7 +530,17 @@ def visualize(project_name):
     # Inline data.json so the HTML works from file:// (no CORS issues)
     if os.path.exists(data_json):
         with open(data_json, encoding="utf-8") as f:
-            data_content = f.read()
+            data_payload = json.load(f)
+
+        # Merge commit_eras and top-level fields from commit-eras.json into PROJECT_DATA
+        # so the era timeline visualization has real data to render.
+        if eras_data is not None:
+            data_payload.setdefault("commit_eras", eras_data.get("eras", []))
+            data_payload.setdefault("total_commits", eras_data.get("total_commits", 0))
+            data_payload.setdefault("first_commit_date", eras_data.get("first_commit_date", ""))
+            data_payload.setdefault("last_commit_date", eras_data.get("last_commit_date", ""))
+
+        data_content = json.dumps(data_payload)
         safe_data_content = data_content.replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026")
         inline_script = f'<script>window.PROJECT_DATA = {safe_data_content}; window.dispatchEvent(new Event("data-loaded"));</script>'
         html = html.replace(
@@ -634,7 +656,10 @@ def cascade(project_name, dry_run, skip_mine):
     db_path = data_dir / "archaeology.db"
     cmd = [sys.executable, "-m", "archaeology.db.builder",
            "--project-root", str(project_dir)]
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
+    _env = os.environ.copy()
+    _pkg_root = str(Path(__file__).parent.parent)
+    _env["PYTHONPATH"] = _pkg_root + ((":" + _env["PYTHONPATH"]) if _env.get("PYTHONPATH") else "")
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=300, env=_env)
     if result.returncode == 0:
         click.echo(f"  Database built ({db_path})")
     else:
@@ -966,7 +991,10 @@ def sync(projects, skip_mine, skip_signals, verbose):
         if verbose:
             cmd.append("--verbose")
 
-        result = subprocess.run(cmd, capture_output=not verbose, check=True, timeout=300)
+        _env = os.environ.copy()
+        _pkg_root = str(Path(__file__).parent.parent)
+        _env["PYTHONPATH"] = _pkg_root + ((":" + _env["PYTHONPATH"]) if _env.get("PYTHONPATH") else "")
+        result = subprocess.run(cmd, capture_output=not verbose, check=True, timeout=300, env=_env)
         if result.returncode == 0 and os.path.exists(db_path):
             click.echo(f"    DB built")
         else:
@@ -1162,7 +1190,7 @@ def benchmark(project_name):
         sys.exit(1)
 
 
-@main.command()
+@main.command("dashboard")
 @click.option("--port", default=8080, help="Port to serve on")
 @click.option("--no-open", is_flag=True, help="Don't open browser automatically")
 def serve(port, no_open):

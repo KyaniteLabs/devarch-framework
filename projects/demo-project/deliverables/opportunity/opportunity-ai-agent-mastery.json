@@ -1,0 +1,24 @@
+{
+  "analysis_type": "ai-agent-mastery",
+  "overall_score": 10.3,
+  "mastery_level": "Beginner",
+  "sub_scores": {
+    "autonomy": 0,
+    "tool_breadth": 0,
+    "adoption_speed": 0,
+    "delegation_quality": 2.0,
+    "baseline": 50
+  },
+  "tools_detected": [],
+  "adoption_lag_avg_months": 12,
+  "autonomy_trajectory": [],
+  "agent_comparison": [],
+  "summary": {
+    "overall_score": 10.3,
+    "level": "Beginner",
+    "strongest_dimension": "delegation",
+    "weakest_dimension": "autonomy"
+  },
+  "generated_at": "2026-05-26T12:44:00.096556",
+  "project": "demo-project"
+}

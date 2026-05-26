@@ -69,7 +69,7 @@ def analyze_agent_benchmarks(db_path: str) -> Dict[str, Any]:
         for row in eras_data:
             era_id = row["id"]
             dates_str = cursor.execute(
-                f"SELECT dates FROM eras WHERE id = {era_id}"
+                "SELECT dates FROM eras WHERE id = ?", (era_id,)
             ).fetchone()["dates"]
             era_date_ranges[era_id] = dates_str
 
@@ -83,29 +83,26 @@ def analyze_agent_benchmarks(db_path: str) -> Dict[str, Any]:
     if has_eras:
         for era_id, era_name in eras.items():
             era_row = cursor.execute(
-                f"SELECT dates, sub_phases FROM eras WHERE id = {era_id}"
+                "SELECT dates FROM eras WHERE id = ?", (era_id,)
             ).fetchone()
 
-            dates_str = era_row["dates"]
-            sub_phases_str = era_row["sub_phases"]
-
-        # Parse the main era date range
-        # Format: "Feb 28 - Mar 18"
-        if " - " in dates_str:
-            start_str, end_str = dates_str.split(" - ")
-            # Add year
-            start_date = f"{start_str}, 2026"
-            end_date = f"{end_str}, 2026"
-        else:
+            dates_str = era_row["dates"] if era_row else None
             start_date = None
             end_date = None
 
-        era_mappings.append({
-            "id": era_id,
-            "name": era_name,
-            "start": start_date,
-            "end": end_date
-        })
+            # Parse the main era date range
+            # Format: "Feb 28 - Mar 18"
+            if dates_str and " - " in dates_str:
+                start_str, end_str = dates_str.split(" - ", 1)
+                start_date = f"{start_str}, 2026"
+                end_date = f"{end_str}, 2026"
+
+            era_mappings.append({
+                "id": era_id,
+                "name": era_name,
+                "start": start_date,
+                "end": end_date
+            })
 
     # Map commits to eras
     import re
