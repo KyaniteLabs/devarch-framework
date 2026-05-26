@@ -2306,16 +2306,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const el = document.getElementById('chart-model-adoption');
     if (!el) return;
     const agents = D.telemetry_agents || {};
-    // Collect era -> model transitions from agent data
-    const modelTimeline = [
-      { era: 1, label: 'Kai + Cursor + Claude', color: COLORS.kai, model: 'gpt-4 + claude-3.5', type: 'Multi-agent exploration' },
-      { era: 2, label: 'Claude Code + Op3', color: '#74c0fc', model: 'claude-3.5 + o3', type: 'CLI + API' },
-      { era: 3, label: 'Claude Code + GLM', color: '#20b2a3', model: 'claude + glm-4.5', type: 'CLI multi-agent' },
-      { era: 4, label: 'Claude Code + GLM', color: '#20b2a3', model: 'glm-4.5/glm-5.1', type: 'Architecture agents' },
-      { era: 5, label: 'Claude Code + GLM', color: '#20b2a3', model: 'glm-5.1', type: 'Studio development' },
-      { era: 6, label: 'Claude Code + GLM', color: '#f06595', model: 'glm-5.1', type: 'Swarm orchestration' },
-      { era: 7, label: 'Claude Code + GLM', color: '#a9e34b', model: 'glm-5.1', type: 'Final forge' }
-    ];
+    // Derive era timeline entries from project data — never hardcode era count
+    const ERA_COLORS = ['#74c0fc','#20b2a3','#f06595','#a9e34b','#ffd43b','#e599f7','#ff922b','#20c997'];
+    const commitEras = (D.commit_eras || []);
+    const modelTimeline = commitEras.map((e, i) => ({
+      era: e.id,
+      label: e.name,
+      color: ERA_COLORS[i % ERA_COLORS.length],
+      model: (agents[`era-${String(e.id).padStart(2,'0')}`] || {}).model || '—',
+      type: e.description ? e.description.slice(0, 40) : '',
+    }));
     const margin = {top: 20, right: 20, bottom: 30, left: 45};
     const width = el.clientWidth - margin.left - margin.right;
     const height = 360 - margin.top - margin.bottom;
