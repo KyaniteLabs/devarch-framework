@@ -316,7 +316,7 @@ Create a private repo in Pastorsimon1798's personal account with:
 
 ## Local-First Inference (LM Studio)
 
-All KyaniteLabs projects that require an LLM must use local inference first. Server runs on Tailscale at `100.66.225.85:1234`.
+All KyaniteLabs projects that require an LLM must use local inference first. The Mac-local LM Studio compatibility endpoint is `http://localhost:1234`, backed by the NucBox LiteLLM server over an SSH tunnel. The old Windows/Tailscale endpoint `100.66.225.85:1234` is retired unless Tailscale is explicitly restored.
 
 ### Server Specs
 - **CPU**: AMD Ryzen AI Max 395 (Strix Halo) — 16 cores, 32 threads

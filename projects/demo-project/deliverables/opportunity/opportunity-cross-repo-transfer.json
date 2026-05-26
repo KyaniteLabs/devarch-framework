@@ -1,0 +1,16 @@
+{
+  "analysis_type": "cross-repo-transfer",
+  "rd_labs": [],
+  "top_repos": [],
+  "language_evolution": [],
+  "transfer_events": [],
+  "concurrent_repos": [],
+  "summary": {
+    "total_repos": 0,
+    "rd_labs_identified": 0,
+    "transfer_events": 0,
+    "primary_languages": []
+  },
+  "generated_at": "2026-05-26T12:44:00.097711",
+  "project": "demo-project"
+}

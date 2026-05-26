@@ -1,0 +1,39 @@
+{
+  "analysis_type": "neurodivergent-profile",
+  "hourly_pattern": {},
+  "peak_hours": [],
+  "quiet_hours": [],
+  "burst_days": {},
+  "recovery_days_count": 4,
+  "weekday_vs_weekend": {
+    "weekday_commits": 0,
+    "weekend_commits": 0,
+    "weekend_bias": 0.0
+  },
+  "witching_hour": {
+    "hours": "21:00-03:00",
+    "commits": 0,
+    "percentage_of_total": 0.0
+  },
+  "lunar_correlation": [],
+  "working_style": {
+    "pattern": "Burst-recovery with nocturnal peak",
+    "peak_productivity": "unknown",
+    "avg_burst_size": 0,
+    "recovery_frequency": "4 recovery days in 4 active days"
+  },
+  "summary": {
+    "profile_type": "ADHD-hyperfocus",
+    "peak_hour": null,
+    "witching_hour_pct": 0.0,
+    "burst_days_count": 0,
+    "recommendations": [
+      "Schedule complex architecture work during peak hours",
+      "Use burst days for feature development, recovery days for documentation",
+      "Protect the witching hour — it's the most productive period",
+      "Batch similar tasks to reduce context-switching overhead"
+    ]
+  },
+  "generated_at": "2026-05-26T12:44:00.096952",
+  "project": "demo-project"
+}
