@@ -69,7 +69,7 @@ def analyze_agent_benchmarks(db_path: str) -> Dict[str, Any]:
         for row in eras_data:
             era_id = row["id"]
             dates_str = cursor.execute(
-                f"SELECT dates FROM eras WHERE id = {era_id}"
+                "SELECT dates FROM eras WHERE id = ?", (era_id,)
             ).fetchone()["dates"]
             era_date_ranges[era_id] = dates_str
 
@@ -83,7 +83,7 @@ def analyze_agent_benchmarks(db_path: str) -> Dict[str, Any]:
     if has_eras:
         for era_id, era_name in eras.items():
             era_row = cursor.execute(
-                f"SELECT dates, sub_phases FROM eras WHERE id = {era_id}"
+                "SELECT dates, sub_phases FROM eras WHERE id = ?", (era_id,)
             ).fetchone()
 
             dates_str = era_row["dates"]

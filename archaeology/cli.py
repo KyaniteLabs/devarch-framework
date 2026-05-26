@@ -81,7 +81,10 @@ def demo(project_name, force, build_db):
     click.echo(f"Then: archaeology audit {project_name} --fail-on HIGH")
     if build_db:
         cmd = [sys.executable, "-m", "archaeology.db.builder", "--project-root", str(project_root)]
-        result = subprocess.run(cmd, check=True, timeout=300)
+        _env = os.environ.copy()
+        _pkg_root = str(Path(__file__).parent.parent)
+        _env["PYTHONPATH"] = _pkg_root + ((":" + _env["PYTHONPATH"]) if _env.get("PYTHONPATH") else "")
+        result = subprocess.run(cmd, check=True, timeout=300, env=_env)
         if result.returncode != 0:
             raise click.exceptions.Exit(result.returncode)
 
@@ -138,7 +141,10 @@ def build_db(project_name, verbose):
     if verbose:
         cmd.append("--verbose")
 
-    result = subprocess.run(cmd, check=True, timeout=300)
+    _env = os.environ.copy()
+    _pkg_root = str(Path(__file__).parent.parent)
+    _env["PYTHONPATH"] = _pkg_root + ((":" + _env["PYTHONPATH"]) if _env.get("PYTHONPATH") else "")
+    result = subprocess.run(cmd, check=True, timeout=300, env=_env)
     if result.returncode == 0 and os.path.exists(db_path):
         click.echo(f"Database built at {db_path}")
     else:
@@ -634,7 +640,10 @@ def cascade(project_name, dry_run, skip_mine):
     db_path = data_dir / "archaeology.db"
     cmd = [sys.executable, "-m", "archaeology.db.builder",
            "--project-root", str(project_dir)]
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
+    _env = os.environ.copy()
+    _pkg_root = str(Path(__file__).parent.parent)
+    _env["PYTHONPATH"] = _pkg_root + ((":" + _env["PYTHONPATH"]) if _env.get("PYTHONPATH") else "")
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=300, env=_env)
     if result.returncode == 0:
         click.echo(f"  Database built ({db_path})")
     else:
@@ -966,7 +975,10 @@ def sync(projects, skip_mine, skip_signals, verbose):
         if verbose:
             cmd.append("--verbose")
 
-        result = subprocess.run(cmd, capture_output=not verbose, check=True, timeout=300)
+        _env = os.environ.copy()
+        _pkg_root = str(Path(__file__).parent.parent)
+        _env["PYTHONPATH"] = _pkg_root + ((":" + _env["PYTHONPATH"]) if _env.get("PYTHONPATH") else "")
+        result = subprocess.run(cmd, capture_output=not verbose, check=True, timeout=300, env=_env)
         if result.returncode == 0 and os.path.exists(db_path):
             click.echo(f"    DB built")
         else:
@@ -1162,7 +1174,7 @@ def benchmark(project_name):
         sys.exit(1)
 
 
-@main.command()
+@main.command("dashboard")
 @click.option("--port", default=8080, help="Port to serve on")
 @click.option("--no-open", is_flag=True, help="Don't open browser automatically")
 def serve(port, no_open):
