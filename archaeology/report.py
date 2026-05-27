@@ -397,16 +397,17 @@ def export_public_case_study(root: str | Path = ".", output_dir: str | Path = "p
     (output / "README.md").write_text(
         "# Dev-Archaeology Public Case Study\n\n"
         "This is a sanitized, publishable demo generated from invented fixture data. "
-        "It exists to show what Dev-Archaeology produces without exposing Liminal's private evidence archive.\n\n"
+        "It exists to show what Dev-Archaeology produces using invented fixture data only — "
+        "no private evidence archives, no personal telemetry.\n\n"
         "## Open the case study\n\n"
         "```text\npublic-case-study/index.html\n```\n\n"
         "## Regenerate locally\n\n"
         "```bash\narchaeology public-case-study --output public-case-study\n```\n\n"
         "## Data safety\n\n"
         "The files in `public-case-study/data/` are invented fixture data only:\n\n"
-        "- no raw Liminal sessions\n"
-        "- no YouTube export\n"
-        "- no resume/profile data\n"
+        "- no raw session exports\n"
+        "- no personal watch history\n"
+        "- no resume or profile data\n"
         "- no personal telemetry\n",
         encoding="utf-8",
     )

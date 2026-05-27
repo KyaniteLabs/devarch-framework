@@ -1158,7 +1158,7 @@ def multi_project_dashboard(output_dir, top_n, year, verbose):
 
 
 @main.command("fetch-github")
-@click.option("--owner", default="Pastorsimon1798", help="GitHub username/org")
+@click.option("--owner", default=os.environ.get("ARCHAEOLOGY_GITHUB_OWNER", ""), help="GitHub username/org")
 @click.option("--output", "output_path", default="global/data/github-repos.json", help="Output JSON path")
 def fetch_github(owner, output_path):
     """Fetch repo metadata from GitHub API for all repos (no cloning)."""
@@ -1221,7 +1221,7 @@ def serve(port, no_open):
     mined_names = {p["name"].lower().replace("-", "").replace("_", "") for p in projects}
     api_repos = [r for r in api_repos if r["name"].lower().replace("-", "").replace("_", "") not in mined_names]
     print(f"  After dedup: {len(api_repos)} API-only repos")
-    owner_labels = {"Pastorsimon1798": "Pastorsimon1798 (Personal)", "KyaniteLabs": "KyaniteLabs (Org)"}
+    owner_labels = {}  # populated from ARCHAEOLOGY_GITHUB_OWNER env or left empty
     api_section_html = generate_global_section(api_repos, owner_labels) if api_repos else ""
 
     dashboard_html = generate_master_dashboard(projects, api_section_html=api_section_html, api_repos=api_repos)
@@ -1362,7 +1362,7 @@ def publish_static(output_dir):
     api_repos = load_api_repos(global_data_dir) if global_data_dir.exists() else []
     mined_names = {p["name"].lower().replace("-", "").replace("_", "") for p in projects}
     api_repos = [r for r in api_repos if r["name"].lower().replace("-", "").replace("_", "") not in mined_names]
-    owner_labels = {"Pastorsimon1798": "Pastorsimon1798 (Personal)", "KyaniteLabs": "KyaniteLabs (Org)"}
+    owner_labels = {}  # populated from ARCHAEOLOGY_GITHUB_OWNER env or left empty
     api_section_html = generate_global_section(api_repos, owner_labels) if api_repos else ""
 
     dashboard_html = generate_master_dashboard(projects, api_section_html=api_section_html, api_repos=api_repos)
