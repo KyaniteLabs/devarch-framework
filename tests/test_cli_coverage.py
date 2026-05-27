@@ -397,7 +397,13 @@ def test_build_db_propagates_pythonpath(tmp_path, monkeypatch):
     assert db_builder_calls, "db.builder was never invoked"
     env = db_builder_calls[0]["env"]
     assert "PYTHONPATH" in env
-    assert "archaeology" in env["PYTHONPATH"] or "DEV-ARCH" in env["PYTHONPATH"]
+    # PYTHONPATH is set to the package root (Path(__file__).parent.parent)
+    # which varies by checkout name — verify it's an absolute path containing
+    # the archaeology package directory, not a hardcoded repo name.
+    pp = env["PYTHONPATH"]
+    assert os.path.isabs(pp.split(":")[0].split(";")[0]), (
+        f"PYTHONPATH should start with an absolute path, got: {pp}"
+    )
 
 
 # ── analyze (unknown vector) ──────────────────────────────────────────────────
