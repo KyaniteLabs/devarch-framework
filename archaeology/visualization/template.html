@@ -224,12 +224,12 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
 .benchmark-note{font-size:0.78rem;color:var(--text3);text-align:center;margin-top:0.75rem;line-height:1.5}
 
 /* Tooltip */
-.tooltip{position:fixed;pointer-events:none;background:rgba(12,16,24,0.96);border:1px solid var(--border-hover);
+.tooltip{position:fixed;pointer-events:none;background:rgba(12,16,24,0.96);color:#edf0f7;border:1px solid var(--border-hover);
   border-radius:var(--radius-md);padding:0.875rem 1.125rem;font-size:0.82rem;max-width:320px;z-index:1000;
   opacity:0;transition:opacity .15s;box-shadow:var(--shadow-lg);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
 .tooltip.visible{opacity:1}
 .tooltip .tt-title{font-family:var(--font-display);font-weight:600;margin-bottom:0.3rem;font-size:0.88rem}
-.tooltip .tt-detail{color:var(--text2);line-height:1.5}
+.tooltip .tt-detail{color:#b4bccf;line-height:1.5}
 .tooltip .tt-quote{font-family:var(--font-quote);font-style:italic;color:var(--cursor);margin-top:0.625rem;
   padding-top:0.625rem;border-top:1px solid var(--border)}
 .tooltip .tt-insight{font-family:var(--font-body);font-style:italic;color:var(--text2);margin-top:0.5rem;
@@ -572,10 +572,33 @@ window.ERAS = [];
   window.addEventListener('data-loaded', function() { buildEras(window.PROJECT_DATA); });
 })();
 
-window.COLORS = {
-  bg:'#080c14', surface:'#0d1117', surface2:'#161b22', border:'#1e2a3a',
-  text:'#e6edf3', text2:'#8b949e', text3:'#484f58'
-};
+window.COLORS = (function() {
+  const s = getComputedStyle(document.documentElement);
+  const v = name => s.getPropertyValue(name).trim();
+  return {
+    bg: v('--bg-main') || '#080c14',
+    surface: v('--bg-surface') || '#0d1117',
+    surface2: v('--bg-card') || '#161b22',
+    border: v('--border') || '#1e2a3a',
+    text: v('--text') || '#e6edf3',
+    text2: v('--text-2') || '#8b949e',
+    text3: v('--text-muted') || '#484f58',
+    kai: v('--kai') || '#ff6b6b',
+    cursor: v('--cursor') || '#ffa94d',
+    claude: v('--claude') || '#51cf66',
+    unknown: v('--unknown') || '#495057',
+    era1: v('--era1') || '#b197fc',
+    era2: v('--era2') || '#ff6b6b',
+    era3: v('--era3') || '#ffa94d',
+    era4: v('--era4') || '#ffd43b',
+    era5: v('--era5') || '#51cf66',
+    era6: v('--era6') || '#495057',
+    era7: v('--era7') || '#cc5de8',
+    era8: v('--era8') || '#ff8787',
+    era9: v('--era9') || '#74c0fc',
+    era10: v('--era10') || '#20b2a3',
+  };
+})();
 
 // Utility: 3-Layer Tooltip
 // Layer 1: Title + core metric (immediate)
@@ -734,23 +757,31 @@ function drawSparkline(svgId, data, color) {
 function initSparklines() {
   const D = window.PROJECT_DATA || {};
   if (!D || !D.telemetry_visualizations) return;
-  const tv = D.telemetry_visualizations.charts;
-  drawSparkline('spark-velocity', Object.values(tv.commit_timeline.data), '#51cf66');
+  const tv = D.telemetry_visualizations.charts || {};
+  const ctl = (tv.commit_timeline || {}).data || {};
+  if (Object.keys(ctl).length) drawSparkline('spark-velocity', Object.values(ctl), '#51cf66');
   // Nocturnal: hours 21-04 vs 8-20
-  const hourly = tv.commit_timeline.hourly_pattern.data;
+  const hourly = (tv.hourly_pattern || {}).data || {};
   const nightHours = [21,22,23,0,1,2,3,4];
   const nightVals = nightHours.map(h => hourly[String(h).padStart(2,'0')] || 0);
-  drawSparkline('spark-nocturnal', nightVals, '#cc5de8');
-  drawSparkline('spark-coauth',
-    D.derived_patterns.co_authorship_gap_analysis.era_breakdown.map(e => e.co_authored),
-    '#ffa94d');
-  drawSparkline('spark-files', Object.values(tv.commit_timeline.file_growth.data), '#74c0fc');
-  const fileVals = Object.values(tv.commit_timeline.file_growth.data);
-  const testVals = Object.values(tv.commit_timeline.test_growth.data);
-  const ratioVals = fileVals.map((f, i) => testVals[i] ? Math.round(f / testVals[i]) : 0);
-  drawSparkline('spark-tests', ratioVals, '#ffd43b');
-  const ct = tv.commit_timeline.commit_types.data;
-  drawSparkline('spark-featfix', [ct.feat || 0, ct.fix || 0, ct.docs || 0, ct.refactor || 0, ct.test || 0, ct.chore || 0], '#ff6b6b');
+  if (Object.keys(hourly).length) drawSparkline('spark-nocturnal', nightVals, '#cc5de8');
+  const coa = ((D.derived_patterns || {}).co_authorship_gap_analysis || {}).era_breakdown;
+  if (Array.isArray(coa) && coa.length) {
+    drawSparkline('spark-coauth', coa.map(e => e.co_authored), '#ffa94d');
+  }
+  const fg = (tv.file_growth || {}).data || {};
+  const tg = (tv.test_growth || {}).data || {};
+  if (Object.keys(fg).length) drawSparkline('spark-files', Object.values(fg), '#74c0fc');
+  const fileVals = Object.values(fg);
+  const testVals = Object.values(tg);
+  if (fileVals.length && testVals.length) {
+    const ratioVals = fileVals.map((f, i) => testVals[i] ? Math.round(f / testVals[i]) : 0);
+    drawSparkline('spark-tests', ratioVals, '#ffd43b');
+  }
+  const ct = (tv.commit_types || {}).data || {};
+  if (Object.keys(ct).length) {
+    drawSparkline('spark-featfix', [ct.feat || 0, ct.fix || 0, ct.docs || 0, ct.refactor || 0, ct.test || 0, ct.chore || 0], '#ff6b6b');
+  }
 }
 
 // Scroll spy: highlight active nav link
@@ -792,7 +823,8 @@ document.addEventListener('DOMContentLoaded', () => {
   (function() {
     const el = document.getElementById('chart-commit-timeline');
     if (!el) return;
-    const rawData = tv.commit_timeline.data;
+    const rawData = ((tv.commit_timeline || {}).data) || {};
+    if (!Object.keys(rawData).length) { noData(el, 'Commit timeline data pending — run cascade to regenerate'); return; }
     const data = Object.entries(rawData).map(([d, v]) => ({ date: d, value: v })).sort((a,b) => a.date.localeCompare(b.date));
     const maxVal = Math.max(...data.map(d => d.value), 1);
     const margin = {top: 20, right: 20, bottom: 30, left: 45};
@@ -834,9 +866,9 @@ document.addEventListener('DOMContentLoaded', () => {
   (function() {
     const el = document.getElementById('chart-loc-growth');
     if (!el) return;
-    const rawData = tv.commit_timeline.loc_growth.data;
+    const rawData = ((tv.loc_growth || {}).data) || {};
     const data = Object.entries(rawData).map(([d, v]) => ({ date: d, value: v })).sort((a,b) => a.date.localeCompare(b.date));
-    if (!data.length) { noData(el, 'Lines-of-code growth data not mined for this project'); return; }
+    if (!data.length) { noData(el, 'Lines-of-code growth data pending — run cascade to regenerate'); return; }
     const maxVal = Math.max(...data.map(d => d.value), 1);
     const margin = {top: 20, right: 20, bottom: 30, left: 55};
     const width = el.clientWidth - margin.left - margin.right;
@@ -913,7 +945,8 @@ document.addEventListener('DOMContentLoaded', () => {
   (function() {
     const el = document.getElementById('chart-hourly-polar');
     if (!el) return;
-    const raw = tv.commit_timeline.hourly_pattern.data;
+    const raw = ((tv.hourly_pattern || {}).data) || {};
+    if (!Object.keys(raw).length) { noData(el, 'Hourly pattern data pending — run cascade to regenerate'); return; }
     const data = Object.entries(raw).map(([h, v]) => ({ hour: parseInt(h), value: v }));
     const maxVal = Math.max(...data.map(d => d.value), 1);
     const size = 280, cx = size/2, cy = size/2, r = size/2 - 30;
@@ -956,7 +989,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const hours = Array.from({length: 24}, (_, i) => i);
     // Load heatmap data from PROJECT_DATA or use empty default
     const D = window.PROJECT_DATA || {};
-    const heatmapData = D.heatmap || {};
+    const heatmapData = (D.telemetry_visualizations || {}).heatmap || {};
     const REAL_HEATMAP = heatmapData.grid || days.reduce((acc, d) => { acc[d] = Array(24).fill(0); return acc; }, {});
     const dayTotals = heatmapData.day_totals || days.reduce((acc, d) => { acc[d] = 0; return acc; }, {});
     const totalCommits = heatmapData.total || 0;
@@ -1080,8 +1113,9 @@ document.addEventListener('DOMContentLoaded', () => {
   (function() {
     const el = document.getElementById('chart-agent-stacked');
     if (!el) return;
-    const raw = tv.commit_timeline.agent_attribution.data;
-    const agentNames = tv.commit_timeline.agent_attribution.agents;
+    const raw = ((tv.agent_stacked || {}).data) || {};
+    const agentNames = ((tv.agent_stacked || {}).agents) || [];
+    if (!Object.keys(raw).length || !agentNames.length) { noData(el, 'Agent attribution data pending — run cascade to regenerate'); return; }
     const data = Object.entries(raw).map(([d, v]) => {
       const obj = { date: d };
       agentNames.forEach(a => obj[a] = v[a] || 0);
@@ -1124,7 +1158,8 @@ document.addEventListener('DOMContentLoaded', () => {
   (function() {
     const el = document.getElementById('chart-treemap');
     if (!el) return;
-    const raw = tv.commit_timeline.source_treemap.data;
+    const raw = ((tv.file_treemap || {}).data) || {};
+    if (!raw || !Object.keys(raw).length) { noData(el, 'File treemap data pending — run cascade to regenerate'); return; }
     const modules = Object.entries(raw).map(([name, info]) => ({
       name, value: info.files || info.size || 1, loc: info.loc || 0, color: info.color || COLORS.claude
     }));
@@ -1153,11 +1188,11 @@ document.addEventListener('DOMContentLoaded', () => {
   (function() {
     const el = document.getElementById('chart-file-test-growth');
     if (!el) return;
-    const fg = tv.commit_timeline.file_growth.data;
-    const tg = tv.commit_timeline.test_growth.data;
+    const fg = ((tv.file_growth || {}).data) || {};
+    const tg = ((tv.test_growth || {}).data) || {};
     const fileData = Object.entries(fg).map(([d, v]) => ({ date: d, files: v }));
     const testData = Object.entries(tg).map(([d, v]) => ({ date: d, tests: v }));
-    if (!fileData.length && !testData.length) { noData(el, 'File and test growth data not mined for this project'); return; }
+    if (!fileData.length && !testData.length) { noData(el, 'File and test growth data pending — run cascade to regenerate'); return; }
     const allDates = [...new Set([...fileData.map(d => d.date), ...testData.map(d => d.date)])].sort();
     const maxF = Math.max(...fileData.map(d => d.files), 1);
     const maxT = Math.max(...testData.map(d => d.tests), 1);
@@ -1195,8 +1230,10 @@ document.addEventListener('DOMContentLoaded', () => {
   (function() {
     const el = document.getElementById('chart-commit-types');
     if (!el) return;
-    const raw = tv.commit_timeline.commit_types.data;
+    const raw = ((tv.commit_types || {}).data) || {};
+    if (!raw || !Object.keys(raw).length) { noData(el, 'Commit type breakdown pending pipeline re-run'); return; }
     const data = Object.entries(raw).filter(([k, v]) => v > 1).map(([type, count]) => ({ type, count })).sort((a, b) => b.count - a.count);
+    if (!data.length) { noData(el, 'Commit type breakdown pending pipeline re-run'); return; }
     const total = data.reduce((s, d) => s + d.count, 0);
     const size = 220, cx = size/2, cy = size/2, r = 80, ir = 50;
     const svg = d3.select(el).append('svg').attr('role','img').attr('viewBox', `0 0 ${size} ${size + 30}`);
@@ -1225,9 +1262,9 @@ document.addEventListener('DOMContentLoaded', () => {
   (function() {
     const el = document.getElementById('chart-dependency-growth');
     if (!el) return;
-    const raw = tv.commit_timeline.dependency_growth.data;
+    const raw = ((tv.dependency_growth || {}).data) || {};
     const data = Object.entries(raw).map(([d, v]) => ({ date: d, value: v })).sort((a,b) => a.date.localeCompare(b.date));
-    if (!data.length) { noData(el, 'Dependency growth data not mined for this project'); return; }
+    if (!data.length) { noData(el, 'Dependency growth data pending — run cascade to regenerate'); return; }
     const maxVal = Math.max(...data.map(d => d.value), 1);
     const margin = {top: 20, right: 20, bottom: 30, left: 40};
     const width = el.clientWidth - margin.left - margin.right;
@@ -1401,14 +1438,31 @@ document.addEventListener('DOMContentLoaded', () => {
   const D = window.PROJECT_DATA || {};
   if (!D || !D.derived_patterns) return;
   const dp = D.derived_patterns;
+  const COLORS = window.COLORS;
 
   // 1. Lunar Illumination vs Commit Velocity
   (function() {
     const el = document.getElementById('chart-lunar');
     if (!el) return;
-    const lunar = dp.lunar_phase_correlation;
-    if (!lunar || !lunar.daily_illumination) { noData(el, 'Lunar phase correlation data not available', 280); return; }
-    const data = lunar.daily_illumination;
+    const lunarData = ((D.telemetry_visualizations || {}).charts || {}).lunar || {};
+    const byDate = (lunarData.data && lunarData.data.by_date) ? lunarData.data.by_date : {};
+    const commitTimeline = ((D.telemetry_visualizations || {}).charts || {}).commit_timeline || {};
+    const commits = commitTimeline.data || {};
+    const phaseIllum = {
+      new_moon: 0, waxing_crescent: 25, first_quarter: 50,
+      waxing_gibbous: 75, full: 100, waning_gibbous: 75,
+      last_quarter: 50, waning_crescent: 25
+    };
+    if (!Object.keys(commits).length || !Object.keys(byDate).length) {
+      noData(el, 'Lunar phase data pending — run cascade to regenerate', 280); return;
+    }
+    const data = Object.entries(commits).map(([date, commitCount]) => ({
+      date,
+      commits: commitCount,
+      phase_name: byDate[date] || 'unknown',
+      illumination_pct: phaseIllum[byDate[date]] != null ? phaseIllum[byDate[date]] : 50
+    })).sort((a, b) => a.date.localeCompare(b.date));
+
     const margin = {top: 30, right: 50, bottom: 30, left: 45};
     const width = el.clientWidth - margin.left - margin.right;
     const height = 280 - margin.top - margin.bottom;
@@ -1417,7 +1471,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
 
     const x = d3.scaleTime().domain(d3.extent(data, d => new Date(d.date))).range([0, width]);
-    const yCommits = d3.scaleLinear().domain([0, d3.max(data, d => d.commits) * 1.1]).range([height, 0]);
+    const maxCommits = d3.max(data, d => d.commits) || 1;
+    const yCommits = d3.scaleLinear().domain([0, maxCommits * 1.1]).range([height, 0]);
     const yMoon = d3.scaleLinear().domain([0, 100]).range([height, 0]);
 
     // Moon illumination area (background)
@@ -1425,7 +1480,7 @@ document.addEventListener('DOMContentLoaded', () => {
     g.append('path').datum(data).attr('d', area).attr('fill', '#ffd43b').attr('opacity', 0.12);
 
     // Full moon markers
-    data.filter(d => d.phase_name.includes('FULL')).forEach(d => {
+    data.filter(d => d.phase_name === 'full').forEach(d => {
       const cx = x(new Date(d.date));
       g.append('circle').attr('cx', cx).attr('cy', 10).attr('r', 8).attr('fill', '#ffd43b').attr('opacity', 0.6);
       g.append('text').attr('x', cx).attr('y', 6).attr('text-anchor', 'middle').attr('fill', '#ffd43b')
@@ -1440,8 +1495,9 @@ document.addEventListener('DOMContentLoaded', () => {
       .attr('fill', d => d.commits >= 40 ? COLORS.claude : d.commits >= 20 ? COLORS.cursor : COLORS.text2)
       .attr('rx', 2)
       .on('mouseover', function(e, d) {
-        const phaseNote = d.phase_name.includes('FULL') ? ' — FULL MOON' : d.phase_name.includes('QUARTER') ? ' — QUARTER' : '';
-        showTooltip(e, { title: d.date, detail: `${d.commits} commits — ${d.phase_name} (${d.illumination_pct}% illumination)${phaseNote}`,
+        const phaseNote = d.phase_name === 'full' ? ' — FULL MOON' : (d.phase_name === 'first_quarter' || d.phase_name === 'last_quarter') ? ' — QUARTER' : '';
+        const prettyPhase = (d.phase_name || 'unknown').replace(/_/g, ' ');
+        showTooltip(e, { title: d.date, detail: `${d.commits} commits — ${prettyPhase} (${d.illumination_pct}% illumination)${phaseNote}`,
           insight: d.commits >= 40 ? 'Peak velocity day — the project surged.' : d.commits === 0 ? 'Silence. The moon was doing something else.' : undefined });
       })
       .on('mouseout', hideTooltip);
@@ -1515,25 +1571,42 @@ document.addEventListener('DOMContentLoaded', () => {
   (function() {
     const el = document.getElementById('chart-agent-econ');
     if (!el) return;
-    const agentData = dp.agent_handoff_economics;
-    if (!agentData || !agentData.agents) { noData(el, 'Agent economics data not available for this project'); return; }
-    const agents = agentData.agents;
-    const entries = Object.entries(agents);
-    const cardW = Math.min(220, (el.clientWidth - 20) / entries.length);
+    const econ = ((D.telemetry_visualizations || {}).charts || {}).agent_econ || {};
+    const agentsArr = (econ.data && Array.isArray(econ.data.agents)) ? econ.data.agents : null;
+    if (!agentsArr || !agentsArr.length) {
+      noData(el, 'Agent economics data pending — run cascade to regenerate'); return;
+    }
+    const cardW = Math.min(220, Math.max(160, (el.clientWidth - 20) / agentsArr.length));
+    const colorFor = (name) => {
+      const k = String(name || '').toLowerCase();
+      if (k.includes('kai')) return COLORS.kai;
+      if (k.includes('claude')) return COLORS.claude;
+      if (k.includes('cursor')) return COLORS.cursor;
+      if (k.includes('human')) return COLORS.era1;
+      if (k.includes('pipeline')) return COLORS.era4;
+      return COLORS.text2;
+    };
 
-    entries.forEach(([name, a], i) => {
+    agentsArr.forEach((a) => {
       const card = document.createElement('div');
-      card.style.cssText = `display:inline-block;vertical-align:top;width:${cardW}px;margin-right:12px;padding:12px;background:${COLORS.surface2};border-radius:8px;border:1px solid ${COLORS.border}`;
-      const commits = typeof a.commit_count === 'object' ? (a.commit_count.total || 0) : (a.commit_count || 0);
-      const ins = a.lines_changed ? (typeof a.lines_changed.insertions === 'object' ? a.lines_changed.insertions.total || 0 : a.lines_changed.insertions) : 0;
-      const fixRate = a.economics ? (a.economics.fix_rate * 100).toFixed(0) : '?';
+      card.style.cssText = `display:inline-block;vertical-align:top;width:${cardW}px;margin-right:12px;margin-bottom:8px;padding:12px;background:${COLORS.surface2};border-radius:8px;border:1px solid ${COLORS.border}`;
+      const name = a.agent || 'unknown';
+      const commits = typeof a.commits === 'number' ? a.commits : 0;
+      const pct = typeof a.pct === 'number' ? a.pct : null;
+      const avgIns = typeof a.avg_insertions === 'number' ? a.avg_insertions : null;
+      const reworkPct = typeof a.rework_rate === 'number' ? (a.rework_rate * 100).toFixed(1) : null;
+      const peakDay = a.peak_day || null;
       const title = document.createElement('div');
-      title.style.cssText = `color:${name === 'kai' ? COLORS.kai : name === 'claude' ? COLORS.claude : COLORS.cursor};font-weight:600;font-size:13px;margin-bottom:6px`;
-      title.textContent = name.toUpperCase();
+      title.style.cssText = `color:${colorFor(name)};font-weight:600;font-size:13px;margin-bottom:6px`;
+      title.textContent = String(name).toUpperCase();
       const body = document.createElement('div');
       body.style.cssText = `color:${COLORS.text2};font-size:11px;line-height:1.6`;
-      const velocity = a.velocity ? a.velocity.commits_per_hour.toFixed(1) + ' commits/hr' : '';
-      body.textContent = `${commits} commits · ${(ins/1000).toFixed(1)}K insertions | Fix rate: ${fixRate}%${velocity ? ' | ' + velocity : ''}${a.archetype ? ' | ' + a.archetype : ''}`;
+      const parts = [];
+      parts.push(`${commits} commits${pct != null ? ` (${pct.toFixed(1)}%)` : ''}`);
+      if (avgIns != null) parts.push(`avg ${avgIns.toFixed(1)} ins/commit`);
+      if (reworkPct != null) parts.push(`rework ${reworkPct}%`);
+      if (peakDay) parts.push(`peak ${peakDay}`);
+      body.textContent = parts.join(' · ');
       card.append(title, body);
       el.appendChild(card);
     });
@@ -1952,41 +2025,34 @@ document.addEventListener('DOMContentLoaded', () => {
       svg.appendChild(desc);
     });
 
-    // Search dots + query text
-    const dotY = cH * 0.55 + mg.t;
+    // Search dots — tooltip-only labels, y-jittered so dots don't pile up
+    // Hash function for deterministic y-jitter (stable across renders)
+    const strHash = str => { let h = 0; for (let i = 0; i < str.length; i++) { h = (h * 31 + str.charCodeAt(i)) & 0xffffffff; } return Math.abs(h); };
+    const dotBandTop = mg.t + 40, dotBandH = cH - 50;
+    const el_svg = el; // reference for mouseover positioning
+
     searches.forEach((s, i) => {
       const x = xScale(s.date);
       const phase = phases.find(p => s.date >= p.range[0] && s.date <= p.range[1]);
       const color = phase ? phase.color : COLORS.text3;
+      let raw = s.query || s.title || '';
+      let txt = raw.replace(/^Searched for /i, '');
 
-      // Vertical line
-      const line = document.createElementNS('http://www.w3.org/2000/svg','line');
-      line.setAttribute('x1', x); line.setAttribute('x2', x);
-      line.setAttribute('y1', dotY - 8); line.setAttribute('y2', dotY + 8);
-      line.setAttribute('stroke', color); line.setAttribute('stroke-width', '2');
-      svg.appendChild(line);
+      // Deterministic y-jitter based on query text hash → spreads dots across height
+      const jitter = (strHash(txt) % 1000) / 1000;
+      const dotY = dotBandTop + jitter * dotBandH;
 
-      // Dot
       const circle = document.createElementNS('http://www.w3.org/2000/svg','circle');
       circle.setAttribute('cx', x); circle.setAttribute('cy', dotY);
       circle.setAttribute('r', '5');
       circle.setAttribute('fill', color);
+      circle.setAttribute('opacity', '0.75');
+      circle.style.cursor = 'pointer';
+      circle.addEventListener('mouseover', function(e) {
+        showTooltip(e, { title: txt, detail: s.date + (phase ? ' · ' + phase.label : '') });
+      });
+      circle.addEventListener('mouseout', hideTooltip);
       svg.appendChild(circle);
-
-      // Query text (alternating above/below)
-      const above = i % 2 === 0;
-      const text = document.createElementNS('http://www.w3.org/2000/svg','text');
-      text.setAttribute('x', x); text.setAttribute('y', above ? dotY - 16 : dotY + 24);
-      text.setAttribute('fill', COLORS.text2); text.setAttribute('font-size', '10');
-      text.setAttribute('text-anchor', above ? 'start' : 'end');
-      text.setAttribute('font-family', 'var(--font-mono)');
-      const maxLen = 28;
-      let raw = s.query || s.title || '';
-      let txt = raw.replace(/^Searched for /i, '');
-      if (txt.length > maxLen) txt = txt.slice(0, maxLen) + '...';
-      text.textContent = `"${txt}"`;
-      svg.appendChild(text);
-
     });
 
     // Project build period marker (from data)
@@ -2148,7 +2214,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const total = data.reduce((s, d) => s + d.value, 0);
     const size = Math.min(el.clientWidth, 320);
     const cx = size / 2, cy = size / 2, r = size * 0.38;
-    const svg = d3.select(el).append('svg').attr('role','img').attr('viewBox', `0 0 ${size} ${size}`);
+    const legendH = data.length * 16 + 10;
+    const svg = d3.select(el).append('svg').attr('role','img').attr('viewBox', `0 0 ${size} ${size + legendH}`);
 
     let angle = -Math.PI / 2;
     data.forEach(d => {
@@ -2162,12 +2229,21 @@ document.addEventListener('DOMContentLoaded', () => {
       svg.append('path').attr('d', path).attr('fill', d.color).attr('opacity', 0.8)
         .on('mouseover', function(e) { showTooltip(e, { title: d.label, detail: `${d.value} mentions (${d.pct})` }); })
         .on('mouseout', hideTooltip);
-      // Label
-      const mid = angle + sweep / 2;
-      const lx = cx + r * 0.6 * Math.cos(mid), ly = cy + r * 0.6 * Math.sin(mid);
-      svg.append('text').attr('x', lx).attr('y', ly).attr('text-anchor', 'middle').attr('dominant-baseline', 'middle')
-        .attr('fill', COLORS.bg).style('font-size', '11px').style('font-weight', '600').text(d.pct);
+      // Slice label — only show if slice is wide enough to fit text
+      if (sweep > 0.25) {
+        const mid = angle + sweep / 2;
+        const lx = cx + r * 0.6 * Math.cos(mid), ly = cy + r * 0.6 * Math.sin(mid);
+        svg.append('text').attr('x', lx).attr('y', ly).attr('text-anchor', 'middle').attr('dominant-baseline', 'middle')
+          .attr('fill', '#fff').style('font-size', '11px').style('font-weight', '600').text(d.pct);
+      }
       angle += sweep;
+    });
+
+    // Legend below donut — colored swatch + label + percentage
+    const legendG = svg.append('g').attr('transform', `translate(10, ${size - 4})`);
+    data.forEach((d, i) => {
+      legendG.append('rect').attr('x', 0).attr('y', i * 16).attr('width', 10).attr('height', 10).attr('rx', 2).attr('fill', d.color);
+      legendG.append('text').attr('x', 14).attr('y', i * 16 + 9).attr('fill', COLORS.text2).style('font-size', '11px').text(`${d.label}: ${d.pct}`);
     });
   })();
 })();
@@ -2182,48 +2258,64 @@ document.addEventListener('DOMContentLoaded', () => {
   const COLORS = window.COLORS;
   const agentColors = { kai: COLORS.kai, cursor: COLORS.cursor, claude: COLORS.claude, unknown: '#495057' };
 
-  // 1. Cross-Repo Stacked Area
+  // 1. Cross-Repo Commit Activity — primary repo vs each active sibling repo
   (function() {
     const el = document.getElementById('chart-cross-repo');
     if (!el) return;
-    const density = cross.commit_density || cross.liminal_commit_density || {};
-    // Generate timeline from density keys if timeline array not available
-    let timeline = cross.timeline || [];
-    if (!timeline.length && Object.keys(density).length > 0) {
-      timeline = Object.keys(density).filter(k => k !== 'total').sort();
-    }
-    if (!timeline.length) {
-      const empty = document.createElement('div'); empty.style.cssText = 'padding:40px;text-align:center;color:var(--text3)'; empty.textContent = 'No cross-repo timeline data available'; el.appendChild(empty);
-      return;
-    }
-    // Build data: for each day, liminal commits vs other commits
-    const data = timeline.map(d => {
-      const date = d.date || d;
-      const liminal = typeof d === 'object' ? (d.liminal || density[date] || 0) : (density[date] || 0);
-      const other = typeof d === 'object' ? (d.other || d.total - liminal || 0) : 0;
-      return { date, liminal, other };
-    }).sort((a, b) => a.date.localeCompare(b.date));
-    const margin = {top: 20, right: 20, bottom: 30, left: 45};
+    const density = cross.commit_density || {};
+    const perProject = cross.per_project || {};
+    const activeProjects = cross.active_projects || Object.keys(perProject).sort();
+
+    // Build union of all dates
+    const allDates = new Set(Object.keys(density));
+    Object.values(perProject).forEach(pd => Object.keys(pd).forEach(d => allDates.add(d)));
+    const timeline = Array.from(allDates).sort();
+    if (!timeline.length) { noData(el, 'Cross-repo timeline data not available'); return; }
+
+    const repoLineColors = [COLORS.era1, COLORS.era3, COLORS.era5, COLORS.era7, COLORS.era9,
+                            COLORS.era2, COLORS.era4, COLORS.era8];
+    const margin = {top: 30, right: 20, bottom: 30, left: 45};
     const width = el.clientWidth - margin.left - margin.right;
-    const height = 200 - margin.top - margin.bottom;
-    const svg = d3.select(el).append('svg').attr('role','img').attr('viewBox', `0 0 ${width + margin.left + margin.right} ${height + margin.top + margin.bottom}`);
+    const height = 220 - margin.top - margin.bottom;
+    const svg = d3.select(el).append('svg').attr('role','img')
+      .attr('viewBox', `0 0 ${width + margin.left + margin.right} ${height + margin.top + margin.bottom}`);
     const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
-    const x = d3.scalePoint().domain(data.map(d => d.date)).range([0, width]);
-    const y = d3.scaleLinear().domain([0, d3.max(data, d => d.liminal + d.other) || 1]).range([height, 0]);
-    const stack = d3.stack().keys(['other', 'liminal'])(data);
-    const colors = [COLORS.unknown, COLORS.claude];
-    stack.forEach((layer, i) => {
-      const area = d3.area().x(d => x(d.data.date)).y0(d => y(d[0])).y1(d => y(d[1])).curve(d3.curveMonotoneX);
-      g.append('path').datum(layer).attr('d', area).attr('fill', colors[i]).attr('opacity', 0.7);
+
+    const x = d3.scalePoint().domain(timeline).range([0, width]);
+    const allVals = timeline.flatMap(d => [density[d] || 0, ...activeProjects.map(p => perProject[p]?.[d] || 0)]);
+    const y = d3.scaleLinear().domain([0, d3.max(allVals) || 1]).range([height, 0]);
+    const lineGen = key => d3.line().x(d => x(d)).y(d => {
+      const val = key === '__primary' ? (density[d] || 0) : (perProject[key]?.[d] || 0);
+      return y(val);
+    }).defined(d => {
+      const val = key === '__primary' ? (density[d] || 0) : (perProject[key]?.[d] || 0);
+      return val > 0;
+    }).curve(d3.curveMonotoneX);
+
+    // Primary repo line (thicker, distinct color)
+    g.append('path').datum(timeline).attr('d', lineGen('__primary'))
+      .attr('fill', 'none').attr('stroke', COLORS.claude).attr('stroke-width', 2.5).attr('opacity', 0.9);
+
+    // Sibling repo lines
+    activeProjects.slice(0, 8).forEach((proj, i) => {
+      const color = repoLineColors[i % repoLineColors.length];
+      g.append('path').datum(timeline).attr('d', lineGen(proj))
+        .attr('fill', 'none').attr('stroke', color).attr('stroke-width', 1.5).attr('opacity', 0.65)
+        .on('mouseover', function(e) { showTooltip(e, { title: proj, detail: `${Object.values(perProject[proj] || {}).reduce((a,b)=>a+b,0)} commits during this period` }); })
+        .on('mouseout', hideTooltip);
     });
-    g.append('g').attr('transform', `translate(0,${height})`).call(d3.axisBottom(x).tickValues(data.filter((_, i) => i % Math.ceil(data.length/10) === 0).map(d => d.date)).tickFormat(d => d.slice(5))).selectAll('text').attr('fill', COLORS.text2).style('font-size', '11px');
+
+    g.append('g').attr('transform', `translate(0,${height})`).call(d3.axisBottom(x).tickValues(timeline.filter((_, i) => i % Math.ceil(timeline.length/10) === 0)).tickFormat(d => d.slice(5))).selectAll('text').attr('fill', COLORS.text2).style('font-size', '11px');
     g.append('g').call(d3.axisLeft(y).ticks(4)).selectAll('text').attr('fill', COLORS.text2).style('font-size', '11px');
     g.selectAll('.domain, .tick line').attr('stroke', COLORS.border);
-    // Legend
-    g.append('rect').attr('x', width - 130).attr('y', 0).attr('width', 8).attr('height', 8).attr('rx', 2).attr('fill', COLORS.claude);
-    g.append('text').attr('x', width - 118).attr('y', 8).attr('fill', COLORS.text2).attr('font-size', '11px').text('Primary repo');
-    g.append('rect').attr('x', width - 65).attr('y', 0).attr('width', 8).attr('height', 8).attr('rx', 2).attr('fill', COLORS.unknown);
-    g.append('text').attr('x', width - 53).attr('y', 8).attr('fill', COLORS.text2).attr('font-size', '11px').text('Other repos');
+
+    // Legend: primary + top active repos
+    const legendItems = [{ label: D.codebase?.project || 'This repo', color: COLORS.claude }, ...activeProjects.slice(0, 5).map((p, i) => ({ label: p, color: repoLineColors[i] }))];
+    const legG = g.append('g').attr('transform', `translate(0, ${-22})`);
+    legendItems.forEach((item, i) => {
+      legG.append('line').attr('x1', i * 120).attr('y1', 5).attr('x2', i * 120 + 16).attr('y2', 5).attr('stroke', item.color).attr('stroke-width', i === 0 ? 2.5 : 1.5);
+      legG.append('text').attr('x', i * 120 + 20).attr('y', 9).attr('fill', COLORS.text2).style('font-size', '10px').text(item.label);
+    });
   })();
 
   // 2. Creative DNA Sankey
