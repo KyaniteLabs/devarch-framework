@@ -441,15 +441,16 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
 <section id="ch-learning" class="chapter reveal">
   <h2><span class="era-dot" style="background:#e599f7"></span>The Learning Curve</h2>
   <p class="chapter-sub">2,470 AI videos watched over 3 years (1,481 in 2025–2026 analyzed here). 815 creators (all-time). 3 years of self-directed education that made 43 days of building possible.</p>
-  <div class="callout" style="background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%);border:1px solid #e599f7;border-radius:8px;padding:1rem 1.25rem;margin:0.75rem 0 1.25rem">
-    <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.5rem">
-      <span style="font-size:1.4rem">&#127775;</span>
-      <strong style="color:#e599f7;font-size:0.95rem">KEY PERSON — Jake Van Clief</strong>
-    </div>
-    <p style="color:var(--text2);font-size:0.85rem;margin:0;line-height:1.5">
-      Jake invented <strong style="color:var(--text)">ICM (Interpreted Context Methodology)</strong> — the "folder system" that broke the iteration trap. His video on the topic was watched in Oct 2025 during the Ramp phase. Simon's <strong style="color:var(--text)">first-ever PR</strong> was to Jake's ICM repo (the <code>workspaces</code> commit on Feb 22). A second PR to <code>mcp-video</code> was merged into an MCP aggregator on GitHub. ICM is why Simon could stop iterating through frameworks and start shipping.
-    </p>
-  </div>
+  <div id="learning-key-person-callout"></div>
+  <script>
+  (function() {
+    var kp = ((window.PROJECT_DATA || {}).learning || {}).keyPerson;
+    if (!kp) return;
+    var el = document.getElementById('learning-key-person-callout');
+    if (!el) return;
+    el.innerHTML = '<div class="callout" style="background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%);border:1px solid #e599f7;border-radius:8px;padding:1rem 1.25rem;margin:0.75rem 0 1.25rem"><div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.5rem"><span style="font-size:1.4rem">&#127775;</span><strong style="color:#e599f7;font-size:0.95rem">KEY PERSON — ' + kp.name + '</strong></div><p style="color:var(--text2);font-size:0.85rem;margin:0;line-height:1.5">' + kp.description + '</p></div>';
+  })();
+  </script>
   <div class="chart-grid">
     <div class="chart-box" style="grid-column:1/-1" id="chart-learning-arc"><div class="chart-title">The 3-Year Learning Arc — Monthly AI Video Consumption (2023–2026)</div></div>
     <div class="chart-box" style="grid-column:1/-1" id="chart-topic-evolution"><div class="chart-title">Topic Evolution — How Viewing Focus Shifted Before and During the Build</div></div>
@@ -549,9 +550,27 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
 // Shared state
 window.ERA_BRUSH = { activeEra: null, startDate: null, endDate: null };
 window.CHARTS = {};
-// ERAS is populated from data.json via the fetch() call above.
-// Fallback to empty array if data hasn't loaded yet.
 window.ERAS = [];
+// Populate ERAS from PROJECT_DATA once available
+(function initEras() {
+  const ERA_PALETTE = ['#3b82f6','#8b5cf6','#10b981','#f59e0b','#ef4444','#ec4899'];
+  function buildEras(d) {
+    if (!d) return;
+    const tv = d.telemetry_visualizations || {};
+    let raw = [];
+    // Support both {eras:[...]} and bare list
+    if (tv.commit_eras && Array.isArray(tv.commit_eras)) raw = tv.commit_eras;
+    else if (tv.commit_eras && Array.isArray(tv.commit_eras.eras)) raw = tv.commit_eras.eras;
+    else if (Array.isArray(d.commit_eras)) raw = d.commit_eras;
+    window.ERAS = raw.map((e, i) => ({
+      ...e,
+      color: e.color || ERA_PALETTE[i % ERA_PALETTE.length],
+      hex: e.hex || ERA_PALETTE[i % ERA_PALETTE.length],
+    }));
+  }
+  if (window.PROJECT_DATA) { buildEras(window.PROJECT_DATA); }
+  window.addEventListener('data-loaded', function() { buildEras(window.PROJECT_DATA); });
+})();
 
 window.COLORS = {
   bg:'#080c14', surface:'#0d1117', surface2:'#161b22', border:'#1e2a3a',
@@ -2415,8 +2434,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const container = document.getElementById('era-cards-container');
   if (!container) return;
 
-  // Get era data from commit_eras
-  const eraData = D.telemetry_visualizations.commit_eras.eras || [];
+  // Get era data — support both {eras:[]} and bare list in telemetry_visualizations.commit_eras
+  const _ce = (D.telemetry_visualizations || {}).commit_eras || {};
+  const eraData = Array.isArray(_ce) ? _ce : (_ce.eras || D.commit_eras || []);
   const eraMap = {};
   eraData.forEach(e => { eraMap[e.id] = e; });
 
