@@ -1637,13 +1637,8 @@ document.addEventListener('DOMContentLoaded', () => {
     svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
     svg.style.cssText = 'width:100%;height:100%';
 
-    const eras = [
-      {name:'Pre-seed\n(Feb 1-27)',coding_agents:80,local_ai:19,llm_models:136,agent_arch:49,ml_fund:6,creative:0},
-      {name:'Era 1\n(Feb 28-Mar 18)',coding_agents:29,local_ai:3,llm_models:48,agent_arch:32,ml_fund:1,creative:0},
-      {name:'Dormancy\n(Mar 8-17)',coding_agents:9,local_ai:4,llm_models:31,agent_arch:15,ml_fund:0,creative:1},
-      {name:'Era 2\n(Mar 19-31)',coding_agents:22,local_ai:8,llm_models:63,agent_arch:38,ml_fund:15,creative:1},
-      {name:'Era 3\n(Apr 1-6)',coding_agents:30,local_ai:10,llm_models:52,agent_arch:42,ml_fund:10,creative:3},
-    ];
+    const eras = LEARNING.topicEvolution || [];
+    if (!eras.length) { noData(el, 'Topic evolution data not available', 380); return; }
 
     const topics = ['coding_agents','llm_models','agent_arch','ml_fund','local_ai','creative'];
     const colors = [COLORS.claude, '#9775fa', '#e599f7', '#ff922b', '#20c997', '#ffd43b'];
@@ -1967,7 +1962,8 @@ document.addEventListener('DOMContentLoaded', () => {
       text.setAttribute('text-anchor', above ? 'start' : 'end');
       text.setAttribute('font-family', 'var(--font-mono)');
       const maxLen = 28;
-      let txt = s.query;
+      let raw = s.query || s.title || '';
+      let txt = raw.replace(/^Searched for /i, '');
       if (txt.length > maxLen) txt = txt.slice(0, maxLen) + '...';
       text.textContent = `"${txt}"`;
       svg.appendChild(text);
