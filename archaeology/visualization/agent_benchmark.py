@@ -119,13 +119,11 @@ def analyze_agent_benchmarks(db_path: str) -> Dict[str, Any]:
             # Try parsing from git log format
             return datetime.strptime(date_str.split()[0], "%Y-%m-%d")
 
-    # Normalize agent names - treat Simon variants as "Simon"
     def normalize_author(author: str) -> str:
         """Normalize author names to canonical agent names."""
         author_lower = author.lower()
-        if "simon" in author_lower:
-            return "Simon"
-        elif author_lower == "claude":
+        ai_agents = {"claude", "kai", "cursor", "kimicode", "codex"}
+        if "claude" in author_lower:
             return "Claude"
         elif author_lower == "kai":
             return "Kai"
@@ -138,7 +136,8 @@ def analyze_agent_benchmarks(db_path: str) -> Dict[str, Any]:
         elif author_lower == "demo-project":
             return "demo-project"
         else:
-            return author
+            # Any non-AI author is labeled "Human" — no personal names in framework output
+            return "Human"
 
     # Group commits by agent and era
     agent_stats: Dict[str, Dict[str, Any]] = {}
@@ -306,7 +305,7 @@ def generate_benchmark_html(benchmark_data: Dict[str, Any], project_name: str) -
   --unknown: #495057;
   --kimicode: #a78bfa;
   --codex: #60a5fa;
-  --simon: #fbbf24;
+  --human: #fbbf24;
 }
 
 /* ── Layout ── */
@@ -505,7 +504,7 @@ function getThemeColors() {{
     kai:       s.getPropertyValue('--kai').trim(),
     cursor:    s.getPropertyValue('--cursor').trim(),
     claude:    s.getPropertyValue('--claude').trim(),
-    simon:     s.getPropertyValue('--simon').trim(),
+    human:     s.getPropertyValue('--human').trim(),
     kimicode:  s.getPropertyValue('--kimicode').trim(),
     codex:     s.getPropertyValue('--codex').trim(),
     unknown:   s.getPropertyValue('--unknown').trim(),
@@ -516,13 +515,13 @@ function getThemeColors() {{
 function getAgentColor(name) {{
   const colors = getThemeColors();
   const colorMap = {{
-    'Simon': colors.simon || colors.accent,
+    'Human': colors.human || colors.accent,
     'Claude': colors.claude || colors.secondary,
     'Kai': colors.kai || colors.text,
     'Cursor': colors.cursor || colors.text2,
     'KimiCode': colors.kimicode || colors.accent,
     'Codex': colors.codex || colors.secondary,
-    'Liminal': colors.text,
+    'demo-project': colors.text,
     'Unknown': colors.unknown || colors.muted
   }};
   return colorMap[name] || colorMap['Unknown'];
@@ -709,7 +708,7 @@ function renderMetricsTable() {{
     // Rework rate with color coding
     const reworkCell = row.append('td').classed('mono', true);
     const reworkRate = agent.rework_rate;
-    const reworkColor = reworkRate > 20 ? colors.kai : reworkRate > 10 ? colors.simon : colors.text;
+    const reworkColor = reworkRate > 20 ? colors.kai : reworkRate > 10 ? colors.human : colors.text;
     reworkCell.text(reworkRate + '%')
       .style('color', reworkColor);
 

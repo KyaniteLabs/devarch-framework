@@ -1,7 +1,7 @@
 """JSON API for dev-archaeology strategic insights.
 
-Lightweight API that serves strategic analysis data to The-Factory
-and other consumers. Stdlib-only — no Flask/FastAPI dependency.
+Lightweight API that serves strategic analysis data to external consumers.
+Stdlib-only — no Flask/FastAPI dependency.
 
 Endpoints:
   GET /api/health              — System status

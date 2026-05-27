@@ -73,8 +73,8 @@ def get_eras(db_path: str) -> list[dict]:
 
     Older archaeology databases do not have a start_date column; they usually
     expose id and/or dates instead. Prefer start_date when available and fall
-    back to stable available columns so query helpers do not break on the main
-    Liminal case study.
+    back to stable available columns so query helpers do not break on
+    databases with varying schema versions.
     """
     conn = get_connection(db_path)
     try:

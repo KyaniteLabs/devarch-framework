@@ -7,7 +7,7 @@ import sys
 from pathlib import Path
 
 
-_DEFAULT_OWNER = os.environ.get("ARCHAEOLOGY_GITHUB_OWNER", "Pastorsimon1798")
+_DEFAULT_OWNER = os.environ.get("ARCHAEOLOGY_GITHUB_OWNER", "")
 
 
 def _gh(*args):
