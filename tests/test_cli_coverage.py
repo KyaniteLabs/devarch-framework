@@ -401,7 +401,7 @@ def test_build_db_propagates_pythonpath(tmp_path, monkeypatch):
     # which varies by checkout name — verify it's an absolute path containing
     # the archaeology package directory, not a hardcoded repo name.
     pp = env["PYTHONPATH"]
-    assert os.path.isabs(pp.split(":")[0].split(";")[0]), (
+    assert os.path.isabs(pp.split(os.pathsep)[0]), (
         f"PYTHONPATH should start with an absolute path, got: {pp}"
     )
 
