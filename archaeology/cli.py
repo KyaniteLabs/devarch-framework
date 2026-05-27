@@ -83,7 +83,7 @@ def demo(project_name, force, build_db):
         cmd = [sys.executable, "-m", "archaeology.db.builder", "--project-root", str(project_root)]
         _env = os.environ.copy()
         _pkg_root = str(Path(__file__).parent.parent)
-        _env["PYTHONPATH"] = _pkg_root + ((":" + _env["PYTHONPATH"]) if _env.get("PYTHONPATH") else "")
+        _env["PYTHONPATH"] = _pkg_root + ((os.pathsep + _env["PYTHONPATH"]) if _env.get("PYTHONPATH") else "")
         result = subprocess.run(cmd, check=True, timeout=300, env=_env)
         if result.returncode != 0:
             raise click.exceptions.Exit(result.returncode)
@@ -143,7 +143,7 @@ def build_db(project_name, verbose):
 
     _env = os.environ.copy()
     _pkg_root = str(Path(__file__).parent.parent)
-    _env["PYTHONPATH"] = _pkg_root + ((":" + _env["PYTHONPATH"]) if _env.get("PYTHONPATH") else "")
+    _env["PYTHONPATH"] = _pkg_root + ((os.pathsep + _env["PYTHONPATH"]) if _env.get("PYTHONPATH") else "")
     result = subprocess.run(cmd, check=True, timeout=300, env=_env)
     if result.returncode == 0 and os.path.exists(db_path):
         click.echo(f"Database built at {db_path}")
@@ -658,7 +658,7 @@ def cascade(project_name, dry_run, skip_mine):
            "--project-root", str(project_dir)]
     _env = os.environ.copy()
     _pkg_root = str(Path(__file__).parent.parent)
-    _env["PYTHONPATH"] = _pkg_root + ((":" + _env["PYTHONPATH"]) if _env.get("PYTHONPATH") else "")
+    _env["PYTHONPATH"] = _pkg_root + ((os.pathsep + _env["PYTHONPATH"]) if _env.get("PYTHONPATH") else "")
     result = subprocess.run(cmd, capture_output=True, text=True, timeout=300, env=_env)
     if result.returncode == 0:
         click.echo(f"  Database built ({db_path})")
@@ -993,7 +993,7 @@ def sync(projects, skip_mine, skip_signals, verbose):
 
         _env = os.environ.copy()
         _pkg_root = str(Path(__file__).parent.parent)
-        _env["PYTHONPATH"] = _pkg_root + ((":" + _env["PYTHONPATH"]) if _env.get("PYTHONPATH") else "")
+        _env["PYTHONPATH"] = _pkg_root + ((os.pathsep + _env["PYTHONPATH"]) if _env.get("PYTHONPATH") else "")
         result = subprocess.run(cmd, capture_output=not verbose, check=True, timeout=300, env=_env)
         if result.returncode == 0 and os.path.exists(db_path):
             click.echo(f"    DB built")

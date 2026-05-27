@@ -14,6 +14,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from click.testing import CliRunner
 
+import archaeology.cli as cli
 from archaeology.cli import main
 
 
@@ -397,13 +398,11 @@ def test_build_db_propagates_pythonpath(tmp_path, monkeypatch):
     assert db_builder_calls, "db.builder was never invoked"
     env = db_builder_calls[0]["env"]
     assert "PYTHONPATH" in env
-    # PYTHONPATH is set to the package root (Path(__file__).parent.parent)
-    # which varies by checkout name — verify it's an absolute path containing
-    # the archaeology package directory, not a hardcoded repo name.
+    # PYTHONPATH is set to the package root (Path(__file__).parent.parent).
+    # Verify that exact path without relying on checkout-specific repo names.
     pp = env["PYTHONPATH"]
-    assert os.path.isabs(pp.split(os.pathsep)[0]), (
-        f"PYTHONPATH should start with an absolute path, got: {pp}"
-    )
+    expected_pkg_root = str(Path(cli.__file__).parent.parent)
+    assert pp.split(os.pathsep)[0] == expected_pkg_root
 
 
 # ── analyze (unknown vector) ──────────────────────────────────────────────────
