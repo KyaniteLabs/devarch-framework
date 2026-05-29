@@ -51,6 +51,8 @@ cover/
 
 # Environments
 .env
+*.pem
+*.key
 .venv
 env/
 venv/
