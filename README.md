@@ -115,7 +115,6 @@ devarch audit my-project --fail-on MEDIUM
 ### Project Management
 - `devarch init <name>` -- Initialize a new archaeology project
 - `devarch demo [--build-db]` -- Create a demo project with synthetic data
-- `devarch status` -- Show project status (coming soon)
 
 ### Data Extraction
 - `devarch mine <repo-path> --project <name>` -- Extract git history
