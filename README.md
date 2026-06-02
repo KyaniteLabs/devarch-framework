@@ -8,7 +8,7 @@
 **Git repository archaeology framework.** Mine commit history, detect development signals, run 6 analysis vectors, and generate engineering narrative reports — from any git repository, fully local, no external services.
 
 ```bash
-pip install devarch-framework
+git clone https://github.com/KyaniteLabs/devarch-framework.git && cd devarch-framework && pip install -e .
 ```
 
 DevArch treats your git history as structured data. It extracts commits into a queryable SQLite database, runs heuristic signal detection (gaps, velocity shifts, author changes), executes specialized analysis vectors, and generates interactive HTML visualizations and markdown reports. Built for engineers, researchers, and AI agents that need to understand how a codebase evolved.
