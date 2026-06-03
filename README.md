@@ -332,3 +332,15 @@ No. DevArch runs entirely locally. All mining, analysis, and report generation h
 
 - **[Dev Learning Archaeologist](https://github.com/KyaniteLabs/dev-learning-archaeologist)** — Zero-setup ICM folder for Claude Code. Drop it in, ask one question, get a full HTML learning diagnostic. The lightweight version of this framework.
 - **[KyaniteLabs](https://github.com/KyaniteLabs)** — More AI-native developer tools: MCP servers, time estimation, and multi-agent orchestration.
+
+---
+
+## Part of KyaniteLabs
+
+Open-source tools by [KyaniteLabs](https://kyanitelabs.tech). Related projects:
+
+- **[dev-learning-archaeologist](https://github.com/KyaniteLabs/dev-learning-archaeologist)** — forensic git-history learning diagnostic
+- **[checkyourself](https://github.com/KyaniteLabs/checkyourself)** — local-first production-readiness checks for AI-built code
+- **[Epoch](https://github.com/KyaniteLabs/Epoch)** — time-estimation MCP server (PERT) for AI agents
+
+→ More at **[kyanitelabs.tech](https://kyanitelabs.tech)**
