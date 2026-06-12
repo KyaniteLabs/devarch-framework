@@ -100,3 +100,5 @@ Thumbs.db
 # Analysis outputs (keep source, ignore generated)
 projects/*/output/
 !projects/*/output/.gitkeep
+*.pyc
+*.pyc

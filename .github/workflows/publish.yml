@@ -8,6 +8,8 @@ on:
 permissions:
   id-token: write  # Trusted publishing
 
+timeout-minutes: 30
+
 jobs:
   publish:
     runs-on: ubuntu-latest
