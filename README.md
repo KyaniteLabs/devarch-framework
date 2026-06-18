@@ -2,175 +2,272 @@
 
 [![PyPI version](https://img.shields.io/pypi/v/devarch-framework.svg)](https://pypi.org/project/devarch-framework/)
 [![Python](https://img.shields.io/pypi/pyversions/devarch-framework.svg)](https://pypi.org/project/devarch-framework/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
 [![GitHub stars](https://img.shields.io/github/stars/KyaniteLabs/devarch-framework.svg?style=social)](https://github.com/KyaniteLabs/devarch-framework)
 
-**Git repository archaeology framework.** Mine commit history, detect development signals, run 6 analysis vectors, and generate engineering narrative reports — from any git repository, fully local, no external services.
+**Forensic archaeology framework for git repositories.** Mine commit history, detect development signals, run 6 analysis vectors, and generate interactive engineering narrative reports — fully local, no external services required.
 
 ```bash
-git clone https://github.com/KyaniteLabs/devarch-framework.git && cd devarch-framework && pip install -e .
+pip install devarch-framework
 ```
 
-DevArch treats your git history as structured data. It extracts commits into a queryable SQLite database, runs heuristic signal detection (gaps, velocity shifts, author changes), executes specialized analysis vectors, and generates interactive HTML visualizations and markdown reports. Built for engineers, researchers, and AI agents that need to understand how a codebase evolved.
+DevArch treats your git history as structured data. It extracts commits into a queryable SQLite database, runs heuristic signal detection (gaps, velocity shifts, author changes), executes specialized analysis vectors, and generates interactive HTML visualizations and markdown reports. Built for engineers, researchers, and AI agents that need to understand how a codebase evolved over time.
 
-> **Just want a quick learning diagnostic?** [Dev Learning Archaeologist](https://github.com/KyaniteLabs/dev-learning-archaeologist) is a zero-setup ICM folder — drop it in any project, run through Claude Code, no install required.
+> **Just want a quick learning diagnostic?** [Dev Learning Archaeologist](https://github.com/KyaniteLabs/dev-learning-archaeologist) is a zero-setup ICM folder — drop it in any project and run through Claude Code, no install required.
 
-## What It Does
+---
 
-DevArch transforms git history into structured insights through a full-featured CLI with 20+ commands. The framework supports:
+## What Is This?
 
-> **Just want the quick learning diagnostic?** [Dev Learning Archaeologist](https://github.com/KyaniteLabs/dev-learning-archaeologist) is a zero-setup ICM folder that drops into any project and runs the same analysis through Claude Code — no install required.
+DevArch is a **Python CLI framework for software archaeology** — the practice of analyzing git repository history to uncover development patterns, productivity signals, and engineering narratives. It transforms raw `git log` data into a structured SQLite database, applies heuristic analysis to detect noteworthy events, and produces reports and interactive dashboards that tell the story of how a codebase was built.
 
-- **Complete Pipeline**: Initialize projects, mine git data, build SQLite databases, detect signals, analyze patterns, visualize results
-- **6 Analysis Vectors**: SDLC Gap Finder, ML Pattern Mapper, Agentic Workflow Analyzer, Formal Terms Mapper, Source Archaeologist, YouTube Correlator
-- **Era System**: Scan commits for era transitions, cascade era labels across codebases, map era boundaries
-- **Audit System**: Validate outputs with severity-based checks (CRITICAL, HIGH, MEDIUM, LOW)
-- **Signal Detection**: 5 heuristics identify noteworthy patterns (gaps, velocity shifts, author changes, scope changes, correlations)
-- **Supplementary Data**: Correlate any external data (fitness, YouTube, calendar) with commits
-- **Multi-Project Sync**: Aggregate findings across multiple repositories
-- **Demo Generation**: Create demo projects for testing and documentation
+**Primary language:** Python 3.10+  
+**Core dependencies:** Click (CLI), sqlite-utils (database), Datasette (data exploration)
+
+The framework is designed for:
+
+- **Engineering managers** reviewing team velocity and development practices
+- **Developers** understanding the evolution of a codebase before contributing
+- **Researchers** studying software development patterns at scale
+- **AI agents** that need structured access to repository history and analysis results
+
+---
+
+## Features
+
+### Complete Pipeline
+
+A 9-stage pipeline from raw repository to finished report:
+
+| Stage | Description |
+|-------|-------------|
+| 01 — Setup | Initialize project scaffolding and configuration |
+| 02 — Mine | Extract commits, files, and metadata from git history |
+| 03 — Build | Assemble a queryable SQLite database |
+| 04 — Detect | Run signal detection heuristics on mined data |
+| 05 — Analyze | Execute specialized analysis vectors |
+| 06 — Visualize | Generate interactive HTML charts and dashboards |
+| 07 — Report | Export narrative markdown and HTML reports |
+| 08 — Audit | Validate outputs with severity-based checks |
+| 09 — Strategy | Synthesize findings into actionable recommendations |
+
+### 6 Analysis Vectors
+
+Specialized analyzers that each look at your repository through a different lens:
+
+1. **SDLC Gap Finder** — Identifies gaps in software development lifecycle practices (missing tests, absent CI, undocumented changes)
+2. **ML Pattern Mapper** — Detects machine learning workflows, model training patterns, and data pipeline structures
+3. **Agentic Workflow Analyzer** — Identifies AI agent integrations, LLM usage, and autonomous workflow patterns
+4. **Formal Terms Mapper** — Tracks formal methods, specification language, and domain-specific terminology across commits
+5. **Source Archaeologist** — Deep code evolution analysis: file churn, refactor detection, dependency graph changes
+6. **YouTube Correlator** — Correlates commit patterns with YouTube watch history to surface learning-to-code relationships
+
+### Signal Detection
+
+5 heuristic detectors scan for noteworthy development patterns:
+
+- **Gap Detection** — Periods of inactivity beyond configurable thresholds
+- **Velocity Shifts** — Sudden changes in commit frequency or code volume
+- **Author Transitions** — Ownership changes, bus factor events, new contributors
+- **Scope Changes** — Commits that touch unusually large numbers of files or modules
+- **Cross-Source Correlations** — Patterns that align with supplementary external data
+
+### Era System
+
+Tracks distinct phases in repository evolution:
+
+- **Era Scanner** — Detects transitions between development eras based on commit patterns and code characteristics
+- **Era Cascade** — Propagates era labels across dependent files and modules
+- **Era Mapper** — Visualizes era boundaries and transitions over time
+
+### Additional Capabilities
+
+- **Audit System** — Validates all pipeline outputs with severity-based checks (CRITICAL, HIGH, MEDIUM, LOW)
+- **Supplementary Data** — Correlate any external time-series data (fitness trackers, YouTube history, calendar events, weather) with commit activity
+- **Multi-Project Sync** — Aggregate findings across multiple repositories for portfolio-level analysis
+- **MCP Server** — Model Context Protocol server for AI agent integration (`devarch-mcp`)
+- **Demo Generation** — Create synthetic demo projects for testing and documentation
+- **Datasette Integration** — One-command database inspection through a web UI
+
+---
 
 ## Installation
 
+### From PyPI
+
 ```bash
-# Clone the repository
+pip install devarch-framework
+```
+
+### From Source (editable)
+
+```bash
 git clone https://github.com/KyaniteLabs/devarch-framework.git
 cd devarch-framework
-
-# Install in editable mode
 pip install -e .
+```
 
-# Verify installation
+### With MCP Support
+
+```bash
+pip install "devarch-framework[mcp]"
+```
+
+### With Development Dependencies
+
+```bash
+pip install -e ".[dev]"
+```
+
+### Requirements
+
+- Python 3.10 or later
+- Git (must be available on `PATH`)
+
+### Verify Installation
+
+```bash
 devarch --help
 ```
 
+---
+
 ## Quick Start
 
-### 1. Initialize a Project
+### 1. Create a Demo Project
+
+The fastest way to see DevArch in action is with the built-in demo:
 
 ```bash
-# Create a new archaeology project
-devarch init my-project --description "My repo archaeology" --repo-url https://github.com/user/repo
-
-# Or create a demo project with synthetic data
 devarch demo --build-db
 ```
 
-### 2. Mine Git History
+This generates a synthetic project at `projects/demo-project/` with mined git data and a pre-built SQLite database.
+
+### 2. Analyze a Real Repository
 
 ```bash
-# Extract commits from a repository
-devarch mine /path/to/repo --project my-project
+# Initialize a new project
+devarch init my-project --description "Analysis of my repo" --repo-url https://github.com/user/repo
 
-# Build the SQLite database
+# Mine git history
+devarch mine /path/to/local/repo --project my-project
+
+# Build the database
 devarch build-db my-project
-```
 
-### 3. Detect Signals
-
-```bash
 # Run signal detection
 devarch signals my-project
 
-# Optionally configure signal thresholds
-devarch signals my-project --config custom-signals.json --min-gap-days 14
-```
-
-### 4. Run Analysis
-
-```bash
 # Run all analysis vectors
 devarch analyze my-project
 
-# Run specific vectors
-devarch analyze my-project --vector sdlc-gap-finder --vector ml-pattern-mapper
-
-# Show legacy prompt instructions (for manual LLM execution)
-devarch analyze my-project --prompts
-```
-
-### 5. Visualize Results
-
-```bash
-# Generate HTML visualization
+# Generate visualizations
 devarch visualize my-project
 
-# Export report in markdown or HTML
-devarch export-report my-project --format markdown
-devarch export-report my-project --format html --output my-report.html
+# Export a report
+devarch export-report my-project --format markdown --output report.md
 ```
 
-### 6. Audit Outputs
+### 3. Explore the Database
 
 ```bash
-# Run audit checks
-devarch audit my-project
-
-# Control failure threshold
-devarch audit my-project --fail-on MEDIUM
+devarch serve my-project --port 8001
 ```
 
-## CLI Commands
+Visit `http://localhost:8001` to interactively query your commits, signals, and analysis results.
 
-### Project Management
-- `devarch init <name>` -- Initialize a new archaeology project
-- `devarch demo [--build-db]` -- Create a demo project with synthetic data
+---
 
-### Data Extraction
-- `devarch mine <repo-path> --project <name>` -- Extract git history
-- `devarch build-db <project>` -- Build SQLite database from mined data
-- `devarch ingest-pipeline <project> --logs-dir <path>` -- Ingest GitHub Actions logs
+## Usage
 
-### Signal Detection
-- `devarch signals <project> [--config] [--min-gap-days]` -- Run signal detection heuristics
-- `devarch extract-sessions <project> --sessions-dir <path>` -- Extract coding sessions
+### CLI Commands
 
-### Analysis
-- `devarch analyze <project> [--vector] [--prompts]` -- Run analysis vectors
-- `devarch cascade <project> [--dry-run] [--skip-mine]` -- Cascade era labels across repos
+DevArch provides 20+ commands organized by pipeline stage:
 
-### Visualization & Reporting
-- `devarch visualize <project>` -- Generate HTML visualization
-- `devarch export-report <project> [--format] [--output]` -- Export report
-- `devarch public-case-study <output-dir> [--project]` -- Create sanitized public case study
+#### Project Management
 
-### Database & Inspection
-- `devarch serve <project> [--port] [--unsafe-cors]` -- Start Datasette server for database inspection
+```bash
+devarch init <name>                              # Initialize a new project
+devarch demo [--build-db]                        # Create a demo project with synthetic data
+devarch validate <project>                       # Validate project configuration
+```
 
-### Audit & Validation
-- `devarch audit <project> [--fail-on]` -- Run audit checks
-- `devarch validate <project>` -- Validate project configuration
+#### Data Extraction
 
-### Multi-Project Operations
-- `devarch sync [--project] [--skip-mine] [--skip-signals]` -- Sync multiple projects
-- `devarch global-viz [--output] [--top-n] [--year]` -- Generate global visualization
-- `devarch fetch-github <owner> [--output]` -- Fetch repository metadata from GitHub
+```bash
+devarch mine <repo-path> --project <name>        # Extract git history into structured data
+devarch build-db <project>                       # Build SQLite database from mined data
+devarch ingest-pipeline <project> --logs-dir <path>  # Ingest GitHub Actions logs
+devarch extract-sessions <project> --sessions-dir <path>  # Extract coding sessions
+```
 
-### Local Pipeline
-- `devarch local-pipeline <repo-name> [--pipeline-dir] [--repos-dir] [--run]` -- Inspect local GitHub pipeline
+#### Analysis
 
-## Analysis Vectors
+```bash
+devarch signals <project>                        # Run signal detection heuristics
+devarch analyze <project>                        # Run all analysis vectors
+devarch analyze <project> --vector sdlc-gap-finder  # Run a specific vector
+devarch cascade <project>                        # Cascade era labels across repos
+```
 
-DevArch includes 6 analysis vectors:
+#### Visualization & Reporting
 
-1. **SDLC Gap Finder** -- Identify gaps in software development lifecycle practices
-2. **ML Pattern Mapper** -- Detect machine learning patterns and practices
-3. **Agentic Workflow Analyzer** -- Identify AI/agent-based workflows
-4. **Formal Terms Mapper** -- Track formal methods and terminology usage
-5. **Source Archaeologist** -- Deep code archaeology and evolution tracking
-6. **YouTube Correlator** -- Correlate commit patterns with YouTube watch history
+```bash
+devarch visualize <project>                      # Generate HTML visualization
+devarch export-report <project> --format markdown  # Export as markdown
+devarch export-report <project> --format html    # Export as HTML
+devarch public-case-study <output-dir> [--project]  # Create sanitized public case study
+```
 
-## Era System
+#### Database Inspection
 
-The era system identifies and tracks distinct phases in repository evolution:
+```bash
+devarch serve <project> --port 8001              # Start Datasette server
+```
 
-- **Scanner**: Detect era transitions based on commit patterns
-- **Cascade**: Propagate era labels across dependent files
-- **Mapper**: Map era boundaries and transitions
+#### Audit & Validation
 
-## Multi-Project Sync
+```bash
+devarch audit <project>                          # Run all audit checks
+devarch audit <project> --fail-on MEDIUM         # Fail if MEDIUM or above issues found
+```
 
-Configure multiple projects in `config/profile.json`:
+#### Multi-Project Operations
+
+```bash
+devarch sync                                     # Sync all projects from profile.json
+devarch sync --project proj-a --project proj-b   # Sync specific projects
+devarch global-viz --output overview.html        # Generate cross-project visualization
+devarch fetch-github <owner>                     # Fetch repository metadata from GitHub
+```
+
+#### Local Pipeline
+
+```bash
+devarch local-pipeline <repo-name>               # Inspect local GitHub pipeline data
+```
+
+### Makefile Targets
+
+Common development tasks:
+
+```bash
+make install          # Install the package
+make install-dev      # Install with development dependencies
+make test             # Run tests
+make test-cov         # Run tests with coverage report
+make demo             # Create and run demo project
+make lint             # Run syntax checking
+make validate         # Validate project configuration
+make serve            # Start Datasette for demo project
+make clean            # Remove build artifacts
+make reset            # Full reset (clean + remove demo)
+```
+
+### Multi-Project Configuration
+
+Configure multiple repositories in `config/profile.json`:
 
 ```json
 {
@@ -191,156 +288,116 @@ Configure multiple projects in `config/profile.json`:
 }
 ```
 
-Then run sync operations:
+### Supplementary Data
 
-```bash
-# Sync all projects
-devarch sync
+Correlate external time-series data with commit activity by adding data sources to your project:
 
-# Sync specific projects
-devarch sync --project project-one --project project-two
-
-# Skip mining (use cached data)
-devarch sync --skip-mine
-```
-
-## Database Inspection
-
-Start a Datasette server to inspect your archaeology database:
-
-```bash
-devarch serve my-project --port 8001
-```
-
-Visit http://localhost:8001 to explore commits, signals, and analysis results.
-
-## Supplementary Data
-
-Add external data sources to correlate with commits:
-
-- Fitness tracker data (CSV/JSON)
+- Fitness tracker exports (CSV/JSON)
 - YouTube watch history (JSON)
 - Calendar events (CSV/JSON)
 - Weather data (CSV)
 - Lunar phases (JSON)
-- Any data with dates
+- Any dataset with date-indexed records
 
-Configure supplementary sources in your project configuration or via analysis vectors.
+### MCP Server (AI Agent Integration)
 
-## ICM Compliance
+DevArch includes a Model Context Protocol server for integration with AI agents:
 
-This framework follows ICM (Interpretable Context Methodology) conventions with full 5-layer separation:
+```bash
+pip install "devarch-framework[mcp]"
+devarch-mcp
+```
 
-| Layer | File | Purpose |
-|-------|------|---------|
-| L0 | `CLAUDE.md` | Identity, folder map, routing table, naming conventions |
-| L1 | `CONTEXT.md` | Workspace router with 5 siloed workspaces |
-| L2 | `stages/*/CONTEXT.md` | Stage contracts with L3/L4 loading guidance |
-| L3 | `shared/`, `analysis-vectors/`, `stages/*/references/` | Reference material loaded selectively |
-| L4 | `stages/*/output/` | Working artifacts per stage |
+This exposes the framework's analysis capabilities as MCP tools that agents can invoke programmatically.
 
-Architecture decisions documented in `docs/decisions.md`.
-
-## Requirements
-
-- Python 3.10+
-- Git repository with commit history
-- Write permissions in workspace directory
-
-## Dependencies
-
-- `click>=8.1` -- CLI framework
-- `sqlite-utils>=3.0` -- Database utilities
-- `datasette>=0.64.0` -- Database inspection server
-
-## Third-Party Acknowledgments
-
-DevArch Framework integrates several excellent open-source libraries:
-
-- **Click** (BSD License) — Elegant CLI framework for command-line interfaces
-- **SQLite** (Public Domain) — Embedded SQL database engine with FTS5 full-text search
-- **Chart.js** (MIT License) — Responsive JavaScript charting library
-- **D3.js** (BSD License) — Document-driven data visualization framework
-- **Google Fonts** (OFL License) — Open-source typography (Inter, JetBrains Mono)
-
-We gratefully acknowledge the work of their respective authors and maintainers.
+---
 
 ## Project Structure
 
 ```
-archaeology/          -- Main Python package
-  cli.py              -- CLI entry point (20+ commands)
-  analysis_runner.py  -- Analysis vector orchestration
-  audit.py            -- Audit system
-  era_scanner.py      -- Era detection
-  era_cascade.py      -- Era label propagation
-  era_mapper.py       -- Era boundary mapping
-  report.py           -- Report generation
-  demo.py             -- Demo project generation
-  local_pipeline.py   -- Local GitHub pipeline inspection
-  db/                 -- Database utilities
-  classifiers/        -- Signal classification
-  extractors/         -- Data extraction
-  validators/         -- Output validation
-  visualization/      -- Template-based visualization
-analysis-vectors/     -- Analysis vector definitions
-config/               -- Configuration templates and schemas
-scripts/              -- Utility scripts
-setup/                -- Project setup questionnaire
-shared/               -- Framework-wide reference docs
-skills/               -- Bundled skill for CLI usage
-stages/               -- 9-stage pipeline contracts (ICM L2)
-docs/                 -- Architecture decisions
-_config/              -- Developer profile templates
+devarch-framework/
+├── archaeology/           # Core Python package
+│   ├── cli.py             # Click CLI entry point
+│   ├── api.py             # Programmatic API
+│   ├── mcp_server/        # Model Context Protocol server
+│   ├── classifiers/       # Commit classification logic
+│   ├── extractors/        # Data extraction from git
+│   ├── validators/        # Output validation
+│   ├── visualization/     # HTML chart templates
+│   ├── templates/         # Report templates
+│   └── db/                # Database utilities
+├── analysis-vectors/      # Analysis vector specifications
+├── config/                # Default configuration and schemas
+├── stages/                # Pipeline stage documentation
+├── shared/                # Shared concepts and design specs
+├── projects/              # Project data directories
+├── tests/                 # Test suite
+├── scripts/               # Utility and automation scripts
+├── skills/                # AI agent skill definitions
+├── docs/                  # Documentation site
+├── setup/                 # Setup questionnaire
+└── _config/               # Developer profile configuration
 ```
-
-## License
-
-MIT License -- See LICENSE file for details.
-
-## Support
-
-For issues or questions:
-
-1. Check CONTEXT.md for task routing
-2. Review analysis vector documentation in analysis-vectors/
-3. Run `devarch validate <project>` to check configuration
-4. Run `devarch audit <project>` to validate outputs
-5. Use `devarch serve <project>` for database inspection
-
-## FAQ
-
-**What is repository archaeology?**
-Repository archaeology treats git history as structured evidence. Instead of reading code, you read the sequence of changes — who changed what, when, at what velocity, and in response to what signals. DevArch automates the excavation.
-
-**How is DevArch different from `git log`?**
-`git log` produces raw output. DevArch mines commits into a queryable SQLite database, runs 5 signal-detection heuristics, executes 6 specialized analysis vectors, and produces interactive HTML visualizations and narrative reports. The output is evidence, not a log dump.
-
-**Does DevArch work with any git repository?**
-Yes. Any local git repository with commit history works. No GitHub API key, no cloud service, no configuration beyond pointing it at a path.
-
-**Can AI agents use DevArch autonomously?**
-Yes. The framework is ICM-compliant — it ships with structured context layers (`CLAUDE.md`, stage contracts, `llms.txt`) so Claude Code, Cursor, and other AI coding agents can understand and operate the pipeline without manual instruction. A bundled `skills/` folder enables one-command usage from the Claude Code CLI.
-
-**What size repositories does DevArch handle?**
-Tested on repositories from dozens to tens of thousands of commits. SQLite + FTS5 handles large git histories without any external infrastructure.
-
-**Is my data sent anywhere?**
-No. DevArch runs entirely locally. All mining, analysis, and report generation happens on your machine. No telemetry, no cloud API calls.
-
-## Related Projects
-
-- **[Dev Learning Archaeologist](https://github.com/KyaniteLabs/dev-learning-archaeologist)** — Zero-setup ICM folder for Claude Code. Drop it in, ask one question, get a full HTML learning diagnostic. The lightweight version of this framework.
-- **[KyaniteLabs](https://github.com/KyaniteLabs)** — More AI-native developer tools: MCP servers, time estimation, and multi-agent orchestration.
 
 ---
 
-## Part of KyaniteLabs
+## FAQ
 
-More from [KyaniteLabs](https://kyanitelabs.tech). Related projects:
+### What does DevArch actually do?
 
-- **[dev-learning-archaeologist](https://github.com/KyaniteLabs/dev-learning-archaeologist)** — forensic git-history learning diagnostic
-- **[checkyourself](https://github.com/KyaniteLabs/checkyourself)** — local-first production-readiness checks for AI-built code
-- **[Epoch](https://github.com/KyaniteLabs/Epoch)** — time-estimation MCP server (PERT) for AI agents
+DevArch extracts data from git repositories (commits, file changes, author history) into a SQLite database, then applies heuristic analysis to detect patterns like development gaps, velocity changes, and era transitions. It produces interactive visualizations and narrative reports that tell the story of how a codebase evolved.
 
-→ More at **[kyanitelabs.tech](https://kyanitelabs.tech)**
+### Do I need internet access or external services?
+
+No. DevArch runs entirely locally. The only exception is the optional `fetch-github` command, which queries the GitHub API for repository metadata, and the YouTube Correlator vector, which processes locally-stored watch history files.
+
+### What Python versions are supported?
+
+Python 3.10, 3.11, and 3.12. Python 3.10 is the minimum required version.
+
+### Can I analyze private repositories?
+
+Yes. DevArch operates on local git clones. It never transmits your code or commit data to external services. All analysis happens on your machine.
+
+### How is this different from `git log` or GitHub Insights?
+
+DevArch goes beyond raw commit logs. It structures history into a queryable database, applies multi-dimensional analysis vectors (not just counts and graphs), detects semantic signals like era transitions and SDLC gaps, correlates with external data sources, and produces narrative reports designed for human understanding — not just dashboards.
+
+### What is the "Era System"?
+
+The Era System identifies distinct phases in a repository's evolution — for example, "initial scaffolding," "feature expansion," "refactoring phase," "maintenance mode." It detects transitions automatically from commit patterns and propagates era labels across the codebase for timeline analysis.
+
+### Can AI agents use DevArch?
+
+Yes. DevArch includes a Model Context Protocol (MCP) server that exposes its capabilities as tools AI agents can invoke. Install with `pip install "devarch-framework[mcp]"` and run `devarch-mcp` to start the server.
+
+---
+
+## Contributing
+
+Contributions are welcome. Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on:
+
+- Setting up a development environment
+- Running tests
+- Submitting pull requests
+- Code style and conventions
+
+```bash
+# Quick setup for contributors
+git clone https://github.com/KyaniteLabs/devarch-framework.git
+cd devarch-framework
+make install-dev
+make test
+```
+
+---
+
+## License
+
+This project is licensed under the **Apache License 2.0** — see the [LICENSE](LICENSE) file for details.
+
+---
+
+<p align="center">
+  <sub>Built by <a href="https://github.com/KyaniteLabs">KyaniteLabs</a></sub>
+</p>
