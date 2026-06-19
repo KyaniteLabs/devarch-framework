@@ -137,14 +137,35 @@ def log(msg: str, verbose: bool = False) -> None:
         print(f"  {msg}")
 
 
+class SqliteUtilsError(RuntimeError):
+    """Raised when the sqlite-utils CLI fails.
+
+    Failing loud here is deliberate: a swallowed failure (e.g. sqlite-utils not
+    installed) leaves tables empty and makes the whole pipeline emit a
+    confidently wrong all-zero report (every SDLC practice reported 'ABSENT').
+    """
+
+
 def run_su(args: list[str], verbose: bool = False) -> subprocess.CompletedProcess:
-    """Call sqlite-utils CLI and return the result."""
+    """Call sqlite-utils CLI and return the result.
+
+    Raises SqliteUtilsError on any non-zero exit so build-db never silently
+    produces an empty/garbage database.
+    """
     cmd = [sys.executable, "-m", "sqlite_utils"] + args
     if verbose:
         print(f"  $ {' '.join(cmd)}")
     result = subprocess.run(cmd, capture_output=True, text=True)
     if result.returncode != 0:
-        print(f"  WARNING: sqlite-utils error: {result.stderr.strip()}", file=sys.stderr)
+        stderr = result.stderr.strip()
+        if "No module named sqlite_utils" in stderr:
+            raise SqliteUtilsError(
+                f"sqlite-utils is not installed for this interpreter ({sys.executable}). "
+                "Install it with `pip install -e .` (it is a declared dependency) or "
+                "`pip install sqlite-utils`. Without it build-db cannot populate any "
+                "table, so every analysis vector silently returns zero."
+            )
+        raise SqliteUtilsError(f"sqlite-utils {args[0] if args else ''} failed: {stderr}")
     return result
 
 
@@ -545,6 +566,35 @@ def print_summary(db: Path, verbose: bool = False) -> None:
 # Main
 # ---------------------------------------------------------------------------
 
+def _assert_commits_ingested(db_path: Path, data_dir: Path) -> None:
+    """Fail loud if github-commits.csv has rows but the commits table is empty.
+
+    Backstop for a silent ingest failure: without it the pipeline emits a
+    confidently wrong all-zero report (every SDLC practice reported 'ABSENT').
+    """
+    commits_csv = data_dir / "github-commits.csv"
+    if not commits_csv.exists():
+        return
+    with open(commits_csv, encoding="utf-8") as f:
+        csv_rows = max(sum(1 for _ in csv.reader(f)) - 1, 0)
+    if csv_rows == 0:
+        return
+    conn = sqlite3.connect(db_path)
+    try:
+        tables = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+        db_rows = conn.execute("SELECT COUNT(*) FROM commits").fetchone()[0] if "commits" in tables else 0
+    finally:
+        conn.close()
+    if db_rows == 0:
+        print(
+            f"ERROR: github-commits.csv has {csv_rows} commit row(s) but the 'commits' "
+            "table is empty after build. Commit ingestion failed (is sqlite-utils "
+            "installed?). Aborting so the pipeline does not emit a false all-zero report.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+
 def build_db(project_root: Path, output: Path | None = None, verbose: bool = False) -> None:
     """Build archaeology SQLite database from data files.
 
@@ -597,6 +647,9 @@ def build_db(project_root: Path, output: Path | None = None, verbose: bool = Fal
     # Registry-driven import (handles all formats)
     print("\n--- Importing tables ---")
     import_from_registry(db_path, data_dir, registry, nested_mappings, verbose)
+
+    # Backstop: a populated commits CSV must yield a populated commits table.
+    _assert_commits_ingested(db_path, data_dir)
 
     # Audit files (auto-discovered from glob)
     print("\n--- Audit files ---")

@@ -1,8 +1,15 @@
 """Tests for archaeology/db/builder.py table name validation."""
 
+import sqlite3
+
 import pytest
 
-from archaeology.db.builder import _validate_table_name
+from archaeology.db.builder import (
+    SqliteUtilsError,
+    _assert_commits_ingested,
+    _validate_table_name,
+    run_su,
+)
 
 
 def test_validate_table_name_valid_simple_names():
@@ -78,3 +85,50 @@ def test_validate_table_name_rejects_starting_with_number():
         _validate_table_name("123table")
     with pytest.raises(ValueError, match="Invalid table name"):
         _validate_table_name("9tables")
+
+
+# --- Fail-loud build guarantees (regression: silent sqlite-utils failure
+# produced an empty DB and a confidently-wrong all-zero report) ---
+
+def test_run_su_raises_on_failure():
+    """run_su must raise, not warn-and-continue, when sqlite-utils fails."""
+    with pytest.raises(SqliteUtilsError):
+        run_su(["this-is-not-a-sqlite-utils-command"])
+
+
+def test_assert_commits_ingested_aborts_when_table_empty(tmp_path):
+    """Populated commits CSV + empty commits table must abort the build."""
+    data_dir = tmp_path / "data"
+    data_dir.mkdir()
+    (data_dir / "github-commits.csv").write_text(
+        "hash,date,message,author\nabc,2026-01-01,hi,me\n", encoding="utf-8"
+    )
+    db = tmp_path / "archaeology.db"
+    sqlite3.connect(db).close()  # empty db, no commits table
+    with pytest.raises(SystemExit):
+        _assert_commits_ingested(db, data_dir)
+
+
+def test_assert_commits_ingested_passes_when_populated(tmp_path):
+    """A populated commits table satisfies the guard."""
+    data_dir = tmp_path / "data"
+    data_dir.mkdir()
+    (data_dir / "github-commits.csv").write_text(
+        "hash,date,message,author\nabc,2026-01-01,hi,me\n", encoding="utf-8"
+    )
+    db = tmp_path / "archaeology.db"
+    conn = sqlite3.connect(db)
+    conn.execute("CREATE TABLE commits (hash, date, message, author)")
+    conn.execute("INSERT INTO commits VALUES ('a', 'b', 'c', 'd')")
+    conn.commit()
+    conn.close()
+    _assert_commits_ingested(db, data_dir)  # must not raise
+
+
+def test_assert_commits_ingested_noop_without_csv(tmp_path):
+    """No commits CSV means nothing to assert (e.g. session-only projects)."""
+    data_dir = tmp_path / "data"
+    data_dir.mkdir()
+    db = tmp_path / "archaeology.db"
+    sqlite3.connect(db).close()
+    _assert_commits_ingested(db, data_dir)  # must not raise
