@@ -12,6 +12,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&family=Lora:wght@400;600;700&family=Source+Sans+3:wght@300;400;500;600&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.6/dist/purify.min.js" integrity="sha384-JEyTNhjM6R1ElGoJns4U2Ln4ofPcqzSsynQkmEc/KGy6336qAZl70tDLufbkla+3" crossorigin="anonymous"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 
@@ -422,7 +423,7 @@ body{background:var(--bg-main);color:var(--text);font-family:var(--font-body);li
   var contentEl = document.getElementById('content-body');
 
   if (!file) {
-    loadingEl.innerHTML = 'No file specified. Use ?file=path/to/document.md';
+    loadingEl.textContent = 'No file specified. Use ?file=path/to/document.md';
     return;
   }
 
@@ -433,7 +434,12 @@ body{background:var(--bg-main);color:var(--text);font-family:var(--font-body);li
   var parts = file.split('/');
   var backHref = '/';
   if (parts.length >= 1) backHref = '/' + parts[0] + '/';
-  metaEl.innerHTML = '<a href="' + backHref + '" style="color:var(--text-muted);text-decoration:none">&larr; back</a>';
+  // Build back link safely (avoid HTML injection from URL param)
+  var backLink = document.createElement('a');
+  backLink.href = backHref;
+  backLink.style.cssText = 'color:var(--text-muted);text-decoration:none';
+  backLink.textContent = '← back';
+  metaEl.appendChild(backLink);
 
   fetch(file)
     .then(function(r) {
@@ -443,12 +449,12 @@ body{background:var(--bg-main);color:var(--text);font-family:var(--font-body);li
     .then(function(text) {
       loadingEl.style.display = 'none';
       contentEl.style.display = 'block';
-      contentEl.innerHTML = marked.parse(text);
+      contentEl.innerHTML = DOMPurify.sanitize(marked.parse(text));
     })
     .catch(function(err) {
       loadingEl.style.display = 'none';
       contentEl.style.display = 'block';
-      contentEl.innerHTML = '<div class="error">Failed to load: ' + err.message + '<br><br>File: ' + file + '</div>';
+      contentEl.textContent = 'Failed to load: ' + err.message + '\n\nFile: ' + file;
     });
 })();
 
