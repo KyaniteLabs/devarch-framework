@@ -1,31 +1,27 @@
 # DevArch Framework
 
-[![PyPI version](https://img.shields.io/pypi/v/devarch-framework.svg)](https://pypi.org/project/devarch-framework/) [![Python](https://img.shields.io/pypi/pyversions/devarch-framework.svg)](https://pypi.org/project/devarch-framework/)
+Git repository archaeology: mine commit history, detect signals, run analysis vectors, and generate engineering reports. Python CLI, agent-ready.
+
+**Who it is for:** engineering leads and agents who need history-backed reports from a git tree — not slideware guesses.
+
+**What you get:** installable `devarch` CLI and analysis pipeline.
 
 ## Try it
 
 ```bash
-git clone https://github.com/KyaniteLabs/devarch-framework.git && cd devarch-framework && pip install -e .
-```
-
-```bash
-# Clone the repository
+pip install devarch-framework
+# or from source:
 git clone https://github.com/KyaniteLabs/devarch-framework.git
 cd devarch-framework
-# Install in editable mode
 pip install -e .
-# Verify installation
 devarch --help
 ```
 
 ## Docs
 
-- [Dev Learning Archaeologist](https://github.com/KyaniteLabs/dev-learning-archaeologist)
-- [Dev Learning Archaeologist](https://github.com/KyaniteLabs/dev-learning-archaeologist)
-- [Dev Learning Archaeologist](https://github.com/KyaniteLabs/dev-learning-archaeologist)
-- [KyaniteLabs](https://github.com/KyaniteLabs)
-- [KyaniteLabs](https://kyanitelabs.tech)
+- PyPI: [devarch-framework](https://pypi.org/project/devarch-framework/)
+- Related: [dev-learning-archaeologist](https://github.com/simongonzalezdc/dev-learning-archaeologist) when present
 
 ## License
 
-See [LICENSE](LICENSE).
+Apache-2.0. See [LICENSE](LICENSE).
