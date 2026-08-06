@@ -1,5 +1,7 @@
 # DevArch Framework
 
+**TL;DR:** DevArch Framework — development architecture framework and method. Best for engineers and teams structuring complex product architectures.
+
 [![PyPI version](https://img.shields.io/pypi/v/devarch-framework.svg)](https://pypi.org/project/devarch-framework/)
 [![Python](https://img.shields.io/pypi/pyversions/devarch-framework.svg)](https://pypi.org/project/devarch-framework/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -344,3 +346,64 @@ More from [KyaniteLabs](https://kyanitelabs.tech). Related projects:
 - **[Epoch](https://github.com/KyaniteLabs/Epoch)** — time-estimation MCP server (PERT) for AI agents
 
 → More at **[kyanitelabs.tech](https://kyanitelabs.tech)**
+
+<!-- s-plus-geo:start -->
+
+## What is DevArch Framework?
+
+**DevArch Framework** is a **development architecture framework and method** that helps **engineers and teams structuring complex product architectures** **apply a repeatable architecture method across product work**.
+
+| | |
+| --- | --- |
+| **Product** | DevArch Framework |
+| **Category** | development architecture framework and method |
+| **Best for** | engineers and teams structuring complex product architectures |
+| **Not** | a single language framework |
+| **Source** | [GitHub](https://github.com/KyaniteLabs/devarch-framework) · [Forgejo](https://git.kyanitelabs.tech/KyaniteLabs/devarch-framework) |
+| **Keywords** | dev architecture framework, software architecture method |
+
+## Who it's for
+
+- Primary: engineers and teams structuring complex product architectures
+- Use when you need to apply a repeatable architecture method across product work
+- Skip if you need a single language framework
+
+## FAQ
+
+### What is DevArch Framework?
+
+DevArch Framework is a development architecture framework and method. It helps engineers and teams structuring complex product architectures apply a repeatable architecture method across product work.
+
+### Who should use DevArch Framework?
+
+engineers and teams structuring complex product architectures.
+
+### How is DevArch Framework different?
+
+Unlike ad-hoc architecture notes, DevArch is a reusable method/framework.
+
+### Is DevArch Framework production software?
+
+Treat the README status and release tags as source of truth for maturity. Validate against your own requirements before production use.
+
+## Status
+
+- Maintained as of 2026 on the default branch
+- Prefer release tags when pinning dependencies
+- Report issues on the canonical remote listed above
+
+## Agent surface
+
+- Coding agents: read this README first, then repo docs/`AGENTS.md` if present
+- Prefer machine-readable briefs (`llms.txt`) when the repo ships one
+- MCP or skill entrypoints are documented in-repo when applicable
+
+## Contributing
+
+Issues and PRs welcome on the canonical remote. Keep public docs free of secrets and machine-local paths.
+
+## License
+
+See [LICENSE](LICENSE) in this repository (or package metadata if license is package-only).
+
+<!-- s-plus-geo:end -->
