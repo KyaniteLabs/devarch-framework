@@ -1,5 +1,7 @@
 # Empower Orchestrator Agent Law
 
+NOTE 2026-08-18: superseded-by-reference — the CEO constitution (empower-orchestrator SKILL.md header + COMPANY-OS.md meta-patterns P1-P7) is authoritative; this doc retains historical context only.
+
 This repo-local copy makes the doctrine visible to Codex, Claude Code, Kimi Code, GitHub reviewers, and CI. It preserves the four-question blast-radius check as an explicit gate before automation or durable system changes.
 
 Canonical installation source on this machine: `/Users/simongonzalezdecruz/Downloads/2026-05-04-empower-orchestrator-recipe.md`.
