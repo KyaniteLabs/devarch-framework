@@ -15,7 +15,7 @@
         <string>8099</string>
     </array>
     <key>WorkingDirectory</key>
-    <string>/Users/simongonzalezdecruz/workspaces/dev-archaeology</string>
+    <string>~/workspaces/dev-archaeology</string>
     <key>RunAtLoad</key>
     <true/>
     <key>KeepAlive</key>

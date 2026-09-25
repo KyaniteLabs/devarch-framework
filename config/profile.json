@@ -1,8 +1,97 @@
 {
-  "projects": [],
+  "projects": [
+    {
+      "name": "thefactory",
+      "repo_path": "~/workspaces/thefactory"
+    },
+    {
+      "name": "liminal",
+      "repo_path": "~/workspaces/liminal"
+    },
+    {
+      "name": "vocal-layer-studio",
+      "repo_path": "~/workspaces/vocal-layer-studio"
+    },
+    {
+      "name": "ContextHotSwap",
+      "repo_path": "~/workspaces/ContextHotSwap"
+    },
+    {
+      "name": "context-supervisor",
+      "repo_path": "~/workspaces/context-supervisor"
+    },
+    {
+      "name": "MAXCLONEASTROLOGY",
+      "repo_path": "~/workspaces/MAXCLONEASTROLOGY"
+    },
+    {
+      "name": "Dispatch_monitor",
+      "repo_path": "~/workspaces/Dispatch_monitor"
+    },
+    {
+      "name": "assay",
+      "repo_path": "~/workspaces/assay"
+    },
+    {
+      "name": "Memoir",
+      "repo_path": "~/workspaces/Memoir"
+    },
+    {
+      "name": "handoff-cms",
+      "repo_path": "~/workspaces/handoff-cms"
+    },
+    {
+      "name": "simon-voice-workbench",
+      "repo_path": "~/workspaces/simon-voice-workbench"
+    },
+    {
+      "name": "second-brain-system",
+      "repo_path": "~/workspaces/second-brain-system"
+    },
+    {
+      "name": "local-model-finder",
+      "repo_path": "~/workspaces/local-model-finder"
+    },
+    {
+      "name": "Total_optimization",
+      "repo_path": "~/workspaces/Total_optimization"
+    },
+    {
+      "name": "HealthAdvocate",
+      "repo_path": "~/workspaces/HealthAdvocate"
+    },
+    {
+      "name": "complyos",
+      "repo_path": "~/workspaces/complyos"
+    },
+    {
+      "name": "unstuck-coach",
+      "repo_path": "~/workspaces/unstuck-coach"
+    },
+    {
+      "name": "deepseek-maxx",
+      "repo_path": "~/workspaces/deepseek-maxx"
+    },
+    {
+      "name": "rabbit-r1-operator-plan",
+      "repo_path": "~/workspaces/rabbit-r1-operator-plan"
+    },
+    {
+      "name": "model-bench",
+      "repo_path": "~/workspaces/model-bench"
+    },
+    {
+      "name": "agent-control-plane",
+      "repo_path": "~/workspaces/agent-control-plane"
+    },
+    {
+      "name": "chance",
+      "repo_path": "~/workspaces/chance"
+    }
+  ],
   "developer": {
-    "name": "",
-    "github_username": "",
+    "name": "Simon Gonzalez de Cruz",
+    "github_username": "simongonzalezdc",
     "email": ""
   },
   "sync_settings": {
