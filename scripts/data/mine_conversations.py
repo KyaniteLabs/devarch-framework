@@ -8,12 +8,12 @@ configurable CLI.
 Examples:
 
   python3 scripts/mine_conversations.py claude \
-    --sessions-dir ~/.claude/projects/-Users-simongonzalezdecruz-Desktop-OMC \
+    --sessions-dir ~/.claude/projects/-Users-user-Desktop-OMC \
     --output-dir projects/demo-project/data \
     --prefix sessions
 
   python3 scripts/mine_conversations.py claude \
-    --sessions-dir ~/.claude/projects/-Users-simongonzalezdecruz-workspaces-demo-project \
+    --sessions-dir ~/.claude/projects/-Users-user-workspaces-demo-project \
     --output-dir projects/demo-project/data \
     --prefix demo-project
 
@@ -40,11 +40,11 @@ ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_OUTPUT = ROOT / "projects/demo-project/data"
 DEFAULT_OMC_SESSIONS = Path(os.environ.get(
     "ARCHAEOLOGY_OMC_SESSIONS",
-    "~/.claude/projects/-Users-simongonzalezdecruz-Desktop-OMC",
+    "~/.claude/projects/-Users-user-Desktop-OMC",
 )).expanduser()
 DEFAULT_DEMO_PROJECT_SESSIONS = Path(os.environ.get(
     "ARCHAEOLOGY_DEMO_PROJECT_SESSIONS",
-    "~/.claude/projects/-Users-simongonzalezdecruz-workspaces-demo-project",
+    "~/.claude/projects/-Users-user-workspaces-demo-project",
 )).expanduser()
 DEFAULT_CHATGPT_EXPORT = Path(os.environ.get(
     "ARCHAEOLOGY_CHATGPT_EXPORT",
