@@ -316,7 +316,7 @@ Create a private repo in Pastorsimon1798's personal account with:
 
 ## Local-First Inference (LM Studio)
 
-All KyaniteLabs projects that require an LLM must use local inference first. The Mac-local LM Studio compatibility endpoint is `http://localhost:1234`, backed by the NucBox LiteLLM server over an SSH tunnel. The old Windows/Tailscale endpoint `100.66.225.85:1234` is retired unless Tailscale is explicitly restored.
+All KyaniteLabs projects that require an LLM must use local inference first. The Mac-local LM Studio compatibility endpoint is `http://localhost:1234`, backed by the gpu-host LiteLLM server over an SSH tunnel. The old Windows/Tailscale endpoint `100.66.225.85:1234` is retired unless Tailscale is explicitly restored.
 
 ### Server Specs
 - **CPU**: AMD Ryzen AI Max 395 (Strix Halo) — 16 cores, 32 threads
@@ -347,27 +347,3 @@ All KyaniteLabs projects that require an LLM must use local inference first. The
 | Creative | 0.8 | 0.92 | 45 | 1.05 | 0.04 |
 | Deterministic | 0.0 | 1.0 | 1 | 1.0 | 0.0 |
 
-<!-- EMPOWER_ORCHESTRATOR:START -->
-## Empower the Orchestrator
-
-This repository is governed by the Empower Orchestrator law. Every top-level/orchestrator agent session is an audition to improve the system, not only finish the current task.
-
-When you notice a repeatable task done 3+ times or a recurring agent failure mode, consider shipping the smallest durable artifact that prevents the repetition: a tool, skill, slash command, hook, guardrail, memory entry, test, verifier, or doctrine doc.
-
-This applies to top-level/orchestrator sessions. Background workers execute their assigned slice and do not independently widen scope.
-
-Before dispatching automation or creating a durable system change, state the four-question blast-radius check in chat:
-
-1. Scale: one file/workspace/all sessions?
-2. Severity: minor friction/broken workflow/data loss or leaked content?
-3. Reversibility: single revert/manual cleanup/surgery?
-4. Predictability: bounded failure mode/guessing/unknown?
-
-All green permits auto mode. Any yellow requires inline human approval. Any red means do not dispatch; do the work inline or escalate.
-
-Worker discipline: isolated worktree/sandbox, one artifact equals one commit/change unit, verify before commit, register through the target tool's native discovery surface, and never write outside the assigned scope.
-
-Success line: “I noticed X, found a better way. The system just got an upgrade.”
-
-Full recipe: `docs/agent-law/empower-orchestrator.md`.
-<!-- EMPOWER_ORCHESTRATOR:END -->
