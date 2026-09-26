@@ -42,13 +42,13 @@ DEFAULT_TABLE_REGISTRY: dict[str, dict] = {
     "lunar_phases": {"file": "lunar-phases.json", "format": "json_nested"},
     "youtube_correlation": {"file": "youtube-ai-correlation.json", "format": "json_nested"},
     "youtube_creators": {"file": "youtube-creators.json", "format": "json_special_creators"},
-    "telemetry_git": {"file": "telemetry-git.json", "format": "json_nested"},
-    "telemetry_agents": {"file": "telemetry-agents.json", "format": "json_nested"},
-    "telemetry_codebase": {"file": "telemetry-codebase.json", "format": "json_nested"},
-    "telemetry_cross_repo": {"file": "telemetry-cross-repo.json", "format": "json_nested"},
-    "telemetry_github_full": {"file": "telemetry-github-full.json", "format": "json_nested"},
-    "telemetry_repo_depth": {"file": "telemetry-repo-depth.json", "format": "json_nested"},
-    "telemetry_visualizations": {"file": "telemetry-visualizations.json", "format": "json_nested"},
+    "telemetry_git": {"file": "metrics-git.json", "format": "json_nested"},
+    "telemetry_agents": {"file": "metrics-agents.json", "format": "json_nested"},
+    "telemetry_codebase": {"file": "metrics-codebase.json", "format": "json_nested"},
+    "telemetry_cross_repo": {"file": "metrics-cross-repo.json", "format": "json_nested"},
+    "telemetry_github_full": {"file": "metrics-github-full.json", "format": "json_nested"},
+    "telemetry_repo_depth": {"file": "metrics-repo-depth.json", "format": "json_nested"},
+    "telemetry_visualizations": {"file": "metrics-visualizations.json", "format": "json_nested"},
     "youtube_topic_classification": {"file": "youtube-topic-classification.json", "format": "json_nested"},
     "youtube_engagement": {"file": "youtube-engagement-heuristics.json", "format": "json"},
     "youtube_transcript_analysis": {"file": "youtube-transcript-analysis.json", "format": "json"},
@@ -81,30 +81,30 @@ NESTED_KEY_MAPPINGS: dict[str, dict[str, str]] = {
         "classified_videos": "yt_classified",
         "categories": "yt_categories",
     },
-    "telemetry-git.json": {
+    "metrics-git.json": {
         "commits_by_hour": "commits_by_hour",
         "commits_by_day_of_week": "commits_by_weekday",
         "author_breakdown": "authors",
         "co_authored_by": "co_authors",
     },
-    "telemetry-agents.json": {
+    "metrics-agents.json": {
         "agent_comparison": "agent_comparison",
         "co_authorship_patterns": "co_authorship_patterns",
     },
-    "telemetry-codebase.json": {
+    "metrics-codebase.json": {
         "file_growth_timeline": "file_growth",
         "language_evolution": "codebase_languages",
         "module_emergence_timeline": "module_emergence",
     },
-    "telemetry-cross-repo.json": {
+    "metrics-cross-repo.json": {
         "timeline": "cross_repo_timeline",
         "concurrent_repos": "concurrent_repos",
     },
-    "telemetry-github-full.json": {
+    "metrics-github-full.json": {
         "repos": "github_repos",
         "activity_heatmap": "github_heatmap",
     },
-    "telemetry-repo-depth.json": {
+    "metrics-repo-depth.json": {
         "repos": "repo_depth",
         "domain_map": "domain_map",
         "feeder_repos": "feeder_repos",
@@ -368,7 +368,7 @@ def import_derived_patterns(db: Path, data_dir: Path, patterns_file: str = "deri
     return total
 
 
-def import_telemetry_sessions(db: Path, data_dir: Path, sessions_file: str = "telemetry-sessions.json", verbose: bool = False) -> int:
+def import_telemetry_sessions(db: Path, data_dir: Path, sessions_file: str = "metrics-sessions.json", verbose: bool = False) -> int:
     data = load_json(data_dir / sessions_file, verbose)
     if data is None:
         return 0
