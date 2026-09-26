@@ -1263,10 +1263,10 @@ def update_agent_economics(data: dict, repo: Path, dry_run: bool) -> list[str]:
 
 
 def update_pre_demo_project(data: dict, repo: Path, dry_run: bool) -> list[str]:
-    """Update pre_demo_project_repos and pre_demo_project_activity from telemetry-repo-depth.json."""
+    """Update pre_demo_project_repos and pre_demo_project_activity from metrics-repo-depth.json."""
     changes = []
-    repo_depth_path = Path(__file__).parent / "projects" / "demo-project" / "data" / "telemetry-repo-depth.json"
-    cross_repo_path = Path(__file__).parent / "projects" / "demo-project" / "data" / "telemetry-cross-repo.json"
+    repo_depth_path = Path(__file__).parent / "projects" / "demo-project" / "data" / "metrics-repo-depth.json"
+    cross_repo_path = Path(__file__).parent / "projects" / "demo-project" / "data" / "metrics-cross-repo.json"
 
     if not repo_depth_path.exists() or not cross_repo_path.exists():
         return changes
@@ -1337,7 +1337,7 @@ def update_pre_demo_project(data: dict, repo: Path, dry_run: bool) -> list[str]:
 def update_creative_dna(data: dict, repo: Path, dry_run: bool) -> list[str]:
     """Update repo_depth.creative_dna and learning sections from telemetry data."""
     changes = []
-    repo_depth_path = Path(__file__).parent / "projects" / "demo-project" / "data" / "telemetry-repo-depth.json"
+    repo_depth_path = Path(__file__).parent / "projects" / "demo-project" / "data" / "metrics-repo-depth.json"
     pre_history_path = Path(__file__).parent / "projects" / "demo-project" / "data" / "pre-history-creative-journey.json"
 
     if not repo_depth_path.exists():
