@@ -12,7 +12,7 @@ import click
 
 from .analysis_runner import run_analysis_vectors
 from .classifiers.era_detector import detect_signals
-from .extractors.git import extract_git_log, extract_git_log_with_stats
+from .extractors.git import extract_git_log, extract_git_log_with_stats, repository_coverage
 
 
 def _project_dir(project_name):
@@ -26,6 +26,7 @@ def _project_dir(project_name):
 
 
 @click.group()
+@click.version_option(package_name="devarch-framework")
 def main():
     """DevArch Framework - forensic mining of software development history."""
     pass
@@ -95,7 +96,7 @@ def demo(project_name, force, build_db):
 @click.option("--verbose", "-v", is_flag=True)
 def mine(repo_path, project, verbose):
     """Phase 1: Extract data from a git repository."""
-    from .extractors.git import extract_git_log, extract_git_log_with_stats
+    from .extractors.git import extract_git_log, extract_git_log_with_stats, repository_coverage
 
     project_dir = _project_dir(project)
     data_dir = os.path.join(project_dir, "data")
@@ -104,9 +105,13 @@ def mine(repo_path, project, verbose):
         click.echo(f"Repository not found: {repo_path}", err=True)
         sys.exit(1)
 
-    if not os.path.isdir(os.path.join(os.path.expanduser(repo_path), '.git')):
-        click.echo(f"Error: Not a git repository: {repo_path}", err=True)
-        sys.exit(1)
+    repo_path = str(Path(repo_path).expanduser().resolve())
+    try:
+        coverage = repository_coverage(repo_path)
+    except RuntimeError as exc:
+        raise click.ClickException(str(exc)) from exc
+    if coverage["shallow"]:
+        raise click.ClickException("Shallow history: fetch complete history before mining; no fetch performed")
 
     click.echo(f"Extracting git log from {repo_path}...")
 
@@ -124,6 +129,18 @@ def mine(repo_path, project, verbose):
     except (RuntimeError, Exception) as e:
         click.echo(f"Error: Git stats extraction failed: {e}", err=True)
         sys.exit(1)
+
+    if repository_coverage(repo_path) != coverage:
+        raise click.ClickException("Repository refs changed during mining; retry before analysis")
+    from .utils import atomic_write
+    import hashlib
+    coverage["artifact_sha256"] = {Path(path).name: hashlib.sha256(Path(path).read_bytes()).hexdigest() for path in (csv_path, stats_path)}
+    atomic_write(Path(data_dir) / "coverage.json", json.dumps(coverage, indent=2))
+    config_path = Path(project_dir) / "project.json"
+    config = json.loads(config_path.read_text(encoding="utf-8"))
+    config["repo_path"] = repo_path
+    config["mined_history_manifest_required"] = True
+    atomic_write(config_path, json.dumps(config, indent=2))
 
     click.echo(f"Phase 1 complete for '{project}'.")
 
@@ -416,147 +433,12 @@ def export_report_cmd(project_name, fmt, output_path):
 @click.argument("project_name")
 def visualize(project_name):
     """Phase 4: Generate visualization HTML from template."""
-    project_dir = _project_dir(project_name)
-    template = os.path.join("archaeology", "visualization", "template.html")
-    data_json = os.path.join(project_dir, "deliverables", "data.json")
-    output_html = os.path.join(project_dir, "deliverables", "visuals", "archaeology.html")
-
-    if not os.path.exists(template):
-        click.echo(f"Template not found at {template}", err=True)
-        sys.exit(1)
-
-    # Load project config for hydration
-    config_path = os.path.join(project_dir, "project.json")
-    project_config = {}
-    if os.path.exists(config_path):
-        try:
-            with open(config_path, encoding="utf-8") as f:
-                project_config = json.load(f)
-        except json.JSONDecodeError as e:
-            click.echo(f"Error: Invalid JSON in {config_path}: {e}", err=True)
-            sys.exit(1)
-
-    vis = project_config.get("visualization", {})
-    overrides = project_config.get("overrides", {})
-
-    # Read template and inject project-specific values
-    with open(template, encoding="utf-8") as f:
-        html = f.read()
-
-    # Compute stats from commit-eras.json for template hydration
-    total_commits = 0
-    total_lines = 0
-    first_date = ""
-    last_date = ""
-    agent_count = 0
-    eras_data = None
-    eras_json = os.path.join(project_dir, "data", "commit-eras.json")
-    if os.path.exists(eras_json):
-        try:
-            with open(eras_json, encoding="utf-8") as f:
-                eras_data = json.load(f)
-        except json.JSONDecodeError as e:
-            click.echo(f"Error: Invalid JSON in {eras_json}: {e}", err=True)
-            sys.exit(1)
-        total_commits = eras_data.get("total_commits", 0)
-        lifespan = eras_data.get("lifespan", "")
-        # Parse "43 days (Feb 28 - Apr 11, 2026)" format
-        if "(" in lifespan and ")" in lifespan:
-            date_part = lifespan.split("(")[1].split(")")[0]
-            parts = date_part.split(" - ")
-            first_date = parts[0].strip() if parts else ""
-            last_date = parts[-1].strip() if len(parts) > 1 else ""
-        # Count unique agents from agent_evidence
-        agent_evidence = eras_data.get("agent_evidence", {})
-        agent_count = len(agent_evidence)
-        if not agent_count:
-            agent_count = 6  # Claude, Kai, Cursor, Kimi, Codex, dogfood
-        # Get file count from codebase_growth last entry
-        growth = eras_data.get("codebase_growth", [])
-        if growth:
-            total_lines = growth[-1].get("files", 0)
-    elif os.path.exists(data_json):
-        try:
-            with open(data_json, encoding="utf-8") as f:
-                pdata = json.load(f)
-            total_commits = pdata.get("total_commits", 0)
-        except json.JSONDecodeError as e:
-            click.echo(f"Error: Invalid JSON in {data_json}: {e}", err=True)
-            sys.exit(1)
-
-    # Hydrate template variables
-    title = vis.get("title", project_name.upper())
-    duration = vis.get("duration", f"{first_date} — {last_date}" if first_date else "")
-    html = html.replace("{{PROJECT_NAME}}", title)
-    html = html.replace("{{PROJECT_DURATION}}", duration)
-    html = html.replace("{{TOTAL_COMMITS}}", str(total_commits or 803))
-    html = html.replace("{{TOTAL_LINES}}", str(total_lines or "35,600"))
-    html = html.replace("{{AGENT_COUNT}}", str(agent_count or 6))
-    # Compute era count for meta description
-    era_count = len(eras_data.get("eras", [])) if os.path.exists(eras_json) else 0
-    html = html.replace("{{ERA_COUNT}}", str(era_count))
-
-    # Also update <title> tag if it still has the old format
-    html = html.replace(
-        "<title>DevArch Framework</title>",
-        f"<title>{title} — DevArch Framework</title>",
-    )
-
-    # Generate era color CSS variables from config
-    era_colors = vis.get("era_colors", {})
-    if era_colors:
-        era_css = "\n".join(
-            f"  --{era_key}: {color};"
-            for era_key, color in era_colors.items()
-        )
-        # Insert era colors after :root block opens
-        html = html.replace(
-            "/* ERA COLORS */",
-            f"/* ERA COLORS — from project.json */\n{era_css}",
-        )
-
-    # Generate agent color CSS variables
-    agent_colors = vis.get("agent_colors", {})
-    if agent_colors:
-        agent_css = "\n".join(
-            f"  --{name.lower()}: {color};"
-            for name, color in agent_colors.items()
-        )
-        html = html.replace(
-            "/* AGENT COLORS */",
-            f"/* AGENT COLORS — from project.json */\n{agent_css}",
-        )
-
-    # Inline data.json so the HTML works from file:// (no CORS issues)
-    if os.path.exists(data_json):
-        with open(data_json, encoding="utf-8") as f:
-            data_payload = json.load(f)
-
-        # Merge commit_eras and top-level fields from commit-eras.json into PROJECT_DATA
-        # so the era timeline visualization has real data to render.
-        if eras_data is not None:
-            data_payload.setdefault("commit_eras", eras_data.get("eras", []))
-            data_payload.setdefault("total_commits", eras_data.get("total_commits", 0))
-            data_payload.setdefault("first_commit_date", eras_data.get("first_commit_date", ""))
-            data_payload.setdefault("last_commit_date", eras_data.get("last_commit_date", ""))
-
-        data_content = json.dumps(data_payload)
-        safe_data_content = data_content.replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026")
-        inline_script = f'<script>window.PROJECT_DATA = {safe_data_content}; window.dispatchEvent(new Event("data-loaded"));</script>'
-        html = html.replace(
-            '<script>\n  // Load project data from external JSON file\n  // The data.json file contains all visualization data (telemetry, sessions, eras, etc.)\n  // Original inline data was ~6870 lines (272KB)\n  fetch("data.json")\n    .then(function(r) { return r.json(); })\n    .then(function(d) {\n      window.PROJECT_DATA = d;\n      window.dispatchEvent(new Event("data-loaded"));\n    })\n    .catch(function(e) { console.error("Failed to load data.json:", e); });\n</script>',
-            inline_script,
-        )
-
-    # Write hydrated HTML
-    os.makedirs(os.path.dirname(output_html), exist_ok=True)
-    with open(output_html, "w", encoding="utf-8") as f:
-        f.write(html)
-
-    click.echo(f"Visualization generated at {output_html}")
-
-    if not os.path.exists(data_json):
-        click.echo(f"Warning: {data_json} not found. Visualization will be empty.")
+    from .visualization.history import render_history
+    try:
+        output = render_history(Path(_project_dir(project_name)))
+    except (OSError, ValueError) as exc:
+        raise click.ClickException(str(exc)) from exc
+    click.echo(f"Visualization generated at {output}")
 
 
 @main.command()
@@ -609,7 +491,7 @@ def ingest_pipeline(project_name, logs_dir, verbose):
 def cascade(project_name, dry_run, skip_mine):
     """Full pipeline: mine → build-db → signals → era cascade → sync → audit."""
     from .era_cascade import cascade as run_cascade
-    from .extractors.git import extract_git_log, extract_git_log_with_stats
+    from .extractors.git import extract_git_log, extract_git_log_with_stats, repository_coverage
     from .classifiers.era_detector import detect_signals
 
     project_dir = Path(_project_dir(project_name))

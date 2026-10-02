@@ -585,10 +585,10 @@ def _assert_commits_ingested(db_path: Path, data_dir: Path) -> None:
         db_rows = conn.execute("SELECT COUNT(*) FROM commits").fetchone()[0] if "commits" in tables else 0
     finally:
         conn.close()
-    if db_rows == 0:
+    if db_rows != csv_rows:
         print(
             f"ERROR: github-commits.csv has {csv_rows} commit row(s) but the 'commits' "
-            "table is empty after build. Commit ingestion failed (is sqlite-utils "
+            "table count differs after build. Commit ingestion failed (is sqlite-utils "
             "installed?). Aborting so the pipeline does not emit a false all-zero report.",
             file=sys.stderr,
         )
@@ -670,6 +670,8 @@ def build_db(project_root: Path, output: Path | None = None, verbose: bool = Fal
     print("\n--- Full-text search ---")
     create_fts(db_path, fts_config, verbose)
 
+    from ..metrics import write_metrics
+    write_metrics(project_root, db_path)
     print_summary(db_path, verbose)
     print(f"\nDone. Database: {db_path}")
 

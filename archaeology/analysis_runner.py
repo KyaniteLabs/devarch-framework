@@ -45,16 +45,14 @@ class AnalysisRunner:
     def _query_db(self, query: str, params: tuple = ()) -> list[dict]:
         """Execute SQL query against archaeology database."""
         if not self.db_path.exists():
-            return []
+            raise ValueError("Analysis database missing; run build-db first")
         conn = sqlite3.connect(str(self.db_path), timeout=30)
         conn.row_factory = sqlite3.Row
         try:
             cursor = conn.execute(query, params)
             return [dict(row) for row in cursor.fetchall()]
         except sqlite3.Error as e:
-            if self.verbose:
-                print(f"  [analysis] Database query error: {e}")
-            return []
+            raise ValueError(f"Analysis query failed: {e}") from e
         finally:
             conn.close()
 
@@ -62,11 +60,11 @@ class AnalysisRunner:
         """Load JSON from project directory (wrapper for utils._load_json)."""
         return _load_json(self.project_dir / rel_path)
 
-    def _like_commits(self, keywords: list[str], limit: int = 100) -> list[dict]:
+    def _like_commits(self, keywords: list[str], limit: int | None = 100) -> list[dict]:
         if not keywords:
             return []
         clauses = " OR ".join("LOWER(message) LIKE ?" for _ in keywords)
-        params = tuple(f"%{kw.lower()}%" for kw in keywords) + (limit,)
+        params = tuple(f"%{kw.lower()}%" for kw in keywords) + (-1 if limit is None else limit,)
         return self._query_db(
             f"SELECT hash, date, message, author FROM commits WHERE {clauses} ORDER BY date DESC LIMIT ?",
             params,
@@ -80,16 +78,16 @@ class AnalysisRunner:
         """Analyze SDLC practices and gaps."""
         self._log("Running SDLC Gap Finder...")
         total_commits = self._commit_count()
-        ci_cd = self._like_commits(["github action", "ci", "workflow", "deploy", "pipeline"], 500)
-        tests = self._like_commits(["test", "spec", "coverage", "vitest", "pytest"], 500)
-        refactor = self._like_commits(["refactor", "clean", "simplify"], 500)
-        security = self._like_commits(["security", "cve", "xss", "injection", "secret"], 500)
-        docs = self._like_commits(["docs", "readme", "documentation"], 500)
+        ci_cd = self._like_commits(["github action", "ci", "workflow", "deploy", "pipeline"], None)
+        tests = self._like_commits(["test", "spec", "coverage", "vitest", "pytest"], None)
+        refactor = self._like_commits(["refactor", "clean", "simplify"], None)
+        security = self._like_commits(["security", "cve", "xss", "injection", "secret"], None)
+        docs = self._like_commits(["docs", "readme", "documentation"], None)
 
         def status(count: int, low: float, high: float) -> str:
             ratio = count / total_commits if total_commits else 0
             if ratio < low:
-                return "ABSENT"
+                return "UNVERIFIED"
             if ratio < high:
                 return "EMERGING"
             return "PRESENT"
@@ -104,12 +102,14 @@ class AnalysisRunner:
         gaps = []
         for practice, rows, low, high, recommendation in practices:
             practice_status = status(len(rows), low, high)
-            severity = "HIGH" if practice_status == "ABSENT" else "MEDIUM" if practice_status == "EMERGING" else "LOW"
+            severity = "MEDIUM" if practice_status == "UNVERIFIED" else "MEDIUM" if practice_status == "EMERGING" else "LOW"
             gaps.append(
                 {
                     "practice": practice,
                     "status": practice_status,
-                    "evidence": [{"result_count": len(rows), "ratio": f"{(len(rows) / total_commits if total_commits else 0):.1%}"}],
+                    "confidence": "LOW",
+                    "interpretation": "Commit-keyword frequency only; not verified presence, absence or coverage",
+                    "evidence": [{"sample": rows[:5], "result_count": len(rows), "ratio": f"{(len(rows) / total_commits if total_commits else 0):.1%}"}],
                     "severity": severity,
                     "effort_to_implement": 3 if severity == "HIGH" else 2,
                     "expected_impact": 5 if severity == "HIGH" else 3,
@@ -148,11 +148,12 @@ class AnalysisRunner:
                 {
                     "intuitive_name": intuitive,
                     "formal_term": formal,
-                    "confidence": "HIGH" if len(evidence) >= 5 else "MEDIUM",
-                    "similarity_to_canonical": min(0.9, 0.45 + len(evidence) * 0.05),
-                    "is_reinvention": reinvention,
+                    "confidence": "LOW",
+                    "status": "UNVERIFIED keyword candidate; inspect source before assigning an algorithm",
+                    "similarity_to_canonical": None,
+                    "is_reinvention": None,
                     "library_alternative": library,
-                    "estimated_token_waste": 5000 if reinvention else None,
+                    "estimated_token_waste": None,
                     "evidence": evidence[:5],
                 }
             )
@@ -213,28 +214,18 @@ class AnalysisRunner:
     def run_agentic_workflow(self) -> dict[str, Any]:
         """Analyze AI agent interaction patterns."""
         self._log("Running Agentic Workflow Analyzer...")
-        sessions = self._approximate_sessions()
         hooks = self._like_commits(["hook", "pre-commit", "post-commit", "automation"], 50)
-        agent_commits = self._query_db("SELECT author, COUNT(*) as cnt FROM commits GROUP BY author ORDER BY cnt DESC")
+        authors = self._query_db("SELECT author, COUNT(*) as cnt FROM commits GROUP BY author ORDER BY cnt DESC")
         return {
             "project": self.project_name,
             "analysis_date": datetime.now().isoformat(),
-            "session_depth_distribution": {
-                "sessions_total": len(sessions),
-                "micro_lt5": max(0, len(sessions) // 6),
-                "standard_5_20": max(0, len(sessions) // 2),
-                "deep_20_50": max(0, len(sessions) // 4),
-                "marathon_50_plus": max(0, len(sessions) - (len(sessions) // 6 + len(sessions) // 2 + len(sessions) // 4)),
-            },
-            "session_taxonomy": {
-                "SCAFFOLDING": len(self._like_commits(["scaffold", "initialize", "setup"], 100)),
-                "BUILDING": len(self._like_commits(["feat", "implement", "add"], 100)),
-                "DEBUGGING": len(self._like_commits(["fix", "debug", "error"], 100)),
-                "REFACTORING": len(self._like_commits(["refactor", "cleanup", "simplify"], 100)),
-            },
-            "hook_effectiveness": [{"hook_name": "automation/hook commits", "effectiveness_score": 0.8, "evidence_count": len(hooks)}] if hooks else [],
-            "agent_attribution": agent_commits,
-            "summary": {"total_sessions_analyzed": len(sessions), "dominant_session_type": "BUILDING"},
+            "session_depth_distribution": None,
+            "session_taxonomy": None,
+            "hook_effectiveness": [],
+            "hook_commit_evidence": hooks,
+            "author_attribution": authors,
+            "limitations": "Commit authors are not verified agent identities. Session depth, autonomy and hook effectiveness are unmeasured; no fabricated estimates.",
+            "summary": {"total_sessions_analyzed": 0, "dominant_session_type": None},
         }
 
     def run_formal_terms_mapper(self) -> dict[str, Any]:
@@ -256,7 +247,8 @@ class AnalysisRunner:
                         "code_name": code_name,
                         "formal_term": formal,
                         "category": "ARCHITECTURE",
-                        "similarity_score": "CLOSE" if len(evidence) >= 3 else "PARTIAL",
+                        "similarity_score": "UNVERIFIED",
+                        "confidence": "LOW",
                         "evidence": evidence,
                     }
                 )
@@ -264,7 +256,7 @@ class AnalysisRunner:
             "project": self.project_name,
             "analysis_date": datetime.now().isoformat(),
             "term_dictionary": dictionary,
-            "naming_trajectory": "Project-specific metaphors are increasingly mapped onto formal control-loop, pipeline, and verification vocabulary.",
+            "naming_trajectory": "Unmeasured; keyword candidates require source validation.",
             "learning_opportunities": ["Control theory", "Quality-diversity algorithms", "Event sourcing", "Multi-agent evaluation"],
             "summary": {"terms_mapped": len(dictionary), "high_confidence": sum(1 for t in dictionary if t["similarity_score"] == "CLOSE")},
         }
@@ -272,7 +264,7 @@ class AnalysisRunner:
     def run_source_archaeologist(self) -> dict[str, Any]:
         """Mine commit history for code quality trajectory and hotspots."""
         self._log("Running Source Code Archaeologist...")
-        quality = self._like_commits(["fix", "test", "refactor", "security", "lint", "type"], 500)
+        quality = self._like_commits(["fix", "test", "refactor", "security", "lint", "type"], None)
         large_change = self._like_commits(["split", "extract", "monolith", "decompose", "simplify"], 100)
         todo = self._like_commits(["todo", "stub", "placeholder", "not implemented"], 100)
         by_month: Counter[str] = Counter()
@@ -284,7 +276,7 @@ class AnalysisRunner:
         improvements = self._derive_improvements(quality, large_change, todo, hotspots)
         return {
             "analysis_metadata": {"timestamp": datetime.now().isoformat(), "analyst": "Automated Source Code Archaeologist", "project": self.project_name, "commit_count": self._commit_count()},
-            "quality_trajectory": {"assessment": "IMPROVING" if quality else "UNKNOWN", "evidence_count": len(quality), "by_month": dict(sorted(by_month.items()))},
+            "quality_trajectory": {"assessment": "UNVERIFIED keyword activity; no quality direction established", "evidence_count": len(quality), "by_month": dict(sorted(by_month.items()))},
             "architecture_drift": {"large_change_signals": large_change[:10], "todo_or_stub_signals": todo[:10]},
             "hotspots": hotspots,
             "improvements": improvements,
@@ -307,7 +299,7 @@ class AnalysisRunner:
             top_msg = str(flapping[0].get("message", ""))[:60]
             items.append((
                 100,
-                f"Fix recurring issue: {top_msg}",
+                f"Investigate repeated message (may be merge/cherry-pick duplication): {top_msg}",
                 "M", "HIGH",
             ))
 
@@ -315,7 +307,7 @@ class AnalysisRunner:
         if todo:
             items.append((
                 90 if len(todo) >= 5 else 70,
-                f"Resolve {len(todo)} stub or placeholder commit(s)",
+                f"Check whether {len(todo)} historical stub/placeholder mentions remain unresolved",
                 "S", "HIGH" if len(todo) >= 5 else "MEDIUM",
             ))
 
@@ -323,7 +315,7 @@ class AnalysisRunner:
         if large_change:
             items.append((
                 60,
-                f"Continue decomposition — {len(large_change)} large-change signal(s) detected",
+                f"Review {len(large_change)} historical decomposition signals before proposing more splits",
                 "L", "MEDIUM",
             ))
 
@@ -345,11 +337,11 @@ class AnalysisRunner:
 
         # No issues found: project is healthy
         if not items:
-            items.append((10, "No critical remediation items — maintain current trajectory", "S", "LOW"))
+            items.append((10, "No keyword-derived candidates; source review still required", "S", "LOW"))
 
         items.sort(key=lambda x: x[0], reverse=True)
         return [
-            {"rank": i + 1, "title": title, "effort": effort, "impact": impact}
+            {"rank": i + 1, "title": title, "effort": effort, "impact": impact, "status": "UNVERIFIED investigation candidate", "evidence": (todo[:3] if "placeholder" in title else large_change[:3] if "decomposition" in title else hotspots[:3] if "repeated" in title else quality[:3])}
             for i, (_, title, effort, impact) in enumerate(items)
         ]
 
@@ -406,6 +398,7 @@ class AnalysisRunner:
             try:
                 output_path = analysis_dir / f"analysis-{vector_name}.json"
                 result = runner_func()
+                result["methodology"] = {"basis": "commit-message heuristics", "source_inspection": False, "causal_inference": False, "limitations": "Requires source/PR validation. Missing keyword evidence does not establish absence. Repeated commits across refs are not necessarily recurring defects."}
                 atomic_write(output_path, json.dumps(result, indent=2, ensure_ascii=False) + "\n")
                 results[vector_name] = str(output_path)
                 print(f"  [analysis] {vector_name}: {output_path}")

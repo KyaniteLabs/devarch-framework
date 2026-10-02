@@ -31,24 +31,29 @@ Run stages individually for granular control:
 Use the Python CLI for automated execution:
 
 ```bash
-cd /path/to/devarch-framework
-python archaeology/cli.py setup
-python archaeology/cli.py mine
-python archaeology/cli.py build
-python archaeology/cli.py detect
-python archaeology/cli.py analyze
-python archaeology/cli.py visualize
-python archaeology/cli.py report
-python archaeology/cli.py audit
+# Install the released distribution in an isolated environment first.
+# Run from an analysis workspace, not from the repository being examined.
+devarch --version
+devarch init example --repo-url https://github.com/OWNER/REPO
+devarch mine /path/to/repo -p example
+devarch build-db example
+devarch signals example
+# Review signal thresholds and evidence before analysis.
+devarch analyze example
+# Review keyword candidates against commit/source evidence before reporting.
+devarch visualize example
+devarch export-report example
+devarch export-report example --format html
+devarch audit example
 ```
 
 ### Keyword Triggers
 
 Use these keywords with Claude Code:
 
-- `setup` -- Initialize new project
+- `init <project>` -- Initialize new project
 - `status` -- Show current stage and progress
-- `mine <repo>` -- Extract git data
+- `mine <repo> -p <project>` -- Extract local Git data
 - `audit` -- Run validation checks
 - `add-supplement <type>` -- Add external data source
 
@@ -82,7 +87,7 @@ Best for:
 Process:
 
 - Run CLI commands sequentially
-- Outputs go to stage output/ folders
+- CLI outputs go to `projects/<project>/data` and `projects/<project>/deliverables`; stage output folders belong to the manual workflow
 - Checkpoints still require manual review
 - Audit validates all outputs
 
@@ -116,7 +121,7 @@ Supported data types:
 
 ## Outputs
 
-Final outputs in stages/07-report/output/:
+The installed CLI writes final outputs under `projects/<project>/deliverables/`. The manual workflow uses `stages/07-report/output/`:
 
 - ARCHAEOLOGY-REPORT.md -- Markdown report
 - ARCHAEOLOGY-REPORT.html -- HTML with visualizations
@@ -167,3 +172,7 @@ This skill follows ICM conventions:
 - Layer 2: Stage CONTEXT.md files specify contracts
 - Layer 3: references/ provide specifications
 - Layer 4: output/ folders contain results
+
+## Evidence boundaries
+
+Mining covers all locally available refs plus HEAD, refuses shallow history, and does not fetch remotes. Establish authorized remote/ref coverage separately before claiming an entire available history. `data/coverage.json` records HEAD, refs, roots, counts and artifact hashes. Audit reconciles extracted records and measured metrics; it is not a cryptographic attestation of repository provenance. The automated vectors use commit-message heuristics, not source-level reasoning. Mark architecture rationales as explicit or inferred and cite commit/PR/source evidence. Never treat keyword absence as proof a capability is missing. Do not ingest personal sessions or supplementary data without task relevance and authorization.

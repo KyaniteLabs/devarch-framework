@@ -17,6 +17,10 @@ DevArch treats your git history as structured data. It extracts commits into a q
 
 > **Just want a quick learning diagnostic?** [Dev Learning Archaeologist](https://github.com/KyaniteLabs/dev-learning-archaeologist) is a zero-setup ICM folder — drop it in any project, run through Claude Code, no install required.
 
+## Evidence integrity (0.4.0)
+
+Mining covers all **locally available refs**, records coverage and rejects shallow history. Fetch the authorized branches/tags/PR refs before mining when remote completeness matters. Automated vectors are keyword-based investigation leads, not verified source conclusions, productivity measurements or causal explanations. The default visualization contains measured daily activity only. See [0.4.0 release notes](docs/RELEASE_0.4.0.md).
+
 ## What It Does
 
 DevArch transforms git history into structured insights through a full-featured CLI with 20+ commands. The framework supports:

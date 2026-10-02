@@ -145,34 +145,28 @@ def test_validate_exits_when_html_missing(tmp_path, monkeypatch):
 
 # ── visualize ─────────────────────────────────────────────────────────────────
 
-def test_visualize_exits_when_template_missing(tmp_path, monkeypatch):
+def test_visualize_exits_when_measured_data_missing(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
     _make_project(tmp_path, "viz-proj")
     runner = CliRunner()
     result = runner.invoke(main, ["visualize", "viz-proj"])
     assert result.exit_code != 0
-    assert "Template not found" in result.output
+    assert "No measured visualization data" in result.output
 
 
 def test_visualize_generates_html_with_template(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
     _make_project(tmp_path, "viz-proj")
 
-    # Create a minimal template in the expected relative path
-    viz_dir = tmp_path / "archaeology" / "visualization"
-    viz_dir.mkdir(parents=True)
-    template = viz_dir / "template.html"
-    template.write_text(
-        "<html><head></head><body>{{PROJECT_NAME}}</body></html>",
-        encoding="utf-8",
-    )
+    data = {"total_commits": 1, "active_days": 1, "daily_commits": {"2026-01-01": 1}}
+    (tmp_path / "projects" / "viz-proj" / "deliverables" / "data.json").write_text(json.dumps(data))
 
     runner = CliRunner()
     result = runner.invoke(main, ["visualize", "viz-proj"])
     assert result.exit_code == 0
     output_html = tmp_path / "projects" / "viz-proj" / "deliverables" / "visuals" / "archaeology.html"
     assert output_html.exists()
-    assert "VIZ-PROJ" in output_html.read_text()
+    assert "viz-proj" in output_html.read_text()
 
 
 # ── ingest-pipeline ───────────────────────────────────────────────────────────

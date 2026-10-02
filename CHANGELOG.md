@@ -1,3 +1,7 @@
+# 0.4.0 — Evidence integrity
+
+Fix full-history mining for bare repositories/worktrees, reject shallow coverage, bind extraction artifacts, reconcile CSV/SQLite metrics, and generate portable measured visualizations. Replace unsupported agent/ML/quality assertions with explicit uncertainty. See [release notes](docs/RELEASE_0.4.0.md) for output compatibility and validation.
+
 # Changelog
 
 All notable changes to DevArch Framework will be documented in this file.
