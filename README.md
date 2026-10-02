@@ -4,7 +4,7 @@
 
 [![PyPI version](https://img.shields.io/pypi/v/devarch-framework.svg)](https://pypi.org/project/devarch-framework/)
 [![Python](https://img.shields.io/pypi/pyversions/devarch-framework.svg)](https://pypi.org/project/devarch-framework/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
 [![GitHub stars](https://img.shields.io/github/stars/KyaniteLabs/devarch-framework.svg?style=social)](https://github.com/KyaniteLabs/devarch-framework)
 
 **Git repository archaeology framework.** Mine commit history, detect development signals, run 6 analysis vectors, and generate engineering narrative reports — from any git repository, fully local, no external services.
@@ -133,7 +133,7 @@ devarch audit my-project --fail-on MEDIUM
 
 ### Analysis
 - `devarch analyze <project> [--vector] [--prompts]` -- Run analysis vectors
-- `devarch cascade <project> [--dry-run] [--skip-mine]` -- Cascade era labels across repos
+- Legacy `cascade`, `opportunity`, `dashboard` and `publish-static` commands are disabled pending safety/evidence redesign.
 
 ### Visualization & Reporting
 - `devarch visualize <project>` -- Generate HTML visualization
@@ -302,7 +302,7 @@ _config/              -- Developer profile templates
 
 ## License
 
-MIT License -- See LICENSE file for details.
+Apache-2.0 — see the existing LICENSE file. Metadata was corrected; the repository has not been relicensed.
 
 ## Support
 
@@ -411,3 +411,9 @@ Issues and PRs welcome on the canonical remote. Keep public docs free of secrets
 See [LICENSE](LICENSE) in this repository (or package metadata if license is package-only).
 
 <!-- s-plus-geo:end -->
+
+### 0.4.1 readiness candidate (unreleased)
+
+The supported measured-history path is `init → mine → build-db → signals → analyze → visualize → validate → export-report → audit`. Analysis and reports bind to exact local input hashes. After changing history or configuration, rerun the affected stages; stale outputs fail audit/export. Bindings detect drift, not malicious coordinated rewriting or remote authenticity. The validator checks the generated history document and binding; it is not a general browser, accessibility or HTML conformance audit.
+
+Legacy network dashboard/static publishing, cascade and opportunity profiling are explicitly disabled before mutation. Open reviewed local HTML directly. Existing scripts depending on these commands receive a nonzero error; there is no unsafe override. No personal/medical profile inference is supported.

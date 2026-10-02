@@ -9,11 +9,10 @@ from pathlib import Path
 from typing import Any
 
 from archaeology.visualization.design_system import (
-    head_bundle,
-    body_end_bundle,
     THEME_SWITCHER_HTML,
+    body_end_bundle,
+    head_bundle,
 )
-
 
 ANALYSIS_FILES = [
     "analysis-sdlc-gap-finder.json",
@@ -44,10 +43,15 @@ def _fmt_count(value: Any) -> str:
     return str(value) if value is not None else "unknown"
 
 
-def export_markdown_report(project_name: str, project_root: str | Path, output_path: str | Path | None = None) -> Path:
+def export_markdown_report(
+    project_name: str, project_root: str | Path, output_path: str | Path | None = None
+) -> Path:
     """Export a concise Markdown report from canonical metrics + analysis JSON."""
     project_root = Path(project_root)
     deliverables = project_root / "deliverables"
+    from .provenance import verify_analyses
+
+    verify_analyses(project_root, require=True)
     analysis_dir = deliverables / "analysis"
     data_dir = project_root / "data"
     project = _load_json(project_root / "project.json") or {}
@@ -72,7 +76,9 @@ def export_markdown_report(project_name: str, project_root: str | Path, output_p
         f"This report summarizes the `{project_name}` development archaeology from canonical project metrics, era data, and automated analysis vectors.\n\n"
     )
 
-    out.append("Automated vectors are commit-keyword investigation leads, not verified source findings, causal explanations, session measurements or implementation-quality scores. Missing evidence is not absence.\n\n")
+    out.append(
+        "Automated vectors are commit-keyword investigation leads, not verified source findings, causal explanations, session measurements or implementation-quality scores. Missing evidence is not absence.\n\n"
+    )
     out.append("## Canonical Metrics\n\n")
     metric_rows = [
         ("Total commits", canonical.get("total_commits", eras.get("total_commits"))),
@@ -89,7 +95,11 @@ def export_markdown_report(project_name: str, project_root: str | Path, output_p
     if era_list:
         out.append("## Development Eras\n\n")
         for era in era_list:
-            out.append(_bullet(f"**Era {era.get('id')}: {era.get('name')}** — {era.get('dates', 'unknown dates')}; {era.get('commits', 'unknown')} commits. {era.get('description') or era.get('narrative_arc') or ''}"))
+            out.append(
+                _bullet(
+                    f"**Era {era.get('id')}: {era.get('name')}** — {era.get('dates', 'unknown dates')}; {era.get('commits', 'unknown')} commits. {era.get('description') or era.get('narrative_arc') or ''}"
+                )
+            )
         out.append("\n")
 
     sdlc = analyses.get("sdlc-gap-finder") or {}
@@ -97,7 +107,11 @@ def export_markdown_report(project_name: str, project_root: str | Path, output_p
     if gaps:
         out.append("## SDLC / Process Gaps\n\n")
         for gap in gaps[:10]:
-            out.append(_bullet(f"**{gap.get('practice')}** — {gap.get('status')} ({gap.get('severity')}). {gap.get('recommendation')}"))
+            out.append(
+                _bullet(
+                    f"**{gap.get('practice')}** — {gap.get('status')} ({gap.get('severity')}). {gap.get('recommendation')}"
+                )
+            )
         out.append("\n")
 
     ml = analyses.get("ml-pattern-mapper") or {}
@@ -105,7 +119,11 @@ def export_markdown_report(project_name: str, project_root: str | Path, output_p
     if mappings:
         out.append("## Formal ML / Architecture Patterns\n\n")
         for mapping in mappings[:10]:
-            out.append(_bullet(f"**{mapping.get('intuitive_name')}** → {mapping.get('formal_term')} (confidence: {mapping.get('confidence')})"))
+            out.append(
+                _bullet(
+                    f"**{mapping.get('intuitive_name')}** → {mapping.get('formal_term')} (confidence: {mapping.get('confidence')})"
+                )
+            )
         out.append("\n")
 
     formal = analyses.get("formal-terms-mapper") or {}
@@ -113,7 +131,11 @@ def export_markdown_report(project_name: str, project_root: str | Path, output_p
     if terms:
         out.append("## Vocabulary Translation\n\n")
         for term in terms[:10]:
-            out.append(_bullet(f"**{term.get('code_name')}** → {term.get('formal_term')} ({term.get('similarity_score')})"))
+            out.append(
+                _bullet(
+                    f"**{term.get('code_name')}** → {term.get('formal_term')} ({term.get('similarity_score')})"
+                )
+            )
         out.append("\n")
 
     source = analyses.get("source-archaeologist") or {}
@@ -121,13 +143,19 @@ def export_markdown_report(project_name: str, project_root: str | Path, output_p
     if improvements:
         out.append("## Remediation Priorities\n\n")
         for item in improvements:
-            out.append(_bullet(f"P{item.get('rank')}: **{item.get('title')}** — effort {item.get('effort')}, impact {item.get('impact')}"))
+            out.append(
+                _bullet(
+                    f"P{item.get('rank')}: **{item.get('title')}** — effort {item.get('effort')}, impact {item.get('impact')}"
+                )
+            )
         out.append("\n")
 
     youtube = analyses.get("youtube-correlator") or {}
     yt_summary = youtube.get("summary") or {}
     out.append("## Behavioral / External Data\n\n")
-    out.append(_bullet(f"YouTube/behavioral data available: {bool(yt_summary.get('data_available'))}"))
+    out.append(
+        _bullet(f"YouTube/behavioral data available: {bool(yt_summary.get('data_available'))}")
+    )
     out.append(_bullet(f"Correlations found: {_fmt_count(yt_summary.get('correlation_count'))}"))
     out.append(_bullet(f"Creator count: {_fmt_count(yt_summary.get('creator_count'))}"))
     out.append("\n")
@@ -142,6 +170,9 @@ def export_markdown_report(project_name: str, project_root: str | Path, output_p
     output = Path(output_path)
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text("".join(out), encoding="utf-8")
+    from .provenance import bind_artifact
+
+    bind_artifact(project_root, output, include_analysis=True)
     return output
 
 
@@ -159,9 +190,10 @@ def _markdown_to_html(markdown: str, title: str) -> str:
     def render_inline(text: str) -> str:
         """Convert **bold** and `code` inline markup to HTML."""
         import re
+
         text = html.escape(text)
-        text = re.sub(r'\*\*(.+?)\*\*', r'<strong>\1</strong>', text)
-        text = re.sub(r'`(.+?)`', r'<code>\1</code>', text)
+        text = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", text)
+        text = re.sub(r"`(.+?)`", r"<code>\1</code>", text)
         return text
 
     for raw_line in markdown.splitlines():
@@ -342,7 +374,9 @@ def _markdown_to_html(markdown: str, title: str) -> str:
 """
 
 
-def export_html_report(project_name: str, project_root: str | Path, output_path: str | Path | None = None) -> Path:
+def export_html_report(
+    project_name: str, project_root: str | Path, output_path: str | Path | None = None
+) -> Path:
     """Export a standalone HTML report from the Markdown report content."""
     project_root = Path(project_root)
     deliverables = project_root / "deliverables"
@@ -355,10 +389,18 @@ def export_html_report(project_name: str, project_root: str | Path, output_path:
     output = Path(output_path)
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(_markdown_to_html(markdown, f"{title} Archaeology Report"), encoding="utf-8")
+    from .provenance import bind_artifact
+
+    bind_artifact(project_root, output, include_analysis=True)
     return output
 
 
-def export_report(project_name: str, project_root: str | Path, output_path: str | Path | None = None, fmt: str = "markdown") -> Path:
+def export_report(
+    project_name: str,
+    project_root: str | Path,
+    output_path: str | Path | None = None,
+    fmt: str = "markdown",
+) -> Path:
     """Export a report in markdown or html format."""
     if fmt in {"markdown", "md"}:
         return export_markdown_report(project_name, project_root, output_path=output_path)
@@ -367,7 +409,12 @@ def export_report(project_name: str, project_root: str | Path, output_path: str 
     raise ValueError(f"Unsupported report format: {fmt}")
 
 
-def export_public_case_study(root: str | Path = ".", output_dir: str | Path = "public-case-study", project_name: str = "demo-archaeology", force: bool = True) -> Path:
+def export_public_case_study(
+    root: str | Path = ".",
+    output_dir: str | Path = "public-case-study",
+    project_name: str = "demo-archaeology",
+    force: bool = True,
+) -> Path:
     """Generate a sanitized public case-study showroom from invented demo data."""
     from .analysis_runner import run_analysis_vectors
     from .db.builder import build_db
@@ -387,10 +434,15 @@ def export_public_case_study(root: str | Path = ".", output_dir: str | Path = "p
     output.mkdir(parents=True, exist_ok=True)
     data_out = output / "data"
     data_out.mkdir(parents=True, exist_ok=True)
-    (output / "ARCHAEOLOGY-REPORT.md").write_text(md_report.read_text(encoding="utf-8"), encoding="utf-8")
+    (output / "ARCHAEOLOGY-REPORT.md").write_text(
+        md_report.read_text(encoding="utf-8"), encoding="utf-8"
+    )
     (output / "index.html").write_text(html_report.read_text(encoding="utf-8"), encoding="utf-8")
     for src, dst in [
-        (work_project / "deliverables" / "canonical-metrics.json", data_out / "canonical-metrics.json"),
+        (
+            work_project / "deliverables" / "canonical-metrics.json",
+            data_out / "canonical-metrics.json",
+        ),
         (work_project / "data" / "commit-eras.json", data_out / "commit-eras.json"),
         (work_project / "data" / "github-commits.csv", data_out / "github-commits.csv"),
     ]:

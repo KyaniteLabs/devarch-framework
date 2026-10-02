@@ -6,7 +6,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-
 _DEFAULT_OWNER = os.environ.get("ARCHAEOLOGY_GITHUB_OWNER", "")
 
 
@@ -38,7 +37,7 @@ def _fetch_all_contributors(owner, repo_name):
     while True:
         contrib_raw = _gh_api(
             f"repos/{owner}/{repo_name}/contributors?per_page={per_page}&page={page}",
-            ".[] | .login + \":\" + (.contributions|tostring)"
+            '.[] | .login + ":" + (.contributions|tostring)',
         )
         if not contrib_raw:
             break
@@ -76,8 +75,15 @@ def fetch_all_repos(owner=_DEFAULT_OWNER, limit=None):
     """
     # Use a high limit to get all repos (gh repo list handles pagination internally)
     repo_limit = limit if limit else 10000
-    raw = _gh("repo", "list", owner, "--limit", str(repo_limit),
-              "--json", "name,isFork,primaryLanguage,createdAt,updatedAt,description,diskUsage")
+    raw = _gh(
+        "repo",
+        "list",
+        owner,
+        "--limit",
+        str(repo_limit),
+        "--json",
+        "name,isFork,primaryLanguage,createdAt,updatedAt,description,diskUsage",
+    )
     if not raw:
         print("Failed to fetch repo list from GitHub", file=sys.stderr)
         return []
@@ -96,18 +102,19 @@ def fetch_all_repos(owner=_DEFAULT_OWNER, limit=None):
 
         # Skip forks (awesome-mcp-servers, apex-vault etc)
         if is_fork:
-            print(f"  [{i+1}/{total}] {name}... SKIP (fork)", flush=True)
+            print(f"  [{i + 1}/{total}] {name}... SKIP (fork)", flush=True)
             continue
 
-        print(f"  [{i+1}/{total}] {name}...", end=" ", flush=True)
+        print(f"  [{i + 1}/{total}] {name}...", end=" ", flush=True)
 
         # Get contributors with pagination
         authors = _fetch_all_contributors(owner, name)
         total_commits = sum(authors.values())
 
         # Get languages
-        lang_raw = _gh_api(f"repos/{owner}/{name}/languages",
-                           "to_entries | .[] | .key + \":\" + (.value|tostring)")
+        lang_raw = _gh_api(
+            f"repos/{owner}/{name}/languages", 'to_entries | .[] | .key + ":" + (.value|tostring)'
+        )
         languages = {}
         if lang_raw:
             for line in lang_raw.split("\n"):
@@ -126,17 +133,19 @@ def fetch_all_repos(owner=_DEFAULT_OWNER, limit=None):
         lang_obj = repo.get("primaryLanguage")
         lang_name = lang_obj.get("name") if lang_obj else None
 
-        results.append({
-            "name": name,
-            "language": lang_name,
-            "created": repo.get("createdAt", "")[:10],
-            "updated": repo.get("updatedAt", "")[:10],
-            "description": repo.get("description", ""),
-            "size_kb": repo.get("diskUsage", 0),
-            "total_commits": total_commits,
-            "authors": authors,
-            "languages": languages,
-        })
+        results.append(
+            {
+                "name": name,
+                "language": lang_name,
+                "created": repo.get("createdAt", "")[:10],
+                "updated": repo.get("updatedAt", "")[:10],
+                "description": repo.get("description", ""),
+                "size_kb": repo.get("diskUsage", 0),
+                "total_commits": total_commits,
+                "authors": authors,
+                "languages": languages,
+            }
+        )
         print(f"{total_commits} commits, {len(authors)} authors", flush=True)
 
     return results

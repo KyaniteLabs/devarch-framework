@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Fill missing content/video files for all 7 KyaniteLabs projects."""
+
 import json
 from pathlib import Path
 
@@ -39,11 +40,19 @@ for name in PROJECTS:
         if not isinstance(agents_detected, list):
             agents_detected = ["Claude Code"]
 
-        agents_list = "\n".join(f"- **{a}**: Evidence in commit messages and code patterns" for a in agents_detected)
-        era_lines = "\n".join(f"- **{e.get('name', 'Era ' + str(e['id']))}**: {e.get('commits', '?')} commits" for e in eras)
-        velocity = round(total_commits / max(int(active_days) if str(active_days).isdigit() else 1, 1), 1)
+        agents_list = "\n".join(
+            f"- **{a}**: Evidence in commit messages and code patterns" for a in agents_detected
+        )
+        era_lines = "\n".join(
+            f"- **{e.get('name', 'Era ' + str(e['id']))}**: {e.get('commits', '?')} commits"
+            for e in eras
+        )
+        velocity = round(
+            total_commits / max(int(active_days) if str(active_days).isdigit() else 1, 1), 1
+        )
 
-        target.write_text(f"""# AI Collaboration Analysis — {name}
+        target.write_text(
+            f"""# AI Collaboration Analysis — {name}
 
 ## Overview
 This analysis examines the role of AI agents in the development of {name}, based on {total_commits} commits across {era_count} eras.
@@ -67,7 +76,9 @@ The commit history shows consistent patterns of AI-assisted development, with st
 1. Maintain structured commit messages for better agent traceability
 2. Document agent-specific decisions in commit bodies
 3. Use conventional commits consistently
-""", encoding="utf-8")
+""",
+            encoding="utf-8",
+        )
         created += 1
 
     # development-rhythm-analysis.md
@@ -81,7 +92,9 @@ The commit history shows consistent patterns of AI-assisted development, with st
         peak_commits = daily.get(peak_day, 0)
         avg_commits = round(sum(daily.values()) / max(len(daily), 1), 1)
 
-        daily_table = "\n".join(f"| {d} | {c} | {'█' * min(c, 40)} |" for d, c in sorted(daily.items()))
+        daily_table = "\n".join(
+            f"| {d} | {c} | {'█' * min(c, 40)} |" for d, c in sorted(daily.items())
+        )
         intensity = "High" if avg_commits > 10 else "Medium" if avg_commits > 5 else "Low"
         consistency = "Steady" if str(span_days) == str(active_days) else "Bursty"
         era_transitions = "\n".join(
@@ -89,7 +102,8 @@ The commit history shows consistent patterns of AI-assisted development, with st
             for e in eras
         )
 
-        target.write_text(f"""# Development Rhythm Analysis — {name}
+        target.write_text(
+            f"""# Development Rhythm Analysis — {name}
 
 ## Overview
 Analysis of work patterns, velocity, and development rhythm across {total_commits} commits.
@@ -113,7 +127,9 @@ Analysis of work patterns, velocity, and development rhythm across {total_commit
 
 ## Era Transitions
 {era_transitions}
-""", encoding="utf-8")
+""",
+            encoding="utf-8",
+        )
         created += 1
 
     # project-narrative-{safe_name}.md
@@ -125,15 +141,27 @@ Analysis of work patterns, velocity, and development rhythm across {total_commit
             events = e.get("key_events", [])
             era_name = e.get("name", "Era " + str(e["id"]))
             events_parts.append(f"### {era_name} ({e.get('dates', '')})")
-            events_parts.append(f"{e.get('commits', '?')} commits across {e.get('active_days', '?')} active days.")
+            events_parts.append(
+                f"{e.get('commits', '?')} commits across {e.get('active_days', '?')} active days."
+            )
             for evt in events[:5]:
                 events_parts.append(f"- {evt}")
         events_text = "\n".join(events_parts)
-        contributor_lines = "\n".join(f"- **{c.get('name', '?')}**: {c.get('commits', '?')} commits ({c.get('percentage', '?')}%)" for c in contributors)
-        pattern = "concentrated" if str(active_days).isdigit() and str(span_days).isdigit() and int(active_days) < int(span_days) // 2 else "sustained"
+        contributor_lines = "\n".join(
+            f"- **{c.get('name', '?')}**: {c.get('commits', '?')} commits ({c.get('percentage', '?')}%)"
+            for c in contributors
+        )
+        pattern = (
+            "concentrated"
+            if str(active_days).isdigit()
+            and str(span_days).isdigit()
+            and int(active_days) < int(span_days) // 2
+            else "sustained"
+        )
         vel_label = "high" if isinstance(total_commits, int) and total_commits > 100 else "moderate"
 
-        target.write_text(f"""# Project Narrative — {name}
+        target.write_text(
+            f"""# Project Narrative — {name}
 
 ## The Story
 This is the narrative of {name}, told through {total_commits} commits across {era_count} development eras.
@@ -149,16 +177,22 @@ This is the narrative of {name}, told through {total_commits} commits across {er
 
 ## Technical Character
 Commit type distribution: {json.dumps(commit_types)}
-""", encoding="utf-8")
+""",
+            encoding="utf-8",
+        )
         created += 1
 
     # technical-decisions-log.md
     target = content_dir / "technical-decisions-log.md"
     if not target.exists():
-        type_table = "\n".join(
-            f"| {t} | {c} | {round(c / total_commits * 100, 1)}% |"
-            for t, c in sorted(commit_types.items(), key=lambda x: -x[1])
-        ) if isinstance(total_commits, int) else ""
+        type_table = (
+            "\n".join(
+                f"| {t} | {c} | {round(c / total_commits * 100, 1)}% |"
+                for t, c in sorted(commit_types.items(), key=lambda x: -x[1])
+            )
+            if isinstance(total_commits, int)
+            else ""
+        )
         era_decisions = []
         for e in eras:
             era_name = e.get("name", "Era " + str(e["id"]))
@@ -166,9 +200,12 @@ Commit type distribution: {json.dumps(commit_types)}
             era_decisions.append(f"### {era_name} ({e.get('dates', '')})\n{events}")
         era_text = "\n\n".join(era_decisions)
         top_type = max(commit_types, key=commit_types.get) if commit_types else "N/A"
-        velocity = round(total_commits / max(int(active_days) if str(active_days).isdigit() else 1, 1), 1)
+        velocity = round(
+            total_commits / max(int(active_days) if str(active_days).isdigit() else 1, 1), 1
+        )
 
-        target.write_text(f"""# Technical Decisions Log — {name}
+        target.write_text(
+            f"""# Technical Decisions Log — {name}
 
 ## Overview
 Key technical decisions visible in the commit history of {name} ({total_commits} commits, {era_count} eras).
@@ -185,7 +222,9 @@ Key technical decisions visible in the commit history of {name} ({total_commits}
 - Project spanned {span_days} days with {active_days} active days
 - Development velocity: {velocity} commits/day
 - Most common commit type: {top_type}
-""", encoding="utf-8")
+""",
+            encoding="utf-8",
+        )
         created += 1
 
     # video/video-script-outline.md
@@ -195,10 +234,13 @@ Key technical decisions visible in the commit history of {name} ({total_commits}
             f"- **{e.get('name', 'Era ' + str(e['id']))}** ({e.get('dates', '')}): {e.get('commits', '?')} commits"
             for e in eras
         )
-        velocity = round(total_commits / max(int(active_days) if str(active_days).isdigit() else 1, 1), 1)
+        velocity = round(
+            total_commits / max(int(active_days) if str(active_days).isdigit() else 1, 1), 1
+        )
         top_type = max(commit_types, key=commit_types.get) if commit_types else "N/A"
 
-        target.write_text(f"""# Video Script Outline — {name}
+        target.write_text(
+            f"""# Video Script Outline — {name}
 
 ## Hook (30 seconds)
 - Start with the number: {total_commits} commits in {span_days} days
@@ -207,7 +249,7 @@ Key technical decisions visible in the commit history of {name} ({total_commits}
 ## Section 1: The Project (60 seconds)
 - What is {name}?
 - {era_count} development eras over {span_days} days
-- Peak day: {metrics.get('peak_day', '?')} with {metrics.get('peak_day_commits', '?')} commits
+- Peak day: {metrics.get("peak_day", "?")} with {metrics.get("peak_day_commits", "?")} commits
 
 ## Section 2: The Eras (90 seconds)
 {era_bullets}
@@ -224,7 +266,9 @@ Key technical decisions visible in the commit history of {name} ({total_commits}
 ## Closing (30 seconds)
 - Summary stats
 - Call to action
-""", encoding="utf-8")
+""",
+            encoding="utf-8",
+        )
         created += 1
 
     print(f"  {name}: created {created} files")

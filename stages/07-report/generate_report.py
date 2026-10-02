@@ -2,8 +2,8 @@
 """Stage 07-Report: Generate Archaeology Reports"""
 
 import json
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 
 # Paths - using relative paths from script location
 STAGES_DIR = Path(__file__).resolve().parent.parent.parent
@@ -16,36 +16,38 @@ OUTPUT_HTML = Path(__file__).resolve().parent / "output" / "ARCHAEOLOGY-REPORT.h
 OUTPUT_MD.parent.mkdir(parents=True, exist_ok=True)
 OUTPUT_HTML.parent.mkdir(parents=True, exist_ok=True)
 
+
 def load_data():
     """Load all analysis data"""
-    with open(SIGNALS_PATH, 'r') as f:
+    with open(SIGNALS_PATH, "r") as f:
         signals = json.load(f)
 
     analyses = {}
-    for analysis_file in ANALYSIS_DIR.glob('analysis-*.json'):
-        with open(analysis_file, 'r') as f:
+    for analysis_file in ANALYSIS_DIR.glob("analysis-*.json"):
+        with open(analysis_file, "r") as f:
             analyses[analysis_file.stem] = json.load(f)
 
     return signals, analyses
+
 
 def generate_markdown_report(signals, analyses):
     """Generate comprehensive markdown report"""
 
     # Extract key metrics
-    total_commits = signals.get('total_commits', 0)
-    active_days = signals.get('active_days', 0)
-    span_days = signals.get('span_days', 0)
-    date_range = signals.get('date_range', '')
+    total_commits = signals.get("total_commits", 0)
+    active_days = signals.get("active_days", 0)
+    span_days = signals.get("span_days", 0)
+    date_range = signals.get("date_range", "")
 
-    daily_breakdown = signals.get('daily_breakdown', {})
-    peak_day = max(daily_breakdown.items(), key=lambda x: x[1]) if daily_breakdown else ('N/A', 0)
+    daily_breakdown = signals.get("daily_breakdown", {})
+    peak_day = max(daily_breakdown.items(), key=lambda x: x[1]) if daily_breakdown else ("N/A", 0)
 
-    signals_list = signals.get('signals', [])
-    signals_summary = signals.get('summary', {})
+    signals_list = signals.get("signals", [])
+    signals_summary = signals.get("summary", {})
 
     md = f"""# Archaeology Report: demo-project
 
-**Generated:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+**Generated:** {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
 
 ---
 
@@ -79,22 +81,22 @@ Achiote is a TypeScript culinary reverse engineering application that was develo
 
 ## Signal Detection Results
 
-### Detected Signals: {signals_summary.get('total_signals', 0)}
+### Detected Signals: {signals_summary.get("total_signals", 0)}
 
 """
 
     # Add signal breakdown by type
-    for signal_type, count in signals_summary.get('by_type', {}).items():
+    for signal_type, count in signals_summary.get("by_type", {}).items():
         md += f"- **{signal_type.replace('_', ' ').title()}:** {count} occurrences\n"
 
     md += "\n### Detailed Signals\n\n"
 
     # Add detailed signals (top 20)
     for i, signal in enumerate(signals_list[:20], 1):
-        signal_type = signal.get('type', 'unknown')
-        date = signal.get('date', 'N/A')
-        value = signal.get('value', 'N/A')
-        description = signal.get('metadata', {}).get('description', f'{signal_type}: {value}')
+        signal_type = signal.get("type", "unknown")
+        date = signal.get("date", "N/A")
+        value = signal.get("value", "N/A")
+        description = signal.get("metadata", {}).get("description", f"{signal_type}: {value}")
 
         md += f"{i}. **{signal_type.replace('_', ' ').title()}** ({date})\n"
         md += f"   - {description}\n\n"
@@ -102,16 +104,16 @@ Achiote is a TypeScript culinary reverse engineering application that was develo
     md += "---\n\n"
 
     # Add SDLC Analysis
-    sdlc_analysis = analyses.get('analysis-sdlc-gap-finder', {})
+    sdlc_analysis = analyses.get("analysis-sdlc-gap-finder", {})
     if sdlc_analysis:
         md += "## SDLC Assessment\n\n"
         md += f"**Total Findings:** {sdlc_analysis.get('summary', {}).get('total_findings', 0)}\n\n"
 
-        for finding in sdlc_analysis.get('findings', []):
-            finding_type = finding.get('type', 'Unknown')
-            description = finding.get('description', '')
-            confidence = finding.get('confidence', 'low').upper()
-            evidence = finding.get('evidence', [])
+        for finding in sdlc_analysis.get("findings", []):
+            finding_type = finding.get("type", "Unknown")
+            description = finding.get("description", "")
+            confidence = finding.get("confidence", "low").upper()
+            evidence = finding.get("evidence", [])
 
             md += f"### {finding_type}\n"
             md += f"**Description:** {description}\n\n"
@@ -126,15 +128,15 @@ Achiote is a TypeScript culinary reverse engineering application that was develo
         md += "---\n\n"
 
     # Add ML Pattern Analysis
-    ml_analysis = analyses.get('analysis-ml-pattern-mapper', {})
+    ml_analysis = analyses.get("analysis-ml-pattern-mapper", {})
     if ml_analysis:
         md += "## ML Pattern Analysis\n\n"
         md += f"**Total Findings:** {ml_analysis.get('summary', {}).get('total_findings', 0)}\n\n"
 
-        for finding in ml_analysis.get('findings', []):
-            finding_type = finding.get('type', 'Unknown')
-            description = finding.get('description', '')
-            confidence = finding.get('confidence', 'low').upper()
+        for finding in ml_analysis.get("findings", []):
+            finding_type = finding.get("type", "Unknown")
+            description = finding.get("description", "")
+            confidence = finding.get("confidence", "low").upper()
 
             md += f"### {finding_type}\n"
             md += f"**Description:** {description}\n\n"
@@ -143,15 +145,15 @@ Achiote is a TypeScript culinary reverse engineering application that was develo
         md += "---\n\n"
 
     # Add Source Archaeology
-    arch_analysis = analyses.get('analysis-source-archaeologist', {})
+    arch_analysis = analyses.get("analysis-source-archaeologist", {})
     if arch_analysis:
         md += "## Development Patterns & Quality\n\n"
         md += f"**Total Findings:** {arch_analysis.get('summary', {}).get('total_findings', 0)}\n\n"
 
-        for finding in arch_analysis.get('findings', []):
-            finding_type = finding.get('type', 'Unknown')
-            description = finding.get('description', '')
-            confidence = finding.get('confidence', 'low').upper()
+        for finding in arch_analysis.get("findings", []):
+            finding_type = finding.get("type", "Unknown")
+            description = finding.get("description", "")
+            confidence = finding.get("confidence", "low").upper()
 
             md += f"### {finding_type}\n"
             md += f"**Description:** {description}\n\n"
@@ -195,9 +197,10 @@ Achiote is a TypeScript culinary reverse engineering application that was develo
         md += f"| {day} | {count} |\n"
 
     md += "\n---\n\n"
-    md += f"*This report was automatically generated by the DevArch ICM Pipeline*\n"
+    md += "*This report was automatically generated by the DevArch ICM Pipeline*\n"
 
     return md
+
 
 def generate_html_report(md_content):
     """Convert markdown report to HTML"""
@@ -337,91 +340,95 @@ def generate_html_report(md_content):
 
     return html
 
+
 def convert_markdown_to_html(md):
     """Simple markdown to HTML conversion"""
 
     html = md
 
     # Headers
-    html = html.replace('### ', '<h3>').replace('\n', '</h3>\n', 1)
-    html = html.replace('## ', '<h2>').replace('\n', '</h2>\n', 1)
-    html = html.replace('# ', '<h1>').replace('\n', '</h1>\n', 1)
+    html = html.replace("### ", "<h3>").replace("\n", "</h3>\n", 1)
+    html = html.replace("## ", "<h2>").replace("\n", "</h2>\n", 1)
+    html = html.replace("# ", "<h1>").replace("\n", "</h1>\n", 1)
 
     # Bold
-    html = html.replace('**', '<strong>').replace('**', '</strong>')
+    html = html.replace("**", "<strong>").replace("**", "</strong>")
 
     # Line breaks
-    html = html.replace('\n\n', '</p><p>')
+    html = html.replace("\n\n", "</p><p>")
 
     # Lists (simplified)
-    lines = html.split('\n')
+    lines = html.split("\n")
     in_list = False
     result = []
 
     for line in lines:
-        if line.startswith('- '):
+        if line.startswith("- "):
             if not in_list:
-                result.append('<ul>')
+                result.append("<ul>")
                 in_list = True
-            result.append(f'<li>{{line[2:]}}</li>')
+            result.append("<li>{line[2:]}</li>")
         else:
             if in_list:
-                result.append('</ul>')
+                result.append("</ul>")
                 in_list = False
             result.append(line)
 
     if in_list:
-        result.append('</ul>')
+        result.append("</ul>")
 
-    html = '\n'.join(result)
+    html = "\n".join(result)
 
     # Tables (simplified)
-    if '|' in html:
-        lines = html.split('\n')
+    if "|" in html:
+        lines = html.split("\n")
         in_table = False
         table_result = []
 
         for line in lines:
-            if '|' in line and not line.strip().startswith('|---'):
+            if "|" in line and not line.strip().startswith("|---"):
                 if not in_table:
-                    table_result.append('<table>')
+                    table_result.append("<table>")
                     in_table = True
-                cells = [cell.strip() for cell in line.split('|')[1:-1]]
+                cells = [cell.strip() for cell in line.split("|")[1:-1]]
                 if cells:
-                    table_result.append('<tr>' + ''.join(f'<td>{{cell}}</td>' for cell in cells) + '</tr>')
+                    table_result.append(
+                        "<tr>" + "".join("<td>{cell}</td>" for cell in cells) + "</tr>"
+                    )
             else:
                 if in_table:
-                    table_result.append('</table>')
+                    table_result.append("</table>")
                     in_table = False
                 table_result.append(line)
 
         if in_table:
-            table_result.append('</table>')
+            table_result.append("</table>")
 
-        html = '\n'.join(table_result)
+        html = "\n".join(table_result)
 
     # Wrap in paragraphs
-    html = '<p>' + html + '</p>'
+    html = "<p>" + html + "</p>"
 
     # Clean up
-    html = html.replace('<p><h1>', '<h1>').replace('</h1></p>', '</h1>')
-    html = html.replace('<p><h2>', '<h2>').replace('</h2></p>', '</h2>')
-    html = html.replace('<p><h3>', '<h3>').replace('</h3></p>', '</h3>')
-    html = html.replace('<p><ul>', '<ul>').replace('</ul></p>', '</ul>')
-    html = html.replace('<p><table>', '<table>').replace('</table></p>', '</table>')
-    html = html.replace('<p><hr>', '<hr>').replace('</hr></p>', '<hr>')
-    html = html.replace('<p></p>', '')
+    html = html.replace("<p><h1>", "<h1>").replace("</h1></p>", "</h1>")
+    html = html.replace("<p><h2>", "<h2>").replace("</h2></p>", "</h2>")
+    html = html.replace("<p><h3>", "<h3>").replace("</h3></p>", "</h3>")
+    html = html.replace("<p><ul>", "<ul>").replace("</ul></p>", "</ul>")
+    html = html.replace("<p><table>", "<table>").replace("</table></p>", "</table>")
+    html = html.replace("<p><hr>", "<hr>").replace("</hr></p>", "<hr>")
+    html = html.replace("<p></p>", "")
 
     return html
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     print("Loading analysis data...")
     signals, analyses = load_data()
 
     print("Generating markdown report...")
     md_report = generate_markdown_report(signals, analyses)
 
-    with open(OUTPUT_MD, 'w') as f:
+    with open(OUTPUT_MD, "w") as f:
         f.write(md_report)
 
     print(f"  Markdown: {OUTPUT_MD}")
@@ -429,10 +436,10 @@ if __name__ == '__main__':
     print("Generating HTML report...")
     html_report = generate_html_report(md_report)
 
-    with open(OUTPUT_HTML, 'w') as f:
+    with open(OUTPUT_HTML, "w") as f:
         f.write(html_report)
 
     print(f"  HTML: {OUTPUT_HTML}")
 
     print("\n✓ Stage 07-Report completed")
-    print(f"  Reports generated successfully")
+    print("  Reports generated successfully")

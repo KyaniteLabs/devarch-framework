@@ -1,11 +1,12 @@
-from setuptools import setup, find_packages
 from pathlib import Path
+
+from setuptools import find_packages, setup
 
 README = (Path(__file__).parent / "README.md").read_text(encoding="utf-8")
 
 setup(
     name="devarch-framework",
-    version="0.4.0",
+    version="0.4.1",
     packages=find_packages(exclude=["tests*", "projects*", "analysis-vectors*"]),
     include_package_data=True,
     install_requires=[
@@ -14,7 +15,7 @@ setup(
         "datasette>=0.64.0",
     ],
     extras_require={
-        "dev": ["pytest>=8.0"],
+        "dev": ["pytest>=8.0", "ruff==0.16.10"],
         "mcp": ["mcp[cli]>=1.0,<2"],
     },
     entry_points={
@@ -36,17 +37,28 @@ setup(
     url="https://github.com/KyaniteLabs/devarch-framework",
     author="Simon Gonzalez De Cruz",
     author_email="simon@puenteworks.com",
-    license="MIT",
+    license="Apache-2.0",
     keywords=[
-        "git", "repository", "archaeology", "code-analysis", "static-analysis",
-        "commit-history", "software-forensics", "engineering-analytics", "cli",
-        "sdlc", "git-history", "codebase-review", "developer-tools", "mcp",
+        "git",
+        "repository",
+        "archaeology",
+        "code-analysis",
+        "static-analysis",
+        "commit-history",
+        "software-forensics",
+        "engineering-analytics",
+        "cli",
+        "sdlc",
+        "git-history",
+        "codebase-review",
+        "developer-tools",
+        "mcp",
     ],
     classifiers=[
         "Development Status :: 4 - Beta",
         "Intended Audience :: Developers",
         "Intended Audience :: Science/Research",
-        "License :: OSI Approved :: MIT License",
+        "License :: OSI Approved :: Apache Software License",
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",

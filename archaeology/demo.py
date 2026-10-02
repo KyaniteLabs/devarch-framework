@@ -6,7 +6,6 @@ import csv
 import json
 from pathlib import Path
 
-
 DEMO_PROJECT = "demo-archaeology"
 
 
@@ -15,7 +14,9 @@ def _write_json(path: Path, data: object) -> None:
     path.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
 
-def create_demo_project(root: str | Path = ".", project_name: str = DEMO_PROJECT, force: bool = False) -> Path:
+def create_demo_project(
+    root: str | Path = ".", project_name: str = DEMO_PROJECT, force: bool = False
+) -> Path:
     """Create a small sanitized demo project under projects/<project_name>.
 
     The demo uses invented commit/session data. It contains no raw private logs,
@@ -24,7 +25,9 @@ def create_demo_project(root: str | Path = ".", project_name: str = DEMO_PROJECT
     root = Path(root)
     project_root = root / "projects" / project_name
     if project_root.exists() and not force:
-        raise FileExistsError(f"Demo project already exists at {project_root}. Use force=True to overwrite.")
+        raise FileExistsError(
+            f"Demo project already exists at {project_root}. Use force=True to overwrite."
+        )
 
     data_dir = project_root / "data"
     deliverables_dir = project_root / "deliverables"
@@ -55,12 +58,27 @@ def create_demo_project(root: str | Path = ".", project_name: str = DEMO_PROJECT
     )
 
     commits = [
-        ["demo001", "2026-01-01 09:00:00 +0000", "docs: write initial product intent", "Demo Developer"],
+        [
+            "demo001",
+            "2026-01-01 09:00:00 +0000",
+            "docs: write initial product intent",
+            "Demo Developer",
+        ],
         ["demo002", "2026-01-01 11:00:00 +0000", "feat: scaffold prototype", "Agent"],
         ["demo003", "2026-01-02 15:30:00 +0000", "fix: wire prototype output", "Agent"],
         ["demo004", "2026-01-03 10:15:00 +0000", "test: add behavior checks", "Agent"],
-        ["demo005", "2026-01-05 13:00:00 +0000", "refactor: extract audit boundary", "Demo Developer"],
-        ["demo006", "2026-01-05 16:45:00 +0000", "docs: publish remediation notes", "Demo Developer"],
+        [
+            "demo005",
+            "2026-01-05 13:00:00 +0000",
+            "refactor: extract audit boundary",
+            "Demo Developer",
+        ],
+        [
+            "demo006",
+            "2026-01-05 16:45:00 +0000",
+            "docs: publish remediation notes",
+            "Demo Developer",
+        ],
     ]
     with (data_dir / "github-commits.csv").open("w", newline="", encoding="utf-8") as handle:
         writer = csv.writer(handle)
@@ -70,8 +88,16 @@ def create_demo_project(root: str | Path = ".", project_name: str = DEMO_PROJECT
     _write_json(
         data_dir / "human-messages.json",
         [
-            {"session_id": "demo-session-1", "timestamp": "2026-01-01T09:00:00Z", "messages": "We need a prototype that proves the core loop."},
-            {"session_id": "demo-session-2", "timestamp": "2026-01-03T10:00:00Z", "messages": "The audit should catch wiring gaps before launch."},
+            {
+                "session_id": "demo-session-1",
+                "timestamp": "2026-01-01T09:00:00Z",
+                "messages": "We need a prototype that proves the core loop.",
+            },
+            {
+                "session_id": "demo-session-2",
+                "timestamp": "2026-01-03T10:00:00Z",
+                "messages": "The audit should catch wiring gaps before launch.",
+            },
         ],
     )
 
@@ -82,9 +108,30 @@ def create_demo_project(root: str | Path = ".", project_name: str = DEMO_PROJECT
             "lifespan": "5 days (2026-01-01 to 2026-01-05)",
             "total_commits": 6,
             "eras": [
-                {"id": 1, "name": "Intent", "dates": "2026-01-01", "commits": 1, "description": "The project goal is written down.", "narrative_arc": "A clear intent appears before code."},
-                {"id": 2, "name": "Prototype", "dates": "2026-01-01 to 2026-01-02", "commits": 2, "description": "The prototype is scaffolded and wired.", "narrative_arc": "Implementation pressure exposes the first integration gap."},
-                {"id": 3, "name": "Hardening", "dates": "2026-01-03 to 2026-01-05", "commits": 3, "description": "Tests and audit boundaries are added.", "narrative_arc": "The project shifts from making claims to proving them."},
+                {
+                    "id": 1,
+                    "name": "Intent",
+                    "dates": "2026-01-01",
+                    "commits": 1,
+                    "description": "The project goal is written down.",
+                    "narrative_arc": "A clear intent appears before code.",
+                },
+                {
+                    "id": 2,
+                    "name": "Prototype",
+                    "dates": "2026-01-01 to 2026-01-02",
+                    "commits": 2,
+                    "description": "The prototype is scaffolded and wired.",
+                    "narrative_arc": "Implementation pressure exposes the first integration gap.",
+                },
+                {
+                    "id": 3,
+                    "name": "Hardening",
+                    "dates": "2026-01-03 to 2026-01-05",
+                    "commits": 3,
+                    "description": "Tests and audit boundaries are added.",
+                    "narrative_arc": "The project shifts from making claims to proving them.",
+                },
             ],
         },
     )

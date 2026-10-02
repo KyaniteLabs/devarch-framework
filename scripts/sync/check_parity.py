@@ -18,7 +18,7 @@ import ast
 import os
 import sys
 from pathlib import Path
-from typing import Dict, List, Set, Tuple
+from typing import Set, Tuple
 
 
 class ParityChecker:
@@ -41,15 +41,19 @@ class ParityChecker:
         commands_b = self._extract_click_commands(cli_b)
 
         # Filter out internal functions (starting with _)
-        commands_a = {c for c in commands_a if not c.startswith('_')}
-        commands_b = {c for c in commands_b if not c.startswith('_')}
+        commands_a = {c for c in commands_a if not c.startswith("_")}
+        commands_b = {c for c in commands_b if not c.startswith("_")}
 
         missing = commands_a - commands_b
         total = len(commands_a)
         present = total - len(missing)
 
         if missing:
-            return False, f"GAP ({present}/{total} in dev-arch, {len(commands_b)}/{total} in framework)", missing
+            return (
+                False,
+                f"GAP ({present}/{total} in dev-arch, {len(commands_b)}/{total} in framework)",
+                missing,
+            )
         return True, f"PARITY ({total}/{total})", set()
 
     def _extract_click_commands(self, cli_file: Path) -> Set[str]:
@@ -57,7 +61,7 @@ class ParityChecker:
         commands = set()
 
         try:
-            with open(cli_file, 'r') as f:
+            with open(cli_file, "r") as f:
                 tree = ast.parse(f.read())
 
             for node in ast.walk(tree):
@@ -66,15 +70,15 @@ class ParityChecker:
                     for decorator in node.decorator_list:
                         # Look for @main.command() or @click.command()
                         if isinstance(decorator, ast.Call):
-                            if hasattr(decorator.func, 'attr'):
-                                if decorator.func.attr == 'command':
+                            if hasattr(decorator.func, "attr"):
+                                if decorator.func.attr == "command":
                                     commands.add(node.name)
                             elif isinstance(decorator.func, ast.Name):
-                                if decorator.func.id == 'command':
+                                if decorator.func.id == "command":
                                     commands.add(node.name)
                         # Look for @main.command (without call)
                         elif isinstance(decorator, ast.Attribute):
-                            if decorator.attr == 'command':
+                            if decorator.attr == "command":
                                 commands.add(node.name)
 
         except Exception as e:
@@ -98,7 +102,11 @@ class ParityChecker:
         present = total - len(missing)
 
         if missing:
-            return False, f"GAP ({present}/{total} in dev-arch, {len(files_b)}/{total} in framework)", missing
+            return (
+                False,
+                f"GAP ({present}/{total} in dev-arch, {len(files_b)}/{total} in framework)",
+                missing,
+            )
         return True, f"PARITY ({total}/{total})", set()
 
     def check_python_modules(self) -> Tuple[bool, str, Set[str]]:
@@ -117,7 +125,11 @@ class ParityChecker:
         present = total - len(missing)
 
         if missing:
-            return False, f"GAP ({present}/{total} in dev-arch, {len(files_b)}/{total} in framework)", missing
+            return (
+                False,
+                f"GAP ({present}/{total} in dev-arch, {len(files_b)}/{total} in framework)",
+                missing,
+            )
         return True, f"PARITY ({total}/{total})", set()
 
     def _get_python_files(self, pkg_dir: Path) -> Set[str]:
@@ -144,7 +156,7 @@ class ParityChecker:
             "defaults.json",
             "project-schema.json",
             "profile.json",
-            "datasette-metadata.yaml"
+            "datasette-metadata.yaml",
         }
 
         files_a = {f.name for f in config_a.iterdir() if f.is_file()}
@@ -175,7 +187,11 @@ class ParityChecker:
         present = total - len(missing)
 
         if missing:
-            return False, f"GAP ({present}/{total} in dev-arch, {len(files_b)}/{total} in framework)", missing
+            return (
+                False,
+                f"GAP ({present}/{total} in dev-arch, {len(files_b)}/{total} in framework)",
+                missing,
+            )
         return True, f"PARITY ({total}/{total})", set()
 
     def check_templates(self) -> Tuple[bool, str, Set[str]]:
@@ -194,12 +210,16 @@ class ParityChecker:
         present = total - len(missing)
 
         if missing:
-            return False, f"GAP ({present}/{total} in dev-arch, {len(templates_b)}/{total} in framework)", missing
+            return (
+                False,
+                f"GAP ({present}/{total} in dev-arch, {len(templates_b)}/{total} in framework)",
+                missing,
+            )
         return True, f"PARITY ({total}/{total})", set()
 
     def run_all_checks(self) -> int:
         """Run all parity checks and return exit code."""
-        print(f"PARITY CHECK: DEV-ARCH vs devarch-framework")
+        print("PARITY CHECK: DEV-ARCH vs devarch-framework")
         print("═" * 55)
         print()
 
@@ -244,15 +264,9 @@ def main():
     parser = argparse.ArgumentParser(
         description="Check feature parity between dev-archaeology and devarch-framework"
     )
+    parser.add_argument("--dev-arch", default=os.getcwd(), help="Path to DEV-ARCH repository")
     parser.add_argument(
-        "--dev-arch",
-        default=os.getcwd(),
-        help="Path to DEV-ARCH repository"
-    )
-    parser.add_argument(
-        "--framework",
-        default=os.getcwd(),
-        help="Path to devarch-framework repository"
+        "--framework", default=os.getcwd(), help="Path to devarch-framework repository"
     )
 
     args = parser.parse_args()

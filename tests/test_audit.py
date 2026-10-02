@@ -118,7 +118,9 @@ def test_export_report_from_demo_analysis(tmp_path, monkeypatch):
     assert "## Remediation Priorities" in text
 
     custom = tmp_path / "case-study" / "index.html"
-    custom_export = runner.invoke(main, ["export-report", "demo", "--format", "html", "--output", str(custom)])
+    custom_export = runner.invoke(
+        main, ["export-report", "demo", "--format", "html", "--output", str(custom)]
+    )
     assert custom_export.exit_code == 0, custom_export.output
     assert custom.exists()
 
@@ -134,21 +136,37 @@ def test_local_pipeline_status_reads_latest_json(tmp_path):
     pipeline_dir = tmp_path / "pipeline"
     latest_dir = pipeline_dir / ".omc" / "logs" / "repo-pipeline"
     latest_dir.mkdir(parents=True)
-    (latest_dir / "latest.json").write_text(json.dumps({
-        "run_timestamp": "2026-01-01T00:00:00Z",
-        "summary": {"overall_health": "PARTIAL"},
-        "repos": [{
-            "name": "dev-archaeology",
-            "full_name": "Pastorsimon1798/dev-archaeology",
-            "health": "HEALTHY",
-            "verdict": "stable",
-            "issues": {"total": 0, "critical": 0, "high": 0, "medium": 0, "low": 0},
-            "open_prs": 1,
-            "open_issues": 0
-        }]
-    }))
+    (latest_dir / "latest.json").write_text(
+        json.dumps(
+            {
+                "run_timestamp": "2026-01-01T00:00:00Z",
+                "summary": {"overall_health": "PARTIAL"},
+                "repos": [
+                    {
+                        "name": "dev-archaeology",
+                        "full_name": "Pastorsimon1798/dev-archaeology",
+                        "health": "HEALTHY",
+                        "verdict": "stable",
+                        "issues": {"total": 0, "critical": 0, "high": 0, "medium": 0, "low": 0},
+                        "open_prs": 1,
+                        "open_issues": 0,
+                    }
+                ],
+            }
+        )
+    )
     runner = CliRunner()
-    result = runner.invoke(main, ["local-pipeline", "--pipeline-dir", str(pipeline_dir), "--repo", "dev-archaeology", "--fail-on-issues"])
+    result = runner.invoke(
+        main,
+        [
+            "local-pipeline",
+            "--pipeline-dir",
+            str(pipeline_dir),
+            "--repo",
+            "dev-archaeology",
+            "--fail-on-issues",
+        ],
+    )
     assert result.exit_code == 0, result.output
     assert "health: HEALTHY" in result.output
     assert "verdict: stable" in result.output
@@ -157,7 +175,7 @@ def test_local_pipeline_status_reads_latest_json(tmp_path):
 def test_public_case_study_command_exports_showroom(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
     runner = CliRunner()
-    result = runner.invoke(main, ["public-case-study", "--output", "showroom"] )
+    result = runner.invoke(main, ["public-case-study", "--output", "showroom"])
     assert result.exit_code == 0, result.output
     assert (tmp_path / "showroom" / "index.html").exists()
     assert (tmp_path / "showroom" / "ARCHAEOLOGY-REPORT.md").exists()

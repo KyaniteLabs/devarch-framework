@@ -1,3 +1,11 @@
+# 0.4.1 — Unreleased readiness candidate
+
+- Bind analysis, reports and visualizations to exact inputs; reject stale A-to-B runs.
+- Disable unsafe legacy dashboard/static publishing, cascade and opportunity profiling before side effects; remove the active Markdown viewer and wildcard API CORS.
+- Validate installed history HTML without a source-relative Node dependency.
+- Correct package/documentation metadata to the existing Apache-2.0 LICENSE; no relicensing.
+- Add installed-wheel checks to native Python3.12 CI and remove suppressed CI failures.
+
 # 0.4.0 — Evidence integrity
 
 Fix full-history mining for bare repositories/worktrees, reject shallow coverage, bind extraction artifacts, reconcile CSV/SQLite metrics, and generate portable measured visualizations. Replace unsupported agent/ML/quality assertions with explicit uncertainty. See [release notes](docs/RELEASE_0.4.0.md) for output compatibility and validation.

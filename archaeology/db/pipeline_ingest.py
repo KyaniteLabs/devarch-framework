@@ -33,11 +33,9 @@ Pipeline JSON format (expected keys):
 
 import json
 import sqlite3
-import sys
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
-
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS pipeline_runs (
@@ -128,7 +126,9 @@ def ingest_run(db_path: Path, run_json: dict, source_file: str = "") -> int:
     conn = sqlite3.connect(str(db_path), timeout=30)
     try:
         # Support both old (timestamp) and new (run_timestamp) field names
-        ts = run_json.get("run_timestamp") or run_json.get("timestamp", datetime.utcnow().isoformat())
+        ts = run_json.get("run_timestamp") or run_json.get(
+            "timestamp", datetime.utcnow().isoformat()
+        )
         # Map new status values to old format for backward compatibility
         raw_status = run_json.get("status", "unknown")
         status = _normalize_status(raw_status)
@@ -146,13 +146,25 @@ def ingest_run(db_path: Path, run_json: dict, source_file: str = "") -> int:
 
         for repo in run_json.get("repos", []):
             issues = repo.get("issues", [])
-            issues_count = len(issues) if isinstance(issues, list) else sum(issues.values()) if isinstance(issues, dict) else 0
+            issues_count = (
+                len(issues)
+                if isinstance(issues, list)
+                else sum(issues.values())
+                if isinstance(issues, dict)
+                else 0
+            )
             issues_json = json.dumps(issues) if isinstance(issues, (list, dict)) else "[]"
             fixes_raw = repo.get("fixes_applied", 0)
-            fixes_count = len(fixes_raw) if isinstance(fixes_raw, list) else fixes_raw if isinstance(fixes_raw, int) else 0
+            fixes_count = (
+                len(fixes_raw)
+                if isinstance(fixes_raw, list)
+                else fixes_raw
+                if isinstance(fixes_raw, int)
+                else 0
+            )
 
             # Extract repo name from multiple possible fields
-            repo_name = (repo.get("full_name") or repo.get("path") or repo.get("name", "unknown"))
+            repo_name = repo.get("full_name") or repo.get("path") or repo.get("name", "unknown")
 
             conn.execute(
                 "INSERT INTO pipeline_repo_results (run_id, repo_name, tier, status, issues_count, fixes_applied, issues_json) "
@@ -186,7 +198,9 @@ def ingest_directory(db_path: Path, logs_dir: Path, verbose: bool = False) -> di
     try:
         existing = {
             row[0]
-            for row in conn.execute("SELECT source_file FROM pipeline_runs WHERE source_file != ''").fetchall()
+            for row in conn.execute(
+                "SELECT source_file FROM pipeline_runs WHERE source_file != ''"
+            ).fetchall()
         }
     finally:
         conn.close()
@@ -224,7 +238,9 @@ def ingest_directory(db_path: Path, logs_dir: Path, verbose: bool = False) -> di
     return stats
 
 
-def get_pipeline_history(db_path: Path, repo_name: Optional[str] = None, limit: int = 50) -> list[dict]:
+def get_pipeline_history(
+    db_path: Path, repo_name: Optional[str] = None, limit: int = 50
+) -> list[dict]:
     """Query pipeline run history, optionally filtered by repo."""
     conn = sqlite3.connect(str(db_path), timeout=30)
     conn.row_factory = sqlite3.Row

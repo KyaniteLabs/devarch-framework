@@ -5,7 +5,6 @@ import sqlite3
 from pathlib import Path
 from typing import Optional
 
-
 # Allowed table names for FTS queries (whitelist validation)
 _ALLOWED_FTS_TABLES = {"commits", "sessions", "eras"}
 
@@ -16,7 +15,7 @@ def _validate_table_name(table: str) -> str:
     Only allows alphanumeric characters and underscores.
     Raises ValueError if invalid.
     """
-    if not re.match(r'^[a-zA-Z_][a-zA-Z0-9_]*$', table):
+    if not re.match(r"^[a-zA-Z_][a-zA-Z0-9_]*$", table):
         raise ValueError(f"Invalid table name: {table}")
     return table
 
@@ -27,7 +26,7 @@ def _validate_order_by(col: str) -> str:
     parts = col.split()
     if len(parts) > 2:
         raise ValueError(f"Invalid order_by: {col!r}")
-    if not re.match(r'^[a-zA-Z_][a-zA-Z0-9_]*$', parts[0]):
+    if not re.match(r"^[a-zA-Z_][a-zA-Z0-9_]*$", parts[0]):
         raise ValueError(f"Invalid column name in order_by: {parts[0]!r}")
     if len(parts) == 2 and parts[1].upper() not in ("ASC", "DESC"):
         raise ValueError(f"Invalid sort direction: {parts[1]!r}")
@@ -126,14 +125,15 @@ def get_fts_results(db_path: str, table: str, query_text: str, limit: int = 50) 
     """
     # Validate table name against whitelist to prevent SQL injection
     if table not in _ALLOWED_FTS_TABLES:
-        raise ValueError(f"Table '{table}' not allowed for FTS queries. Allowed: {sorted(_ALLOWED_FTS_TABLES)}")
+        raise ValueError(
+            f"Table '{table}' not allowed for FTS queries. Allowed: {sorted(_ALLOWED_FTS_TABLES)}"
+        )
 
     conn = get_connection(db_path)
     try:
         fts_table = f"{table}_fts"
         rows = conn.execute(
-            f"SELECT * FROM {fts_table} WHERE {fts_table} MATCH ? LIMIT ?",
-            [query_text, limit]
+            f"SELECT * FROM {fts_table} WHERE {fts_table} MATCH ? LIMIT ?", [query_text, limit]
         ).fetchall()
         return [dict(r) for r in rows]
     finally:
@@ -144,7 +144,9 @@ def get_table_list(db_path: str) -> list[str]:
     """Get all table names in the database."""
     conn = get_connection(db_path)
     try:
-        rows = conn.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name").fetchall()
+        rows = conn.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
+        ).fetchall()
         return [r[0] for r in rows]
     finally:
         conn.close()
@@ -164,10 +166,12 @@ def get_table_count(db_path: str, table: str) -> int:
 def get_pipeline_runs(db_path: str, repo_name: str | None = None, limit: int = 50) -> list[dict]:
     """Query pipeline run history from the pipeline_runs table."""
     from .pipeline_ingest import get_pipeline_history
+
     return get_pipeline_history(Path(db_path), repo_name=repo_name, limit=limit)
 
 
 def get_repo_quality_trend(db_path: str, repo_name: str, limit: int = 30) -> list[dict]:
     """Get quality trend for a repo across pipeline runs."""
     from .pipeline_ingest import get_repo_quality_trend as _trend
+
     return _trend(Path(db_path), repo_name=repo_name, limit=limit)

@@ -8,7 +8,6 @@ claims.
 
 from __future__ import annotations
 
-import json
 import re
 import sqlite3
 from dataclasses import dataclass
@@ -16,7 +15,6 @@ from pathlib import Path
 from typing import Any, Iterable
 
 from .utils import _load_json
-
 
 SEVERITY_ORDER = {"CRITICAL": 0, "HIGH": 1, "MEDIUM": 2, "LOW": 3, "INFO": 4}
 PUBLISHABLE_SUFFIXES = {".md", ".html", ".json", ".j2"}
@@ -126,7 +124,14 @@ def check_canonical_consistency(project_name: str, root: Path) -> list[AuditFind
     eras = _load_json(eras_path) or {}
 
     if not canonical:
-        findings.append(AuditFinding("CRITICAL", "CANONICAL_MISSING", "canonical-metrics.json is missing or invalid", _rel(canonical_path, root)))
+        findings.append(
+            AuditFinding(
+                "CRITICAL",
+                "CANONICAL_MISSING",
+                "canonical-metrics.json is missing or invalid",
+                _rel(canonical_path, root),
+            )
+        )
         return findings
 
     expected_commits = _as_int(canonical.get("total_commits"))
@@ -136,16 +141,31 @@ def check_canonical_consistency(project_name: str, root: Path) -> list[AuditFind
     project_overrides = project.get("overrides", {}) if isinstance(project, dict) else {}
     project_timeline = project.get("timeline", {}) if isinstance(project, dict) else {}
     checks = [
-        ("total_commits", expected_commits, project_overrides.get("total_commits"), project_json_path),
+        (
+            "total_commits",
+            expected_commits,
+            project_overrides.get("total_commits"),
+            project_json_path,
+        ),
         ("span_days", expected_days, project_timeline.get("total_days"), project_json_path),
         ("active_days", expected_active, project_overrides.get("active_days"), project_json_path),
     ]
     for metric, expected, observed, path in checks:
         observed_int = _as_int(observed)
         if expected is not None and observed_int is not None and expected != observed_int:
-            findings.append(AuditFinding("HIGH", "PROJECT_DRIFT", f"project.json {metric} does not match canonical metrics", _rel(path, root), f"canonical={expected}, project={observed_int}"))
+            findings.append(
+                AuditFinding(
+                    "HIGH",
+                    "PROJECT_DRIFT",
+                    f"project.json {metric} does not match canonical metrics",
+                    _rel(path, root),
+                    f"canonical={expected}, project={observed_int}",
+                )
+            )
 
-    tv_meta = data.get("telemetry_visualizations", {}).get("meta", {}) if isinstance(data, dict) else {}
+    tv_meta = (
+        data.get("telemetry_visualizations", {}).get("meta", {}) if isinstance(data, dict) else {}
+    )
     data_checks = [
         ("total_commits", expected_commits, tv_meta.get("total_commits")),
         ("span_days", expected_days, tv_meta.get("lifespan_days") or tv_meta.get("span_days")),
@@ -154,26 +174,77 @@ def check_canonical_consistency(project_name: str, root: Path) -> list[AuditFind
     for metric, expected, observed in data_checks:
         observed_int = _as_int(observed)
         if expected is not None and observed_int is not None and expected != observed_int:
-            findings.append(AuditFinding("HIGH", "DATA_DRIFT", f"data.json {metric} does not match canonical metrics", _rel(data_json_path, root), f"canonical={expected}, data={observed_int}"))
+            findings.append(
+                AuditFinding(
+                    "HIGH",
+                    "DATA_DRIFT",
+                    f"data.json {metric} does not match canonical metrics",
+                    _rel(data_json_path, root),
+                    f"canonical={expected}, data={observed_int}",
+                )
+            )
 
     if isinstance(eras, dict):
         era_commits = _as_int(eras.get("total_commits"))
-        if expected_commits is not None and era_commits is not None and era_commits != expected_commits:
-            findings.append(AuditFinding("HIGH", "ERA_DRIFT", "commit-eras.json total_commits does not match canonical metrics", _rel(eras_path, root), f"canonical={expected_commits}, commit-eras={era_commits}"))
+        if (
+            expected_commits is not None
+            and era_commits is not None
+            and era_commits != expected_commits
+        ):
+            findings.append(
+                AuditFinding(
+                    "HIGH",
+                    "ERA_DRIFT",
+                    "commit-eras.json total_commits does not match canonical metrics",
+                    _rel(eras_path, root),
+                    f"canonical={expected_commits}, commit-eras={era_commits}",
+                )
+            )
         canonical_eras = _as_int(project_overrides.get("era_count"))
         era_count = len(eras.get("eras", [])) if isinstance(eras.get("eras"), list) else None
         if canonical_eras is not None and era_count is not None and canonical_eras != era_count:
-            findings.append(AuditFinding("HIGH", "ERA_COUNT_DRIFT", "commit-eras.json era count does not match project override", _rel(eras_path, root), f"project={canonical_eras}, commit-eras={era_count}"))
+            findings.append(
+                AuditFinding(
+                    "HIGH",
+                    "ERA_COUNT_DRIFT",
+                    "commit-eras.json era count does not match project override",
+                    _rel(eras_path, root),
+                    f"project={canonical_eras}, commit-eras={era_count}",
+                )
+            )
 
     db_commits = _db_count(db_path, "commits")
     if expected_commits is not None and db_commits is not None and db_commits != expected_commits:
-        findings.append(AuditFinding("HIGH", "DB_COMMIT_DRIFT", "SQLite commits table does not match canonical metrics", _rel(db_path, root), f"canonical={expected_commits}, db={db_commits}"))
+        findings.append(
+            AuditFinding(
+                "HIGH",
+                "DB_COMMIT_DRIFT",
+                "SQLite commits table does not match canonical metrics",
+                _rel(db_path, root),
+                f"canonical={expected_commits}, db={db_commits}",
+            )
+        )
     db_eras = _db_count(db_path, "eras")
     canonical_eras = _as_int(project_overrides.get("era_count"))
     if canonical_eras is not None and db_eras is not None and db_eras != canonical_eras:
-        findings.append(AuditFinding("HIGH", "DB_ERA_DRIFT", "SQLite eras table does not match project era count", _rel(db_path, root), f"project={canonical_eras}, db={db_eras}"))
+        findings.append(
+            AuditFinding(
+                "HIGH",
+                "DB_ERA_DRIFT",
+                "SQLite eras table does not match project era count",
+                _rel(db_path, root),
+                f"project={canonical_eras}, db={db_eras}",
+            )
+        )
     if db_path.exists() and not _table_exists(db_path, "pipeline_runs"):
-        findings.append(AuditFinding("MEDIUM", "PIPELINE_TABLE_MISSING", "pipeline_runs table is absent; pipeline history queries cannot work", _rel(db_path, root)))
+        findings.append(
+            AuditFinding(
+                "MEDIUM",
+                "PIPELINE_TABLE_MISSING",
+                "pipeline_runs table is absent; pipeline history queries cannot work",
+                _rel(db_path, root),
+            )
+        )
 
     return findings
 
@@ -191,7 +262,10 @@ def check_placeholder_data(project_name: str, root: Path) -> list[AuditFinding]:
             provenance = obj.get("provenance")
             if isinstance(provenance, dict):
                 status = str(provenance.get("status", "")).lower()
-                if status in {"placeholder_excluded", "excluded", "historical_raw"} or provenance.get("publishable") is False:
+                if (
+                    status in {"placeholder_excluded", "excluded", "historical_raw"}
+                    or provenance.get("publishable") is False
+                ):
                     current_excluded = True
         yield path, obj, current_excluded
         if isinstance(obj, dict):
@@ -213,13 +287,45 @@ def check_placeholder_data(project_name: str, root: Path) -> list[AuditFinding]:
                 (excluded_mpc_paths if excluded else mpc_paths).append(path)
 
     if len(zero_total_paths) >= 3:
-        findings.append(AuditFinding("HIGH", "PLACEHOLDER_COAUTHORSHIP", "Repeated all-zero co-authorship rows look placeholder-derived", _rel(data_json_path, root), f"examples={zero_total_paths[:5]}"))
+        findings.append(
+            AuditFinding(
+                "HIGH",
+                "PLACEHOLDER_COAUTHORSHIP",
+                "Repeated all-zero co-authorship rows look placeholder-derived",
+                _rel(data_json_path, root),
+                f"examples={zero_total_paths[:5]}",
+            )
+        )
     elif excluded_zero_total_paths:
-        findings.append(AuditFinding("INFO", "PLACEHOLDER_COAUTHORSHIP_EXCLUDED", "Co-authorship placeholder rows are explicitly marked non-publishable", _rel(data_json_path, root), f"count={len(excluded_zero_total_paths)}"))
+        findings.append(
+            AuditFinding(
+                "INFO",
+                "PLACEHOLDER_COAUTHORSHIP_EXCLUDED",
+                "Co-authorship placeholder rows are explicitly marked non-publishable",
+                _rel(data_json_path, root),
+                f"count={len(excluded_zero_total_paths)}",
+            )
+        )
     if len(mpc_paths) >= 3:
-        findings.append(AuditFinding("MEDIUM", "PLACEHOLDER_SESSION_DEPTH", "Repeated messages_per_commit=1.0 rows look placeholder-derived", _rel(data_json_path, root), f"examples={mpc_paths[:5]}"))
+        findings.append(
+            AuditFinding(
+                "MEDIUM",
+                "PLACEHOLDER_SESSION_DEPTH",
+                "Repeated messages_per_commit=1.0 rows look placeholder-derived",
+                _rel(data_json_path, root),
+                f"examples={mpc_paths[:5]}",
+            )
+        )
     elif excluded_mpc_paths:
-        findings.append(AuditFinding("INFO", "PLACEHOLDER_SESSION_DEPTH_EXCLUDED", "Session-depth placeholder rows are explicitly marked non-publishable", _rel(data_json_path, root), f"count={len(excluded_mpc_paths)}"))
+        findings.append(
+            AuditFinding(
+                "INFO",
+                "PLACEHOLDER_SESSION_DEPTH_EXCLUDED",
+                "Session-depth placeholder rows are explicitly marked non-publishable",
+                _rel(data_json_path, root),
+                f"count={len(excluded_mpc_paths)}",
+            )
+        )
     return findings
 
 
@@ -236,8 +342,20 @@ def check_sensitive_artifacts(project_name: str, root: Path) -> list[AuditFindin
     if sensitive_paths:
         manifest = project_root / "PRIVACY-MANIFEST.md"
         severity = "INFO" if manifest.exists() else "MEDIUM"
-        message = "Private/raw data artifacts are present and governed by the project privacy manifest" if manifest.exists() else "Private/raw data artifacts are present in the project tree"
-        findings.append(AuditFinding(severity, "SENSITIVE_ARTIFACTS", message, _rel(project_root, root), "examples=" + ", ".join(sensitive_paths[:8])))
+        message = (
+            "Private/raw data artifacts are present and governed by the project privacy manifest"
+            if manifest.exists()
+            else "Private/raw data artifacts are present in the project tree"
+        )
+        findings.append(
+            AuditFinding(
+                severity,
+                "SENSITIVE_ARTIFACTS",
+                message,
+                _rel(project_root, root),
+                "examples=" + ", ".join(sensitive_paths[:8]),
+            )
+        )
 
     for path in _iter_publishable_files([project_root / "data", project_root / "deliverables"]):
         try:
@@ -246,7 +364,14 @@ def check_sensitive_artifacts(project_name: str, root: Path) -> list[AuditFindin
             continue
         for pattern in SECRET_PATTERNS:
             if pattern.search(text):
-                findings.append(AuditFinding("CRITICAL", "SECRET_PATTERN", "Potential secret/private key pattern found", _rel(path, root)))
+                findings.append(
+                    AuditFinding(
+                        "CRITICAL",
+                        "SECRET_PATTERN",
+                        "Potential secret/private key pattern found",
+                        _rel(path, root),
+                    )
+                )
                 break
     return findings
 
@@ -256,13 +381,34 @@ def check_project_config(project_name: str, root: Path) -> list[AuditFinding]:
     project_json_path = _project_dir(project_name, root) / "project.json"
     project = _load_json(project_json_path)
     if not isinstance(project, dict):
-        findings.append(AuditFinding("CRITICAL", "PROJECT_JSON_INVALID", "project.json is missing or invalid", _rel(project_json_path, root)))
+        findings.append(
+            AuditFinding(
+                "CRITICAL",
+                "PROJECT_JSON_INVALID",
+                "project.json is missing or invalid",
+                _rel(project_json_path, root),
+            )
+        )
         return findings
     for key in ("name", "description", "repo_url"):
         if not str(project.get(key, "")).strip():
-            findings.append(AuditFinding("MEDIUM", "PROJECT_FIELD_EMPTY", f"project.json field '{key}' is empty", _rel(project_json_path, root)))
+            findings.append(
+                AuditFinding(
+                    "MEDIUM",
+                    "PROJECT_FIELD_EMPTY",
+                    f"project.json field '{key}' is empty",
+                    _rel(project_json_path, root),
+                )
+            )
     if project.get("repo_url") and not str(project["repo_url"]).startswith("https://github.com/"):
-        findings.append(AuditFinding("MEDIUM", "PROJECT_REPO_URL", "repo_url should be a GitHub HTTPS URL", _rel(project_json_path, root)))
+        findings.append(
+            AuditFinding(
+                "MEDIUM",
+                "PROJECT_REPO_URL",
+                "repo_url should be a GitHub HTTPS URL",
+                _rel(project_json_path, root),
+            )
+        )
     return findings
 
 
@@ -300,12 +446,15 @@ def check_era_references(project_name: str, root: Path) -> list[AuditFinding]:
             severity = "MEDIUM"
             code = "ERA_STALE_COUNT"
 
-        findings.append(AuditFinding(
-            severity, code,
-            f"Stale era reference: {ref.old_value} (expected: {ref.expected})",
-            path=_rel(ref.file, root),
-            detail=f"line {ref.line}, kind={ref.kind}",
-        ))
+        findings.append(
+            AuditFinding(
+                severity,
+                code,
+                f"Stale era reference: {ref.old_value} (expected: {ref.expected})",
+                path=_rel(ref.file, root),
+                detail=f"line {ref.line}, kind={ref.kind}",
+            )
+        )
 
     return findings
 
@@ -315,11 +464,19 @@ def run_audit(project_name: str, root: str | Path = ".") -> list[AuditFinding]:
     project_root = _project_dir(project_name, root_path)
     findings: list[AuditFinding] = []
     if not project_root.exists():
-        return [AuditFinding("CRITICAL", "PROJECT_MISSING", f"Project '{project_name}' does not exist", _rel(project_root, root_path))]
+        return [
+            AuditFinding(
+                "CRITICAL",
+                "PROJECT_MISSING",
+                f"Project '{project_name}' does not exist",
+                _rel(project_root, root_path),
+            )
+        ]
 
     for check in (
         check_project_config,
         check_mined_history,
+        check_derived_evidence,
         check_canonical_consistency,
         check_placeholder_data,
         check_sensitive_artifacts,
@@ -327,7 +484,9 @@ def run_audit(project_name: str, root: str | Path = ".") -> list[AuditFinding]:
     ):
         findings.extend(check(project_name, root_path))
 
-    return sorted(findings, key=lambda f: (SEVERITY_ORDER.get(f.severity, 99), f.code, f.path or ""))
+    return sorted(
+        findings, key=lambda f: (SEVERITY_ORDER.get(f.severity, 99), f.code, f.path or "")
+    )
 
 
 def has_blocking_findings(findings: Iterable[AuditFinding], fail_on: str = "HIGH") -> bool:
@@ -346,48 +505,95 @@ def check_mined_history(project_name: str, root: Path) -> list[AuditFinding]:
     """Reconcile extraction identities and byte bindings when mining evidence exists."""
     import csv
     import hashlib
+
     project = _project_dir(project_name, root)
-    coverage_path = project / 'data' / 'coverage.json'
+    coverage_path = project / "data" / "coverage.json"
     coverage = _load_json(coverage_path)
-    config = _load_json(project / 'project.json') or {}
-    if not coverage_path.exists() and not config.get('mined_history_manifest_required'):
+    config = _load_json(project / "project.json") or {}
+    if not coverage_path.exists() and not config.get("mined_history_manifest_required"):
         return []  # Legacy imported datasets never claimed a mining manifest.
-    if not isinstance(coverage, dict) or not isinstance(coverage.get('artifact_sha256'), dict):
-        return [AuditFinding('HIGH', 'MINING_MANIFEST_INVALID', 'Mining coverage manifest missing or invalid')]
+    if not isinstance(coverage, dict) or not isinstance(coverage.get("artifact_sha256"), dict):
+        return [
+            AuditFinding(
+                "HIGH", "MINING_MANIFEST_INVALID", "Mining coverage manifest missing or invalid"
+            )
+        ]
     findings = []
-    expected_names = {'github-commits.csv', 'github-commits-with-stats.txt'}
-    if set(coverage['artifact_sha256']) != expected_names:
-        findings.append(AuditFinding('HIGH', 'MINING_MANIFEST_INVALID', 'Mining artifact bindings incomplete'))
-    for name, expected in coverage['artifact_sha256'].items():
+    expected_names = {"github-commits.csv", "github-commits-with-stats.txt"}
+    if set(coverage["artifact_sha256"]) != expected_names:
+        findings.append(
+            AuditFinding("HIGH", "MINING_MANIFEST_INVALID", "Mining artifact bindings incomplete")
+        )
+    for name, expected in coverage["artifact_sha256"].items():
         if name not in expected_names:
-            findings.append(AuditFinding('HIGH', 'MINING_MANIFEST_INVALID', 'Unexpected artifact name'))
+            findings.append(
+                AuditFinding("HIGH", "MINING_MANIFEST_INVALID", "Unexpected artifact name")
+            )
             continue
-        path = project / 'data' / name
+        path = project / "data" / name
         if not path.exists() or hashlib.sha256(path.read_bytes()).hexdigest() != expected:
-            findings.append(AuditFinding('HIGH', 'MINING_ARTIFACT_DRIFT', f'Mined artifact changed: {name}'))
-    csv_path = project / 'data' / 'github-commits.csv'
-    db_path = project / 'data' / 'archaeology.db'
+            findings.append(
+                AuditFinding("HIGH", "MINING_ARTIFACT_DRIFT", f"Mined artifact changed: {name}")
+            )
+    csv_path = project / "data" / "github-commits.csv"
+    db_path = project / "data" / "archaeology.db"
     try:
-        with csv_path.open(encoding='utf-8', newline='') as handle:
+        with csv_path.open(encoding="utf-8", newline="") as handle:
             rows = list(csv.DictReader(handle))
-        keys = ('hash', 'date', 'message', 'author')
+        keys = ("hash", "date", "message", "author")
         source = [tuple(row[key] for key in keys) for row in rows]
-        hashes = [row['hash'] for row in rows]
+        hashes = [row["hash"] for row in rows]
         if not db_path.exists():
-            raise ValueError('Mined history database is missing')
+            raise ValueError("Mined history database is missing")
         with sqlite3.connect(db_path) as conn:
-            stored = list(conn.execute('SELECT hash,date,message,author FROM commits'))
-        if len(hashes) != coverage.get('commit_count') or len(set(hashes)) != len(hashes) or sorted(source) != sorted(stored):
-            raise ValueError('Git manifest, CSV and SQLite commit records do not reconcile')
+            stored = list(conn.execute("SELECT hash,date,message,author FROM commits"))
+        if (
+            len(hashes) != coverage.get("commit_count")
+            or len(set(hashes)) != len(hashes)
+            or sorted(source) != sorted(stored)
+        ):
+            raise ValueError("Git manifest, CSV and SQLite commit records do not reconcile")
         from .metrics import calculate_metrics
+
         measured = calculate_metrics(rows)
-        canonical = _load_json(project / 'deliverables' / 'canonical-metrics.json') or {}
+        canonical = _load_json(project / "deliverables" / "canonical-metrics.json") or {}
         if any(canonical.get(key) != value for key, value in measured.items()):
-            raise ValueError('Canonical metrics differ from source commit measurements')
-        visual = _load_json(project / 'deliverables' / 'data.json') or {}
-        meta = visual.get('telemetry_visualizations', {}).get('meta', {})
-        if any(visual.get(key) != value or meta.get(key) != value for key, value in measured.items()):
-            raise ValueError('Visualization metrics differ from source commit measurements')
+            raise ValueError("Canonical metrics differ from source commit measurements")
+        visual = _load_json(project / "deliverables" / "data.json") or {}
+        meta = visual.get("telemetry_visualizations", {}).get("meta", {})
+        if any(
+            visual.get(key) != value or meta.get(key) != value for key, value in measured.items()
+        ):
+            raise ValueError("Visualization metrics differ from source commit measurements")
     except (OSError, ValueError, KeyError, TypeError, sqlite3.Error) as exc:
-        findings.append(AuditFinding('HIGH', 'MINING_HISTORY_DRIFT', str(exc)))
+        findings.append(AuditFinding("HIGH", "MINING_HISTORY_DRIFT", str(exc)))
     return findings
+
+
+def check_derived_evidence(project_name: str, root: Path) -> list[AuditFinding]:
+    from .provenance import requires_binding, verify_analyses, verify_artifact
+
+    project = _project_dir(project_name, root)
+    try:
+        if not requires_binding(project):
+            return []
+        verify_analyses(project)
+        deliverables = project / "deliverables"
+        artifacts = {
+            Path(str(p)[: -len(".provenance.json")])
+            for p in deliverables.rglob("*.provenance.json")
+        }
+        artifacts.update(
+            p
+            for p in [
+                deliverables / "reports/ARCHAEOLOGY-REPORT.md",
+                deliverables / "visuals/report.html",
+                deliverables / "visuals/archaeology.html",
+            ]
+            if p.exists()
+        )
+        for path in artifacts:
+            verify_artifact(project, path)
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        return [AuditFinding("HIGH", "DERIVED_EVIDENCE_STALE", str(exc))]
+    return []
