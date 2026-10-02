@@ -11,15 +11,16 @@ jobs:
         run: apt-get update -qq && apt-get install -y -qq python3 python3-pip
       - name: Install dependencies
         run: |
-          if [ -f requirements.txt ]; then pip install --break-system-packages -r requirements.txt || true; fi
-          if [ -f pyproject.toml ]; then pip install --break-system-packages -e ".[dev]" 2>/dev/null || true; fi
+          if [ -f requirements.txt ]; then pip install --break-system-packages -r requirements.txt; fi
+          pip install --break-system-packages -e ".[dev]"
       - name: Lint
         run: |
-          pip install --break-system-packages ruff 2>/dev/null
-          ruff check . || true
+          pip install --break-system-packages ruff==0.16.10
+          ruff check .
+          ruff format --check .
       - name: Test
         run: |
           if [ -f pytest.ini ] || [ -f setup.cfg ] || [ -d tests ]; then
-            pip install --break-system-packages pytest 2>/dev/null
-            pytest || true
+            pip install --break-system-packages pytest
+            pytest
           fi

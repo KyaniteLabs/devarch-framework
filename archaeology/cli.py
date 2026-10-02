@@ -2,7 +2,6 @@
 
 import json
 import os
-
 import subprocess
 import sys
 import tempfile
@@ -34,8 +33,12 @@ def main():
 
 @main.command()
 @click.argument("project_name")
-@click.option("--description", default="Draft archaeology project", help="Human-readable project description")
-@click.option("--repo-url", default="https://github.com/example/example", help="GitHub repository URL")
+@click.option(
+    "--description", default="Draft archaeology project", help="Human-readable project description"
+)
+@click.option(
+    "--repo-url", default="https://github.com/example/example", help="GitHub repository URL"
+)
 def init(project_name, description, repo_url):
     """Create a new project directory with default config."""
     project_dir = os.path.join("projects", project_name)
@@ -65,9 +68,13 @@ def init(project_name, description, repo_url):
 
 
 @main.command()
-@click.option("--project", "project_name", default="demo-archaeology", help="Demo project name to create")
+@click.option(
+    "--project", "project_name", default="demo-archaeology", help="Demo project name to create"
+)
 @click.option("--force", is_flag=True, help="Overwrite an existing demo project")
-@click.option("--build-db", is_flag=True, help="Build the demo SQLite database after creating files")
+@click.option(
+    "--build-db", is_flag=True, help="Build the demo SQLite database after creating files"
+)
 def demo(project_name, force, build_db):
     """Create a sanitized demo archaeology project."""
     from .demo import create_demo_project
@@ -84,7 +91,9 @@ def demo(project_name, force, build_db):
         cmd = [sys.executable, "-m", "archaeology.db.builder", "--project-root", str(project_root)]
         _env = os.environ.copy()
         _pkg_root = str(Path(__file__).parent.parent)
-        _env["PYTHONPATH"] = _pkg_root + ((os.pathsep + _env["PYTHONPATH"]) if _env.get("PYTHONPATH") else "")
+        _env["PYTHONPATH"] = _pkg_root + (
+            (os.pathsep + _env["PYTHONPATH"]) if _env.get("PYTHONPATH") else ""
+        )
         result = subprocess.run(cmd, check=True, timeout=300, env=_env)
         if result.returncode != 0:
             raise click.exceptions.Exit(result.returncode)
@@ -96,7 +105,7 @@ def demo(project_name, force, build_db):
 @click.option("--verbose", "-v", is_flag=True)
 def mine(repo_path, project, verbose):
     """Phase 1: Extract data from a git repository."""
-    from .extractors.git import extract_git_log, extract_git_log_with_stats, repository_coverage
+    from .extractors.git import extract_git_log, extract_git_log_with_stats
 
     project_dir = _project_dir(project)
     data_dir = os.path.join(project_dir, "data")
@@ -111,7 +120,9 @@ def mine(repo_path, project, verbose):
     except RuntimeError as exc:
         raise click.ClickException(str(exc)) from exc
     if coverage["shallow"]:
-        raise click.ClickException("Shallow history: fetch complete history before mining; no fetch performed")
+        raise click.ClickException(
+            "Shallow history: fetch complete history before mining; no fetch performed"
+        )
 
     click.echo(f"Extracting git log from {repo_path}...")
 
@@ -132,9 +143,14 @@ def mine(repo_path, project, verbose):
 
     if repository_coverage(repo_path) != coverage:
         raise click.ClickException("Repository refs changed during mining; retry before analysis")
-    from .utils import atomic_write
     import hashlib
-    coverage["artifact_sha256"] = {Path(path).name: hashlib.sha256(Path(path).read_bytes()).hexdigest() for path in (csv_path, stats_path)}
+
+    from .utils import atomic_write
+
+    coverage["artifact_sha256"] = {
+        Path(path).name: hashlib.sha256(Path(path).read_bytes()).hexdigest()
+        for path in (csv_path, stats_path)
+    }
     atomic_write(Path(data_dir) / "coverage.json", json.dumps(coverage, indent=2))
     config_path = Path(project_dir) / "project.json"
     config = json.loads(config_path.read_text(encoding="utf-8"))
@@ -153,14 +169,15 @@ def build_db(project_name, verbose):
     project_dir = _project_dir(project_name)
     db_path = os.path.join(project_dir, "data", "archaeology.db")
 
-    cmd = [sys.executable, "-m", "archaeology.db.builder",
-           "--project-root", project_dir]
+    cmd = [sys.executable, "-m", "archaeology.db.builder", "--project-root", project_dir]
     if verbose:
         cmd.append("--verbose")
 
     _env = os.environ.copy()
     _pkg_root = str(Path(__file__).parent.parent)
-    _env["PYTHONPATH"] = _pkg_root + ((os.pathsep + _env["PYTHONPATH"]) if _env.get("PYTHONPATH") else "")
+    _env["PYTHONPATH"] = _pkg_root + (
+        (os.pathsep + _env["PYTHONPATH"]) if _env.get("PYTHONPATH") else ""
+    )
     result = subprocess.run(cmd, check=True, timeout=300, env=_env)
     if result.returncode == 0 and os.path.exists(db_path):
         click.echo(f"Database built at {db_path}")
@@ -172,14 +189,20 @@ def build_db(project_name, verbose):
 @main.command()
 @click.argument("project_name")
 @click.option("--port", default=8001, help="Port for Datasette server")
-@click.option("--unsafe-cors", is_flag=True, help="Enable Datasette CORS headers. Off by default for local data safety.")
+@click.option(
+    "--unsafe-cors",
+    is_flag=True,
+    help="Enable Datasette CORS headers. Off by default for local data safety.",
+)
 def serve(project_name, port, unsafe_cors):
     """Launch Datasette for a project."""
     project_dir = _project_dir(project_name)
     db_path = os.path.join(project_dir, "data", "archaeology.db")
 
     if not os.path.exists(db_path):
-        click.echo(f"Database not found at {db_path}. Run 'archaeology build-db {project_name}' first.")
+        click.echo(
+            f"Database not found at {db_path}. Run 'archaeology build-db {project_name}' first."
+        )
         sys.exit(1)
 
     # Load project config for display name
@@ -193,9 +216,7 @@ def serve(project_name, port, unsafe_cors):
             click.echo(f"Error: Invalid JSON in {config_path}: {e}", err=True)
             sys.exit(1)
 
-    display_name = project_config.get("visualization", {}).get(
-        "title", project_name.upper()
-    )
+    display_name = project_config.get("visualization", {}).get("title", project_name.upper())
 
     # Use project-specific metadata if it exists, otherwise default
     project_metadata = os.path.join(project_dir, "datasette-metadata.yaml")
@@ -219,8 +240,7 @@ def serve(project_name, port, unsafe_cors):
         tmp.close()
         metadata_src = tmp.name
 
-    cmd = ["datasette", db_path, "--port", str(port),
-           "--setting", "sql_time_limit_ms,5000"]
+    cmd = ["datasette", db_path, "--port", str(port), "--setting", "sql_time_limit_ms,5000"]
     if unsafe_cors:
         cmd.append("--cors")
     if metadata_src:
@@ -265,8 +285,10 @@ def signals(project_name, config_path, min_gap_days, verbose):
 
     result = detect_signals(project_name, config=config or None)
     if result.get("signals"):
-        click.echo(f"Detected {len(result['signals'])} signals "
-                   f"across {len(result['cluster_summary'])} clusters.")
+        click.echo(
+            f"Detected {len(result['signals'])} signals "
+            f"across {len(result['cluster_summary'])} clusters."
+        )
     else:
         click.echo("No significant patterns detected in the commit history.")
 
@@ -280,8 +302,7 @@ def extract_sessions(project_name, sessions_dir, verbose):
     project_dir = _project_dir(project_name)
     output_path = os.path.join(project_dir, "data", "raw-sessions.md")
 
-    cmd = [sys.executable, "-m", "archaeology.extractors.sessions",
-           "--output", output_path]
+    cmd = [sys.executable, "-m", "archaeology.extractors.sessions", "--output", output_path]
     if sessions_dir:
         cmd.extend(["--sessions-dir", sessions_dir])
     cmd.extend(["--project", project_name])
@@ -290,15 +311,24 @@ def extract_sessions(project_name, sessions_dir, verbose):
     if result.returncode == 0:
         click.echo(f"Sessions extracted to {output_path}")
     else:
-        click.echo(f"Session extraction failed", err=True)
+        click.echo("Session extraction failed", err=True)
         sys.exit(result.returncode)
 
 
 @main.command()
 @click.argument("project_name")
-@click.option("--vector", "-v", "vectors", multiple=True,
-              help="Run specific analysis vector(s). Repeat for multiple.")
-@click.option("--prompts", is_flag=True, help="Show legacy prompt-template instructions instead of running automation")
+@click.option(
+    "--vector",
+    "-v",
+    "vectors",
+    multiple=True,
+    help="Run specific analysis vector(s). Repeat for multiple.",
+)
+@click.option(
+    "--prompts",
+    is_flag=True,
+    help="Show legacy prompt-template instructions instead of running automation",
+)
 @click.option("--verbose", is_flag=True, help="Print vector execution detail")
 def analyze(project_name, vectors, prompts, verbose):
     """Phase 3: Run automated analysis vectors against project data."""
@@ -338,53 +368,77 @@ def analyze(project_name, vectors, prompts, verbose):
 
 @main.command()
 @click.argument("project_name")
-@click.option("--analyzers", "-a", multiple=True, help="Specific analyzer(s) to run (default: all 14)")
+@click.option(
+    "--analyzers", "-a", multiple=True, help="Specific analyzer(s) to run (default: all 14)"
+)
 @click.option("--verbose", "-v", is_flag=True, help="Show detailed output")
 def opportunity(project_name, analyzers, verbose):
-    """Run all 14 opportunity analyzers against project data."""
-    from .opportunity_analyzers import OpportunityAnalyzer
-
-    target = list(analyzers) if analyzers else None
-    project_dir = _project_dir(project_name)
-    if not os.path.isdir(project_dir):
-        click.echo(f"Project '{project_name}' not found", err=True)
-        raise click.exceptions.Exit(1)
-
-    click.echo(f"Running opportunity analyzers for '{project_name}'")
-    if target:
-        click.echo(f"Analyzers: {', '.join(target)}")
-
-    runner = OpportunityAnalyzer(project_name, project_dir, verbose=verbose)
-    results = runner.run_all(analyzers=target)
-
-    ok = sum(1 for v in results.values() if v == "OK")
-    err = sum(1 for v in results.values() if v.startswith("ERROR"))
-    click.echo(f"\n  {ok} OK, {err} errors out of {len(results)} analyzers")
-    if err:
-        raise click.exceptions.Exit(1)
+    """Disabled pending evidence and data-exposure hardening."""
+    raise click.ClickException(
+        "opportunity is disabled pending readiness hardening. Use init, mine, build-db, signals, analyze, visualize, export-report and audit."
+    )
 
 
 @main.command("public-case-study")
-@click.option("--output", "output_dir", default="public-case-study", help="Output directory for the sanitized public case study")
-@click.option("--project", "project_name", default="demo-archaeology", help="Temporary/generated sanitized demo project name")
-@click.option("--force", is_flag=True, default=True, help="Overwrite existing generated demo project")
+@click.option(
+    "--output",
+    "output_dir",
+    default="public-case-study",
+    help="Output directory for the sanitized public case study",
+)
+@click.option(
+    "--project",
+    "project_name",
+    default="demo-archaeology",
+    help="Temporary/generated sanitized demo project name",
+)
+@click.option(
+    "--force", is_flag=True, default=True, help="Overwrite existing generated demo project"
+)
 def public_case_study(output_dir, project_name, force):
     """Generate a sanitized public case-study showroom."""
     from .report import export_public_case_study
 
-    path = export_public_case_study(Path.cwd(), output_dir=output_dir, project_name=project_name, force=force)
+    path = export_public_case_study(
+        Path.cwd(), output_dir=output_dir, project_name=project_name, force=force
+    )
     click.echo(f"Public case study exported to {path}")
 
 
 @main.command("local-pipeline")
-@click.option("--repo", "repo_name", default="dev-archaeology", help="Repository name or owner/name to inspect")
-@click.option("--pipeline-dir", default=None, help="Path to the local GITHUB_pipeline workspace (defaults to ARCHAEOLOGY_PIPELINE_ROOT)")
-@click.option("--repos-dir", default=None, help="Directory containing local repositories (defaults to ARCHAEOLOGY_REPOS_DIR)")
-@click.option("--top-repos", default=20, type=int, help="Number of active repos to review when --run is used")
-@click.option("--review-days", default=30, type=int, help="Commit lookback window when --run is used")
-@click.option("--run", "run_first", is_flag=True, help="Run the local pipeline before reading latest.json")
-@click.option("--fail-on-issues", is_flag=True, help="Exit nonzero if the repo has any local-pipeline findings")
-def local_pipeline(repo_name, pipeline_dir, repos_dir, top_repos, review_days, run_first, fail_on_issues):
+@click.option(
+    "--repo",
+    "repo_name",
+    default="dev-archaeology",
+    help="Repository name or owner/name to inspect",
+)
+@click.option(
+    "--pipeline-dir",
+    default=None,
+    help="Path to the local GITHUB_pipeline workspace (defaults to ARCHAEOLOGY_PIPELINE_ROOT)",
+)
+@click.option(
+    "--repos-dir",
+    default=None,
+    help="Directory containing local repositories (defaults to ARCHAEOLOGY_REPOS_DIR)",
+)
+@click.option(
+    "--top-repos", default=20, type=int, help="Number of active repos to review when --run is used"
+)
+@click.option(
+    "--review-days", default=30, type=int, help="Commit lookback window when --run is used"
+)
+@click.option(
+    "--run", "run_first", is_flag=True, help="Run the local pipeline before reading latest.json"
+)
+@click.option(
+    "--fail-on-issues",
+    is_flag=True,
+    help="Exit nonzero if the repo has any local-pipeline findings",
+)
+def local_pipeline(
+    repo_name, pipeline_dir, repos_dir, top_repos, review_days, run_first, fail_on_issues
+):
     """Read or run the local GITHUB_pipeline verification status."""
     from .local_pipeline import read_local_pipeline_status, run_local_pipeline, status_lines
 
@@ -408,7 +462,12 @@ def local_pipeline(repo_name, pipeline_dir, repos_dir, top_repos, review_days, r
                     "Please set it to the directory containing your local repositories, "
                     "or use --repos-dir option."
                 )
-        run_local_pipeline(pipeline_dir=pipeline_dir, repos_dir=repos_dir, top_repos=top_repos, review_days=review_days)
+        run_local_pipeline(
+            pipeline_dir=pipeline_dir,
+            repos_dir=repos_dir,
+            top_repos=top_repos,
+            review_days=review_days,
+        )
     status = read_local_pipeline_status(pipeline_dir, repo_name)
     for line in status_lines(status):
         click.echo(line)
@@ -418,14 +477,27 @@ def local_pipeline(repo_name, pipeline_dir, repos_dir, top_repos, review_days, r
 
 @main.command("export-report")
 @click.argument("project_name")
-@click.option("--format", "fmt", type=click.Choice(["markdown", "md", "html"]), default="markdown", help="Report format to export")
-@click.option("--output", "output_path", help="Output path. Defaults to project deliverables/ARCHAEOLOGY-REPORT.<ext>")
+@click.option(
+    "--format",
+    "fmt",
+    type=click.Choice(["markdown", "md", "html"]),
+    default="markdown",
+    help="Report format to export",
+)
+@click.option(
+    "--output",
+    "output_path",
+    help="Output path. Defaults to project deliverables/ARCHAEOLOGY-REPORT.<ext>",
+)
 def export_report_cmd(project_name, fmt, output_path):
     """Export an archaeology report from analysis outputs."""
     from .report import export_report
 
     project_dir = _project_dir(project_name)
-    path = export_report(project_name, project_dir, output_path=output_path, fmt=fmt)
+    try:
+        path = export_report(project_name, project_dir, output_path=output_path, fmt=fmt)
+    except (OSError, ValueError) as exc:
+        raise click.ClickException(str(exc)) from exc
     click.echo(f"Report exported to {path}")
 
 
@@ -434,6 +506,7 @@ def export_report_cmd(project_name, fmt, output_path):
 def visualize(project_name):
     """Phase 4: Generate visualization HTML from template."""
     from .visualization.history import render_history
+
     try:
         output = render_history(Path(_project_dir(project_name)))
     except (OSError, ValueError) as exc:
@@ -457,7 +530,9 @@ def ingest_pipeline(project_name, logs_dir, verbose):
     db_path = os.path.join(project_dir, "data", "archaeology.db")
 
     if not os.path.exists(db_path):
-        click.echo(f"Database not found. Run 'archaeology build-db {project_name}' first.", err=True)
+        click.echo(
+            f"Database not found. Run 'archaeology build-db {project_name}' first.", err=True
+        )
         sys.exit(1)
 
     # Auto-detect pipeline logs dir
@@ -479,7 +554,9 @@ def ingest_pipeline(project_name, logs_dir, verbose):
 
     click.echo(f"Ingesting pipeline logs from {logs_dir}...")
     stats = ingest_directory(Path(db_path), Path(logs_dir), verbose=verbose)
-    click.echo(f"  Ingested: {stats['ingested']}, Skipped: {stats['skipped']}, Errors: {len(stats['errors'])}")
+    click.echo(
+        f"  Ingested: {stats['ingested']}, Skipped: {stats['skipped']}, Errors: {len(stats['errors'])}"
+    )
     for err in stats["errors"]:
         click.echo(f"  ERROR: {err}", err=True)
 
@@ -489,135 +566,20 @@ def ingest_pipeline(project_name, logs_dir, verbose):
 @click.option("--dry-run", is_flag=True, help="Show what would change without writing")
 @click.option("--skip-mine", is_flag=True, help="Skip git mining (use existing data)")
 def cascade(project_name, dry_run, skip_mine):
-    """Full pipeline: mine → build-db → signals → era cascade → sync → audit."""
-    from .era_cascade import cascade as run_cascade
-    from .extractors.git import extract_git_log, extract_git_log_with_stats, repository_coverage
-    from .classifiers.era_detector import detect_signals
-
-    project_dir = Path(_project_dir(project_name))
-    project_json_path = project_dir / "project.json"
-    eras_path = project_dir / "data" / "commit-eras.json"
-    data_dir = project_dir / "data"
-
-    # Load project config for repo path
-    repo_path = None
-    if project_json_path.exists():
-        try:
-            pj = json.loads(project_json_path.read_text())
-            repo_path = pj.get("repo_path")
-            if repo_path:
-                repo_path = os.path.expanduser(repo_path)
-        except json.JSONDecodeError as e:
-            click.echo(f"Error: Invalid JSON in {project_json_path}: {e}", err=True)
-            sys.exit(1)
-
-    # ── Step 1: Mine fresh git data ──
-    if not skip_mine:
-        if not repo_path or not os.path.isdir(repo_path):
-            click.echo(f"  SKIP: repo_path not found ({repo_path}). Use --skip-mine to skip mining.")
-        else:
-            click.echo(f"\n[1/7] Mining git data from {repo_path}...")
-            csv_path = data_dir / "github-commits.csv"
-            try:
-                count = extract_git_log(repo_path, str(csv_path))
-                click.echo(f"  Extracted {count} commits")
-            except (RuntimeError, Exception) as e:
-                click.echo(f"  Error: Git extraction failed: {e}", err=True)
-                sys.exit(1)
-            stats_path = data_dir / "github-commits-with-stats.txt"
-            try:
-                extract_git_log_with_stats(repo_path, str(stats_path))
-            except (RuntimeError, Exception) as e:
-                click.echo(f"  Error: Git stats extraction failed: {e}", err=True)
-                sys.exit(1)
-    else:
-        click.echo(f"\n[1/7] Mining — SKIPPED (--skip-mine)")
-
-    # ── Step 2: Build database ──
-    click.echo(f"\n[2/7] Building database...")
-    db_path = data_dir / "archaeology.db"
-    cmd = [sys.executable, "-m", "archaeology.db.builder",
-           "--project-root", str(project_dir)]
-    _env = os.environ.copy()
-    _pkg_root = str(Path(__file__).parent.parent)
-    _env["PYTHONPATH"] = _pkg_root + ((os.pathsep + _env["PYTHONPATH"]) if _env.get("PYTHONPATH") else "")
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=300, env=_env)
-    if result.returncode == 0:
-        click.echo(f"  Database built ({db_path})")
-    else:
-        click.echo(f"  Build failed: {result.stderr}", err=True)
-
-    # ── Step 3: Detect signals ──
-    click.echo(f"\n[3/7] Detecting signals...")
-    sig_result = detect_signals(project_name)
-    n_signals = len(sig_result.get("signals", []))
-    n_clusters = len(sig_result.get("cluster_summary", []))
-    click.echo(f"  {n_signals} signals across {n_clusters} clusters")
-
-    # ── Step 4: Era cascade ──
-    click.echo(f"\n[4/7] Running era cascade...")
-    if not eras_path.exists():
-        click.echo(f"  ERROR: No commit-eras.json found at {eras_path}", err=True)
-        sys.exit(1)
-
-    if dry_run:
-        click.echo("  (dry run — no files will be written)")
-
-    cascade_result = run_cascade(project_dir, eras_path, dry_run=dry_run)
-    click.echo(f"  Files scanned: {cascade_result.files_scanned}")
-    click.echo(f"  Files changed: {cascade_result.files_changed}")
-    click.echo(f"  Era fields remapped: {cascade_result.era_fields_remapped}")
-    click.echo(f"  Stale refs remaining: {cascade_result.stale_refs_remaining}")
-
-    # ── Step 5: Sync derived deliverables ──
-    click.echo(f"\n[5/7] Syncing derived deliverables...")
-    sync_script = Path(__file__).parent.parent / "scripts" / "sync" / "sync_derived_deliverables.py"
-    if sync_script.exists():
-        sync_cmd = [sys.executable, str(sync_script)]
-        if dry_run:
-            sync_cmd.append("--check")
-        sync_result = subprocess.run(sync_cmd, capture_output=True, text=True, timeout=120)
-        click.echo(f"  {sync_result.stdout.strip()}")
-    else:
-        click.echo("  SKIP: sync script not found")
-
-    # ── Step 6: Audit ──
-    click.echo(f"\n[6/7] Running audit...")
-    from .audit import has_blocking_findings, run_audit, summarize
-    findings = run_audit(project_name, root=Path.cwd())
-    summary = summarize(findings)
-    blocking = [f for f in findings if f.severity in ("CRITICAL", "HIGH")]
-
-    # ── Step 7: Opportunity analyzers ──
-    click.echo(f"\n[7/7] Running opportunity analyzers...")
-    from .opportunity_analyzers import OpportunityAnalyzer
-    opp_runner = OpportunityAnalyzer(project_name, str(project_dir), verbose=False)
-    opp_results = opp_runner.run_all()
-    opp_ok = sum(1 for v in opp_results.values() if v == "OK")
-    click.echo(f"  {opp_ok}/{len(opp_results)} opportunity analyzers OK")
-
-    if blocking:
-        click.echo(f"  FAIL: {len(blocking)} HIGH/CRITICAL findings")
-        for f in blocking:
-            click.echo(f"    {f.format()}")
-    else:
-        info_count = sum(1 for f in findings if f.severity == "INFO")
-        click.echo(f"  PASS: {info_count} info-only findings")
-
-    if cascade_result.stale_refs_remaining > 0:
-        click.echo(f"\n  WARNING: {cascade_result.stale_refs_remaining} stale era references remain")
-        if not dry_run:
-            raise click.exceptions.Exit(1)
-    elif blocking:
-        if not dry_run:
-            raise click.exceptions.Exit(1)
-    else:
-        click.echo(f"\n  ✓ Pipeline complete. All {cascade_result.files_scanned} deliverables consistent.")
+    """Disabled pending evidence and data-exposure hardening."""
+    raise click.ClickException(
+        "cascade is disabled pending readiness hardening. Use init, mine, build-db, signals, analyze, visualize, export-report and audit."
+    )
 
 
 @main.command()
 @click.argument("project_name")
-@click.option("--fail-on", type=click.Choice(["CRITICAL", "HIGH", "MEDIUM", "LOW"]), default="HIGH", help="Lowest severity that causes nonzero exit")
+@click.option(
+    "--fail-on",
+    type=click.Choice(["CRITICAL", "HIGH", "MEDIUM", "LOW"]),
+    default="HIGH",
+    help="Lowest severity that causes nonzero exit",
+)
 def audit(project_name, fail_on):
     """Run forensic audit quality gate."""
     from .audit import has_blocking_findings, run_audit, summarize
@@ -638,23 +600,20 @@ def audit(project_name, fail_on):
 @main.command()
 @click.argument("project_name")
 def validate(project_name):
-    """Run HTML validation checks."""
-    project_dir = _project_dir(project_name)
-    html_path = os.path.join(project_dir, "deliverables", "archaeology.html")
-    validator = os.path.join("archaeology", "validators", "validate_html.cjs")
+    """Validate the generated history HTML and its evidence binding."""
+    from .validators.history import validate_history
 
-    if not os.path.exists(html_path):
-        click.echo(f"No archaeology.html found at {html_path}")
-        sys.exit(1)
-
-    subprocess.run(["node", validator, html_path, "--project-dir", project_dir], check=True, timeout=120)
+    try:
+        validate_history(Path(_project_dir(project_name)))
+    except (OSError, ValueError) as exc:
+        raise click.ClickException(str(exc)) from exc
+    click.echo("PASS: generated history HTML and evidence binding")
 
 
 def _aggregate_global(targets, profile, verbose=False):
     """Merge per-project data into global/ for cross-project narrative."""
     import csv
     import sqlite3
-    from datetime import datetime
 
     global_dir = os.path.join("global", "data")
     os.makedirs(global_dir, exist_ok=True)
@@ -697,15 +656,16 @@ def _aggregate_global(targets, profile, verbose=False):
             conn.row_factory = sqlite3.Row
             try:
                 row = conn.execute(
-                    "SELECT COUNT(*) as cnt, MIN(date) as first, MAX(date) as last "
-                    "FROM commits"
+                    "SELECT COUNT(*) as cnt, MIN(date) as first, MAX(date) as last FROM commits"
                 ).fetchone()
-                project_summaries.append({
-                    "name": proj_name,
-                    "total_commits": row["cnt"],
-                    "first_commit": row["first"],
-                    "last_commit": row["last"],
-                })
+                project_summaries.append(
+                    {
+                        "name": proj_name,
+                        "total_commits": row["cnt"],
+                        "first_commit": row["first"],
+                        "last_commit": row["last"],
+                    }
+                )
             except sqlite3.OperationalError:
                 project_summaries.append({"name": proj_name, "total_commits": 0})
             finally:
@@ -723,14 +683,18 @@ def _aggregate_global(targets, profile, verbose=False):
             writer = csv.DictWriter(f, fieldnames=fields, extrasaction="ignore")
             writer.writeheader()
             writer.writerows(all_commits)
-        click.echo(f"  {len(all_commits)} commits across {len(targets)} projects → global-commits.csv")
+        click.echo(
+            f"  {len(all_commits)} commits across {len(targets)} projects → global-commits.csv"
+        )
 
     # Write global signals JSON
     if all_eras:
         signals_path = os.path.join(global_dir, "global-signals.json")
         with open(signals_path, "w", encoding="utf-8") as f:
             json.dump(all_eras, f, indent=2)
-        click.echo(f"  {len(all_eras)} signal reports across {len(targets)} projects → global-signals.json")
+        click.echo(
+            f"  {len(all_eras)} signal reports across {len(targets)} projects → global-signals.json"
+        )
 
     # Write project summaries
     summaries_path = os.path.join(global_dir, "project-summaries.json")
@@ -748,7 +712,9 @@ def _aggregate_global(targets, profile, verbose=False):
         try:
             subprocess.run(
                 ["sqlite-utils", "insert", global_db, "commits", tmp_csv, "--csv"],
-                capture_output=True, check=True, timeout=300,
+                capture_output=True,
+                check=True,
+                timeout=300,
             )
         except (FileNotFoundError, subprocess.CalledProcessError):
             conn = sqlite3.connect(global_db, timeout=30)
@@ -756,9 +722,7 @@ def _aggregate_global(targets, profile, verbose=False):
                 with open(tmp_csv, newline="", encoding="utf-8") as f:
                     reader = csv.DictReader(f)
                     cols = reader.fieldnames
-                    conn.execute(
-                        f"CREATE TABLE commits ({', '.join(c + ' TEXT' for c in cols)})"
-                    )
+                    conn.execute(f"CREATE TABLE commits ({', '.join(c + ' TEXT' for c in cols)})")
                     for row in reader:
                         placeholders = ", ".join("?" for _ in cols)
                         conn.execute(
@@ -769,12 +733,17 @@ def _aggregate_global(targets, profile, verbose=False):
             finally:
                 conn.close()
 
-        click.echo(f"  Global DB → global.db")
+        click.echo("  Global DB → global.db")
 
 
 @main.command()
-@click.option("--project", "-p", "projects", multiple=True,
-              help="Sync specific project(s) only. Defaults to all in profile.json.")
+@click.option(
+    "--project",
+    "-p",
+    "projects",
+    multiple=True,
+    help="Sync specific project(s) only. Defaults to all in profile.json.",
+)
 @click.option("--skip-mine", is_flag=True, help="Skip git extraction (use cached data)")
 @click.option("--skip-signals", is_flag=True, help="Skip signal detection")
 @click.option("--verbose", "-v", is_flag=True)
@@ -784,7 +753,10 @@ def sync(projects, skip_mine, skip_signals, verbose):
     if not os.path.exists(profile_path):
         profile_path = "config/profile.json"
     if not os.path.exists(profile_path):
-        click.echo("No profile.json found. Create one at config/profile.json with your project list.", err=True)
+        click.echo(
+            "No profile.json found. Create one at config/profile.json with your project list.",
+            err=True,
+        )
         sys.exit(1)
 
     try:
@@ -868,17 +840,24 @@ def sync(projects, skip_mine, skip_signals, verbose):
         db_path = os.path.join("projects", proj_name, "data", "archaeology.db")
         click.echo(f"  Building DB for {proj_name}...")
 
-        cmd = [sys.executable, "-m", "archaeology.db.builder",
-               "--project-root", os.path.join("projects", proj_name)]
+        cmd = [
+            sys.executable,
+            "-m",
+            "archaeology.db.builder",
+            "--project-root",
+            os.path.join("projects", proj_name),
+        ]
         if verbose:
             cmd.append("--verbose")
 
         _env = os.environ.copy()
         _pkg_root = str(Path(__file__).parent.parent)
-        _env["PYTHONPATH"] = _pkg_root + ((os.pathsep + _env["PYTHONPATH"]) if _env.get("PYTHONPATH") else "")
+        _env["PYTHONPATH"] = _pkg_root + (
+            (os.pathsep + _env["PYTHONPATH"]) if _env.get("PYTHONPATH") else ""
+        )
         result = subprocess.run(cmd, capture_output=not verbose, check=True, timeout=300, env=_env)
         if result.returncode == 0 and os.path.exists(db_path):
-            click.echo(f"    DB built")
+            click.echo("    DB built")
         else:
             click.echo(f"    DB build failed (exit {result.returncode})", err=True)
 
@@ -916,7 +895,12 @@ def sync(projects, skip_mine, skip_signals, verbose):
 
 
 @main.command("global-viz")
-@click.option("--output", "output_dir", default="global/deliverables", help="Output directory for the global visualization")
+@click.option(
+    "--output",
+    "output_dir",
+    default="global/deliverables",
+    help="Output directory for the global visualization",
+)
 @click.option("--top", "top_n", type=int, help="Limit to top N repos by commit count")
 @click.option("--year", type=int, help="Only include repos updated in this year")
 @click.option("--verbose", "-v", is_flag=True)
@@ -930,7 +914,10 @@ def global_viz(output_dir, top_n, year, verbose):
     commits_csv = os.path.join(data_dir, "global-commits.csv")
 
     if not os.path.exists(commits_csv) and not os.path.exists(github_json):
-        click.echo("No global data found. Run 'archaeology fetch-github' or 'archaeology sync' first.", err=True)
+        click.echo(
+            "No global data found. Run 'archaeology fetch-github' or 'archaeology sync' first.",
+            err=True,
+        )
         sys.exit(1)
 
     # Build visualization data
@@ -953,7 +940,9 @@ def global_viz(output_dir, top_n, year, verbose):
         html = f.read()
 
     # Inline the data JSON
-    safe_data = json.dumps(viz_data).replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026")
+    safe_data = (
+        json.dumps(viz_data).replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026")
+    )
 
     # Replace the placeholder lines inside the script block
     # Template has: "// GLOBAL_DATA_PLACEHOLDER\nwindow.GLOBAL_DATA = {};"
@@ -974,11 +963,18 @@ def global_viz(output_dir, top_n, year, verbose):
 
     click.echo(f"Global visualization generated at {output_path}")
     meta = viz_data.get("meta", {})
-    click.echo(f"  {meta.get('total_commits', '?')} commits across {meta.get('total_repos', '?')} repos")
+    click.echo(
+        f"  {meta.get('total_commits', '?')} commits across {meta.get('total_repos', '?')} repos"
+    )
 
 
 @main.command("multi-project-dashboard")
-@click.option("--output", "output_dir", default="global/deliverables", help="Output directory for the dashboard")
+@click.option(
+    "--output",
+    "output_dir",
+    default="global/deliverables",
+    help="Output directory for the dashboard",
+)
 @click.option("--top", "top_n", type=int, help="Limit to top N repos by commit count")
 @click.option("--year", type=int, help="Only include repos updated in this year")
 @click.option("--verbose", "-v", is_flag=True)
@@ -1015,7 +1011,12 @@ def multi_project_dashboard(output_dir, top_n, year, verbose):
         html = f.read()
 
     # Inline the data JSON
-    safe_data = json.dumps(dashboard_data).replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026")
+    safe_data = (
+        json.dumps(dashboard_data)
+        .replace("<", "\\u003c")
+        .replace(">", "\\u003e")
+        .replace("&", "\\u0026")
+    )
 
     # Replace the placeholder
     old_placeholder = "// DATA_PLACEHOLDER\nwindow.DASHBOARD_DATA = {};"
@@ -1035,13 +1036,19 @@ def multi_project_dashboard(output_dir, top_n, year, verbose):
 
     click.echo(f"Multi-project dashboard generated at {output_path}")
     meta = dashboard_data.get("meta", {})
-    click.echo(f"  {meta.get('total_commits', '?')} commits across {meta.get('total_repos', '?')} repos")
+    click.echo(
+        f"  {meta.get('total_commits', '?')} commits across {meta.get('total_repos', '?')} repos"
+    )
     click.echo(f"  Period: {meta.get('first_date', '?')} to {meta.get('last_date', '?')}")
 
 
 @main.command("fetch-github")
-@click.option("--owner", default=os.environ.get("ARCHAEOLOGY_GITHUB_OWNER", ""), help="GitHub username/org")
-@click.option("--output", "output_path", default="global/data/github-repos.json", help="Output JSON path")
+@click.option(
+    "--owner", default=os.environ.get("ARCHAEOLOGY_GITHUB_OWNER", ""), help="GitHub username/org"
+)
+@click.option(
+    "--output", "output_path", default="global/data/github-repos.json", help="Output JSON path"
+)
 def fetch_github(owner, output_path):
     """Fetch repo metadata from GitHub API for all repos (no cloning)."""
     from .visualization.github_fetcher import save_github_data
@@ -1075,217 +1082,20 @@ def benchmark(project_name):
 @main.command("dashboard")
 @click.option("--port", default=8080, help="Port to serve on")
 @click.option("--no-open", is_flag=True, help="Don't open browser automatically")
-def serve(port, no_open):
-    """Start local dashboard server for all project deliverables.
-
-    Generates the master dashboard and serves all projects over HTTP.
-    Accessible from any device on your Tailscale network.
-    """
-    import http.server
-    import threading
-    import webbrowser
-
-    from .visualization.dashboard import discover_projects, generate_master_dashboard, generate_project_index, load_api_repos, generate_global_section
-
-    root = Path.cwd()
-    projects_dir = root / "projects"
-    global_data_dir = root / "global" / "data"
-
-    # Generate master dashboard
-    projects = discover_projects(projects_dir)
-    if not projects:
-        click.echo("No projects found. Run 'archaeology mine <repo>' first.", err=True)
-        sys.exit(1)
-
-    # Load API-only repos (no cloning needed)
-    api_repos = load_api_repos(global_data_dir) if global_data_dir.exists() else []
-    # Deduplicate: remove API repos already present as mined projects
-    mined_names = {p["name"].lower().replace("-", "").replace("_", "") for p in projects}
-    api_repos = [r for r in api_repos if r["name"].lower().replace("-", "").replace("_", "") not in mined_names]
-    print(f"  After dedup: {len(api_repos)} API-only repos")
-    owner_labels = {}  # populated from ARCHAEOLOGY_GITHUB_OWNER env or left empty
-    api_section_html = generate_global_section(api_repos, owner_labels) if api_repos else ""
-
-    dashboard_html = generate_master_dashboard(projects, api_section_html=api_section_html, api_repos=api_repos)
-
-    # Symlink global visualizations if they exist
-    site_dir = root / ".serve"
-    site_dir.mkdir(exist_ok=True)
-    global_deliverables = root / "global" / "deliverables"
-    if global_deliverables.exists():
-        for html_file in global_deliverables.glob("*.html"):
-            link_path = site_dir / html_file.name
-            if link_path.is_symlink() or link_path.exists():
-                link_path.unlink()
-            link_path.symlink_to(html_file.resolve())
-    (site_dir / "index.html").write_text(dashboard_html, encoding="utf-8")
-
-    # Generate per-project index pages and symlink all deliverable files
-    for proj in projects:
-        proj_site_dir = site_dir / proj["name"]
-        proj_site_dir.mkdir(exist_ok=True)
-
-        # Generate project index page
-        proj_index_html = generate_project_index(proj)
-        (proj_site_dir / "index.html").write_text(proj_index_html, encoding="utf-8")
-
-        # Symlink ALL deliverable files from all subdirectories
-        deliverables_dir = projects_dir / proj["name"] / "deliverables"
-        if deliverables_dir.exists():
-            # Symlink top-level data files (data.json, canonical-metrics.json)
-            for data_file in deliverables_dir.glob("*.json"):
-                link_path = proj_site_dir / data_file.name
-                if link_path.is_symlink() or link_path.exists():
-                    link_path.unlink()
-                link_path.symlink_to(data_file.resolve())
-
-            # Symlink all files from each deliverable subdirectory
-            for sub_dir in deliverables_dir.iterdir():
-                if not sub_dir.is_dir():
-                    continue
-                target_dir = proj_site_dir / sub_dir.name
-                target_dir.mkdir(exist_ok=True)
-                for f in sub_dir.iterdir():
-                    if f.is_dir():
-                        continue
-                    link_path = target_dir / f.name
-                    if link_path.is_symlink() or link_path.exists():
-                        link_path.unlink()
-                    link_path.symlink_to(f.resolve())
-
-    # Symlink global deliverables for cross-repo analysis
-    global_deliverables_dir = root / "global" / "deliverables"
-    if global_deliverables_dir.exists():
-        global_site_dir = site_dir / "global"
-        global_site_dir.mkdir(exist_ok=True)
-        for f in global_deliverables_dir.rglob("*"):
-            if f.is_dir():
-                continue
-            rel = f.relative_to(global_deliverables_dir)
-            link_path = global_site_dir / rel
-            link_path.parent.mkdir(parents=True, exist_ok=True)
-            if link_path.is_symlink() or link_path.exists():
-                link_path.unlink()
-            link_path.symlink_to(f.resolve())
-
-    # Copy md-viewer.html to serve directory
-    md_viewer_src = root / "archaeology" / "templates" / "md-viewer.html"
-    if md_viewer_src.exists():
-        md_viewer_dst = site_dir / "md-viewer.html"
-        if md_viewer_dst.exists():
-            md_viewer_dst.unlink()
-        import shutil
-        shutil.copy2(md_viewer_src, md_viewer_dst)
-
-    total_deliverables = sum(p.get("total_deliverables", 0) for p in projects)
-    click.echo(f"  Master dashboard: {len(projects)} projects")
-    click.echo(f"  Total deliverables: {total_deliverables}")
-
-    # Custom handler: /api/* routes to JSON API, everything else is static files
-    import functools
-    from .api import route as api_route
-
-    class DevArchHandler(http.server.SimpleHTTPRequestHandler):
-        def do_GET(self):
-            if self.path.startswith("/api/"):
-                api_route(self)
-            else:
-                super().do_GET()
-
-        def log_message(self, fmt, *args):
-            # Suppress per-request logging for static files, keep for API
-            if self.path.startswith("/api/"):
-                click.echo(f"  API: {self.path}")
-
-    handler = functools.partial(DevArchHandler, directory=str(site_dir))
-
-    server = http.server.HTTPServer(("0.0.0.0", port), handler)
-    url = f"http://localhost:{port}"
-
-    click.echo(f"\n  Serving at {url}")
-    click.echo(f"  Tailscale: http://100.115.175.18:{port}")
-    click.echo(f"  Press Ctrl+C to stop\n")
-
-    if not no_open:
-        threading.Timer(0.5, lambda: webbrowser.open(url)).start()
-
-    try:
-        server.serve_forever()
-    except KeyboardInterrupt:
-        click.echo("\n  Server stopped.")
-        server.server_close()
+def dashboard(port, no_open):
+    """Disabled pending evidence and data-exposure hardening."""
+    raise click.ClickException(
+        "dashboard is disabled pending readiness hardening. Use init, mine, build-db, signals, analyze, visualize, export-report and audit."
+    )
 
 
 @main.command("publish-static")
 @click.option("--output", "output_dir", default="site", help="Output directory for the static site")
 def publish_static(output_dir):
-    """Generate a static site for deployment (GitHub Pages, nginx, etc.)."""
-    import shutil
-
-    from .visualization.dashboard import discover_projects, generate_master_dashboard, generate_project_index, load_api_repos, generate_global_section
-
-    root = Path.cwd()
-    projects_dir = root / "projects"
-    site = root / output_dir
-
-    # Clean output directory
-    if site.exists():
-        shutil.rmtree(site)
-    site.mkdir(parents=True)
-
-    # Generate master dashboard
-    projects = discover_projects(projects_dir)
-    if not projects:
-        click.echo("No projects found.", err=True)
-        sys.exit(1)
-
-    # Load and deduplicate API repos
-    global_data_dir = root / "global" / "data"
-    api_repos = load_api_repos(global_data_dir) if global_data_dir.exists() else []
-    mined_names = {p["name"].lower().replace("-", "").replace("_", "") for p in projects}
-    api_repos = [r for r in api_repos if r["name"].lower().replace("-", "").replace("_", "") not in mined_names]
-    owner_labels = {}  # populated from ARCHAEOLOGY_GITHUB_OWNER env or left empty
-    api_section_html = generate_global_section(api_repos, owner_labels) if api_repos else ""
-
-    dashboard_html = generate_master_dashboard(projects, api_section_html=api_section_html, api_repos=api_repos)
-    (site / "index.html").write_text(dashboard_html, encoding="utf-8")
-
-    click.echo(f"  Master dashboard: {len(projects)} projects, {len(api_repos)} API repos")
-
-    # Copy global deliverables (dashboard.html, global.html)
-    global_deliverables = root / "global" / "deliverables"
-    if global_deliverables.exists():
-        for html_file in global_deliverables.glob("*.html"):
-            shutil.copy2(html_file, site / html_file.name)
-        click.echo(f"  Global visualizations copied")
-
-    # Generate per-project pages
-    for proj in projects:
-        proj_site_dir = site / proj["name"]
-        proj_site_dir.mkdir()
-
-        # Project index
-        proj_index_html = generate_project_index(proj)
-        (proj_site_dir / "index.html").write_text(proj_index_html, encoding="utf-8")
-
-        # Copy HTML files from deliverables
-        deliverables_dir = projects_dir / proj["name"] / "deliverables"
-        visuals_dir = deliverables_dir / "visuals"
-        source_dir = visuals_dir if visuals_dir.exists() else deliverables_dir
-
-        for html_file in source_dir.glob("*.html"):
-            shutil.copy2(html_file, proj_site_dir / html_file.name)
-
-        # Copy data.json
-        data_json = deliverables_dir / "data.json"
-        if data_json.exists():
-            shutil.copy2(data_json, proj_site_dir / "data.json")
-
-        click.echo(f"  {proj['name']}: {len(proj['visuals'])} pages")
-
-    total = sum(len(p["visuals"]) for p in projects) + len(projects) + 1
-    click.echo(f"\n  Static site generated at {site}/ ({total} pages)")
-    click.echo(f"  Deploy with: rsync -avz {site}/ user@host:/var/www/archaeology/")
+    """Disabled pending evidence and data-exposure hardening."""
+    raise click.ClickException(
+        "publish-static is disabled pending readiness hardening. Use init, mine, build-db, signals, analyze, visualize, export-report and audit."
+    )
 
 
 if __name__ == "__main__":

@@ -46,11 +46,7 @@ import sqlite_utils
 db = sqlite_utils.Database("archaeology.db")
 
 # Insert data
-db["commits"].insert_all(
-    csv_data,
-    pk="hash",
-    replace=True
-)
+db["commits"].insert_all(csv_data, pk="hash", replace=True)
 
 # Create indexes
 db["commits"].create_index("date")

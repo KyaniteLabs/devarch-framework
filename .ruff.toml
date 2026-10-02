@@ -1,0 +1,14 @@
+target-version = "py310"
+line-length = 100
+
+[lint]
+select = ["E4", "E7", "E9", "F", "I"]
+
+# Repository-only content-generation utilities require Python 3.12.
+[per-file-target-version]
+"scripts/**/*.py" = "py312"
+
+[lint.per-file-ignores]
+# These standalone utilities import project modules after explicit sys.path setup.
+"scripts/data/refresh_data.py" = ["E402"]
+"scripts/sync/generate-bridge.py" = ["E402"]

@@ -3,8 +3,8 @@
 
 import json
 import sys
-from pathlib import Path
 from collections import defaultdict
+from pathlib import Path
 
 # Resolve repo root: stages/06-visualize/generate_visualization.py -> repo root
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
@@ -60,7 +60,9 @@ def prepare_chart_data(signals, analyses):
     if DB_PATH.exists():
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
-        cursor.execute("SELECT author, COUNT(*) as cnt FROM commits GROUP BY author ORDER BY cnt DESC")
+        cursor.execute(
+            "SELECT author, COUNT(*) as cnt FROM commits GROUP BY author ORDER BY cnt DESC"
+        )
         author_rows = cursor.fetchall()
         cursor.execute("SELECT message FROM commits")
         commit_messages = [row[0] for row in cursor.fetchall()]
@@ -126,16 +128,9 @@ def prepare_chart_data(signals, analyses):
 def generate_html(signals, analyses, chart_data):
     """Generate the complete HTML visualization using the DevArch design system."""
     from archaeology.visualization.design_system import (
-        ACCESSIBILITY_CSS,
-        CHART_THEME_JS,
-        FAVICON,
-        GOOGLE_FONTS_LINK,
-        THEME_CSS,
-        THEME_SWITCHER_CSS,
         THEME_SWITCHER_HTML,
         THEME_SWITCHER_JS,
         head_bundle,
-        seo_meta,
     )
 
     # Extract key metrics
@@ -150,9 +145,7 @@ def generate_html(signals, analyses, chart_data):
 
     commit_type_counts = chart_data["commit_type"]["data"]["counts"]
     total_type_commits = sum(commit_type_counts) or 1
-    commit_type_percentages = [
-        round(c / total_type_commits * 100, 1) for c in commit_type_counts
-    ]
+    commit_type_percentages = [round(c / total_type_commits * 100, 1) for c in commit_type_counts]
 
     author_labels = json.dumps(chart_data["author_distribution"]["data"]["authors"])
     author_values = json.dumps(chart_data["author_distribution"]["data"]["commits"])
@@ -325,7 +318,7 @@ def generate_signals_html(signals):
 
         html.append(f"""
         <div style="background: var(--bg-main); border-left: 3px solid var(--accent); padding: var(--space-3) var(--space-4); border-radius: 0 var(--radius-sm) var(--radius-sm) 0;">
-          <div style="font-weight: 600; color: var(--accent); margin-bottom: var(--space-1);">{signal_type.replace('_', ' ').title()}</div>
+          <div style="font-weight: 600; color: var(--accent); margin-bottom: var(--space-1);">{signal_type.replace("_", " ").title()}</div>
           <div style="color: var(--text-2); font-size: var(--text-sm);">{date}</div>
           <div style="margin-top: var(--space-1);">{description}</div>
         </div>""")
@@ -340,13 +333,17 @@ def generate_findings_html(analyses):
         vector_name = analysis_data.get("vector_name", analysis_name)
         findings = analysis_data.get("findings", [])[:3]
 
-        html.append(f'<h3 style="font-family: var(--font-display); margin-top: var(--space-5); margin-bottom: var(--space-3);">{vector_name}</h3>')
+        html.append(
+            f'<h3 style="font-family: var(--font-display); margin-top: var(--space-5); margin-bottom: var(--space-3);">{vector_name}</h3>'
+        )
 
         for finding in findings:
             finding_type = finding.get("type", "Unknown")
             description = finding.get("description", "")
             confidence = finding.get("confidence", "low")
-            conf_color = {"high": "#22c55e", "medium": "#eab308", "low": "#ef4444"}.get(confidence, "#a1a1aa")
+            conf_color = {"high": "#22c55e", "medium": "#eab308", "low": "#ef4444"}.get(
+                confidence, "#a1a1aa"
+            )
 
             html.append(f"""
         <div style="padding: var(--space-3) 0; border-bottom: 1px solid var(--border);">
@@ -371,5 +368,5 @@ if __name__ == "__main__":
     with open(OUTPUT_PATH, "w") as f:
         f.write(html)
 
-    print(f"Stage 06-Visualize completed")
+    print("Stage 06-Visualize completed")
     print(f"  Output written to: {OUTPUT_PATH}")

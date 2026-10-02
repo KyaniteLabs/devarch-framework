@@ -10,10 +10,7 @@ Provides a consistent nav bar across all HTML pages with:
 
 from __future__ import annotations
 
-import os
 from pathlib import Path
-from typing import Any
-
 
 # ── PostHog snippet ──────────────────────────────────────────────────
 
@@ -78,7 +75,9 @@ NAV_THEME_JS = """<script>
 </script>"""
 
 
-def _discover_sibling_pages(current_file: Path, project_deliverables_dir: Path) -> list[dict[str, str]]:
+def _discover_sibling_pages(
+    current_file: Path, project_deliverables_dir: Path
+) -> list[dict[str, str]]:
     """Find all HTML files in the same visuals/ directory (or deliverables/ for legacy).
 
     Returns list of {name, href, is_active}.
@@ -103,11 +102,13 @@ def _discover_sibling_pages(current_file: Path, project_deliverables_dir: Path) 
             display = "Playbook"
         elif display == "Report":
             display = "Report"
-        pages.append({
-            "name": display,
-            "href": html_file.name,
-            "is_active": current_file.name == html_file.name,
-        })
+        pages.append(
+            {
+                "name": display,
+                "href": html_file.name,
+                "is_active": current_file.name == html_file.name,
+            }
+        )
     return pages
 
 
@@ -150,7 +151,7 @@ def generate_nav(
         project_index_href = "visuals/index.html"
 
     nav_html = f"""{NAV_CSS}
-{POSTHOG_SNIPPET if include_posthog else ''}
+{POSTHOG_SNIPPET if include_posthog else ""}
 <nav class="site-nav">
   <a href="{home_url}" class="nav-home">Home</a>
   <div class="nav-sep"></div>
@@ -196,7 +197,7 @@ def generate_nav_simple(
         page_links += f'<a href="{page["href"]}"{active_class}>{page["name"]}</a>\n      '
 
     nav_html = f"""{NAV_CSS}
-{POSTHOG_SNIPPET if include_posthog else ''}
+{POSTHOG_SNIPPET if include_posthog else ""}
 <nav class="site-nav">
   <a href="{home_url}" class="nav-home">Home</a>
   <div class="nav-sep"></div>

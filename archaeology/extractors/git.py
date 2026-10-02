@@ -10,7 +10,11 @@ def _git(repo_path: str, *args: str) -> str:
     try:
         result = subprocess.run(
             ["git", "-C", str(Path(repo_path).expanduser()), *args],
-            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=300,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=300,
         )
     except FileNotFoundError as exc:
         raise RuntimeError("git binary not found. Install git and ensure it's on PATH.") from exc
@@ -34,7 +38,9 @@ def repository_coverage(repo_path: str) -> dict:
         "commit_count": count,
         "refs": [dict(zip(("name", "object"), line.split("\t", 1))) for line in refs.splitlines()],
         "roots": _git(repo_path, "rev-list", "--all", "--max-parents=0").splitlines(),
-        "gaps": ["Deleted, inaccessible and unfetched remote refs are outside this local snapshot."],
+        "gaps": [
+            "Deleted, inaccessible and unfetched remote refs are outside this local snapshot."
+        ],
     }
 
 
@@ -45,8 +51,9 @@ def extract_git_log(repo_path: str, output_path: str, verbose: bool = False) -> 
     preserve those values rather than silently shifting or dropping CSV fields.
     Empty histories write a header, replacing any stale previous extraction.
     """
-    from datetime import datetime, timezone
     import io
+    from datetime import datetime, timezone
+
     from ..utils import atomic_write
 
     raw = _git(repo_path, "log", "-z", "--all", "--format=%H%x00%aI%x00%s%x00%an")
@@ -59,8 +66,10 @@ def extract_git_log(repo_path: str, output_path: str, verbose: bool = False) -> 
     writer = csv.writer(stream, lineterminator="\n")
     writer.writerow(["hash", "date", "message", "author"])
     for i in range(0, len(fields), 4):
-        sha, date, subject, author = fields[i:i + 4]
-        normalized = datetime.fromisoformat(date.replace("Z", "+00:00")).astimezone(timezone.utc).isoformat()
+        sha, date, subject, author = fields[i : i + 4]
+        normalized = (
+            datetime.fromisoformat(date.replace("Z", "+00:00")).astimezone(timezone.utc).isoformat()
+        )
         writer.writerow([sha, normalized, subject, author])
     count = len(fields) // 4
     expected = int(_git(repo_path, "rev-list", "--all", "--count").strip())
@@ -74,12 +83,11 @@ def extract_git_log(repo_path: str, output_path: str, verbose: bool = False) -> 
 
 def extract_git_log_with_stats(repo_path: str, output_path: str, verbose: bool = False) -> int:
     """Extract git log with file change stats."""
-    cmd = [
-        "git", "-C", repo_path,
-        "log", "--format=%H%x1f%ai%x1f%s%x1f%an", "--shortstat", "--all"
-    ]
+    cmd = ["git", "-C", repo_path, "log", "--format=%H%x1f%ai%x1f%s%x1f%an", "--shortstat", "--all"]
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=300)
+        result = subprocess.run(
+            cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=300
+        )
     except FileNotFoundError:
         raise RuntimeError("git binary not found. Install git and ensure it's on PATH.")
     except subprocess.TimeoutExpired:
@@ -103,7 +111,10 @@ def get_repo_list(repo_path: str) -> list[str]:
     try:
         result = subprocess.run(
             ["gh", "repo", "list", "--limit", "100", "--json", "name,url"],
-            capture_output=True, text=True, cwd=repo_path, timeout=60
+            capture_output=True,
+            text=True,
+            cwd=repo_path,
+            timeout=60,
         )
     except FileNotFoundError:
         raise RuntimeError("gh CLI not found. Install GitHub CLI and ensure it's on PATH.")
@@ -112,6 +123,7 @@ def get_repo_list(repo_path: str) -> list[str]:
 
     if result.returncode == 0:
         import json
+
         repos = json.loads(result.stdout)
         return [r["name"] for r in repos]
     return []

@@ -16,7 +16,6 @@ import sys
 import time
 import urllib.request
 from pathlib import Path
-from datetime import datetime
 
 ROOT = Path(__file__).resolve().parents[2]
 LM_STUDIO_URL = os.environ.get("LM_STUDIO_URL", "http://localhost:1234")
@@ -66,13 +65,15 @@ def load_project_data(project_name: str) -> dict:
 
 def llm_generate(prompt: str, max_tokens: int = 4000) -> str:
     """Generate text using local LLM via LM Studio."""
-    payload = json.dumps({
-        "model": MODEL,
-        "messages": [{"role": "user", "content": prompt}],
-        "max_tokens": max_tokens,
-        "temperature": 0.7,
-        "top_p": 0.9,
-    }).encode("utf-8")
+    payload = json.dumps(
+        {
+            "model": MODEL,
+            "messages": [{"role": "user", "content": prompt}],
+            "max_tokens": max_tokens,
+            "temperature": 0.7,
+            "top_p": 0.9,
+        }
+    ).encode("utf-8")
 
     req = urllib.request.Request(
         f"{LM_STUDIO_URL}/v1/chat/completions",
@@ -99,11 +100,15 @@ def build_context(proj: dict) -> str:
         m = proj["metrics"]
         lines.append(f"Active days: {m.get('active_days', '?')}")
         lines.append(f"Span: {m.get('span_days', '?')} days")
-        lines.append(f"Peak day: {m.get('peak_day', '?')} ({m.get('peak_day_commits', '?')} commits)")
+        lines.append(
+            f"Peak day: {m.get('peak_day', '?')} ({m.get('peak_day_commits', '?')} commits)"
+        )
     if "eras" in proj:
         lines.append(f"Eras ({len(proj['eras'])}):")
         for era in proj["eras"]:
-            lines.append(f"  - Era {era.get('id', '?')}: {era.get('name', '?')} ({era.get('dates', '?')}) — {era.get('commits', '?')} commits")
+            lines.append(
+                f"  - Era {era.get('id', '?')}: {era.get('name', '?')} ({era.get('dates', '?')}) — {era.get('commits', '?')} commits"
+            )
             if era.get("key_events"):
                 for evt in era["key_events"][:3]:
                     lines.append(f"    • {evt}")
@@ -111,7 +116,9 @@ def build_context(proj: dict) -> str:
         lines.append(f"Commit types: {json.dumps(proj['commit_types'])}")
     if "contributors" in proj:
         for c in proj["contributors"][:3]:
-            lines.append(f"Contributor: {c.get('name', '?')} — {c.get('commits', '?')} commits ({c.get('percentage', '?')}%)")
+            lines.append(
+                f"Contributor: {c.get('name', '?')} — {c.get('commits', '?')} commits ({c.get('percentage', '?')}%)"
+            )
     return "\n".join(lines)
 
 
@@ -126,7 +133,7 @@ def ensure_analysis_md(proj: dict) -> int:
         if md_path.exists():
             continue
 
-        prompt = f"""Generate a concise markdown analysis summary from this JSON data for the project "{proj['name']}".
+        prompt = f"""Generate a concise markdown analysis summary from this JSON data for the project "{proj["name"]}".
 
 Project context:
 {build_context(proj)}
@@ -145,7 +152,7 @@ Keep it factual and data-driven. Use real numbers from the JSON. Do not invent d
         content = llm_generate(prompt, max_tokens=2000)
         if not content.startswith("ERROR:"):
             # Clean up any thinking tags from reasoning models
-            content = re.sub(r'<think[^>]*>.*?</think\s*>', '', content, flags=re.DOTALL).strip()
+            content = re.sub(r"<think[^>]*>.*?</think\s*>", "", content, flags=re.DOTALL).strip()
             md_path.write_text(content, encoding="utf-8")
             count += 1
             print(f"    + {md_path.name}")
@@ -163,7 +170,7 @@ def ensure_report_files(proj: dict) -> int:
     # CROSS-REPO-NARRATIVE.md
     target = reports_dir / "CROSS-REPO-NARRATIVE.md"
     if not target.exists():
-        prompt = f"""Generate a cross-repository narrative for "{proj['name']}".
+        prompt = f"""Generate a cross-repository narrative for "{proj["name"]}".
 
 Project context:
 {build_context(proj)}
@@ -178,7 +185,7 @@ Use real data (commits, eras, dates). Keep it factual."""
 
         content = llm_generate(prompt, max_tokens=2000)
         if not content.startswith("ERROR:"):
-            content = re.sub(r'<think[^>]*>.*?</think\s*>', '', content, flags=re.DOTALL).strip()
+            content = re.sub(r"<think[^>]*>.*?</think\s*>", "", content, flags=re.DOTALL).strip()
             target.write_text(content, encoding="utf-8")
             count += 1
             print(f"    + {target.name}")
@@ -187,7 +194,7 @@ Use real data (commits, eras, dates). Keep it factual."""
     # raw-narrative.md
     target = reports_dir / "raw-narrative.md"
     if not target.exists():
-        prompt = f"""Generate a raw chronological narrative for "{proj['name']}" from its commit history.
+        prompt = f"""Generate a raw chronological narrative for "{proj["name"]}" from its commit history.
 
 Project context:
 {build_context(proj)}
@@ -198,11 +205,11 @@ Write a markdown document that tells the chronological story of this project's d
 - Capture the development flow and momentum shifts
 - Be narrative but factual — no invented details
 
-Title: "Raw Development Narrative — {proj['name']}" """
+Title: "Raw Development Narrative — {proj["name"]}" """
 
         content = llm_generate(prompt, max_tokens=3000)
         if not content.startswith("ERROR:"):
-            content = re.sub(r'<think[^>]*>.*?</think\s*>', '', content, flags=re.DOTALL).strip()
+            content = re.sub(r"<think[^>]*>.*?</think\s*>", "", content, flags=re.DOTALL).strip()
             target.write_text(content, encoding="utf-8")
             count += 1
             print(f"    + {target.name}")
@@ -218,7 +225,7 @@ def ensure_strategy_files(proj: dict) -> int:
     strategy_dir.mkdir(parents=True, exist_ok=True)
 
     missing = {
-        "ADVERSARIAL-ANALYSIS.md": f"""Generate an adversarial analysis for "{proj['name']}".
+        "ADVERSARIAL-ANALYSIS.md": f"""Generate an adversarial analysis for "{proj["name"]}".
 
 Project context:
 {build_context(proj)}
@@ -230,9 +237,8 @@ Write a markdown document that critically examines this project:
 - What would a critic say about the development approach?
 - Rate confidence levels for key claims
 
-Be honest and constructive. Title: "Adversarial Analysis — {proj['name']}" """,
-
-        "AGENT-BENCHMARK-REPORT.md": f"""Generate an agent benchmark report for "{proj['name']}".
+Be honest and constructive. Title: "Adversarial Analysis — {proj["name"]}" """,
+        "AGENT-BENCHMARK-REPORT.md": f"""Generate an agent benchmark report for "{proj["name"]}".
 
 Project context:
 {build_context(proj)}
@@ -244,7 +250,7 @@ Write a markdown document analyzing AI agent usage in this project:
 - Quality comparison between agent-assisted and manual commits
 - Recommendations for improving AI-assisted workflow
 
-Title: "Agent Benchmark Report — {proj['name']}" """,
+Title: "Agent Benchmark Report — {proj["name"]}" """,
     }
 
     for filename, prompt in missing.items():
@@ -254,7 +260,7 @@ Title: "Agent Benchmark Report — {proj['name']}" """,
 
         content = llm_generate(prompt, max_tokens=2500)
         if not content.startswith("ERROR:"):
-            content = re.sub(r'<think[^>]*>.*?</think\s*>', '', content, flags=re.DOTALL).strip()
+            content = re.sub(r"<think[^>]*>.*?</think\s*>", "", content, flags=re.DOTALL).strip()
             target.write_text(content, encoding="utf-8")
             count += 1
             print(f"    + {target.name}")
@@ -270,7 +276,7 @@ def ensure_planning_files(proj: dict) -> int:
     planning_dir.mkdir(parents=True, exist_ok=True)
 
     missing = {
-        "REMEDIATION_SUMMARY.md": f"""Generate a remediation summary for "{proj['name']}".
+        "REMEDIATION_SUMMARY.md": f"""Generate a remediation summary for "{proj["name"]}".
 
 Project context:
 {build_context(proj)}
@@ -282,9 +288,8 @@ Write a markdown document summarizing:
 - Current state of code quality
 - Prioritized remediation backlog
 
-Title: "Remediation Summary — {proj['name']}" """,
-
-        "external-data-sources-research.md": f"""Generate an external data sources research document for "{proj['name']}".
+Title: "Remediation Summary — {proj["name"]}" """,
+        "external-data-sources-research.md": f"""Generate an external data sources research document for "{proj["name"]}".
 
 Project context:
 {build_context(proj)}
@@ -295,9 +300,8 @@ Write a markdown document identifying:
 - Rate limits, costs, and reliability considerations
 - Recommended data sources for deeper analysis
 
-Title: "External Data Sources Research — {proj['name']}" """,
-
-        "META-PATTERN-VISUALIZATION-RESEARCH.md": f"""Generate a meta-pattern visualization research document for "{proj['name']}".
+Title: "External Data Sources Research — {proj["name"]}" """,
+        "META-PATTERN-VISUALIZATION-RESEARCH.md": f"""Generate a meta-pattern visualization research document for "{proj["name"]}".
 
 Project context:
 {build_context(proj)}
@@ -308,7 +312,7 @@ Write a markdown document exploring:
 - What visualization approaches would best reveal these patterns
 - Recommendations for advanced analysis techniques
 
-Title: "Meta-Pattern Visualization Research — {proj['name']}" """,
+Title: "Meta-Pattern Visualization Research — {proj["name"]}" """,
     }
 
     for filename, prompt in missing.items():
@@ -318,7 +322,7 @@ Title: "Meta-Pattern Visualization Research — {proj['name']}" """,
 
         content = llm_generate(prompt, max_tokens=2000)
         if not content.startswith("ERROR:"):
-            content = re.sub(r'<think[^>]*>.*?</think\s*>', '', content, flags=re.DOTALL).strip()
+            content = re.sub(r"<think[^>]*>.*?</think\s*>", "", content, flags=re.DOTALL).strip()
             target.write_text(content, encoding="utf-8")
             count += 1
             print(f"    + {target.name}")
@@ -334,7 +338,7 @@ def ensure_learning_files(proj: dict) -> int:
     learning_dir.mkdir(parents=True, exist_ok=True)
 
     missing = {
-        "ML-LEARNING-PLAN.md": f"""Generate an ML-focused learning plan for "{proj['name']}".
+        "ML-LEARNING-PLAN.md": f"""Generate an ML-focused learning plan for "{proj["name"]}".
 
 Project context:
 {build_context(proj)}
@@ -346,9 +350,8 @@ Write a markdown document that:
 - Suggests resources and exercises
 - Focuses on practical, project-relevant skills
 
-Title: "ML Learning Plan — {proj['name']}" """,
-
-        "RECURSIVE-STORY-CIRCLE.md": f"""Generate a recursive story circle document for "{proj['name']}".
+Title: "ML Learning Plan — {proj["name"]}" """,
+        "RECURSIVE-STORY-CIRCLE.md": f"""Generate a recursive story circle document for "{proj["name"]}".
 
 Project context:
 {build_context(proj)}
@@ -362,7 +365,7 @@ Write a markdown document that frames the project's development as a narrative a
 - Reward, road back, resurrection (resolution)
 - Return with elixir (what was learned)
 
-Use real dates, commits, and events. Title: "Recursive Story Circle — {proj['name']}" """,
+Use real dates, commits, and events. Title: "Recursive Story Circle — {proj["name"]}" """,
     }
 
     for filename, prompt in missing.items():
@@ -372,7 +375,7 @@ Use real dates, commits, and events. Title: "Recursive Story Circle — {proj['n
 
         content = llm_generate(prompt, max_tokens=2000)
         if not content.startswith("ERROR:"):
-            content = re.sub(r'<think[^>]*>.*?</think\s*>', '', content, flags=re.DOTALL).strip()
+            content = re.sub(r"<think[^>]*>.*?</think\s*>", "", content, flags=re.DOTALL).strip()
             target.write_text(content, encoding="utf-8")
             count += 1
             print(f"    + {target.name}")
@@ -388,7 +391,7 @@ def ensure_content_files(proj: dict) -> int:
     content_dir.mkdir(parents=True, exist_ok=True)
 
     missing = {
-        "blog-draft.md": f"""Generate a blog post draft about "{proj['name']}".
+        "blog-draft.md": f"""Generate a blog post draft about "{proj["name"]}".
 
 Project context:
 {build_context(proj)}
@@ -401,8 +404,7 @@ Write a compelling blog post (800-1200 words) about this project:
 - End with a takeaway or lesson learned
 
 Title should be engaging. Write in first-person plural ("we").""",
-
-        "excavation-report.md": f"""Generate an excavation report for "{proj['name']}".
+        "excavation-report.md": f"""Generate an excavation report for "{proj["name"]}".
 
 Project context:
 {build_context(proj)}
@@ -414,9 +416,8 @@ Write a markdown excavation report:
 - What the data reveals about development practices
 - Summary statistics and their meaning
 
-Title: "Excavation Report — {proj['name']}" """,
-
-        "STORY-CIRCLE-SAMPLE.md": f"""Generate a story circle sample for "{proj['name']}".
+Title: "Excavation Report — {proj["name"]}" """,
+        "STORY-CIRCLE-SAMPLE.md": f"""Generate a story circle sample for "{proj["name"]}".
 
 Project context:
 {build_context(proj)}
@@ -428,9 +429,8 @@ in an engaging, almost literary way:
 - Make the code feel alive
 - Focus on the human side of development
 
-Title: "The Story of {proj['name']}" """,
-
-        "twitter-thread.md": f"""Generate a Twitter/X thread about "{proj['name']}".
+Title: "The Story of {proj["name"]}" """,
+        "twitter-thread.md": f"""Generate a Twitter/X thread about "{proj["name"]}".
 
 Project context:
 {build_context(proj)}
@@ -443,8 +443,7 @@ Write a 8-12 tweet thread about this project's development story:
 - Use engaging but professional tone
 
 Format as numbered tweets (1/, 2/, etc.)""",
-
-        f"project-narrative-{proj['name'].lower()}.md": f"""Generate a project narrative for "{proj['name']}".
+        f"project-narrative-{proj['name'].lower()}.md": f"""Generate a project narrative for "{proj["name"]}".
 
 Project context:
 {build_context(proj)}
@@ -456,9 +455,8 @@ Write a longer-form narrative (1000-1500 words) about this project:
 - The overall arc of development
 - What this project says about the developer's growth
 
-Title: "Project Narrative — {proj['name']}" """,
-
-        "ai-collaboration-analysis.md": f"""Generate an AI collaboration analysis for "{proj['name']}".
+Title: "Project Narrative — {proj["name"]}" """,
+        "ai-collaboration-analysis.md": f"""Generate an AI collaboration analysis for "{proj["name"]}".
 
 Project context:
 {build_context(proj)}
@@ -470,9 +468,8 @@ Write a markdown analysis of how AI agents were used in this project:
 - What this reveals about human-AI collaboration
 - Lessons for improving AI-assisted development
 
-Title: "AI Collaboration Analysis — {proj['name']}" """,
-
-        "development-rhythm-analysis.md": f"""Generate a development rhythm analysis for "{proj['name']}".
+Title: "AI Collaboration Analysis — {proj["name"]}" """,
+        "development-rhythm-analysis.md": f"""Generate a development rhythm analysis for "{proj["name"]}".
 
 Project context:
 {build_context(proj)}
@@ -484,9 +481,8 @@ Write a markdown analysis of the development rhythm:
 - What the commit frequency reveals about development style
 - Comparison to typical development patterns
 
-Title: "Development Rhythm Analysis — {proj['name']}" """,
-
-        "technical-decisions-log.md": f"""Generate a technical decisions log for "{proj['name']}".
+Title: "Development Rhythm Analysis — {proj["name"]}" """,
+        "technical-decisions-log.md": f"""Generate a technical decisions log for "{proj["name"]}".
 
 Project context:
 {build_context(proj)}
@@ -498,9 +494,8 @@ Write a markdown log of key technical decisions visible in the commit history:
 - What was added, removed, or changed
 - Decision quality in hindsight
 
-Title: "Technical Decisions Log — {proj['name']}" """,
-
-        "era-deep-dive.md": f"""Generate an era deep-dive for "{proj['name']}".
+Title: "Technical Decisions Log — {proj["name"]}" """,
+        "era-deep-dive.md": f"""Generate an era deep-dive for "{proj["name"]}".
 
 Project context:
 {build_context(proj)}
@@ -512,7 +507,7 @@ Write a markdown deep-dive into each era:
 - What triggered era changes
 - Overall narrative arc
 
-Title: "Era Deep-Dive — {proj['name']}" """,
+Title: "Era Deep-Dive — {proj["name"]}" """,
     }
 
     for filename, prompt in missing.items():
@@ -522,7 +517,7 @@ Title: "Era Deep-Dive — {proj['name']}" """,
 
         content = llm_generate(prompt, max_tokens=2500)
         if not content.startswith("ERROR:"):
-            content = re.sub(r'<think[^>]*>.*?</think\s*>', '', content, flags=re.DOTALL).strip()
+            content = re.sub(r"<think[^>]*>.*?</think\s*>", "", content, flags=re.DOTALL).strip()
             target.write_text(content, encoding="utf-8")
             count += 1
             print(f"    + {target.name}")
@@ -539,7 +534,7 @@ def ensure_video_files(proj: dict) -> int:
 
     target = video_dir / "video-script-outline.md"
     if not target.exists():
-        prompt = f"""Generate a video script outline for "{proj['name']}".
+        prompt = f"""Generate a video script outline for "{proj["name"]}".
 
 Project context:
 {build_context(proj)}
@@ -555,7 +550,7 @@ Keep it practical for a 5-8 minute video."""
 
         content = llm_generate(prompt, max_tokens=1500)
         if not content.startswith("ERROR:"):
-            content = re.sub(r'<think[^>]*>.*?</think\s*>', '', content, flags=re.DOTALL).strip()
+            content = re.sub(r"<think[^>]*>.*?</think\s*>", "", content, flags=re.DOTALL).strip()
             target.write_text(content, encoding="utf-8")
             count += 1
             print(f"    + {target.name}")
@@ -566,9 +561,9 @@ Keep it practical for a 5-8 minute video."""
 
 def generate_for_project(project_name: str) -> None:
     """Generate all missing deliverables for a project."""
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"Generating deliverables for {project_name}")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
 
     proj = load_project_data(project_name)
     if "eras" not in proj:
@@ -593,7 +588,15 @@ def main():
         sys.exit(1)
 
     if sys.argv[1] == "--all":
-        for proj_name in ["Achiote", "DECLuTTER-AI", "DialectOS", "Epoch", "Fugax", "mcp-video", "openglaze"]:
+        for proj_name in [
+            "Achiote",
+            "DECLuTTER-AI",
+            "DialectOS",
+            "Epoch",
+            "Fugax",
+            "mcp-video",
+            "openglaze",
+        ]:
             generate_for_project(proj_name)
     else:
         generate_for_project(sys.argv[1])
