@@ -349,27 +349,45 @@ def check_mined_history(project_name: str, root: Path) -> list[AuditFinding]:
     project = _project_dir(project_name, root)
     coverage_path = project / 'data' / 'coverage.json'
     coverage = _load_json(coverage_path)
-    if coverage is None:
-        return []  # Imported legacy datasets have no mining manifest.
+    config = _load_json(project / 'project.json') or {}
+    if not coverage_path.exists() and not config.get('mined_history_manifest_required'):
+        return []  # Legacy imported datasets never claimed a mining manifest.
+    if not isinstance(coverage, dict) or not isinstance(coverage.get('artifact_sha256'), dict):
+        return [AuditFinding('HIGH', 'MINING_MANIFEST_INVALID', 'Mining coverage manifest missing or invalid')]
     findings = []
-    for name, expected in coverage.get('artifact_sha256', {}).items():
-        path = project / 'data' / name
-        if name not in {'github-commits.csv', 'github-commits-with-stats.txt'}:
+    expected_names = {'github-commits.csv', 'github-commits-with-stats.txt'}
+    if set(coverage['artifact_sha256']) != expected_names:
+        findings.append(AuditFinding('HIGH', 'MINING_MANIFEST_INVALID', 'Mining artifact bindings incomplete'))
+    for name, expected in coverage['artifact_sha256'].items():
+        if name not in expected_names:
             findings.append(AuditFinding('HIGH', 'MINING_MANIFEST_INVALID', 'Unexpected artifact name'))
             continue
+        path = project / 'data' / name
         if not path.exists() or hashlib.sha256(path.read_bytes()).hexdigest() != expected:
             findings.append(AuditFinding('HIGH', 'MINING_ARTIFACT_DRIFT', f'Mined artifact changed: {name}'))
     csv_path = project / 'data' / 'github-commits.csv'
     db_path = project / 'data' / 'archaeology.db'
     try:
         with csv_path.open(encoding='utf-8', newline='') as handle:
-            hashes = [row['hash'] for row in csv.DictReader(handle)]
+            rows = list(csv.DictReader(handle))
+        keys = ('hash', 'date', 'message', 'author')
+        source = [tuple(row[key] for key in keys) for row in rows]
+        hashes = [row['hash'] for row in rows]
         if not db_path.exists():
             raise ValueError('Mined history database is missing')
         with sqlite3.connect(db_path) as conn:
-            stored = [row[0] for row in conn.execute('SELECT hash FROM commits')]
-        if len(hashes) != coverage.get('commit_count') or len(set(hashes)) != len(hashes) or sorted(hashes) != sorted(stored):
-            raise ValueError('Git manifest, CSV and SQLite commit identities do not reconcile')
-    except (OSError, ValueError, KeyError, sqlite3.Error) as exc:
+            stored = list(conn.execute('SELECT hash,date,message,author FROM commits'))
+        if len(hashes) != coverage.get('commit_count') or len(set(hashes)) != len(hashes) or sorted(source) != sorted(stored):
+            raise ValueError('Git manifest, CSV and SQLite commit records do not reconcile')
+        from .metrics import calculate_metrics
+        measured = calculate_metrics(rows)
+        canonical = _load_json(project / 'deliverables' / 'canonical-metrics.json') or {}
+        if any(canonical.get(key) != value for key, value in measured.items()):
+            raise ValueError('Canonical metrics differ from source commit measurements')
+        visual = _load_json(project / 'deliverables' / 'data.json') or {}
+        meta = visual.get('telemetry_visualizations', {}).get('meta', {})
+        if any(visual.get(key) != value or meta.get(key) != value for key, value in measured.items()):
+            raise ValueError('Visualization metrics differ from source commit measurements')
+    except (OSError, ValueError, KeyError, TypeError, sqlite3.Error) as exc:
         findings.append(AuditFinding('HIGH', 'MINING_HISTORY_DRIFT', str(exc)))
     return findings

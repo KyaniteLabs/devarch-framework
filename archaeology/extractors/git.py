@@ -25,11 +25,13 @@ def repository_coverage(repo_path: str) -> dict:
     """Record local reachability, never imply that remote/deleted refs were fetched."""
     _git(repo_path, "rev-parse", "--git-dir")
     refs = _git(repo_path, "for-each-ref", "--format=%(refname)%09%(objectname)")
+    count = int(_git(repo_path, "rev-list", "--all", "--count").strip())
     return {
+        "head": _git(repo_path, "rev-parse", "--verify", "HEAD").strip() if count else None,
         "scope": "all locally available refs plus HEAD; no automatic remote fetch",
         "shallow": _git(repo_path, "rev-parse", "--is-shallow-repository").strip() == "true",
         "bare": _git(repo_path, "rev-parse", "--is-bare-repository").strip() == "true",
-        "commit_count": int(_git(repo_path, "rev-list", "--all", "--count").strip()),
+        "commit_count": count,
         "refs": [dict(zip(("name", "object"), line.split("\t", 1))) for line in refs.splitlines()],
         "roots": _git(repo_path, "rev-list", "--all", "--max-parents=0").splitlines(),
         "gaps": ["Deleted, inaccessible and unfetched remote refs are outside this local snapshot."],
@@ -54,11 +56,11 @@ def extract_git_log(repo_path: str, output_path: str, verbose: bool = False) -> 
     if len(fields) % 4:
         raise RuntimeError("Malformed Git extraction; refusing partial history")
     stream = io.StringIO(newline="")
-    writer = csv.writer(stream)
+    writer = csv.writer(stream, lineterminator="\n")
     writer.writerow(["hash", "date", "message", "author"])
     for i in range(0, len(fields), 4):
         sha, date, subject, author = fields[i:i + 4]
-        normalized = datetime.fromisoformat(date).astimezone(timezone.utc).isoformat()
+        normalized = datetime.fromisoformat(date.replace("Z", "+00:00")).astimezone(timezone.utc).isoformat()
         writer.writerow([sha, normalized, subject, author])
     count = len(fields) // 4
     expected = int(_git(repo_path, "rev-list", "--all", "--count").strip())
@@ -77,7 +79,7 @@ def extract_git_log_with_stats(repo_path: str, output_path: str, verbose: bool =
         "log", "--format=%H%x1f%ai%x1f%s%x1f%an", "--shortstat", "--all"
     ]
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
+        result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=300)
     except FileNotFoundError:
         raise RuntimeError("git binary not found. Install git and ensure it's on PATH.")
     except subprocess.TimeoutExpired:

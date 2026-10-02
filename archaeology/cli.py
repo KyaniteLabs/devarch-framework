@@ -139,6 +139,7 @@ def mine(repo_path, project, verbose):
     config_path = Path(project_dir) / "project.json"
     config = json.loads(config_path.read_text(encoding="utf-8"))
     config["repo_path"] = repo_path
+    config["mined_history_manifest_required"] = True
     atomic_write(config_path, json.dumps(config, indent=2))
 
     click.echo(f"Phase 1 complete for '{project}'.")

@@ -18,6 +18,17 @@ def write_metrics(project_root: Path, db_path: Path) -> dict:
         stored = [row[0] for row in conn.execute("SELECT hash FROM commits")]
     if len(set(hashes)) != len(hashes) or sorted(hashes) != sorted(stored):
         raise ValueError("CSV/SQLite commit identities differ or contain duplicates")
+    metrics = calculate_metrics(rows)
+    atomic_write(project_root / "deliverables" / "canonical-metrics.json", json.dumps(metrics, indent=2))
+    atomic_write(project_root / "deliverables" / "data.json", json.dumps({
+        **metrics,
+        "telemetry_visualizations": {"meta": metrics},
+    }, indent=2))
+    return metrics
+
+
+def calculate_metrics(rows: list[dict]) -> dict:
+    """Derive canonical values from source rows without writing artifacts."""
     days = Counter()
     for row in rows:
         parsed = _parse_date(row["date"])
@@ -28,6 +39,7 @@ def write_metrics(project_root: Path, db_path: Path) -> dict:
     peak = min(days, key=lambda d: (-days[d], d)) if days else None
     metrics = {
         "total_commits": len(rows), "active_days": len(days),
+        "daily_commits": dict(sorted(days.items())),
         "first_commit_date": dates[0] if dates else None,
         "last_commit_date": dates[-1] if dates else None,
         "span_days": (_parse_date(dates[-1]) - _parse_date(dates[0])).days + 1 if dates else 0,
@@ -35,9 +47,4 @@ def write_metrics(project_root: Path, db_path: Path) -> dict:
         "date_basis": "author timestamps normalized to UTC; inclusive calendar span",
         "source_scope": "all locally mined refs, not proof of all remote history",
     }
-    atomic_write(project_root / "deliverables" / "canonical-metrics.json", json.dumps(metrics, indent=2))
-    atomic_write(project_root / "deliverables" / "data.json", json.dumps({
-        **metrics, "daily_commits": dict(sorted(days.items())),
-        "telemetry_visualizations": {"meta": metrics},
-    }, indent=2))
     return metrics

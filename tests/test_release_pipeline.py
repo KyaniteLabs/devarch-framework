@@ -98,3 +98,62 @@ def test_audit_detects_modified_mining_input(repo, tmp_path, monkeypatch):
     path = tmp_path / 'projects/audit-fixture/data/github-commits.csv'
     path.write_text(path.read_text().replace('init','changed'))
     assert any(f.code == 'MINING_ARTIFACT_DRIFT' for f in check_mined_history('audit-fixture', tmp_path))
+
+
+def test_git_z_timestamp_is_portable(tmp_path, monkeypatch):
+    import archaeology.extractors.git as extractor
+    def read_git(repo_path, *args):
+        return 'a\x002026-01-02T07:30:00Z\x00subject\x00author\x00' if args[0] == 'log' else '1\n'
+    monkeypatch.setattr(extractor, '_git', read_git)
+    out = tmp_path / 'utc.csv'
+    assert extract_git_log(str(tmp_path), str(out)) == 1
+    with out.open(newline='') as f: row = next(csv.DictReader(f))
+    assert row['date'] == '2026-01-02T07:30:00+00:00'
+
+
+def test_csv_export_under_windows_newline_translation(repo, tmp_path, monkeypatch):
+    import archaeology.utils as utils
+    def windows_write(path, content, encoding='utf-8'):
+        Path(path).write_bytes(content.replace('\n', '\r\n').encode(encoding))
+    monkeypatch.setattr(utils, 'atomic_write', windows_write)
+    out = tmp_path / 'windows.csv'
+    assert extract_git_log(str(repo), str(out)) == 2
+    with out.open(newline='', encoding='utf-8') as handle:
+        rows = list(csv.reader(handle))
+    assert len(rows) == 3 and all(len(row) == 4 for row in rows)
+
+
+@pytest.mark.parametrize('corruption', ['manifest', 'database', 'metrics', 'visual'])
+def test_audit_rejects_semantic_corruption(repo, tmp_path, monkeypatch, corruption):
+    import sqlite3
+    monkeypatch.chdir(tmp_path); runner = CliRunner()
+    for args in (['init','corrupt'],['mine',str(repo),'-p','corrupt'],['build-db','corrupt']):
+        result=runner.invoke(main,args); assert result.exit_code == 0, result.output
+    project=tmp_path/'projects/corrupt'
+    if corruption == 'manifest':
+        (project/'data/coverage.json').write_text('{not-json')
+    elif corruption == 'database':
+        with sqlite3.connect(project/'data/archaeology.db') as conn:
+            # Deliberately corrupt base records, bypassing FTS maintenance in this fixture.
+            triggers = conn.execute("SELECT name FROM sqlite_master WHERE type='trigger' AND tbl_name='commits'").fetchall()
+            for (name,) in triggers:
+                conn.execute('DROP TRIGGER "' + name.replace('"', '""') + '"')
+            conn.execute("UPDATE commits SET date='1900-01-01', message='changed'")
+    elif corruption == 'visual':
+        visual=project/'deliverables/data.json';data=json.loads(visual.read_text())
+        data['daily_commits']={'1900-01-01':2};visual.write_text(json.dumps(data))
+    else:
+        canonical=project/'deliverables/canonical-metrics.json'
+        data=json.loads(canonical.read_text());data['active_days']=9999;data['span_days']=9999
+        canonical.write_text(json.dumps(data))
+        visual=project/'deliverables/data.json';data2=json.loads(visual.read_text())
+        data2['telemetry_visualizations']['meta']=data;visual.write_text(json.dumps(data2))
+    result=runner.invoke(main,['audit','corrupt'])
+    assert result.exit_code != 0, result.output
+    assert 'HIGH' in result.output or 'CRITICAL' in result.output
+
+
+def test_coverage_records_detached_head(repo):
+    git(repo, 'checkout', '--detach')
+    git(repo, 'commit', '--allow-empty', '-m', 'detached')
+    assert repository_coverage(str(repo))['head'] == git(repo, 'rev-parse', 'HEAD')
