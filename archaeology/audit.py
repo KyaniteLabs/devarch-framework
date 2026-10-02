@@ -319,6 +319,7 @@ def run_audit(project_name: str, root: str | Path = ".") -> list[AuditFinding]:
 
     for check in (
         check_project_config,
+        check_mined_history,
         check_canonical_consistency,
         check_placeholder_data,
         check_sensitive_artifacts,
@@ -339,3 +340,36 @@ def summarize(findings: Iterable[AuditFinding]) -> dict[str, int]:
     for finding in findings:
         summary[finding.severity] = summary.get(finding.severity, 0) + 1
     return summary
+
+
+def check_mined_history(project_name: str, root: Path) -> list[AuditFinding]:
+    """Reconcile extraction identities and byte bindings when mining evidence exists."""
+    import csv
+    import hashlib
+    project = _project_dir(project_name, root)
+    coverage_path = project / 'data' / 'coverage.json'
+    coverage = _load_json(coverage_path)
+    if coverage is None:
+        return []  # Imported legacy datasets have no mining manifest.
+    findings = []
+    for name, expected in coverage.get('artifact_sha256', {}).items():
+        path = project / 'data' / name
+        if name not in {'github-commits.csv', 'github-commits-with-stats.txt'}:
+            findings.append(AuditFinding('HIGH', 'MINING_MANIFEST_INVALID', 'Unexpected artifact name'))
+            continue
+        if not path.exists() or hashlib.sha256(path.read_bytes()).hexdigest() != expected:
+            findings.append(AuditFinding('HIGH', 'MINING_ARTIFACT_DRIFT', f'Mined artifact changed: {name}'))
+    csv_path = project / 'data' / 'github-commits.csv'
+    db_path = project / 'data' / 'archaeology.db'
+    try:
+        with csv_path.open(encoding='utf-8', newline='') as handle:
+            hashes = [row['hash'] for row in csv.DictReader(handle)]
+        if not db_path.exists():
+            raise ValueError('Mined history database is missing')
+        with sqlite3.connect(db_path) as conn:
+            stored = [row[0] for row in conn.execute('SELECT hash FROM commits')]
+        if len(hashes) != coverage.get('commit_count') or len(set(hashes)) != len(hashes) or sorted(hashes) != sorted(stored):
+            raise ValueError('Git manifest, CSV and SQLite commit identities do not reconcile')
+    except (OSError, ValueError, KeyError, sqlite3.Error) as exc:
+        findings.append(AuditFinding('HIGH', 'MINING_HISTORY_DRIFT', str(exc)))
+    return findings

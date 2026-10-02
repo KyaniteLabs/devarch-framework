@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import logging
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -64,14 +64,15 @@ def _parse_date(date_str: str) -> datetime | None:
     if not date_str:
         return None
     date_str = str(date_str).strip()
-    for fmt in (
-        "%Y-%m-%d %H:%M:%S %z",
-        "%Y-%m-%d %H:%M:%S",
-        "%Y-%m-%dT%H:%M:%S",
-        "%Y-%m-%d",
-    ):
+    # Normalize timezone-bearing dates to UTC, preserving a naive UTC return
+    # for existing date arithmetic callers. Legacy trailing annotations remain supported.
+    candidates = [date_str, date_str[:25], date_str[:26], date_str[:19], date_str[:10]]
+    for candidate in candidates:
         try:
-            return datetime.strptime(date_str[:19], fmt)
+            parsed = datetime.fromisoformat(candidate.replace("Z", "+00:00"))
+            if parsed.tzinfo is not None:
+                parsed = parsed.astimezone(timezone.utc).replace(tzinfo=None)
+            return parsed
         except ValueError:
             continue
     return None

@@ -5,7 +5,7 @@ README = (Path(__file__).parent / "README.md").read_text(encoding="utf-8")
 
 setup(
     name="devarch-framework",
-    version="0.3.0",
+    version="0.4.0",
     packages=find_packages(exclude=["tests*", "projects*", "analysis-vectors*"]),
     include_package_data=True,
     install_requires=[

@@ -72,9 +72,10 @@ def export_markdown_report(project_name: str, project_root: str | Path, output_p
         f"This report summarizes the `{project_name}` development archaeology from canonical project metrics, era data, and automated analysis vectors.\n\n"
     )
 
+    out.append("Automated vectors are commit-keyword investigation leads, not verified source findings, causal explanations, session measurements or implementation-quality scores. Missing evidence is not absence.\n\n")
     out.append("## Canonical Metrics\n\n")
     metric_rows = [
-        ("Total commits", canonical.get("total_commits") or eras.get("total_commits")),
+        ("Total commits", canonical.get("total_commits", eras.get("total_commits"))),
         ("Span days", canonical.get("span_days")),
         ("Active days", canonical.get("active_days")),
         ("Peak day", canonical.get("peak_day")),
