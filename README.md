@@ -1,6 +1,6 @@
 # DevArch Framework
 
-**TL;DR:** DevArch Framework — development architecture framework and method. Best for engineers and teams structuring complex product architectures.
+**TL;DR:** DevArch Framework — local git repository archaeology: mine commit history into SQLite, detect development signals, run analysis vectors, and generate reports. Best for engineers, researchers, and AI agents who need to understand how a codebase evolved.
 
 [![PyPI version](https://img.shields.io/pypi/v/devarch-framework.svg)](https://pypi.org/project/devarch-framework/)
 [![Python](https://img.shields.io/pypi/pyversions/devarch-framework.svg)](https://pypi.org/project/devarch-framework/)
@@ -15,7 +15,7 @@ git clone https://github.com/KyaniteLabs/devarch-framework.git && cd devarch-fra
 
 DevArch treats your git history as structured data. It extracts commits into a queryable SQLite database, runs heuristic signal detection (gaps, velocity shifts, author changes), executes specialized analysis vectors, and generates interactive HTML visualizations and markdown reports. Built for engineers, researchers, and AI agents that need to understand how a codebase evolved.
 
-> **Just want a quick learning diagnostic?** [Dev Learning Archaeologist](https://github.com/KyaniteLabs/dev-learning-archaeologist) is a zero-setup ICM folder — drop it in any project, run through Claude Code, no install required.
+> **Just want a quick learning diagnostic?** [Dev Learning Archaeologist](https://github.com/simongonzalezdc/dev-learning-archaeologist) is a zero-setup ICM folder — drop it in any project, run through Claude Code, no install required.
 
 ## Evidence integrity (0.4.0)
 
@@ -24,8 +24,6 @@ Mining covers all **locally available refs**, records coverage and rejects shall
 ## What It Does
 
 DevArch transforms git history into structured insights through a full-featured CLI with 20+ commands. The framework supports:
-
-> **Just want the quick learning diagnostic?** [Dev Learning Archaeologist](https://github.com/KyaniteLabs/dev-learning-archaeologist) is a zero-setup ICM folder that drops into any project and runs the same analysis through Claude Code — no install required.
 
 - **Complete Pipeline**: Initialize projects, mine git data, build SQLite databases, detect signals, analyze patterns, visualize results
 - **6 Analysis Vectors**: SDLC Gap Finder, ML Pattern Mapper, Agentic Workflow Analyzer, Formal Terms Mapper, Source Archaeologist, YouTube Correlator
@@ -145,7 +143,7 @@ devarch audit my-project --fail-on MEDIUM
 
 ### Audit & Validation
 - `devarch audit <project> [--fail-on]` -- Run audit checks
-- `devarch validate <project>` -- Validate project configuration
+- `devarch validate <project>` -- Validate the generated history HTML and its binding
 
 ### Multi-Project Operations
 - `devarch sync [--project] [--skip-mine] [--skip-signals]` -- Sync multiple projects
@@ -310,7 +308,7 @@ For issues or questions:
 
 1. Check CONTEXT.md for task routing
 2. Review analysis vector documentation in analysis-vectors/
-3. Run `devarch validate <project>` to check configuration
+3. Run `devarch validate <project>` to check the generated history document
 4. Run `devarch audit <project>` to validate outputs
 5. Use `devarch serve <project>` for database inspection
 
@@ -336,7 +334,7 @@ No. DevArch runs entirely locally. All mining, analysis, and report generation h
 
 ## Related Projects
 
-- **[Dev Learning Archaeologist](https://github.com/KyaniteLabs/dev-learning-archaeologist)** — Zero-setup ICM folder for Claude Code. Drop it in, ask one question, get a full HTML learning diagnostic. The lightweight version of this framework.
+- **[Dev Learning Archaeologist](https://github.com/simongonzalezdc/dev-learning-archaeologist)** — Zero-setup ICM folder for Claude Code. Drop it in, ask one question, get a full HTML learning diagnostic. The lightweight version of this framework.
 - **[KyaniteLabs](https://github.com/KyaniteLabs)** — More AI-native developer tools: MCP servers, time estimation, and multi-agent orchestration.
 
 ---
@@ -345,7 +343,7 @@ No. DevArch runs entirely locally. All mining, analysis, and report generation h
 
 More from [KyaniteLabs](https://kyanitelabs.tech). Related projects:
 
-- **[dev-learning-archaeologist](https://github.com/KyaniteLabs/dev-learning-archaeologist)** — forensic git-history learning diagnostic
+- **[dev-learning-archaeologist](https://github.com/simongonzalezdc/dev-learning-archaeologist)** — forensic git-history learning diagnostic
 - **[checkyourself](https://github.com/KyaniteLabs/checkyourself)** — local-first production-readiness checks for AI-built code
 - **[Epoch](https://github.com/KyaniteLabs/Epoch)** — time-estimation MCP server (PERT) for AI agents
 
@@ -355,36 +353,36 @@ More from [KyaniteLabs](https://kyanitelabs.tech). Related projects:
 
 ## What is DevArch Framework?
 
-**DevArch Framework** is a **development architecture framework and method** that helps **engineers and teams structuring complex product architectures** **apply a repeatable architecture method across product work**.
+**DevArch Framework** is a local **git repository archaeology framework**: it mines commit history into SQLite, runs heuristic signal detection (gaps, velocity shifts, author changes), executes analysis vectors, and generates HTML visualizations and Markdown reports — no external services.
 
 | | |
 | --- | --- |
 | **Product** | DevArch Framework |
-| **Category** | development architecture framework and method |
-| **Best for** | engineers and teams structuring complex product architectures |
-| **Not** | a single language framework |
-| **Source** | [GitHub](https://github.com/KyaniteLabs/devarch-framework) · [Forgejo](https://git.kyanitelabs.tech/KyaniteLabs/devarch-framework) |
-| **Keywords** | dev architecture framework, software architecture method |
+| **Category** | git repository archaeology framework (CLI + Python package) |
+| **Best for** | engineers, researchers, and AI agents who need to understand how a codebase evolved |
+| **Not** | a productivity-scoring tool or a hosted analytics service |
+| **Source** | [GitHub](https://github.com/KyaniteLabs/devarch-framework) · [Forgejo](https://git.kyanitelabs.tech/KyaniteLabs/devarch-framework) (private, maintainers only) |
+| **Keywords** | git history analysis, repository archaeology, commit mining, development signals, engineering narrative reports |
 
 ## Who it's for
 
-- Primary: engineers and teams structuring complex product architectures
-- Use when you need to apply a repeatable architecture method across product work
-- Skip if you need a single language framework
+- Primary: engineers, researchers, and AI agents who need to understand how a codebase evolved
+- Use when you need to mine git history into a queryable SQLite database, detect development signals, and generate evidence-bound reports, fully locally
+- Skip if you need a productivity-scoring tool or a hosted analytics service
 
 ## FAQ
 
 ### What is DevArch Framework?
 
-DevArch Framework is a development architecture framework and method. It helps engineers and teams structuring complex product architectures apply a repeatable architecture method across product work.
+**DevArch Framework** is a local **git repository archaeology framework**: it mines commit history into SQLite, runs heuristic signal detection (gaps, velocity shifts, author changes), executes analysis vectors, and generates HTML visualizations and Markdown reports — no external services.
 
 ### Who should use DevArch Framework?
 
-engineers and teams structuring complex product architectures.
+Engineers, researchers, and AI agents who need to understand how a codebase evolved.
 
 ### How is DevArch Framework different?
 
-Unlike ad-hoc architecture notes, DevArch is a reusable method/framework.
+Unlike `git log`, DevArch turns history into queryable, hash-bound evidence; automated vectors are investigation leads, not verified conclusions or productivity measurements.
 
 ### Is DevArch Framework production software?
 
@@ -394,7 +392,7 @@ Treat the README status and release tags as source of truth for maturity. Valida
 
 - Maintained as of 2026 on the default branch
 - Prefer release tags when pinning dependencies
-- Report issues on the canonical remote listed above
+- Report issues on [GitHub](https://github.com/KyaniteLabs/devarch-framework/issues)
 
 ## Agent surface
 
@@ -404,7 +402,7 @@ Treat the README status and release tags as source of truth for maturity. Valida
 
 ## Contributing
 
-Issues and PRs welcome on the canonical remote. Keep public docs free of secrets and machine-local paths.
+Issues and PRs welcome on [GitHub](https://github.com/KyaniteLabs/devarch-framework). Keep public docs free of secrets and machine-local paths.
 
 ## License
 
