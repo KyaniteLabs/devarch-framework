@@ -26,7 +26,6 @@ from pathlib import Path
 
 from ..utils import _script_dir
 
-
 # ---------------------------------------------------------------------------
 # Default table registry (fallback when no project.json or defaults.json)
 # ---------------------------------------------------------------------------
@@ -49,7 +48,10 @@ DEFAULT_TABLE_REGISTRY: dict[str, dict] = {
     "telemetry_github_full": {"file": "metrics-github-full.json", "format": "json_nested"},
     "telemetry_repo_depth": {"file": "metrics-repo-depth.json", "format": "json_nested"},
     "telemetry_visualizations": {"file": "metrics-visualizations.json", "format": "json_nested"},
-    "youtube_topic_classification": {"file": "youtube-topic-classification.json", "format": "json_nested"},
+    "youtube_topic_classification": {
+        "file": "youtube-topic-classification.json",
+        "format": "json_nested",
+    },
     "youtube_engagement": {"file": "youtube-engagement-heuristics.json", "format": "json"},
     "youtube_transcript_analysis": {"file": "youtube-transcript-analysis.json", "format": "json"},
     "context_management": {"file": "context-management-analysis.json", "format": "json"},
@@ -131,6 +133,7 @@ DEFAULT_FTS: list[tuple[str, list[str]]] = [
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def log(msg: str, verbose: bool = False) -> None:
     if verbose:
@@ -222,7 +225,9 @@ def extract_nested(data: dict, key: str) -> list[dict] | None:
     if isinstance(value, list):
         return value
     if isinstance(value, dict):
-        return [{"_key": k, **(v if isinstance(v, dict) else {"value": v})} for k, v in value.items()]
+        return [
+            {"_key": k, **(v if isinstance(v, dict) else {"value": v})} for k, v in value.items()
+        ]
     return None
 
 
@@ -250,6 +255,7 @@ def _import_mapping(db: Path, data: dict, mapping: dict[str, str], verbose: bool
 # ---------------------------------------------------------------------------
 # Config loading
 # ---------------------------------------------------------------------------
+
 
 def load_table_registry(project_root: Path, verbose: bool = False) -> dict[str, dict]:
     """Load table registry from project.json, then defaults.json, then fallback.
@@ -290,7 +296,9 @@ def load_table_registry(project_root: Path, verbose: bool = False) -> dict[str, 
     return DEFAULT_TABLE_REGISTRY.copy()
 
 
-def load_nested_key_mappings(project_root: Path, verbose: bool = False) -> dict[str, dict[str, str]]:
+def load_nested_key_mappings(
+    project_root: Path, verbose: bool = False
+) -> dict[str, dict[str, str]]:
     """Load nested key-to-table mappings from project config.
 
     Priority:
@@ -333,7 +341,10 @@ def resolve_project_root(args: argparse.Namespace) -> Path:
 # Specialized importers
 # ---------------------------------------------------------------------------
 
-def import_commit_eras(db: Path, data_dir: Path, era_file: str = "commit-eras.json", verbose: bool = False) -> int:
+
+def import_commit_eras(
+    db: Path, data_dir: Path, era_file: str = "commit-eras.json", verbose: bool = False
+) -> int:
     data = load_json(data_dir / era_file, verbose)
     if data is None:
         return 0
@@ -345,12 +356,17 @@ def import_commit_eras(db: Path, data_dir: Path, era_file: str = "commit-eras.js
     return total
 
 
-def import_derived_patterns(db: Path, data_dir: Path, patterns_file: str = "derived-patterns.json", verbose: bool = False) -> int:
+def import_derived_patterns(
+    db: Path, data_dir: Path, patterns_file: str = "derived-patterns.json", verbose: bool = False
+) -> int:
     data = load_json(data_dir / patterns_file, verbose)
     if data is None:
         return 0
     total = 0
-    named = {"frustration_to_automation_latency": "frustration_patterns", "co_authorship_gap_analysis": "co_authorship_gaps"}
+    named = {
+        "frustration_to_automation_latency": "frustration_patterns",
+        "co_authorship_gap_analysis": "co_authorship_gaps",
+    }
     for key, table in named.items():
         section = data.get(key)
         if section is None:
@@ -368,7 +384,9 @@ def import_derived_patterns(db: Path, data_dir: Path, patterns_file: str = "deri
     return total
 
 
-def import_telemetry_sessions(db: Path, data_dir: Path, sessions_file: str = "metrics-sessions.json", verbose: bool = False) -> int:
+def import_telemetry_sessions(
+    db: Path, data_dir: Path, sessions_file: str = "metrics-sessions.json", verbose: bool = False
+) -> int:
     data = load_json(data_dir / sessions_file, verbose)
     if data is None:
         return 0
@@ -407,9 +425,14 @@ def import_audit_files(db: Path, data_dir: Path, verbose: bool = False) -> int:
 # Registry-driven import (generalized)
 # ---------------------------------------------------------------------------
 
-def import_from_registry(db: Path, data_dir: Path, registry: dict[str, dict],
-                         nested_mappings: dict[str, dict[str, str]],
-                         verbose: bool = False) -> int:
+
+def import_from_registry(
+    db: Path,
+    data_dir: Path,
+    registry: dict[str, dict],
+    nested_mappings: dict[str, dict[str, str]],
+    verbose: bool = False,
+) -> int:
     """Import all tables defined in the registry.
 
     Format handling:
@@ -473,16 +496,19 @@ def import_from_registry(db: Path, data_dir: Path, registry: dict[str, dict],
 # Indexes & FTS
 # ---------------------------------------------------------------------------
 
+
 def _validate_table_name(table: str) -> str:
     """Reject table names that could enable SQL injection."""
-    if not re.match(r'^[a-zA-Z_][a-zA-Z0-9_]*$', table):
+    if not re.match(r"^[a-zA-Z_][a-zA-Z0-9_]*$", table):
         raise ValueError(f"Invalid table name: {table!r}")
     return table
 
 
 def table_exists(db: Path, table: str) -> bool:
     table = _validate_table_name(table)
-    result = run_su(["query", str(db), f"SELECT name FROM sqlite_master WHERE type='table' AND name='{table}'"])
+    result = run_su(
+        ["query", str(db), f"SELECT name FROM sqlite_master WHERE type='table' AND name='{table}'"]
+    )
     if result.returncode == 0 and result.stdout.strip():
         try:
             rows = json.loads(result.stdout)
@@ -504,8 +530,9 @@ def table_columns(db: Path, table: str) -> set[str]:
     return {row.get("name") for row in rows if row.get("name")}
 
 
-def create_indexes(db: Path, indexes: list[tuple[str, list[str]]] | None = None,
-                   verbose: bool = False) -> None:
+def create_indexes(
+    db: Path, indexes: list[tuple[str, list[str]]] | None = None, verbose: bool = False
+) -> None:
     if indexes is None:
         indexes = DEFAULT_INDEXES
     for table, columns in indexes:
@@ -517,11 +544,23 @@ def create_indexes(db: Path, indexes: list[tuple[str, list[str]]] | None = None,
             if col not in available:
                 log(f"SKIP index {table}.{col} (column not found)", verbose)
                 continue
-            run_su(["create-index", str(db), table, col, "--name", f"idx_{table}_{col}", "--if-not-exists"], verbose)
+            run_su(
+                [
+                    "create-index",
+                    str(db),
+                    table,
+                    col,
+                    "--name",
+                    f"idx_{table}_{col}",
+                    "--if-not-exists",
+                ],
+                verbose,
+            )
 
 
-def create_fts(db: Path, fts_config: list[tuple[str, list[str]]] | None = None,
-               verbose: bool = False) -> None:
+def create_fts(
+    db: Path, fts_config: list[tuple[str, list[str]]] | None = None, verbose: bool = False
+) -> None:
     if fts_config is None:
         fts_config = DEFAULT_FTS
     for table, columns in fts_config:
@@ -539,6 +578,7 @@ def create_fts(db: Path, fts_config: list[tuple[str, list[str]]] | None = None,
 # Summary
 # ---------------------------------------------------------------------------
 
+
 def print_summary(db: Path, verbose: bool = False) -> None:
     result = run_su(["tables", str(db), "--counts"], verbose)
     if result.returncode == 0 and result.stdout.strip():
@@ -550,7 +590,14 @@ def print_summary(db: Path, verbose: bool = False) -> None:
         print("\nIndexes:")
         for line in idx.stdout.strip().splitlines():
             print(f"  {line}")
-    fts = run_su(["query", str(db), "SELECT name FROM sqlite_master WHERE type='table' AND name LIKE '%_fts%'"], verbose)
+    fts = run_su(
+        [
+            "query",
+            str(db),
+            "SELECT name FROM sqlite_master WHERE type='table' AND name LIKE '%_fts%'",
+        ],
+        verbose,
+    )
     if fts.returncode == 0 and fts.stdout.strip():
         try:
             tables = json.loads(fts.stdout)
@@ -565,6 +612,7 @@ def print_summary(db: Path, verbose: bool = False) -> None:
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
+
 
 def _assert_commits_ingested(db_path: Path, data_dir: Path) -> None:
     """Fail loud if github-commits.csv has rows but the commits table is empty.
@@ -582,7 +630,9 @@ def _assert_commits_ingested(db_path: Path, data_dir: Path) -> None:
     conn = sqlite3.connect(db_path)
     try:
         tables = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
-        db_rows = conn.execute("SELECT COUNT(*) FROM commits").fetchone()[0] if "commits" in tables else 0
+        db_rows = (
+            conn.execute("SELECT COUNT(*) FROM commits").fetchone()[0] if "commits" in tables else 0
+        )
     finally:
         conn.close()
     if db_rows != csv_rows:
@@ -660,6 +710,7 @@ def build_db(project_root: Path, output: Path | None = None, verbose: bool = Fal
     # query helpers can distinguish "no runs" from "schema missing".
     try:
         from .pipeline_ingest import ensure_tables
+
         ensure_tables(db_path)
     except (OSError, sqlite3.Error) as exc:  # pragma: no cover - defensive CLI guard
         print(f"  WARNING: Failed to ensure pipeline tables: {exc}", file=sys.stderr)
@@ -671,16 +722,25 @@ def build_db(project_root: Path, output: Path | None = None, verbose: bool = Fal
     create_fts(db_path, fts_config, verbose)
 
     from ..metrics import write_metrics
+
     write_metrics(project_root, db_path)
     print_summary(db_path, verbose)
     print(f"\nDone. Database: {db_path}")
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Build archaeology SQLite database from data files")
+    parser = argparse.ArgumentParser(
+        description="Build archaeology SQLite database from data files"
+    )
     parser.add_argument("--project", help="Project name (resolves to projects/<name>/)")
-    parser.add_argument("--project-root", default=".", help="Direct path to project root (default: .)")
-    parser.add_argument("--output", default=None, help="Output DB path (default: <project-root>/data/archaeology.db)")
+    parser.add_argument(
+        "--project-root", default=".", help="Direct path to project root (default: .)"
+    )
+    parser.add_argument(
+        "--output",
+        default=None,
+        help="Output DB path (default: <project-root>/data/archaeology.db)",
+    )
     parser.add_argument("--verbose", action="store_true", help="Print detailed progress")
     args = parser.parse_args()
 

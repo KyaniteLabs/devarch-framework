@@ -13,23 +13,28 @@ from __future__ import annotations
 
 import json
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 
-from .era_mapper import EraDef, load_eras, remap_json_era_fields, era_count, get_current_era_names
+from .era_mapper import EraDef, era_count, get_current_era_names, load_eras, remap_json_era_fields
 from .era_scanner import scan_deliverables
-
 
 # Known old era names that may appear in deliverables
 KNOWN_OLD_NAMES = {
-    "The Acceleration", "The Crusade", "The Hardening",
-    "The Threshold", "The Surface", "The Return",
+    "The Acceleration",
+    "The Crusade",
+    "The Hardening",
+    "The Threshold",
+    "The Surface",
+    "The Return",
 }
 
 # Files exempt from era name replacement (historical mapping docs)
-EXEMPT_FILES: frozenset[str] = frozenset({
-    "ERA_UPDATE_SUMMARY.md",
-})
+EXEMPT_FILES: frozenset[str] = frozenset(
+    {
+        "ERA_UPDATE_SUMMARY.md",
+    }
+)
 
 
 @dataclass
@@ -129,8 +134,9 @@ def _sync_project_json(
     # Fix era_colors — trim to n_eras entries
     viz = pj.setdefault("visualization", {})
     colors = viz.setdefault("era_colors", {})
-    trimmed = {f"era-{i+1:02d}": colors.get(f"era-{i+1:02d}", _default_color(i))
-               for i in range(n_eras)}
+    trimmed = {
+        f"era-{i + 1:02d}": colors.get(f"era-{i + 1:02d}", _default_color(i)) for i in range(n_eras)
+    }
     if len(colors) != len(trimmed) or colors != trimmed:
         viz["era_colors"] = trimmed
         changed = True
@@ -144,15 +150,21 @@ def _sync_project_json(
 def _default_color(index: int) -> str:
     """Default era color palette."""
     palette = [
-        "#4ade80", "#f87171", "#fb923c", "#60a5fa", "#a78bfa",
-        "#34d399", "#fbbf24", "#f472b6", "#c084fc", "#9ca3af",
+        "#4ade80",
+        "#f87171",
+        "#fb923c",
+        "#60a5fa",
+        "#a78bfa",
+        "#34d399",
+        "#fbbf24",
+        "#f472b6",
+        "#c084fc",
+        "#9ca3af",
     ]
     return palette[index % len(palette)]
 
 
-def _remap_data_json(
-    data_json: Path, eras: list[EraDef], dry_run: bool
-) -> int:
+def _remap_data_json(data_json: Path, eras: list[EraDef], dry_run: bool) -> int:
     """Remap era fields in data.json using date-based calculation."""
     data = json.loads(data_json.read_text())
     changes = remap_json_era_fields(data, eras)
@@ -210,6 +222,7 @@ def _fix_html_file(
 
 def _fix_css_vars(line: str, n_eras: int, result: CascadeResult) -> str:
     """Remove or fix era CSS variables beyond current count."""
+
     def _replace(m: re.Match) -> str:
         num = int(m.group(1))
         if num > n_eras:
@@ -222,6 +235,7 @@ def _fix_css_vars(line: str, n_eras: int, result: CascadeResult) -> str:
 
 def _fix_era_range(line: str, n_eras: int, result: CascadeResult) -> str:
     """Cap data-era-range upper bound to n_eras."""
+
     def _replace(m: re.Match) -> str:
         low = int(m.group(1))
         high = int(m.group(2))
@@ -243,10 +257,22 @@ def _fix_era_count_text(line: str, n_eras: int, result: CascadeResult) -> str:
         return line
 
     word_map = {
-        1: "One", 2: "Two", 3: "Three", 4: "Four", 5: "Five",
-        6: "Six", 7: "Seven", 8: "Eight", 9: "Nine", 10: "Ten",
-        11: "Eleven", 12: "Twelve", 13: "Thirteen", 14: "Fourteen",
-        15: "Fifteen", 16: "Sixteen",
+        1: "One",
+        2: "Two",
+        3: "Three",
+        4: "Four",
+        5: "Five",
+        6: "Six",
+        7: "Seven",
+        8: "Eight",
+        9: "Nine",
+        10: "Ten",
+        11: "Eleven",
+        12: "Twelve",
+        13: "Thirteen",
+        14: "Fourteen",
+        15: "Fifteen",
+        16: "Sixteen",
     }
     target_word = word_map.get(n_eras, str(n_eras))
 
@@ -275,12 +301,10 @@ def _fix_era_number_text(line: str, n_eras: int, result: CascadeResult) -> str:
     return line
 
 
-def _fix_embedded_json_eras(
-    content: str, eras: list[EraDef], result: CascadeResult
-) -> str:
+def _fix_embedded_json_eras(content: str, eras: list[EraDef], result: CascadeResult) -> str:
     """Fix 'era': N fields in embedded HTML data using nearby date context."""
     lines = content.splitlines(keepends=True)
-    new_lines = []
+    _new_lines = []
 
     era_line_indices = []
     for i, line in enumerate(lines):
@@ -294,13 +318,17 @@ def _fix_embedded_json_eras(
         # Search backwards up to 20 lines for a date field
         found_date = None
         for j in range(max(0, idx - 20), idx + 1):
-            dm = re.search(r'"(?:date|first_expression|estimated_hook_commit)":\s*"(\d{4}-\d{2}-\d{2})', lines[j])
+            dm = re.search(
+                r'"(?:date|first_expression|estimated_hook_commit)":\s*"(\d{4}-\d{2}-\d{2})',
+                lines[j],
+            )
             if dm:
                 found_date = dm.group(1)
                 break
 
         if found_date:
             from .era_mapper import era_from_date
+
             new_era = era_from_date(eras, found_date)
             if new_era is not None:
                 lines[idx] = re.sub(r'"era":\s*\d+', f'"era": {new_era}', lines[idx])

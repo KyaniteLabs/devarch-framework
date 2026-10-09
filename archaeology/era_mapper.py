@@ -71,6 +71,7 @@ def load_eras(eras_path: Path) -> list[EraDef]:
     if not eras_path.exists():
         return []
     import re as _re
+
     raw = json.loads(eras_path.read_text())
     year = _infer_year(raw)
     eras = []
@@ -96,13 +97,15 @@ def load_eras(eras_path: Path) -> list[EraDef]:
         if isinstance(commits, str):
             m = _re.search(r"(\d+)", commits)
             commits = int(m.group(1)) if m else 0
-        eras.append(EraDef(
-            id=era["id"],
-            name=era["name"],
-            start=start,
-            end=end,
-            commits=commits,
-        ))
+        eras.append(
+            EraDef(
+                id=era["id"],
+                name=era["name"],
+                start=start,
+                end=end,
+                commits=commits,
+            )
+        )
     return eras
 
 
@@ -120,9 +123,7 @@ def era_from_date(eras: list[EraDef], date_str: str) -> int | None:
     return None
 
 
-def remap_json_era_fields(
-    data: Any, eras: list[EraDef]
-) -> list[tuple[int, int, str]]:
+def remap_json_era_fields(data: Any, eras: list[EraDef]) -> list[tuple[int, int, str]]:
     """Walk JSON structure and remap all 'era' fields based on their date fields.
 
     Returns list of (old_era, new_era, date_string) for each change made.
@@ -133,17 +134,13 @@ def remap_json_era_fields(
     return changed
 
 
-def _remap_walk(
-    obj: Any, eras: list[EraDef], changed: list[tuple[int, int, str]]
-) -> None:
+def _remap_walk(obj: Any, eras: list[EraDef], changed: list[tuple[int, int, str]]) -> None:
     """Recursively walk and remap era fields."""
     if isinstance(obj, dict):
         if "era" in obj:
             # Try multiple date field names
             date_val = (
-                obj.get("date")
-                or obj.get("first_expression")
-                or obj.get("estimated_hook_commit")
+                obj.get("date") or obj.get("first_expression") or obj.get("estimated_hook_commit")
             )
             if date_val:
                 new_era = era_from_date(eras, date_val)

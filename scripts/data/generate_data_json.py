@@ -20,8 +20,19 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 
 CONVENTIONAL_TYPES = {
-    "feat", "fix", "docs", "style", "refactor", "perf",
-    "test", "build", "ci", "chore", "revert", "merge", "security",
+    "feat",
+    "fix",
+    "docs",
+    "style",
+    "refactor",
+    "perf",
+    "test",
+    "build",
+    "ci",
+    "chore",
+    "revert",
+    "merge",
+    "security",
 }
 
 AGENT_PATTERNS = [
@@ -66,13 +77,15 @@ def parse_csv(csv_path: Path) -> list[dict]:
                     continue
             else:
                 continue
-            commits.append({
-                "hash": row.get("hash", ""),
-                "date": dt.strftime("%Y-%m-%d"),
-                "hour": dt.hour,
-                "message": row.get("message", ""),
-                "author": row.get("author", "unknown"),
-            })
+            commits.append(
+                {
+                    "hash": row.get("hash", ""),
+                    "date": dt.strftime("%Y-%m-%d"),
+                    "hour": dt.hour,
+                    "message": row.get("message", ""),
+                    "author": row.get("author", "unknown"),
+                }
+            )
     return commits
 
 
@@ -147,16 +160,20 @@ def generate_for_project(project_name: str) -> None:
     # Build commit_eras for visualization
     viz_eras = []
     for era in eras_data:
-        viz_eras.append({
-            "id": era.get("id", 0),
-            "name": era.get("name", f"Era {era.get('id', 0)}"),
-            "dates": era.get("dates", ""),
-            "commits": era.get("commits", 0),
-            "author": ", ".join(era.get("authors", era.get("contributors", []))) if isinstance(era.get("authors", era.get("contributors", [])), list) else str(era.get("authors", "")),
-            "description": era.get("description", ""),
-            "key_events": era.get("key_events", []),
-            "narrative_arc": era.get("narrative_arc", ""),
-        })
+        viz_eras.append(
+            {
+                "id": era.get("id", 0),
+                "name": era.get("name", f"Era {era.get('id', 0)}"),
+                "dates": era.get("dates", ""),
+                "commits": era.get("commits", 0),
+                "author": ", ".join(era.get("authors", era.get("contributors", [])))
+                if isinstance(era.get("authors", era.get("contributors", [])), list)
+                else str(era.get("authors", "")),
+                "description": era.get("description", ""),
+                "key_events": era.get("key_events", []),
+                "narrative_arc": era.get("narrative_arc", ""),
+            }
+        )
 
     # Build the data.json structure
     data = {
@@ -170,7 +187,9 @@ def generate_for_project(project_name: str) -> None:
                 "lifespan_days": metrics.get("span_days", 0),
                 "active_days": active_days,
                 "avg_commits_per_active_day": round(total_commits / max(active_days, 1), 1),
-                "avg_commits_per_day_full_span": round(total_commits / max(metrics.get("span_days", 1), 1), 1),
+                "avg_commits_per_day_full_span": round(
+                    total_commits / max(metrics.get("span_days", 1), 1), 1
+                ),
                 "peak_day": peak_day,
                 "peak_day_commits": peak_day_commits,
                 "source_scope": f"github-commits.csv ({total_commits} commits)",
@@ -230,7 +249,9 @@ def generate_for_project(project_name: str) -> None:
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
-    print(f"  OK: {output_path} ({total_commits} commits, {len(viz_eras)} eras, {active_days} active days)")
+    print(
+        f"  OK: {output_path} ({total_commits} commits, {len(viz_eras)} eras, {active_days} active days)"
+    )
 
 
 def main():

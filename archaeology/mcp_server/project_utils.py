@@ -47,14 +47,14 @@ def validate_project_name(name: str) -> None:
         raise ValueError(f"Project name too long (max 100 chars): {len(name)}")
 
     # Only allow alphanumeric, dot, underscore, hyphen
-    if not re.match(r'^[a-zA-Z0-9._-]+$', name):
+    if not re.match(r"^[a-zA-Z0-9._-]+$", name):
         raise ValueError(f"Project name contains invalid characters: {name!r}")
 
     # Reject path traversal attempts
-    if '..' in name:
+    if ".." in name:
         raise ValueError(f"Project name cannot contain '..': {name!r}")
 
-    if name.startswith('/'):
+    if name.startswith("/"):
         raise ValueError(f"Project name cannot start with '/': {name!r}")
 
 
@@ -103,15 +103,17 @@ def list_projects() -> list[dict[str, Any]]:
         if not project_dir.is_dir() or project_dir.name.startswith((".", "_")):
             continue
         config = get_project_config(project_dir.name)
-        projects.append({
-            "name": project_dir.name,
-            "path": str(project_dir),
-            "has_data": (project_dir / "data").exists(),
-            "has_deliverables": (project_dir / "deliverables").exists(),
-            "has_database": (project_dir / "data" / "archaeology.db").exists(),
-            "description": config.get("description", "") if config else "",
-            "repo_url": config.get("repo_url", "") if config else "",
-        })
+        projects.append(
+            {
+                "name": project_dir.name,
+                "path": str(project_dir),
+                "has_data": (project_dir / "data").exists(),
+                "has_deliverables": (project_dir / "deliverables").exists(),
+                "has_database": (project_dir / "data" / "archaeology.db").exists(),
+                "description": config.get("description", "") if config else "",
+                "repo_url": config.get("repo_url", "") if config else "",
+            }
+        )
     return projects
 
 

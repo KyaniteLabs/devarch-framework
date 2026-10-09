@@ -38,18 +38,24 @@ from typing import Any, Iterable
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_OUTPUT = ROOT / "projects/demo-project/data"
-DEFAULT_OMC_SESSIONS = Path(os.environ.get(
-    "ARCHAEOLOGY_OMC_SESSIONS",
-    "~/.claude/projects/-Users-user-Desktop-OMC",
-)).expanduser()
-DEFAULT_DEMO_PROJECT_SESSIONS = Path(os.environ.get(
-    "ARCHAEOLOGY_DEMO_PROJECT_SESSIONS",
-    "~/.claude/projects/-Users-user-workspaces-demo-project",
-)).expanduser()
-DEFAULT_CHATGPT_EXPORT = Path(os.environ.get(
-    "ARCHAEOLOGY_CHATGPT_EXPORT",
-    "~/Desktop/MyStuff/Documents/ToReview/conversations.json",
-)).expanduser()
+DEFAULT_OMC_SESSIONS = Path(
+    os.environ.get(
+        "ARCHAEOLOGY_OMC_SESSIONS",
+        "~/.claude/projects/-Users-user-Desktop-OMC",
+    )
+).expanduser()
+DEFAULT_DEMO_PROJECT_SESSIONS = Path(
+    os.environ.get(
+        "ARCHAEOLOGY_DEMO_PROJECT_SESSIONS",
+        "~/.claude/projects/-Users-user-workspaces-demo-project",
+    )
+).expanduser()
+DEFAULT_CHATGPT_EXPORT = Path(
+    os.environ.get(
+        "ARCHAEOLOGY_CHATGPT_EXPORT",
+        "~/Desktop/MyStuff/Documents/ToReview/conversations.json",
+    )
+).expanduser()
 
 GPT_PATTERNS = [
     re.compile(r"\bGPT\b", re.IGNORECASE),
@@ -61,18 +67,46 @@ GPT_PATTERNS = [
 ]
 
 REFLECTION_PATTERNS = [
-    re.compile(r"\bi\s+(?:just\s+)?(?:understand|see|get|realized|learned|discovered)\b", re.IGNORECASE),
-    re.compile(r"\bi\s+(?:really\s+)?(?:understand|see|get|realized|learned|discovered)\b", re.IGNORECASE),
+    re.compile(
+        r"\bi\s+(?:just\s+)?(?:understand|see|get|realized|learned|discovered)\b", re.IGNORECASE
+    ),
+    re.compile(
+        r"\bi\s+(?:really\s+)?(?:understand|see|get|realized|learned|discovered)\b", re.IGNORECASE
+    ),
     re.compile(r"\bnow\s+i\s+(?:understand|see|get|realized|learned|discovered)\b", re.IGNORECASE),
-    re.compile(r"\b(?:i've|i have)\s+(?:learned|realized|discovered|figured\s+out)\b", re.IGNORECASE),
-    re.compile(r"\b(?:i've|i have)\s+just\s+(?:learned|realized|discovered|figured\s+out)\b", re.IGNORECASE),
-    re.compile(r"\bmy\s+(?:understanding|insight|takeaway|learning|realization|hypothesis|theory|sense|intuition)\s+(?:is|was)\b", re.IGNORECASE),
-    re.compile(r"\bthe\s+(?:pattern|trend|theme)\s+(?:i'm\s+)?(?:seeing|noticing|observing)\b", re.IGNORECASE),
-    re.compile(r"\bi\s+(?:keep\s+)?(?:notice|observe|see)\s+(?:that\s+)?:?\s*a\s+(?:pattern|trend)\b", re.IGNORECASE),
-    re.compile(r"\bthis\s+(?:is\s+)?(?:interesting|fascinating|surprising|confusing|puzzling)\b", re.IGNORECASE),
-    re.compile(r"\bthis\s+is\s+really\s+(?:interesting|fascinating|surprising|confusing|puzzling)\b", re.IGNORECASE),
-    re.compile(r"\bi\s+(?:am\s+)?(?:excited|worried|concerned|surprised|confused|puzzled)\s+(?:about|that|by)\b", re.IGNORECASE),
-    re.compile(r"\bi\s+think\s+(?:we\s+should|i\s+should|the\s+approach\s+should)\b", re.IGNORECASE),
+    re.compile(
+        r"\b(?:i've|i have)\s+(?:learned|realized|discovered|figured\s+out)\b", re.IGNORECASE
+    ),
+    re.compile(
+        r"\b(?:i've|i have)\s+just\s+(?:learned|realized|discovered|figured\s+out)\b", re.IGNORECASE
+    ),
+    re.compile(
+        r"\bmy\s+(?:understanding|insight|takeaway|learning|realization|hypothesis|theory|sense|intuition)\s+(?:is|was)\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"\bthe\s+(?:pattern|trend|theme)\s+(?:i'm\s+)?(?:seeing|noticing|observing)\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"\bi\s+(?:keep\s+)?(?:notice|observe|see)\s+(?:that\s+)?:?\s*a\s+(?:pattern|trend)\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"\bthis\s+(?:is\s+)?(?:interesting|fascinating|surprising|confusing|puzzling)\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"\bthis\s+is\s+really\s+(?:interesting|fascinating|surprising|confusing|puzzling)\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"\bi\s+(?:am\s+)?(?:excited|worried|concerned|surprised|confused|puzzled)\s+(?:about|that|by)\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"\bi\s+think\s+(?:we\s+should|i\s+should|the\s+approach\s+should)\b", re.IGNORECASE
+    ),
     re.compile(r"\bthat\s+(?:helps|clarifies|makes\s+sense)\b", re.IGNORECASE),
     re.compile(r"\bnow\s+i\s+(?:see|get|understand)\b", re.IGNORECASE),
     re.compile(r"\bkey\s+insight\b", re.IGNORECASE),
@@ -156,7 +190,9 @@ def classify_text(content: str) -> str | None:
     return None
 
 
-def mine_claude_sessions(sessions_dir: Path, output_dir: Path, prefix: str, *, dry_run: bool) -> dict[str, int]:
+def mine_claude_sessions(
+    sessions_dir: Path, output_dir: Path, prefix: str, *, dry_run: bool
+) -> dict[str, int]:
     files = sorted(sessions_dir.glob("*.jsonl"), key=lambda p: p.stat().st_size, reverse=True)
     results: list[dict[str, Any]] = []
 
@@ -193,12 +229,19 @@ def mine_claude_sessions(sessions_dir: Path, output_dir: Path, prefix: str, *, d
     output_dir.mkdir(parents=True, exist_ok=True)
     gpt_path = output_dir / f"{prefix}-gpt54-extracted.json"
     reflections_path = output_dir / (
-        "sessions-user-reflections-extracted.json" if prefix == "sessions" else f"{prefix}-learnings-extracted.json"
+        "sessions-user-reflections-extracted.json"
+        if prefix == "sessions"
+        else f"{prefix}-learnings-extracted.json"
     )
     if not dry_run:
         gpt_path.write_text(json.dumps(gpt, indent=2, ensure_ascii=False) + "\n")
         reflections_path.write_text(json.dumps(non_gpt, indent=2, ensure_ascii=False) + "\n")
-    return {"files": len(files), "matches": len(results), "gpt": len(gpt), "reflections": len(non_gpt)}
+    return {
+        "files": len(files),
+        "matches": len(results),
+        "gpt": len(gpt),
+        "reflections": len(non_gpt),
+    }
 
 
 def chatgpt_text(content: Any) -> str:
@@ -266,19 +309,32 @@ def mine_chatgpt_export(input_path: Path, output_dir: Path, *, dry_run: bool) ->
     learnings = [row for row in results if row["type"] == "simon_learning"]
     output_dir.mkdir(parents=True, exist_ok=True)
     if not dry_run:
-        (output_dir / "gpt-conversations-extracted.json").write_text(json.dumps(gpt, indent=2, ensure_ascii=False) + "\n")
-        (output_dir / "simon-learnings-extracted.json").write_text(json.dumps(learnings, indent=2, ensure_ascii=False) + "\n")
-    return {"conversations": len(conversations), "matches": len(results), "gpt": len(gpt), "learnings": len(learnings)}
+        (output_dir / "gpt-conversations-extracted.json").write_text(
+            json.dumps(gpt, indent=2, ensure_ascii=False) + "\n"
+        )
+        (output_dir / "simon-learnings-extracted.json").write_text(
+            json.dumps(learnings, indent=2, ensure_ascii=False) + "\n"
+        )
+    return {
+        "conversations": len(conversations),
+        "matches": len(results),
+        "gpt": len(gpt),
+        "learnings": len(learnings),
+    }
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Mine private conversation/session exports into archaeology data files.")
+    parser = argparse.ArgumentParser(
+        description="Mine private conversation/session exports into archaeology data files."
+    )
     sub = parser.add_subparsers(dest="command", required=True)
 
     claude = sub.add_parser("claude", help="Mine Claude Code JSONL sessions")
     claude.add_argument("--sessions-dir", type=Path, default=DEFAULT_OMC_SESSIONS)
     claude.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT)
-    claude.add_argument("--prefix", default="sessions", help="Output prefix, e.g. sessions or demo-project")
+    claude.add_argument(
+        "--prefix", default="sessions", help="Output prefix, e.g. sessions or demo-project"
+    )
     claude.add_argument("--dry-run", action="store_true")
 
     chatgpt = sub.add_parser("chatgpt", help="Mine ChatGPT conversations.json export")
@@ -291,7 +347,9 @@ def main() -> int:
         if not args.sessions_dir.exists():
             print(f"Session directory not found: {args.sessions_dir}", file=sys.stderr)
             return 1
-        stats = mine_claude_sessions(args.sessions_dir, args.output_dir, args.prefix, dry_run=args.dry_run)
+        stats = mine_claude_sessions(
+            args.sessions_dir, args.output_dir, args.prefix, dry_run=args.dry_run
+        )
     else:
         if not args.input.exists():
             print(f"ChatGPT export not found: {args.input}", file=sys.stderr)

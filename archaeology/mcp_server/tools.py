@@ -9,7 +9,6 @@ from __future__ import annotations
 import json
 import os
 from contextlib import contextmanager
-from pathlib import Path
 from typing import Any
 
 from .project_utils import (
@@ -249,6 +248,7 @@ def devarch_visualize(project_name: str) -> dict[str, Any]:
     projects = []
     if projects_dir.exists():
         from archaeology.visualization.dashboard import discover_projects
+
         projects = discover_projects(projects_dir)
 
     # Find the matching project
@@ -284,7 +284,7 @@ def devarch_report(project_name: str, fmt: str = "html") -> dict[str, Any]:
     if not project_dir.exists():
         return {"error": f"Project '{project_name}' not found"}
 
-    from archaeology.report import export_markdown_report, _markdown_to_html
+    from archaeology.report import _markdown_to_html, export_markdown_report
 
     md_path = export_markdown_report(project_name, str(project_dir))
 
@@ -322,8 +322,7 @@ def devarch_audit(project_name: str, fail_on: str = "HIGH") -> dict[str, Any]:
         "passed": passed,
         "failed": failed,
         "findings": [
-            {"check": f.code, "severity": f.severity, "message": f.message}
-            for f in findings
+            {"check": f.code, "severity": f.severity, "message": f.message} for f in findings
         ],
     }
 

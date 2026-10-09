@@ -17,7 +17,6 @@ import sys
 import threading
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[1]
 DELIVERABLES = ROOT / "projects/demo-project/deliverables"
 
