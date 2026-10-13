@@ -15,7 +15,7 @@ setup(
         "datasette>=0.64.0",
     ],
     extras_require={
-        "dev": ["pytest>=8.0", "ruff==0.16.10"],
+        "dev": ["pytest>=8.0", "ruff==0.17.0"],
         "mcp": ["mcp[cli]>=1.0,<2"],
     },
     entry_points={
