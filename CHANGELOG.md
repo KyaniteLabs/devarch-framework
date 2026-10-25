@@ -5,7 +5,7 @@ All notable changes to DevArch Framework will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.3.1] - 2026-05-12
+## [0.3.1] - Unreleased (staged; no tag or release yet — no tags exist in this repo)
 
 ### Security
 - **Path traversal protection**: Added `validate_project_name()` to MCP server — blocks `..`, `/`, and non-alphanumeric characters in project names
@@ -28,7 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - **Consistent branding**: Standardized to "DevArch Framework" across all 36 references (was mixed with "Development Archaeology")
 - **Author attribution**: Standardized to "Simon Gonzalez De Cruz" across setup.py, LICENSE, and generated HTML
-- **Version in footers**: HTML templates now show "DevArch Framework v0.3.0"
+- **Version in footers**: HTML templates show "DevArch Framework v0.3.1" (bumped with this version train; no artifacts have been tagged)
 - **Third-party acknowledgments**: Added dependency attribution section to README.md
 
 ## [0.3.0] - 2026-05-11
