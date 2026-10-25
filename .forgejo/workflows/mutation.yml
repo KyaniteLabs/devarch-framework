@@ -36,13 +36,13 @@ jobs:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           persist-credentials: false
-      - name: Install pinned tools on Python 3.12 (uv bootstrap, as in CI)
+      - name: Install pinned tools + runtime deps on Python 3.12 (uv bootstrap, as in CI)
         run: |
           apt-get update -qq && apt-get install -y -qq python3-venv
           python3 -m venv /tmp/uv-bootstrap
           /tmp/uv-bootstrap/bin/pip install --quiet uv==0.10.2
           /tmp/uv-bootstrap/bin/uv venv --python 3.12.12 .venv
-          /tmp/uv-bootstrap/bin/uv pip install --python .venv pytest==9.1.1 mutmut==3.8.0
+          /tmp/uv-bootstrap/bin/uv pip install --python .venv pytest==9.1.1 mutmut==3.8.0 sqlite-utils
       - name: Mutation score of the era subsystem (break below 80%)
         run: |
           .venv/bin/mutmut run
