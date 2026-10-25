@@ -4,6 +4,8 @@ The old parser built the strengths key from an undefined name and searched
 only the title line, so real SWOT-ANALYSIS.md files never produced counts.
 """
 
+import re
+
 from archaeology.api import _parse_swot
 from scripts.data.generate_template_deliverables import strategy_swot_analysis
 
@@ -20,8 +22,11 @@ def _project():
 def test_swot_counts_match_generated_lists(tmp_path):
     strategy = tmp_path / "deliverables" / "strategy"
     strategy.mkdir(parents=True)
-    (strategy / "SWOT-ANALYSIS.md").write_text(strategy_swot_analysis(_project()), encoding="utf-8")
+    text = strategy_swot_analysis(_project())
+    (strategy / "SWOT-ANALYSIS.md").write_text(text, encoding="utf-8")
     result = _parse_swot(tmp_path)
-    for quadrant in ("strengths", "weaknesses", "opportunities", "threats"):
-        assert result[f"{quadrant}_count"] == len(result[quadrant])
+    # Matrix order in the generator: strengths, weaknesses, opportunities, threats.
+    matrix = [int(n) for n in re.findall(r"\((\d+) found\)", text)]
+    quadrants = ("strengths", "weaknesses", "opportunities", "threats")
+    assert [result[f"{q}_count"] for q in quadrants] == matrix
     assert result["strengths_count"] > 0
