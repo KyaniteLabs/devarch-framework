@@ -26,21 +26,20 @@ def test_load_json_logs_warning_on_corrupt_file(tmp_path, caplog):
     assert "JSON parse error" in caplog.text
 
 
-def test_load_json_logs_warning_on_io_error(tmp_path, caplog):
+def test_load_json_logs_warning_on_io_error(tmp_path, caplog, monkeypatch):
+    # Inject the I/O error: chmod(0o000) does not stop root (CI containers)
+    # or Windows from reading the file, so permission bits are not reliable.
     bad = tmp_path / "unreadable.json"
     bad.write_text("{}", encoding="utf-8")
-    bad.chmod(0o000)
-    import sys
-    if sys.platform == "win32":
-        # Windows ignores Unix-style chmod for owner — skip this test
-        pytest.skip("chmod(0o000) does not prevent reads on Windows")
-    try:
-        with caplog.at_level("WARNING"):
-            result = _load_json(bad)
-        assert result is None
-        assert "I/O error" in caplog.text
-    finally:
-        bad.chmod(0o644)
+
+    def deny(self, *args, **kwargs):
+        raise PermissionError(13, "Permission denied", str(self))
+
+    monkeypatch.setattr(Path, "read_text", deny)
+    with caplog.at_level("WARNING"):
+        result = _load_json(bad)
+    assert result is None
+    assert "I/O error" in caplog.text
 
 
 def test_load_json_returns_data_for_valid_file(tmp_path):
