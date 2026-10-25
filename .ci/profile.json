@@ -1,0 +1,81 @@
+{
+  "version": 1,
+  "test_globs": [
+    "tests/test_*.py"
+  ],
+  "dependency_files": [
+    "setup.py",
+    ".ci/profile.json"
+  ],
+  "junit_reports": [
+    ".ci-results/tests.xml"
+  ],
+  "steps": [
+    {
+      "name": "Install Python 3.12 (newest supported), the package and pinned test tools",
+      "phase": "install",
+      "argv": [
+        "bash",
+        "-euo",
+        "pipefail",
+        "-c",
+        "apt-get update -qq && apt-get install -y -qq python3-venv && python3 -m venv /tmp/uv-bootstrap && /tmp/uv-bootstrap/bin/pip install --quiet uv==0.10.2 && /tmp/uv-bootstrap/bin/uv venv --python 3.12.12 .venv && /tmp/uv-bootstrap/bin/uv pip install --python .venv '.[dev]' pytest==9.1.1 ruff==0.15.21"
+      ],
+      "timeout_seconds": 900
+    },
+    {
+      "name": "Lint for errors (syntax, undefined names, redefinitions)",
+      "phase": "verify",
+      "argv": [
+        ".venv/bin/ruff",
+        "check",
+        "--isolated",
+        "--select",
+        "E9,F63,F7,F82,F811",
+        "archaeology",
+        "scripts",
+        "setup.py",
+        "tests"
+      ]
+    },
+    {
+      "name": "Build the wheel once and record its digest",
+      "phase": "build",
+      "argv": [
+        "bash",
+        "-euo",
+        "pipefail",
+        "-c",
+        "/tmp/uv-bootstrap/bin/uv build --wheel --out-dir .ci-results/dist . && (cd .ci-results/dist && sha256sum *.whl | tee SHA256SUMS)"
+      ]
+    },
+    {
+      "name": "Run all tests",
+      "phase": "test",
+      "argv": [
+        ".venv/bin/python",
+        "-m",
+        "pytest",
+        "tests",
+        "-q",
+        "--tb=short",
+        "-p",
+        "no:cacheprovider",
+        "--junitxml=.ci-results/tests.xml"
+      ],
+      "timeout_seconds": 900
+    },
+    {
+      "name": "Smoke-test the built wheel from a clean venv (package data + demo)",
+      "phase": "acceptance",
+      "argv": [
+        "bash",
+        "-euo",
+        "pipefail",
+        "-c",
+        "(cd .ci-results/dist && sha256sum -c SHA256SUMS); python3 -c 'import sys, zipfile; names = zipfile.ZipFile(sys.argv[1]).namelist(); assert any(n.startswith(\"archaeology/visualization/\") and n.endswith(\".html\") for n in names), \"wheel lacks visualization templates\"' .ci-results/dist/*.whl; accept=$(mktemp -d); /tmp/uv-bootstrap/bin/uv venv --python 3.12.12 \"$accept/venv\"; /tmp/uv-bootstrap/bin/uv pip install --python \"$accept/venv\" .ci-results/dist/*.whl; cd \"$accept\"; ./venv/bin/devarch --help > /dev/null; ./venv/bin/devarch demo --force --build-db; test -s projects/demo-archaeology/data/archaeology.db"
+      ],
+      "timeout_seconds": 600
+    }
+  ]
+}
