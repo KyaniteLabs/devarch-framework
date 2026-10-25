@@ -19,7 +19,7 @@
         "-euo",
         "pipefail",
         "-c",
-        "apt-get update -qq && apt-get install -y -qq python3-venv && python3 -m venv /tmp/uv-bootstrap && /tmp/uv-bootstrap/bin/pip install --quiet uv==0.10.2 && /tmp/uv-bootstrap/bin/uv venv --python 3.12 .venv && /tmp/uv-bootstrap/bin/uv pip install --python .venv '.[dev]' pytest==9.1.1 ruff==0.15.21"
+        "apt-get update -qq && apt-get install -y -qq python3-venv && python3 -m venv /tmp/uv-bootstrap && /tmp/uv-bootstrap/bin/pip install --quiet uv==0.10.2 && /tmp/uv-bootstrap/bin/uv venv --python 3.12.12 .venv && /tmp/uv-bootstrap/bin/uv pip install --python .venv '.[dev]' pytest==9.1.1 ruff==0.15.21"
       ],
       "timeout_seconds": 900
     },
@@ -66,14 +66,14 @@
       "timeout_seconds": 900
     },
     {
-      "name": "Install the exact tested wheel cleanly and run the demo",
+      "name": "Smoke-test the built wheel from a clean venv (package data + demo)",
       "phase": "acceptance",
       "argv": [
         "bash",
         "-euo",
         "pipefail",
         "-c",
-        "(cd .ci-results/dist && sha256sum -c SHA256SUMS); /tmp/uv-bootstrap/bin/uv venv --python 3.12 /tmp/accept; /tmp/uv-bootstrap/bin/uv pip install --python /tmp/accept .ci-results/dist/*.whl; work=$(mktemp -d); cd \"$work\"; /tmp/accept/bin/devarch --help > /dev/null; /tmp/accept/bin/devarch demo --force --build-db; test -s projects/demo-archaeology/data/archaeology.db"
+        "(cd .ci-results/dist && sha256sum -c SHA256SUMS); python3 -c 'import sys, zipfile; names = zipfile.ZipFile(sys.argv[1]).namelist(); assert any(n.startswith(\"archaeology/visualization/\") and n.endswith(\".html\") for n in names), \"wheel lacks visualization templates\"' .ci-results/dist/*.whl; accept=$(mktemp -d); /tmp/uv-bootstrap/bin/uv venv --python 3.12.12 \"$accept/venv\"; /tmp/uv-bootstrap/bin/uv pip install --python \"$accept/venv\" .ci-results/dist/*.whl; cd \"$accept\"; ./venv/bin/devarch --help > /dev/null; ./venv/bin/devarch demo --force --build-db; test -s projects/demo-archaeology/data/archaeology.db"
       ],
       "timeout_seconds": 600
     }

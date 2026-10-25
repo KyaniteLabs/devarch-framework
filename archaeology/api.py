@@ -153,13 +153,10 @@ def _parse_swot(project_dir):
         section = sections.get(key, "")
         result[key.lower()] = _parse_list_items(section)
 
-    # Extract matrix counts
-    matrix_text = sections.get("header", "")
+    # The generator's matrix counts are the lengths of these same lists
+    # (scripts/data/generate_template_deliverables.py, SWOT Matrix block).
     for quadrant in ("strengths", "weaknesses", "opportunities", "threats"):
-        pattern = rf"{quadrant}.*?(\d+)\s+found"
-        m = re.search(pattern, matrix_text, re.IGNORECASE)
-        if m:
-            result.setdefault(f"{quadrant}_count", int(m.group(1)))
+        result[f"{quadrant}_count"] = len(result[quadrant])
 
     return result
 
@@ -290,7 +287,6 @@ def _parse_bcg(project_dir):
 
     for quadrant_key in ("Stars", "Cash Cows", "Question Marks", "Dogs"):
         section = sections.get(f"{quadrant_key}", "")
-        count_match = re.search(rf"\((\d+)\)", sections.get("Quadrant Analysis", ""))
         result[quadrant_key.lower().replace(" ", "_")] = _parse_list_items(section)
 
     result["recommendations"] = _parse_list_items(sections.get("Strategic Recommendations", ""))
