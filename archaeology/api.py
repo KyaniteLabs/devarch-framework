@@ -159,7 +159,7 @@ def _parse_swot(project_dir):
         pattern = rf"{quadrant}.*?(\d+)\s+found"
         m = re.search(pattern, matrix_text, re.IGNORECASE)
         if m:
-            result.setdefault(f"{quadrangle if quadrant == 'strengths' else quadrant}_count", int(m.group(1)))
+            result.setdefault(f"{quadrant}_count", int(m.group(1)))
 
     return result
 

@@ -6,7 +6,6 @@ import sqlite3
 import tempfile
 from pathlib import Path
 
-import pytest
 
 from archaeology.utils import _load_json, atomic_write
 from archaeology.db.queries import _validate_order_by, _validate_table_name

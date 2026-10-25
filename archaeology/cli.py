@@ -1193,7 +1193,7 @@ def benchmark(project_name):
 @main.command("dashboard")
 @click.option("--port", default=8080, help="Port to serve on")
 @click.option("--no-open", is_flag=True, help="Don't open browser automatically")
-def serve(port, no_open):
+def dashboard(port, no_open):
     """Start local dashboard server for all project deliverables.
 
     Generates the master dashboard and serves all projects over HTTP.
