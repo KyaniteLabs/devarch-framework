@@ -1,5 +1,9 @@
 # DevArch Framework
 
+<p align="center">
+  <img src="branding/devarch-512.png" alt="devarch icon" width="128">
+</p>
+
 **TL;DR:** DevArch Framework — local git repository archaeology: mine commit history into SQLite, detect development signals, run analysis vectors, and generate reports. Best for engineers, researchers, and AI agents who need to understand how a codebase evolved.
 
 [![PyPI version](https://img.shields.io/pypi/v/devarch-framework.svg)](https://pypi.org/project/devarch-framework/)
