@@ -104,3 +104,6 @@ projects/*/output/
 !projects/*/output/.gitkeep
 .ci-results/
 .venv/
+
+# Mutation testing (mutmut)
+mutants/

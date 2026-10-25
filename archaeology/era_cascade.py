@@ -261,7 +261,7 @@ def _fix_era_count_text(line: str, n_eras: int, result: CascadeResult) -> str:
     line = re.sub(r"\b(\d+)\s+Eras\b", _replace_num, line)
 
     # "Ten Eras" → "Seven Eras"
-    for word, num in word_map.items():
+    for num, word in word_map.items():
         if num != n_eras and f"{word} Eras" in line:
             line = line.replace(f"{word} Eras", f"{target_word} Eras")
             result.counts_fixed += 1
