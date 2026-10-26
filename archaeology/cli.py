@@ -10,19 +10,39 @@ from pathlib import Path
 
 import click
 
+from . import pipeline
 from .analysis_runner import run_analysis_vectors
 from .classifiers.era_detector import detect_signals
 from .extractors.git import extract_git_log, extract_git_log_with_stats
+from .pipeline import PipelineError
+
+
+def _exit_with(err):
+    """Print a PipelineError the way the CLI always has, then exit 1."""
+    if err.kind == "project-missing" and err.path:
+        name = err.message.split("'")[1]
+        click.echo(f"Project '{name}' not found at {err.path}/", err=True)
+        click.echo(f"Run 'devarch init {name}' first.", err=True)
+    elif err.kind in ("not-git", "invalid-json"):
+        click.echo(f"Error: {err.message}", err=True)
+    else:
+        click.echo(err.message, err=True)
+    sys.exit(1)
+
+
+def _project(project_name):
+    """Return the ProjectRef for an existing project, or exit with the CLI hint."""
+    ref = pipeline.ProjectRef.for_cli(project_name)
+    try:
+        ref.resolve()
+    except PipelineError as e:
+        _exit_with(e)
+    return ref
 
 
 def _project_dir(project_name):
     """Resolve project directory path."""
-    d = os.path.join("projects", project_name)
-    if not os.path.isdir(d):
-        click.echo(f"Project '{project_name}' not found at {d}/", err=True)
-        click.echo(f"Run 'devarch init {project_name}' first.", err=True)
-        sys.exit(1)
-    return d
+    return str(_project(project_name).resolve())
 
 
 @click.group()
@@ -37,30 +57,13 @@ def main():
 @click.option("--repo-url", default="https://github.com/example/example", help="GitHub repository URL")
 def init(project_name, description, repo_url):
     """Create a new project directory with default config."""
-    project_dir = os.path.join("projects", project_name)
-    os.makedirs(os.path.join(project_dir, "data"), exist_ok=True)
-    os.makedirs(os.path.join(project_dir, "deliverables"), exist_ok=True)
-
-    config_path = os.path.join(project_dir, "project.json")
-    if os.path.exists(config_path):
-        click.echo(f"Project '{project_name}' already exists at {config_path}")
+    ref = pipeline.ProjectRef.for_cli(project_name, must_exist=False)
+    result = pipeline.init(ref, description, repo_url)
+    if not result.created:
+        click.echo(f"Project '{project_name}' already exists at {result.config_path}")
         return
 
-    config = {
-        "name": project_name,
-        "description": description,
-        "repo_url": repo_url,
-        "developer": {},
-        "timeline": {},
-        "overrides": {},
-        "visualization": {},
-        "data_sources": {},
-    }
-
-    with open(config_path, "w", encoding="utf-8") as f:
-        json.dump(config, f, indent=2)
-
-    click.echo(f"Created project '{project_name}' at {project_dir}/")
+    click.echo(f"Created project '{project_name}' at {result.project_dir}/")
 
 
 @main.command()
@@ -95,34 +98,23 @@ def demo(project_name, force, build_db):
 @click.option("--verbose", "-v", is_flag=True)
 def mine(repo_path, project, verbose):
     """Phase 1: Extract data from a git repository."""
-    from .extractors.git import extract_git_log, extract_git_log_with_stats
+    ref = _project(project)
+    stage = {"name": "Git extraction"}
+    csv_path = os.path.join(ref.resolve(), "data", "github-commits.csv")
 
-    project_dir = _project_dir(project)
-    data_dir = os.path.join(project_dir, "data")
+    def on_event(event, detail):
+        if event == "start":
+            click.echo(f"Extracting git log from {repo_path}...")
+        elif event == "csv-done":
+            click.echo(f"  Extracted {detail} commits to {csv_path}")
+            stage["name"] = "Git stats extraction"
 
-    if not os.path.isdir(os.path.expanduser(repo_path)):
-        click.echo(f"Repository not found: {repo_path}", err=True)
-        sys.exit(1)
-
-    if not os.path.isdir(os.path.join(os.path.expanduser(repo_path), '.git')):
-        click.echo(f"Error: Not a git repository: {repo_path}", err=True)
-        sys.exit(1)
-
-    click.echo(f"Extracting git log from {repo_path}...")
-
-    csv_path = os.path.join(data_dir, "github-commits.csv")
     try:
-        count = extract_git_log(repo_path, csv_path, verbose=verbose)
-        click.echo(f"  Extracted {count} commits to {csv_path}")
-    except (RuntimeError, Exception) as e:
-        click.echo(f"Error: Git extraction failed: {e}", err=True)
-        sys.exit(1)
-
-    stats_path = os.path.join(data_dir, "github-commits-with-stats.txt")
-    try:
-        extract_git_log_with_stats(repo_path, stats_path, verbose=verbose)
-    except (RuntimeError, Exception) as e:
-        click.echo(f"Error: Git stats extraction failed: {e}", err=True)
+        pipeline.mine(repo_path, ref, verbose=verbose, expand_repo_path=False, on_event=on_event)
+    except PipelineError as e:
+        _exit_with(e)
+    except Exception as e:
+        click.echo(f"Error: {stage['name']} failed: {e}", err=True)
         sys.exit(1)
 
     click.echo(f"Phase 1 complete for '{project}'.")
@@ -133,23 +125,12 @@ def mine(repo_path, project, verbose):
 @click.option("--verbose", "-v", is_flag=True, help="Verbose output")
 def build_db(project_name, verbose):
     """Phase 1.5: Build SQLite database from extracted data."""
-    project_dir = _project_dir(project_name)
-    db_path = os.path.join(project_dir, "data", "archaeology.db")
-
-    cmd = [sys.executable, "-m", "archaeology.db.builder",
-           "--project-root", project_dir]
-    if verbose:
-        cmd.append("--verbose")
-
-    _env = os.environ.copy()
-    _pkg_root = str(Path(__file__).parent.parent)
-    _env["PYTHONPATH"] = _pkg_root + ((os.pathsep + _env["PYTHONPATH"]) if _env.get("PYTHONPATH") else "")
-    result = subprocess.run(cmd, check=True, timeout=300, env=_env)
-    if result.returncode == 0 and os.path.exists(db_path):
-        click.echo(f"Database built at {db_path}")
+    built = pipeline.build_db(_project(project_name), verbose=verbose, isolated=True)
+    if built.returncode == 0 and built.built:
+        click.echo(f"Database built at {built.db_path}")
     else:
-        click.echo(f"Build failed with exit code {result.returncode}", err=True)
-        sys.exit(result.returncode)
+        click.echo(f"Build failed with exit code {built.returncode}", err=True)
+        sys.exit(built.returncode)
 
 
 @main.command()
@@ -228,28 +209,23 @@ def signals(project_name, config_path, min_gap_days, verbose):
     Signals are patterns in the data, NOT era definitions. Eras are
     hand-curated narrative judgments based on these signals.
     """
-    from .classifiers.era_detector import detect_signals
-
     config = {}
     if config_path:
         try:
-            with open(config_path) as f:
-                config = json.load(f)
-        except json.JSONDecodeError as e:
-            click.echo(f"Error: Invalid JSON in {config_path}: {e}", err=True)
-            sys.exit(1)
-    if min_gap_days is not None:
-        config["min_gap_days"] = min_gap_days
+            config = pipeline.load_config_file(config_path)
+        except PipelineError as e:
+            _exit_with(e)
 
-    db_path = os.path.join(_project_dir(project_name), "data", "archaeology.db")
-    if not os.path.exists(db_path):
+    ref = _project(project_name)
+    try:
+        result = pipeline.signals(ref, config=config, min_gap_days=min_gap_days)
+    except PipelineError:
         click.echo(f"No database found. Run 'devarch build-db {project_name}' first.", err=True)
         sys.exit(1)
 
-    result = detect_signals(project_name, config=config or None)
-    if result.get("signals"):
-        click.echo(f"Detected {len(result['signals'])} signals "
-                   f"across {len(result['cluster_summary'])} clusters.")
+    if result.signals:
+        click.echo(f"Detected {len(result.signals)} signals "
+                   f"across {len(result.clusters)} clusters.")
     else:
         click.echo("No significant patterns detected in the commit history.")
 
@@ -285,20 +261,14 @@ def extract_sessions(project_name, sessions_dir, verbose):
 @click.option("--verbose", is_flag=True, help="Print vector execution detail")
 def analyze(project_name, vectors, prompts, verbose):
     """Phase 3: Run automated analysis vectors against project data."""
-    from .analysis_runner import AnalysisRunner, run_analysis_vectors
-
-    available = AnalysisRunner.VECTORS
-    unknown = set(vectors) - set(available) if vectors else set()
-    if unknown:
-        for vector in sorted(unknown):
-            click.echo(f"Unknown vector: {vector}", err=True)
+    try:
+        target = pipeline.validate_vectors(vectors)
+    except PipelineError as e:
+        click.echo(e.message, err=True)
         raise click.exceptions.Exit(1)
 
-    target = list(vectors) if vectors else list(available)
-    project_dir = _project_dir(project_name)
-    deliverables_dir = os.path.join(project_dir, "deliverables")
-    analysis_dir = os.path.join(deliverables_dir, "analysis")
-    os.makedirs(analysis_dir, exist_ok=True)
+    ref = _project(project_name)
+    analysis_dir = pipeline.analysis_dir(ref)
 
     if prompts:
         vectors_dir = os.path.join(os.path.dirname(__file__), "..", "analysis-vectors")
@@ -311,11 +281,10 @@ def analyze(project_name, vectors, prompts, verbose):
 
     click.echo(f"Running automated analysis vectors for '{project_name}'")
     click.echo(f"Vectors: {', '.join(target)}")
-    results = run_analysis_vectors(project_name, verbose=verbose, vectors=target)
-    failed = {name: path for name, path in results.items() if str(path).startswith("ERROR")}
-    for name, path in results.items():
+    analysis = pipeline.analyze(ref, target, verbose=verbose)
+    for name, path in analysis.results.items():
         click.echo(f"  {name}: {path}")
-    if failed:
+    if analysis.failed:
         raise click.exceptions.Exit(1)
 
 
@@ -416,147 +385,13 @@ def export_report_cmd(project_name, fmt, output_path):
 @click.argument("project_name")
 def visualize(project_name):
     """Phase 4: Generate visualization HTML from template."""
-    project_dir = _project_dir(project_name)
-    template = os.path.join("archaeology", "visualization", "template.html")
-    data_json = os.path.join(project_dir, "deliverables", "data.json")
-    output_html = os.path.join(project_dir, "deliverables", "visuals", "archaeology.html")
-
-    if not os.path.exists(template):
-        click.echo(f"Template not found at {template}", err=True)
-        sys.exit(1)
-
-    # Load project config for hydration
-    config_path = os.path.join(project_dir, "project.json")
-    project_config = {}
-    if os.path.exists(config_path):
-        try:
-            with open(config_path, encoding="utf-8") as f:
-                project_config = json.load(f)
-        except json.JSONDecodeError as e:
-            click.echo(f"Error: Invalid JSON in {config_path}: {e}", err=True)
-            sys.exit(1)
-
-    vis = project_config.get("visualization", {})
-    overrides = project_config.get("overrides", {})
-
-    # Read template and inject project-specific values
-    with open(template, encoding="utf-8") as f:
-        html = f.read()
-
-    # Compute stats from commit-eras.json for template hydration
-    total_commits = 0
-    total_lines = 0
-    first_date = ""
-    last_date = ""
-    agent_count = 0
-    eras_data = None
-    eras_json = os.path.join(project_dir, "data", "commit-eras.json")
-    if os.path.exists(eras_json):
-        try:
-            with open(eras_json, encoding="utf-8") as f:
-                eras_data = json.load(f)
-        except json.JSONDecodeError as e:
-            click.echo(f"Error: Invalid JSON in {eras_json}: {e}", err=True)
-            sys.exit(1)
-        total_commits = eras_data.get("total_commits", 0)
-        lifespan = eras_data.get("lifespan", "")
-        # Parse "43 days (Feb 28 - Apr 11, 2026)" format
-        if "(" in lifespan and ")" in lifespan:
-            date_part = lifespan.split("(")[1].split(")")[0]
-            parts = date_part.split(" - ")
-            first_date = parts[0].strip() if parts else ""
-            last_date = parts[-1].strip() if len(parts) > 1 else ""
-        # Count unique agents from agent_evidence
-        agent_evidence = eras_data.get("agent_evidence", {})
-        agent_count = len(agent_evidence)
-        if not agent_count:
-            agent_count = 6  # Claude, Kai, Cursor, Kimi, Codex, dogfood
-        # Get file count from codebase_growth last entry
-        growth = eras_data.get("codebase_growth", [])
-        if growth:
-            total_lines = growth[-1].get("files", 0)
-    elif os.path.exists(data_json):
-        try:
-            with open(data_json, encoding="utf-8") as f:
-                pdata = json.load(f)
-            total_commits = pdata.get("total_commits", 0)
-        except json.JSONDecodeError as e:
-            click.echo(f"Error: Invalid JSON in {data_json}: {e}", err=True)
-            sys.exit(1)
-
-    # Hydrate template variables
-    title = vis.get("title", project_name.upper())
-    duration = vis.get("duration", f"{first_date} — {last_date}" if first_date else "")
-    html = html.replace("{{PROJECT_NAME}}", title)
-    html = html.replace("{{PROJECT_DURATION}}", duration)
-    html = html.replace("{{TOTAL_COMMITS}}", str(total_commits or 803))
-    html = html.replace("{{TOTAL_LINES}}", str(total_lines or "35,600"))
-    html = html.replace("{{AGENT_COUNT}}", str(agent_count or 6))
-    # Compute era count for meta description
-    era_count = len(eras_data.get("eras", [])) if os.path.exists(eras_json) else 0
-    html = html.replace("{{ERA_COUNT}}", str(era_count))
-
-    # Also update <title> tag if it still has the old format
-    html = html.replace(
-        "<title>DevArch Framework</title>",
-        f"<title>{title} — DevArch Framework</title>",
-    )
-
-    # Generate era color CSS variables from config
-    era_colors = vis.get("era_colors", {})
-    if era_colors:
-        era_css = "\n".join(
-            f"  --{era_key}: {color};"
-            for era_key, color in era_colors.items()
-        )
-        # Insert era colors after :root block opens
-        html = html.replace(
-            "/* ERA COLORS */",
-            f"/* ERA COLORS — from project.json */\n{era_css}",
-        )
-
-    # Generate agent color CSS variables
-    agent_colors = vis.get("agent_colors", {})
-    if agent_colors:
-        agent_css = "\n".join(
-            f"  --{name.lower()}: {color};"
-            for name, color in agent_colors.items()
-        )
-        html = html.replace(
-            "/* AGENT COLORS */",
-            f"/* AGENT COLORS — from project.json */\n{agent_css}",
-        )
-
-    # Inline data.json so the HTML works from file:// (no CORS issues)
-    if os.path.exists(data_json):
-        with open(data_json, encoding="utf-8") as f:
-            data_payload = json.load(f)
-
-        # Merge commit_eras and top-level fields from commit-eras.json into PROJECT_DATA
-        # so the era timeline visualization has real data to render.
-        if eras_data is not None:
-            data_payload.setdefault("commit_eras", eras_data.get("eras", []))
-            data_payload.setdefault("total_commits", eras_data.get("total_commits", 0))
-            data_payload.setdefault("first_commit_date", eras_data.get("first_commit_date", ""))
-            data_payload.setdefault("last_commit_date", eras_data.get("last_commit_date", ""))
-
-        data_content = json.dumps(data_payload)
-        safe_data_content = data_content.replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026")
-        inline_script = f'<script>window.PROJECT_DATA = {safe_data_content}; window.dispatchEvent(new Event("data-loaded"));</script>'
-        html = html.replace(
-            '<script>\n  // Load project data from external JSON file\n  // The data.json file contains all visualization data (telemetry, sessions, eras, etc.)\n  // Original inline data was ~6870 lines (272KB)\n  fetch("data.json")\n    .then(function(r) { return r.json(); })\n    .then(function(d) {\n      window.PROJECT_DATA = d;\n      window.dispatchEvent(new Event("data-loaded"));\n    })\n    .catch(function(e) { console.error("Failed to load data.json:", e); });\n</script>',
-            inline_script,
-        )
-
-    # Write hydrated HTML
-    os.makedirs(os.path.dirname(output_html), exist_ok=True)
-    with open(output_html, "w", encoding="utf-8") as f:
-        f.write(html)
-
-    click.echo(f"Visualization generated at {output_html}")
-
-    if not os.path.exists(data_json):
-        click.echo(f"Warning: {data_json} not found. Visualization will be empty.")
+    try:
+        rendered = pipeline.render_visualization(_project(project_name))
+    except PipelineError as e:
+        _exit_with(e)
+    click.echo(f"Visualization generated at {rendered.output_path}")
+    if rendered.warning:
+        click.echo(rendered.warning)
 
 
 @main.command()
@@ -738,18 +573,16 @@ def cascade(project_name, dry_run, skip_mine):
 @click.option("--fail-on", type=click.Choice(["CRITICAL", "HIGH", "MEDIUM", "LOW"]), default="HIGH", help="Lowest severity that causes nonzero exit")
 def audit(project_name, fail_on):
     """Run forensic audit quality gate."""
-    from .audit import has_blocking_findings, run_audit, summarize
-
-    findings = run_audit(project_name, root=Path.cwd())
-    summary = summarize(findings)
+    audit_result = pipeline.audit(pipeline.ProjectRef.for_cli(project_name), fail_on)
+    findings = audit_result.findings
     click.echo(f"Forensic audit for '{project_name}'")
-    click.echo("Summary: " + ", ".join(f"{k}={v}" for k, v in summary.items() if v))
+    click.echo("Summary: " + ", ".join(f"{k}={v}" for k, v in audit_result.summary.items() if v))
     if not findings:
         click.echo("PASS: no findings")
         return
     for finding in findings:
         click.echo(finding.format())
-    if has_blocking_findings(findings, fail_on=fail_on):
+    if audit_result.blocking:
         raise click.exceptions.Exit(1)
 
 
