@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Database errors**: Added `sqlite3.Error` logging in `analysis_runner._query_db()` when verbose mode is active
 
 ### Changed
+- **Single version source**: `/api/health` and the global insights payload reported a hard-coded `1.0.0` from `archaeology/api.py`. They now report `archaeology.__version__` (0.3.1). The unused `__version__ = "1.0.0"` in `scripts/content/__init__.py` is removed.
 - **CLI command name**: hints and errors named a nonexistent `archaeology` command. The installed command is `devarch` (`setup.py` console_scripts). Fixed in `cli.py`, `demo.py`, `report.py` and the demo fixture READMEs. The "Run 'devarch init …' first" error now formats the project name: it was a plain string that printed `{project_name}` literally.
 - **Executable README**: a `bash readme-test` block (offline demo plus signals) runs in CI on every change through the shared profile's Layer 3 step. It pins the corrected hint text.
 - **Consistent branding**: Standardized to "DevArch Framework" across all 36 references (was mixed with "Development Archaeology")
