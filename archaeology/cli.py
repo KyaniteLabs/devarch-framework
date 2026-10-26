@@ -23,16 +23,24 @@ def _exit_with(err):
         name = err.message.split("'")[1]
         click.echo(f"Project '{name}' not found at {err.path}/", err=True)
         click.echo(f"Run 'devarch init {name}' first.", err=True)
-    elif err.kind in ("not-git", "invalid-json"):
+    elif err.kind in ("not-git", "invalid-json", "invalid-name"):
         click.echo(f"Error: {err.message}", err=True)
     else:
         click.echo(err.message, err=True)
     sys.exit(1)
 
 
+def _cli_ref(project_name, must_exist=True):
+    """Return a validated CLI ProjectRef, or exit 1 on an unsafe project name."""
+    try:
+        return pipeline.ProjectRef.for_cli(project_name, must_exist=must_exist)
+    except PipelineError as e:
+        _exit_with(e)
+
+
 def _project(project_name):
     """Return the ProjectRef for an existing project, or exit with the CLI hint."""
-    ref = pipeline.ProjectRef.for_cli(project_name)
+    ref = _cli_ref(project_name)
     try:
         ref.resolve()
     except PipelineError as e:
@@ -57,7 +65,7 @@ def main():
 @click.option("--repo-url", default="https://github.com/example/example", help="GitHub repository URL")
 def init(project_name, description, repo_url):
     """Create a new project directory with default config."""
-    ref = pipeline.ProjectRef.for_cli(project_name, must_exist=False)
+    ref = _cli_ref(project_name, must_exist=False)
     result = pipeline.init(ref, description, repo_url)
     if not result.created:
         click.echo(f"Project '{project_name}' already exists at {result.config_path}")
@@ -74,6 +82,7 @@ def demo(project_name, force, build_db):
     """Create a sanitized demo archaeology project."""
     from .demo import create_demo_project
 
+    _cli_ref(project_name, must_exist=False)
     try:
         project_root = create_demo_project(Path.cwd(), project_name=project_name, force=force)
     except FileExistsError as exc:
@@ -324,6 +333,7 @@ def public_case_study(output_dir, project_name, force):
     """Generate a sanitized public case-study showroom."""
     from .report import export_public_case_study
 
+    _cli_ref(project_name, must_exist=False)
     path = export_public_case_study(Path.cwd(), output_dir=output_dir, project_name=project_name, force=force)
     click.echo(f"Public case study exported to {path}")
 
@@ -573,7 +583,7 @@ def cascade(project_name, dry_run, skip_mine):
 @click.option("--fail-on", type=click.Choice(["CRITICAL", "HIGH", "MEDIUM", "LOW"]), default="HIGH", help="Lowest severity that causes nonzero exit")
 def audit(project_name, fail_on):
     """Run forensic audit quality gate."""
-    audit_result = pipeline.audit(pipeline.ProjectRef.for_cli(project_name), fail_on)
+    audit_result = pipeline.audit(_cli_ref(project_name), fail_on)
     findings = audit_result.findings
     click.echo(f"Forensic audit for '{project_name}'")
     click.echo("Summary: " + ", ".join(f"{k}={v}" for k, v in audit_result.summary.items() if v))

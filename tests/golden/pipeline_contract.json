@@ -769,8 +769,8 @@
       "args": {
         "project": "../escape"
       },
-      "exit_code": 0,
-      "output": "Created project '../escape' at projects/../escape/\n",
+      "exit_code": 1,
+      "output": "Error: Project name contains invalid characters: '../escape'\n",
       "stdout": "",
       "stderr": ""
     },
@@ -779,8 +779,8 @@
       "args": {
         "project": "bad name"
       },
-      "exit_code": 0,
-      "output": "Created project 'bad name' at projects/bad name/\n",
+      "exit_code": 1,
+      "output": "Error: Project name contains invalid characters: 'bad name'\n",
       "stdout": "",
       "stderr": ""
     },
