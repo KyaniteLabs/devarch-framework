@@ -1,36 +1,27 @@
 """MCP tools wrapping DevArch pipeline functions.
 
-Each tool calls the underlying Python function directly — no subprocess
-or CLI invocation. Returns structured data for AI assistant consumption.
+Each tool is a thin adapter over ``archaeology.pipeline``: it names the project,
+calls the operation and shapes the result into a dict for AI assistant
+consumption. No subprocess or CLI invocation.
 """
 
 from __future__ import annotations
 
-import json
-import os
-from contextlib import contextmanager
-from pathlib import Path
 from typing import Any
+
+from archaeology import pipeline
+from archaeology.pipeline import PipelineError, ProjectRef
 
 from .project_utils import (
     get_project_config,
     get_project_dir,
-    get_projects_dir,
-    get_workspace_root,
     list_projects,
     read_json,
 )
 
 
-@contextmanager
-def _in_workspace():
-    """Temporarily chdir to the workspace root for CWD-relative function calls."""
-    saved = os.getcwd()
-    os.chdir(str(get_workspace_root()))
-    try:
-        yield
-    finally:
-        os.chdir(saved)
+def _ref(project_name: str) -> ProjectRef:
+    return ProjectRef.for_workspace(project_name)
 
 
 # ── Project tools ────────────────────────────────────────────────────────
@@ -38,27 +29,12 @@ def _in_workspace():
 
 def devarch_init(project_name: str, description: str = "", repo_url: str = "") -> dict[str, Any]:
     """Initialize a new DevArch project with directory structure and config."""
-    project_dir = get_project_dir(project_name)
-    project_dir.mkdir(parents=True, exist_ok=True)
-    (project_dir / "data").mkdir(exist_ok=True)
-    (project_dir / "deliverables").mkdir(exist_ok=True)
-
-    config_path = project_dir / "project.json"
-    if config_path.exists():
-        return {"status": "exists", "project": project_name, "path": str(project_dir)}
-
-    config = {
-        "name": project_name,
-        "description": description,
-        "repo_url": repo_url,
-        "developer": {},
-        "timeline": {},
-        "overrides": {},
-        "visualization": {},
-        "data_sources": {},
+    result = pipeline.init(_ref(project_name), description, repo_url)
+    return {
+        "status": "created" if result.created else "exists",
+        "project": project_name,
+        "path": str(result.project_dir),
     }
-    config_path.write_text(json.dumps(config, indent=2), encoding="utf-8")
-    return {"status": "created", "project": project_name, "path": str(project_dir)}
 
 
 def devarch_list_projects() -> list[dict[str, Any]]:
@@ -94,97 +70,50 @@ def devarch_get_project(project_name: str) -> dict[str, Any]:
 
 def devarch_mine(repo_path: str, project_name: str) -> dict[str, Any]:
     """Extract git commit history from a repository into a project."""
-    from archaeology.extractors.git import extract_git_log, extract_git_log_with_stats
+    try:
+        return _mine_dict(project_name, pipeline.mine(repo_path, _ref(project_name)))
+    except PipelineError as e:
+        return {"error": e.message}
 
-    expanded = os.path.expanduser(repo_path)
-    if not os.path.isdir(expanded):
-        return {"error": f"Repository not found: {repo_path}"}
-    if not os.path.isdir(os.path.join(expanded, ".git")):
-        return {"error": f"Not a git repository: {repo_path}"}
 
-    project_dir = get_project_dir(project_name)
-    data_dir = project_dir / "data"
-    data_dir.mkdir(parents=True, exist_ok=True)
-
-    csv_path = str(data_dir / "github-commits.csv")
-    count = extract_git_log(expanded, csv_path)
-
-    stats_path = str(data_dir / "github-commits-with-stats.txt")
-    extract_git_log_with_stats(expanded, stats_path)
-
+def _mine_dict(project_name: str, mined: pipeline.MineResult) -> dict[str, Any]:
     return {
         "status": "complete",
         "project": project_name,
-        "commits_extracted": count,
-        "csv_path": csv_path,
+        "commits_extracted": mined.commits,
+        "csv_path": mined.csv_path,
     }
 
 
 def devarch_build_db(project_name: str) -> dict[str, Any]:
     """Build SQLite database from extracted git data."""
-    from archaeology.db.builder import build_db
+    built = pipeline.build_db(_ref(project_name))
+    return _build_dict(project_name, built)
 
-    project_dir = get_project_dir(project_name)
-    db_path = project_dir / "data" / "archaeology.db"
 
-    try:
-        build_db(project_root=project_dir, verbose=False)
-    except Exception as e:
-        return {
-            "status": "failed",
-            "project": project_name,
-            "error": str(e),
-        }
-
-    if db_path.exists():
-        return {
-            "status": "complete",
-            "project": project_name,
-            "database_path": str(db_path),
-        }
-    return {
-        "status": "failed",
-        "project": project_name,
-        "error": "Database file not created after build",
-    }
+def _build_dict(project_name: str, built: pipeline.BuildResult) -> dict[str, Any]:
+    if built.error is not None:
+        return {"status": "failed", "project": project_name, "error": built.error}
+    return {"status": "complete", "project": project_name, "database_path": str(built.db_path)}
 
 
 def devarch_signals(project_name: str, min_gap_days: int | None = None) -> dict[str, Any]:
     """Detect development signals from commit history."""
-    from archaeology.classifiers.era_detector import detect_signals
-
-    project_dir = get_project_dir(project_name)
-    db_path = project_dir / "data" / "archaeology.db"
-    if not db_path.exists():
-        return {"error": "Database not found. Run build-db first."}
-
-    config = {}
-    if min_gap_days is not None:
-        config["min_gap_days"] = min_gap_days
-
-    with _in_workspace():
-        signals = detect_signals(project_name, config=config or None)
-
-    signal_list = signals.get("signals", []) if isinstance(signals, dict) else signals
+    try:
+        found = pipeline.signals(_ref(project_name), min_gap_days=min_gap_days)
+    except PipelineError as e:
+        return {"error": e.message}
     return {
         "status": "complete",
         "project": project_name,
-        "signal_count": len(signal_list),
-        "output_path": str(project_dir / "data" / "detected-signals.json"),
+        "signal_count": len(found.signals),
+        "output_path": str(found.output_path),
     }
 
 
 def devarch_analyze(project_name: str, vectors: list[str] | None = None) -> dict[str, Any]:
     """Run analysis vectors on a project's data."""
-    from archaeology.analysis_runner import run_analysis_vectors
-
-    with _in_workspace():
-        result = run_analysis_vectors(
-            project_name,
-            verbose=False,
-            vectors=vectors,
-        )
-
+    result = pipeline.analyze(_ref(project_name), vectors).results
     return {
         "status": "complete",
         "project": project_name,
@@ -195,40 +124,25 @@ def devarch_analyze(project_name: str, vectors: list[str] | None = None) -> dict
 
 def devarch_run_pipeline(repo_path: str, project_name: str) -> dict[str, Any]:
     """Run the full DevArch pipeline: mine → build-db → signals → analyze."""
-    results = {}
+    run = pipeline.run_pipeline(repo_path, _ref(project_name))
+    results: dict[str, Any] = {"init": "created" if run.init_created else "exists"}
 
-    # Step 1: Init
-    init_result = devarch_init(project_name)
-    results["init"] = init_result["status"]
-
-    # Step 2: Mine
-    mine_result = devarch_mine(repo_path, project_name)
-    results["mine"] = mine_result
-    if "error" in mine_result:
+    if run.failed_at == "mine":
+        results["mine"] = {"error": run.mine_error}
         results["status"] = "failed"
         results["failed_at"] = "mine"
         return results
-    results["commits_extracted"] = mine_result.get("commits_extracted", 0)
+    results["mine"] = _mine_dict(project_name, run.mine)
+    results["commits_extracted"] = run.mine.commits
 
-    # Step 3: Build DB
-    db_result = devarch_build_db(project_name)
-    results["build_db"] = db_result.get("status", "unknown")
-    if db_result.get("status") == "failed":
+    results["build_db"] = "failed" if run.build.error is not None else "complete"
+    if run.failed_at == "build_db":
         results["status"] = "failed"
         results["failed_at"] = "build_db"
         return results
 
-    # Step 4: Signals
-    sig_result = devarch_signals(project_name)
-    results["signals"] = sig_result.get("signal_count", 0)
-
-    # Step 5: Analyze
-    try:
-        analyze_result = devarch_analyze(project_name)
-        results["analysis"] = analyze_result.get("vectors_run", [])
-    except Exception as e:
-        results["analysis"] = f"skipped: {e}"
-
+    results["signals"] = run.signal_count
+    results["analysis"] = run.analysis
     results["status"] = "complete"
     results["project"] = project_name
     return results
@@ -239,78 +153,29 @@ def devarch_run_pipeline(repo_path: str, project_name: str) -> dict[str, Any]:
 
 def devarch_visualize(project_name: str) -> dict[str, Any]:
     """Generate HTML visualization for a project."""
-    project_dir = get_project_dir(project_name)
-    if not project_dir.exists():
-        return {"error": f"Project '{project_name}' not found"}
-
-    from archaeology.visualization.dashboard import generate_project_index
-
-    projects_dir = get_projects_dir()
-    projects = []
-    if projects_dir.exists():
-        from archaeology.visualization.dashboard import discover_projects
-        projects = discover_projects(projects_dir)
-
-    # Find the matching project
-    project_data = None
-    for p in projects:
-        if p["name"] == project_name:
-            project_data = p
-            break
-
-    if not project_data:
-        return {"error": f"Project '{project_name}' not found in discovered projects"}
-
-    html = generate_project_index(project_data)
-    output_dir = project_dir / "deliverables" / "visuals"
-    output_dir.mkdir(parents=True, exist_ok=True)
-    output_path = output_dir / "index.html"
-    output_path.write_text(html, encoding="utf-8")
-
-    return {
-        "status": "complete",
-        "project": project_name,
-        "output_path": str(output_path),
-    }
+    try:
+        output_path = pipeline.render_project_index(_ref(project_name))
+    except PipelineError as e:
+        return {"error": e.message}
+    return {"status": "complete", "project": project_name, "output_path": str(output_path)}
 
 
 def devarch_report(project_name: str, fmt: str = "html") -> dict[str, Any]:
     """Generate a report (html or markdown) for a project."""
-    fmt = fmt.lower().strip()
-    if fmt not in ("html", "markdown"):
-        return {"error": f"Invalid format '{fmt}'. Use 'html' or 'markdown'."}
-
-    project_dir = get_project_dir(project_name)
-    if not project_dir.exists():
-        return {"error": f"Project '{project_name}' not found"}
-
-    from archaeology.report import export_markdown_report, _markdown_to_html
-
-    md_path = export_markdown_report(project_name, str(project_dir))
-
-    if fmt == "html":
-        title = project_name
-        config = get_project_config(project_name)
-        if config:
-            title = config.get("visualization", {}).get("title", project_name)
-
-        md_content = md_path.read_text(encoding="utf-8")
-        html_content = _markdown_to_html(md_content, title)
-
-        output_dir = project_dir / "deliverables" / "visuals"
-        output_dir.mkdir(parents=True, exist_ok=True)
-        output_path = output_dir / "report.html"
-        output_path.write_text(html_content, encoding="utf-8")
-        return {"status": "complete", "format": "html", "output_path": str(output_path)}
-
-    return {"status": "complete", "format": "markdown", "output_path": str(md_path)}
+    try:
+        report = pipeline.render_report(_ref(project_name), fmt)
+    except PipelineError as e:
+        return {"error": e.message}
+    return {"status": "complete", "format": report.fmt, "output_path": str(report.output_path)}
 
 
 def devarch_audit(project_name: str, fail_on: str = "HIGH") -> dict[str, Any]:
-    """Run audit checks on a project."""
-    from archaeology.audit import run_audit
+    """Run audit checks on a project.
 
-    findings = run_audit(project_name, str(get_workspace_root()))
+    ``fail_on`` is accepted for tool-signature compatibility; this tool has
+    always reported every finding and never used it to decide a verdict.
+    """
+    findings = pipeline.audit(_ref(project_name), fail_on=None).findings
 
     passed = sum(1 for f in findings if f.severity == "PASS")
     failed = sum(1 for f in findings if f.severity != "PASS")
