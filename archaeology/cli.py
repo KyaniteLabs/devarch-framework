@@ -333,6 +333,7 @@ def public_case_study(output_dir, project_name, force):
     """Generate a sanitized public case-study showroom."""
     from .report import export_public_case_study
 
+    _cli_ref(project_name, must_exist=False)
     path = export_public_case_study(Path.cwd(), output_dir=output_dir, project_name=project_name, force=force)
     click.echo(f"Public case study exported to {path}")
 

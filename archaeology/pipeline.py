@@ -104,6 +104,10 @@ def validate_project_name(name: str) -> None:
     if name.startswith('/'):
         raise ValueError(f"Project name cannot start with '/': {name!r}")
 
+    # "." would resolve to projects/ itself; a leading "-" reads as a CLI flag.
+    if name.startswith(('.', '-')):
+        raise ValueError(f"Project name cannot start with '.' or '-': {name!r}")
+
 
 def get_project_dir(project_name: str) -> Path:
     """Return a specific project's directory path inside the workspace.

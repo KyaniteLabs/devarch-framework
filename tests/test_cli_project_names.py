@@ -5,8 +5,11 @@ from click.testing import CliRunner
 
 from archaeology.cli import main
 
-UNSAFE = ["../escape", "a/b", "..", "with space", "x" * 101]
-COMMANDS = [["init"], ["audit"], ["signals"], ["build-db"], ["demo", "--project"]]
+UNSAFE = ["../escape", "a/b", "..", ".", ".hidden", "with space", "x" * 101]
+COMMANDS = [
+    ["init"], ["audit"], ["signals"], ["build-db"],
+    ["demo", "--project"], ["public-case-study", "--project"], ["mine", "/nonexistent-repo", "-p"],
+]
 
 
 def _tree(root):
@@ -30,6 +33,22 @@ def test_unsafe_names_are_rejected_before_any_write(workspace, argv, name):
     assert "Error: Project name" in result.output
     # Nothing was created anywhere: not in the workspace, not beside it.
     assert _tree(workspace.parent) == before_parent
+
+
+def test_a_leading_dash_is_rejected(workspace):
+    before_parent = _tree(workspace.parent)
+    result = CliRunner().invoke(main, ["init", "--", "-rf"])
+    assert result.exit_code == 1, result.output
+    assert "cannot start with '.' or '-'" in result.output
+    assert _tree(workspace.parent) == before_parent
+
+
+def test_demo_project_creation_validates_the_name_itself(tmp_path):
+    from archaeology.demo import create_demo_project
+
+    with pytest.raises(ValueError):
+        create_demo_project(tmp_path, project_name="../outside")
+    assert not (tmp_path / "outside").exists()
 
 
 def test_safe_names_still_work(workspace):

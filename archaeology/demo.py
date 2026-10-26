@@ -21,6 +21,9 @@ def create_demo_project(root: str | Path = ".", project_name: str = DEMO_PROJECT
     The demo uses invented commit/session data. It contains no raw private logs,
     no personal telemetry, and no external behavioral exports.
     """
+    from archaeology.pipeline import validate_project_name
+
+    validate_project_name(project_name)
     root = Path(root)
     project_root = root / "projects" / project_name
     if project_root.exists() and not force:
