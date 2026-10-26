@@ -352,4 +352,4 @@ When adding new integration hooks:
 For issues or questions:
 - Open an issue on the devarch-framework repository
 - Check the main devarch-framework documentation
-- Review the CLI help: `archaeology --help`
+- Review the CLI help: `devarch --help`

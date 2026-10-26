@@ -1,7 +1,7 @@
 """Master dashboard generator for DevArch Framework.
 
 Generates the top-level index.html that shows all projects as cards
-with links to their individual visualizations. Served by `archaeology serve`
+with links to their individual visualizations. Served by `devarch serve`
 or deployed as a static site.
 """
 

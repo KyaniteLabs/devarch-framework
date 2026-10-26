@@ -1048,7 +1048,7 @@ def global_viz(output_dir, top_n, year, verbose):
     commits_csv = os.path.join(data_dir, "global-commits.csv")
 
     if not os.path.exists(commits_csv) and not os.path.exists(github_json):
-        click.echo("No global data found. Run 'archaeology fetch-github' or 'archaeology sync' first.", err=True)
+        click.echo("No global data found. Run 'devarch fetch-github' or 'devarch sync' first.", err=True)
         sys.exit(1)
 
     # Build visualization data
@@ -1109,7 +1109,7 @@ def multi_project_dashboard(output_dir, top_n, year, verbose):
     github_json = os.path.join(data_dir, "github-repos.json")
 
     if not os.path.exists(github_json):
-        click.echo("No GitHub data found. Run 'archaeology fetch-github' first.", err=True)
+        click.echo("No GitHub data found. Run 'devarch fetch-github' first.", err=True)
         sys.exit(1)
 
     # Build dashboard data
