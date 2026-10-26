@@ -94,7 +94,8 @@ def validate_project_name(name: str) -> None:
         raise ValueError(f"Project name too long (max 100 chars): {len(name)}")
 
     # Only allow alphanumeric, dot, underscore, hyphen
-    if not re.match(r'^[a-zA-Z0-9._-]+$', name):
+    # fullmatch, not ^...$: "$" also matches before a trailing newline.
+    if not re.fullmatch(r'[a-zA-Z0-9._-]+', name):
         raise ValueError(f"Project name contains invalid characters: {name!r}")
 
     # Reject path traversal attempts

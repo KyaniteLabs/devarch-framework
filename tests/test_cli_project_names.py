@@ -5,7 +5,7 @@ from click.testing import CliRunner
 
 from archaeology.cli import main
 
-UNSAFE = ["../escape", "a/b", "..", ".", ".hidden", "with space", "x" * 101]
+UNSAFE = ["../escape", "a/b", "..", ".", ".hidden", "with space", "x" * 101, "trailing\n"]
 COMMANDS = [
     ["init"], ["audit"], ["signals"], ["build-db"],
     ["demo", "--project"], ["public-case-study", "--project"], ["mine", "/nonexistent-repo", "-p"],
