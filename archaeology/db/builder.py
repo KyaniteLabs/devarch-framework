@@ -475,7 +475,7 @@ def import_from_registry(db: Path, data_dir: Path, registry: dict[str, dict],
 
 def _validate_table_name(table: str) -> str:
     """Reject table names that could enable SQL injection."""
-    if not re.match(r'^[a-zA-Z_][a-zA-Z0-9_]*$', table):
+    if not re.fullmatch(r'[a-zA-Z_][a-zA-Z0-9_]*', table):  # "$" would allow a trailing newline
         raise ValueError(f"Invalid table name: {table!r}")
     return table
 

@@ -31,7 +31,8 @@ BRIDGE_PATH = ROOT / "global" / "data" / "factory-bridge.json"
 
 def _validate_project_name(name):
     """Reject path traversal and invalid characters in project names."""
-    if not name or not re.match(r'^[a-zA-Z0-9._-]+$', name):
+    # fullmatch, not ^...$: "$" also matches before a trailing newline.
+    if not name or not re.fullmatch(r'[a-zA-Z0-9._-]+', name):
         return False
     # Double-check no path traversal
     resolved = (PROJECTS_DIR / name).resolve()

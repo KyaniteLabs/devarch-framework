@@ -16,7 +16,7 @@ def _validate_table_name(table: str) -> str:
     Only allows alphanumeric characters and underscores.
     Raises ValueError if invalid.
     """
-    if not re.match(r'^[a-zA-Z_][a-zA-Z0-9_]*$', table):
+    if not re.fullmatch(r'[a-zA-Z_][a-zA-Z0-9_]*', table):  # "$" would allow a trailing newline
         raise ValueError(f"Invalid table name: {table}")
     return table
 
@@ -27,7 +27,7 @@ def _validate_order_by(col: str) -> str:
     parts = col.split()
     if len(parts) > 2:
         raise ValueError(f"Invalid order_by: {col!r}")
-    if not re.match(r'^[a-zA-Z_][a-zA-Z0-9_]*$', parts[0]):
+    if not re.fullmatch(r'[a-zA-Z_][a-zA-Z0-9_]*', parts[0]):
         raise ValueError(f"Invalid column name in order_by: {parts[0]!r}")
     if len(parts) == 2 and parts[1].upper() not in ("ASC", "DESC"):
         raise ValueError(f"Invalid sort direction: {parts[1]!r}")
