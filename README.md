@@ -58,6 +58,17 @@ devarch init my-project --description "My repo archaeology" --repo-url https://g
 devarch demo --build-db
 ```
 
+The demo needs no repository or network, so it is a quick end-to-end check. CI runs this block on every change, and each `# expect:` line must appear in the output:
+
+```bash readme-test
+cd "$(mktemp -d)"   # the demo writes ./projects/
+devarch demo --build-db
+# expect: Created sanitized demo project
+# expect: Try: devarch build-db demo-archaeology
+devarch signals demo-archaeology
+# expect: Detected 0 signals, 1 clusters
+```
+
 ### 2. Mine Git History
 
 ```bash

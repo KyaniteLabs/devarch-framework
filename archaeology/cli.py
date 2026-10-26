@@ -20,7 +20,7 @@ def _project_dir(project_name):
     d = os.path.join("projects", project_name)
     if not os.path.isdir(d):
         click.echo(f"Project '{project_name}' not found at {d}/", err=True)
-        click.echo("Run 'archaeology init {project_name}' first.", err=True)
+        click.echo(f"Run 'devarch init {project_name}' first.", err=True)
         sys.exit(1)
     return d
 
@@ -77,8 +77,8 @@ def demo(project_name, force, build_db):
         click.echo(str(exc), err=True)
         raise click.exceptions.Exit(1)
     click.echo(f"Created sanitized demo project at {project_root}")
-    click.echo(f"Try: archaeology build-db {project_name}")
-    click.echo(f"Then: archaeology audit {project_name} --fail-on HIGH")
+    click.echo(f"Try: devarch build-db {project_name}")
+    click.echo(f"Then: devarch audit {project_name} --fail-on HIGH")
     if build_db:
         cmd = [sys.executable, "-m", "archaeology.db.builder", "--project-root", str(project_root)]
         _env = os.environ.copy()
@@ -162,7 +162,7 @@ def serve(project_name, port, unsafe_cors):
     db_path = os.path.join(project_dir, "data", "archaeology.db")
 
     if not os.path.exists(db_path):
-        click.echo(f"Database not found at {db_path}. Run 'archaeology build-db {project_name}' first.")
+        click.echo(f"Database not found at {db_path}. Run 'devarch build-db {project_name}' first.")
         sys.exit(1)
 
     # Load project config for display name
@@ -243,7 +243,7 @@ def signals(project_name, config_path, min_gap_days, verbose):
 
     db_path = os.path.join(_project_dir(project_name), "data", "archaeology.db")
     if not os.path.exists(db_path):
-        click.echo(f"No database found. Run 'archaeology build-db {project_name}' first.", err=True)
+        click.echo(f"No database found. Run 'devarch build-db {project_name}' first.", err=True)
         sys.exit(1)
 
     result = detect_signals(project_name, config=config or None)
@@ -575,7 +575,7 @@ def ingest_pipeline(project_name, logs_dir, verbose):
     db_path = os.path.join(project_dir, "data", "archaeology.db")
 
     if not os.path.exists(db_path):
-        click.echo(f"Database not found. Run 'archaeology build-db {project_name}' first.", err=True)
+        click.echo(f"Database not found. Run 'devarch build-db {project_name}' first.", err=True)
         sys.exit(1)
 
     # Auto-detect pipeline logs dir
@@ -1048,7 +1048,7 @@ def global_viz(output_dir, top_n, year, verbose):
     commits_csv = os.path.join(data_dir, "global-commits.csv")
 
     if not os.path.exists(commits_csv) and not os.path.exists(github_json):
-        click.echo("No global data found. Run 'archaeology fetch-github' or 'archaeology sync' first.", err=True)
+        click.echo("No global data found. Run 'devarch fetch-github' or 'devarch sync' first.", err=True)
         sys.exit(1)
 
     # Build visualization data
@@ -1109,7 +1109,7 @@ def multi_project_dashboard(output_dir, top_n, year, verbose):
     github_json = os.path.join(data_dir, "github-repos.json")
 
     if not os.path.exists(github_json):
-        click.echo("No GitHub data found. Run 'archaeology fetch-github' first.", err=True)
+        click.echo("No GitHub data found. Run 'devarch fetch-github' first.", err=True)
         sys.exit(1)
 
     # Build dashboard data
@@ -1212,7 +1212,7 @@ def dashboard(port, no_open):
     # Generate master dashboard
     projects = discover_projects(projects_dir)
     if not projects:
-        click.echo("No projects found. Run 'archaeology mine <repo>' first.", err=True)
+        click.echo("No projects found. Run 'devarch mine <repo>' first.", err=True)
         sys.exit(1)
 
     # Load API-only repos (no cloning needed)
