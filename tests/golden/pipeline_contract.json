@@ -1,0 +1,1066 @@
+{
+  "happy/cli": [
+    {
+      "op": "init",
+      "args": {
+        "project": "alpha",
+        "description": "Alpha",
+        "repo_url": "https://example.com/a"
+      },
+      "exit_code": 0,
+      "output": "Created project 'alpha' at projects/alpha/\n",
+      "stdout": "",
+      "stderr": "",
+      "files_after": [
+        "project.json"
+      ]
+    },
+    {
+      "op": "init",
+      "args": {
+        "project": "alpha"
+      },
+      "exit_code": 0,
+      "output": "Project 'alpha' already exists at projects/alpha/project.json\n",
+      "stdout": "",
+      "stderr": "",
+      "files_after": [
+        "project.json"
+      ]
+    },
+    {
+      "op": "mine",
+      "args": {
+        "repo": "<TMP>/repo",
+        "project": "alpha"
+      },
+      "exit_code": 0,
+      "output": "Extracting git log from <TMP>/repo...\n  Extracted 5 commits to projects/alpha/data/github-commits.csv\nPhase 1 complete for 'alpha'.\n",
+      "stdout": "",
+      "stderr": "",
+      "files_after": [
+        "data/github-commits-with-stats.txt",
+        "data/github-commits.csv",
+        "project.json"
+      ]
+    },
+    {
+      "op": "build_db",
+      "args": {
+        "project": "alpha"
+      },
+      "exit_code": 0,
+      "output": "Database built at projects/alpha/data/archaeology.db\n",
+      "stdout": "Building archaeology DB: <TMP>/ws/projects/alpha/data/archaeology.db\nProject root: <TMP>/ws/projects/alpha\nData directory: <TMP>/ws/projects/alpha/data\n\n--- Importing tables ---\n\n--- Audit files ---\n\n--- Indexes ---\n\n--- Full-text search ---\n\nTables (with row counts):\n  [{\"table\": \"commits\", \"count\": 5},\n   {\"table\": \"pipeline_runs\", \"count\": 0},\n   {\"table\": \"sqlite_sequence\", \"count\": 0},\n   {\"table\": \"pipeline_repo_results\", \"count\": 0},\n   {\"table\": \"commits_fts\", \"count\": 5},\n   {\"table\": \"commits_fts_segments\", \"count\": 0},\n   {\"table\": \"commits_fts_segdir\", \"count\": 1},\n   {\"table\": \"commits_fts_docsize\", \"count\": 5},\n   {\"table\": \"commits_fts_stat\", \"count\": 1}]\n\nIndexes:\n  [{\"table\": \"commits\", \"index_name\": \"idx_commits_author\", \"seqno\": 0, \"cid\": 3, \"name\": \"author\", \"desc\": 0, \"coll\": \"BINARY\", \"key\": 1},\n   {\"table\": \"commits\", \"index_name\": \"idx_commits_date\", \"seqno\": 0, \"cid\": 1, \"name\": \"date\", \"desc\": 0, \"coll\": \"BINARY\", \"key\": 1},\n   {\"table\": \"pipeline_runs\", \"index_name\": \"idx_pipeline_runs_status\", \"seqno\": 0, \"cid\": 2, \"name\": \"status\", \"desc\": 0, \"coll\": \"BINARY\", \"key\": 1},\n   {\"table\": \"pipeline_runs\", \"index_name\": \"idx_pipeline_runs_timestamp\", \"seqno\": 0, \"cid\": 1, \"name\": \"run_timestamp\", \"desc\": 0, \"coll\": \"BINARY\", \"key\": 1},\n   {\"table\": \"pipeline_repo_results\", \"index_name\": \"idx_pipeline_repo_results_run\", \"seqno\": 0, \"cid\": 1, \"name\": \"run_id\", \"desc\": 0, \"coll\": \"BINARY\", \"key\": 1},\n   {\"table\": \"pipeline_repo_results\", \"index_name\": \"idx_pipeline_repo_results_repo\", \"seqno\": 0, \"cid\": 2, \"name\": \"repo_name\", \"desc\": 0, \"coll\": \"BINARY\", \"key\": 1},\n   {\"table\": \"commits_fts_segdir\", \"index_name\": \"sqlite_autoindex_commits_fts_segdir_1\", \"seqno\": 0, \"cid\": 0, \"name\": \"level\", \"desc\": 0, \"coll\": \"BINARY\", \"key\": 1},\n   {\"table\": \"commits_fts_segdir\", \"index_name\": \"sqlite_autoindex_commits_fts_segdir_1\", \"seqno\": 1, \"cid\": 1, \"name\": \"idx\", \"desc\": 0, \"coll\": \"BINARY\", \"key\": 1}]\n\nFTS tables:\n  commits_fts\n  commits_fts_segments\n  commits_fts_segdir\n  commits_fts_docsize\n  commits_fts_stat\n\nDone. Database: <TMP>/ws/projects/alpha/data/archaeology.db\n",
+      "stderr": "",
+      "files_after": [
+        "data/archaeology.db",
+        "data/github-commits-with-stats.txt",
+        "data/github-commits.csv",
+        "project.json"
+      ]
+    },
+    {
+      "op": "signals",
+      "args": {
+        "project": "alpha"
+      },
+      "exit_code": 0,
+      "output": "Detected 1 signals, 2 clusters\n  gap: 1 signals\n  Cluster: 2026-01-01 -> 2026-01-03 (3 commits, 3 days)\n  Cluster: 2026-02-20 -> 2026-02-21 (2 commits, 2 days)\nSaved to <TMP>/ws/projects/alpha/data/detected-signals.json\nDetected 1 signals across 2 clusters.\n",
+      "stdout": "",
+      "stderr": "",
+      "files_after": [
+        "data/archaeology.db",
+        "data/detected-signals.json",
+        "data/github-commits-with-stats.txt",
+        "data/github-commits.csv",
+        "project.json"
+      ]
+    },
+    {
+      "op": "signals",
+      "args": {
+        "project": "alpha",
+        "min_gap_days": 5
+      },
+      "exit_code": 0,
+      "output": "Detected 1 signals, 2 clusters\n  gap: 1 signals\n  Cluster: 2026-01-01 -> 2026-01-03 (3 commits, 3 days)\n  Cluster: 2026-02-20 -> 2026-02-21 (2 commits, 2 days)\nSaved to <TMP>/ws/projects/alpha/data/detected-signals.json\nDetected 1 signals across 2 clusters.\n",
+      "stdout": "",
+      "stderr": "",
+      "files_after": [
+        "data/archaeology.db",
+        "data/detected-signals.json",
+        "data/github-commits-with-stats.txt",
+        "data/github-commits.csv",
+        "project.json"
+      ]
+    },
+    {
+      "op": "analyze",
+      "args": {
+        "project": "alpha",
+        "vectors": [
+          "sdlc-gap-finder"
+        ]
+      },
+      "exit_code": 0,
+      "output": "Running automated analysis vectors for 'alpha'\nVectors: sdlc-gap-finder\n  [analysis] sdlc-gap-finder: projects/alpha/deliverables/analysis/analysis-sdlc-gap-finder.json\n  sdlc-gap-finder: projects/alpha/deliverables/analysis/analysis-sdlc-gap-finder.json\n",
+      "stdout": "",
+      "stderr": "",
+      "files_after": [
+        "data/archaeology.db",
+        "data/detected-signals.json",
+        "data/github-commits-with-stats.txt",
+        "data/github-commits.csv",
+        "deliverables/analysis/analysis-sdlc-gap-finder.json",
+        "project.json"
+      ]
+    },
+    {
+      "op": "analyze",
+      "args": {
+        "project": "alpha"
+      },
+      "exit_code": 0,
+      "output": "Running automated analysis vectors for 'alpha'\nVectors: sdlc-gap-finder, ml-pattern-mapper, agentic-workflow, formal-terms-mapper, source-archaeologist, youtube-correlator\n  [analysis] sdlc-gap-finder: projects/alpha/deliverables/analysis/analysis-sdlc-gap-finder.json\n  [analysis] ml-pattern-mapper: projects/alpha/deliverables/analysis/analysis-ml-pattern-mapper.json\n  [analysis] agentic-workflow: projects/alpha/deliverables/analysis/analysis-agentic-workflow.json\n  [analysis] formal-terms-mapper: projects/alpha/deliverables/analysis/analysis-formal-terms-mapper.json\n  [analysis] source-archaeologist: projects/alpha/deliverables/analysis/analysis-source-archaeologist.json\n  [analysis] youtube-correlator: projects/alpha/deliverables/analysis/analysis-youtube-correlator.json\n  sdlc-gap-finder: projects/alpha/deliverables/analysis/analysis-sdlc-gap-finder.json\n  ml-pattern-mapper: projects/alpha/deliverables/analysis/analysis-ml-pattern-mapper.json\n  agentic-workflow: projects/alpha/deliverables/analysis/analysis-agentic-workflow.json\n  formal-terms-mapper: projects/alpha/deliverables/analysis/analysis-formal-terms-mapper.json\n  source-archaeologist: projects/alpha/deliverables/analysis/analysis-source-archaeologist.json\n  youtube-correlator: projects/alpha/deliverables/analysis/analysis-youtube-correlator.json\n",
+      "stdout": "",
+      "stderr": "",
+      "files_after": [
+        "data/archaeology.db",
+        "data/detected-signals.json",
+        "data/github-commits-with-stats.txt",
+        "data/github-commits.csv",
+        "deliverables/analysis/analysis-agentic-workflow.json",
+        "deliverables/analysis/analysis-formal-terms-mapper.json",
+        "deliverables/analysis/analysis-ml-pattern-mapper.json",
+        "deliverables/analysis/analysis-sdlc-gap-finder.json",
+        "deliverables/analysis/analysis-source-archaeologist.json",
+        "deliverables/analysis/analysis-youtube-correlator.json",
+        "project.json"
+      ]
+    },
+    {
+      "op": "visualize",
+      "args": {
+        "project": "alpha"
+      },
+      "exit_code": 0,
+      "output": "Visualization generated at projects/alpha/deliverables/visuals/archaeology.html\nWarning: projects/alpha/deliverables/data.json not found. Visualization will be empty.\n",
+      "stdout": "",
+      "stderr": "",
+      "files_after": [
+        "data/archaeology.db",
+        "data/detected-signals.json",
+        "data/github-commits-with-stats.txt",
+        "data/github-commits.csv",
+        "deliverables/analysis/analysis-agentic-workflow.json",
+        "deliverables/analysis/analysis-formal-terms-mapper.json",
+        "deliverables/analysis/analysis-ml-pattern-mapper.json",
+        "deliverables/analysis/analysis-sdlc-gap-finder.json",
+        "deliverables/analysis/analysis-source-archaeologist.json",
+        "deliverables/analysis/analysis-youtube-correlator.json",
+        "deliverables/visuals/archaeology.html",
+        "project.json"
+      ]
+    },
+    {
+      "op": "report",
+      "args": {
+        "project": "alpha",
+        "fmt": "markdown"
+      },
+      "exit_code": 0,
+      "output": "Report exported to projects/alpha/deliverables/reports/ARCHAEOLOGY-REPORT.md\n",
+      "stdout": "",
+      "stderr": "",
+      "files_after": [
+        "data/archaeology.db",
+        "data/detected-signals.json",
+        "data/github-commits-with-stats.txt",
+        "data/github-commits.csv",
+        "deliverables/analysis/analysis-agentic-workflow.json",
+        "deliverables/analysis/analysis-formal-terms-mapper.json",
+        "deliverables/analysis/analysis-ml-pattern-mapper.json",
+        "deliverables/analysis/analysis-sdlc-gap-finder.json",
+        "deliverables/analysis/analysis-source-archaeologist.json",
+        "deliverables/analysis/analysis-youtube-correlator.json",
+        "deliverables/reports/ARCHAEOLOGY-REPORT.md",
+        "deliverables/visuals/archaeology.html",
+        "project.json"
+      ]
+    },
+    {
+      "op": "report",
+      "args": {
+        "project": "alpha",
+        "fmt": "html"
+      },
+      "exit_code": 0,
+      "output": "Report exported to projects/alpha/deliverables/visuals/report.html\n",
+      "stdout": "",
+      "stderr": "",
+      "files_after": [
+        "data/archaeology.db",
+        "data/detected-signals.json",
+        "data/github-commits-with-stats.txt",
+        "data/github-commits.csv",
+        "deliverables/analysis/analysis-agentic-workflow.json",
+        "deliverables/analysis/analysis-formal-terms-mapper.json",
+        "deliverables/analysis/analysis-ml-pattern-mapper.json",
+        "deliverables/analysis/analysis-sdlc-gap-finder.json",
+        "deliverables/analysis/analysis-source-archaeologist.json",
+        "deliverables/analysis/analysis-youtube-correlator.json",
+        "deliverables/reports/ARCHAEOLOGY-REPORT.md",
+        "deliverables/visuals/archaeology.html",
+        "deliverables/visuals/report.html",
+        "project.json"
+      ]
+    },
+    {
+      "op": "audit",
+      "args": {
+        "project": "alpha"
+      },
+      "exit_code": 1,
+      "output": "Forensic audit for 'alpha'\nSummary: CRITICAL=1, MEDIUM=1\nCRITICAL: CANONICAL_MISSING: canonical-metrics.json is missing or invalid [projects/alpha/deliverables/canonical-metrics.json]\nMEDIUM: PROJECT_REPO_URL: repo_url should be a GitHub HTTPS URL [projects/alpha/project.json]\n",
+      "stdout": "",
+      "stderr": "",
+      "files_after": [
+        "data/archaeology.db",
+        "data/detected-signals.json",
+        "data/github-commits-with-stats.txt",
+        "data/github-commits.csv",
+        "deliverables/analysis/analysis-agentic-workflow.json",
+        "deliverables/analysis/analysis-formal-terms-mapper.json",
+        "deliverables/analysis/analysis-ml-pattern-mapper.json",
+        "deliverables/analysis/analysis-sdlc-gap-finder.json",
+        "deliverables/analysis/analysis-source-archaeologist.json",
+        "deliverables/analysis/analysis-youtube-correlator.json",
+        "deliverables/reports/ARCHAEOLOGY-REPORT.md",
+        "deliverables/visuals/archaeology.html",
+        "deliverables/visuals/report.html",
+        "project.json"
+      ]
+    }
+  ],
+  "happy/mcp": [
+    {
+      "op": "init",
+      "args": {
+        "project": "alpha",
+        "description": "Alpha",
+        "repo_url": "https://example.com/a"
+      },
+      "returned": {
+        "status": "created",
+        "project": "alpha",
+        "path": "<TMP>/ws/projects/alpha"
+      },
+      "stdout": "",
+      "stderr": "",
+      "files_after": [
+        "project.json"
+      ]
+    },
+    {
+      "op": "init",
+      "args": {
+        "project": "alpha"
+      },
+      "returned": {
+        "status": "exists",
+        "project": "alpha",
+        "path": "<TMP>/ws/projects/alpha"
+      },
+      "stdout": "",
+      "stderr": "",
+      "files_after": [
+        "project.json"
+      ]
+    },
+    {
+      "op": "mine",
+      "args": {
+        "repo": "<TMP>/repo",
+        "project": "alpha"
+      },
+      "returned": {
+        "status": "complete",
+        "project": "alpha",
+        "commits_extracted": 5,
+        "csv_path": "<TMP>/ws/projects/alpha/data/github-commits.csv"
+      },
+      "stdout": "",
+      "stderr": "",
+      "files_after": [
+        "data/github-commits-with-stats.txt",
+        "data/github-commits.csv",
+        "project.json"
+      ]
+    },
+    {
+      "op": "build_db",
+      "args": {
+        "project": "alpha"
+      },
+      "returned": {
+        "status": "complete",
+        "project": "alpha",
+        "database_path": "<TMP>/ws/projects/alpha/data/archaeology.db"
+      },
+      "stdout": "Building archaeology DB: <TMP>/ws/projects/alpha/data/archaeology.db\nProject root: <TMP>/ws/projects/alpha\nData directory: <TMP>/ws/projects/alpha/data\n\n--- Importing tables ---\n\n--- Audit files ---\n\n--- Indexes ---\n\n--- Full-text search ---\n\nTables (with row counts):\n  [{\"table\": \"commits\", \"count\": 5},\n   {\"table\": \"pipeline_runs\", \"count\": 0},\n   {\"table\": \"sqlite_sequence\", \"count\": 0},\n   {\"table\": \"pipeline_repo_results\", \"count\": 0},\n   {\"table\": \"commits_fts\", \"count\": 5},\n   {\"table\": \"commits_fts_segments\", \"count\": 0},\n   {\"table\": \"commits_fts_segdir\", \"count\": 1},\n   {\"table\": \"commits_fts_docsize\", \"count\": 5},\n   {\"table\": \"commits_fts_stat\", \"count\": 1}]\n\nIndexes:\n  [{\"table\": \"commits\", \"index_name\": \"idx_commits_author\", \"seqno\": 0, \"cid\": 3, \"name\": \"author\", \"desc\": 0, \"coll\": \"BINARY\", \"key\": 1},\n   {\"table\": \"commits\", \"index_name\": \"idx_commits_date\", \"seqno\": 0, \"cid\": 1, \"name\": \"date\", \"desc\": 0, \"coll\": \"BINARY\", \"key\": 1},\n   {\"table\": \"pipeline_runs\", \"index_name\": \"idx_pipeline_runs_status\", \"seqno\": 0, \"cid\": 2, \"name\": \"status\", \"desc\": 0, \"coll\": \"BINARY\", \"key\": 1},\n   {\"table\": \"pipeline_runs\", \"index_name\": \"idx_pipeline_runs_timestamp\", \"seqno\": 0, \"cid\": 1, \"name\": \"run_timestamp\", \"desc\": 0, \"coll\": \"BINARY\", \"key\": 1},\n   {\"table\": \"pipeline_repo_results\", \"index_name\": \"idx_pipeline_repo_results_run\", \"seqno\": 0, \"cid\": 1, \"name\": \"run_id\", \"desc\": 0, \"coll\": \"BINARY\", \"key\": 1},\n   {\"table\": \"pipeline_repo_results\", \"index_name\": \"idx_pipeline_repo_results_repo\", \"seqno\": 0, \"cid\": 2, \"name\": \"repo_name\", \"desc\": 0, \"coll\": \"BINARY\", \"key\": 1},\n   {\"table\": \"commits_fts_segdir\", \"index_name\": \"sqlite_autoindex_commits_fts_segdir_1\", \"seqno\": 0, \"cid\": 0, \"name\": \"level\", \"desc\": 0, \"coll\": \"BINARY\", \"key\": 1},\n   {\"table\": \"commits_fts_segdir\", \"index_name\": \"sqlite_autoindex_commits_fts_segdir_1\", \"seqno\": 1, \"cid\": 1, \"name\": \"idx\", \"desc\": 0, \"coll\": \"BINARY\", \"key\": 1}]\n\nFTS tables:\n  commits_fts\n  commits_fts_segments\n  commits_fts_segdir\n  commits_fts_docsize\n  commits_fts_stat\n\nDone. Database: <TMP>/ws/projects/alpha/data/archaeology.db\n",
+      "stderr": "",
+      "files_after": [
+        "data/archaeology.db",
+        "data/github-commits-with-stats.txt",
+        "data/github-commits.csv",
+        "project.json"
+      ]
+    },
+    {
+      "op": "signals",
+      "args": {
+        "project": "alpha"
+      },
+      "returned": {
+        "status": "complete",
+        "project": "alpha",
+        "signal_count": 1,
+        "output_path": "<TMP>/ws/projects/alpha/data/detected-signals.json"
+      },
+      "stdout": "Detected 1 signals, 2 clusters\n  gap: 1 signals\n  Cluster: 2026-01-01 -> 2026-01-03 (3 commits, 3 days)\n  Cluster: 2026-02-20 -> 2026-02-21 (2 commits, 2 days)\nSaved to <TMP>/ws/projects/alpha/data/detected-signals.json\n",
+      "stderr": "",
+      "files_after": [
+        "data/archaeology.db",
+        "data/detected-signals.json",
+        "data/github-commits-with-stats.txt",
+        "data/github-commits.csv",
+        "project.json"
+      ]
+    },
+    {
+      "op": "signals",
+      "args": {
+        "project": "alpha",
+        "min_gap_days": 5
+      },
+      "returned": {
+        "status": "complete",
+        "project": "alpha",
+        "signal_count": 1,
+        "output_path": "<TMP>/ws/projects/alpha/data/detected-signals.json"
+      },
+      "stdout": "Detected 1 signals, 2 clusters\n  gap: 1 signals\n  Cluster: 2026-01-01 -> 2026-01-03 (3 commits, 3 days)\n  Cluster: 2026-02-20 -> 2026-02-21 (2 commits, 2 days)\nSaved to <TMP>/ws/projects/alpha/data/detected-signals.json\n",
+      "stderr": "",
+      "files_after": [
+        "data/archaeology.db",
+        "data/detected-signals.json",
+        "data/github-commits-with-stats.txt",
+        "data/github-commits.csv",
+        "project.json"
+      ]
+    },
+    {
+      "op": "analyze",
+      "args": {
+        "project": "alpha",
+        "vectors": [
+          "sdlc-gap-finder"
+        ]
+      },
+      "returned": {
+        "status": "complete",
+        "project": "alpha",
+        "vectors_run": [
+          "sdlc-gap-finder"
+        ],
+        "results": {
+          "sdlc-gap-finder": "projects/alpha/deliverables/analysis/analysis-sdlc-gap-finder.json"
+        }
+      },
+      "stdout": "  [analysis] sdlc-gap-finder: projects/alpha/deliverables/analysis/analysis-sdlc-gap-finder.json\n",
+      "stderr": "",
+      "files_after": [
+        "data/archaeology.db",
+        "data/detected-signals.json",
+        "data/github-commits-with-stats.txt",
+        "data/github-commits.csv",
+        "deliverables/analysis/analysis-sdlc-gap-finder.json",
+        "project.json"
+      ]
+    },
+    {
+      "op": "analyze",
+      "args": {
+        "project": "alpha"
+      },
+      "returned": {
+        "status": "complete",
+        "project": "alpha",
+        "vectors_run": [
+          "sdlc-gap-finder",
+          "ml-pattern-mapper",
+          "agentic-workflow",
+          "formal-terms-mapper",
+          "source-archaeologist",
+          "youtube-correlator"
+        ],
+        "results": {
+          "sdlc-gap-finder": "projects/alpha/deliverables/analysis/analysis-sdlc-gap-finder.json",
+          "ml-pattern-mapper": "projects/alpha/deliverables/analysis/analysis-ml-pattern-mapper.json",
+          "agentic-workflow": "projects/alpha/deliverables/analysis/analysis-agentic-workflow.json",
+          "formal-terms-mapper": "projects/alpha/deliverables/analysis/analysis-formal-terms-mapper.json",
+          "source-archaeologist": "projects/alpha/deliverables/analysis/analysis-source-archaeologist.json",
+          "youtube-correlator": "projects/alpha/deliverables/analysis/analysis-youtube-correlator.json"
+        }
+      },
+      "stdout": "  [analysis] sdlc-gap-finder: projects/alpha/deliverables/analysis/analysis-sdlc-gap-finder.json\n  [analysis] ml-pattern-mapper: projects/alpha/deliverables/analysis/analysis-ml-pattern-mapper.json\n  [analysis] agentic-workflow: projects/alpha/deliverables/analysis/analysis-agentic-workflow.json\n  [analysis] formal-terms-mapper: projects/alpha/deliverables/analysis/analysis-formal-terms-mapper.json\n  [analysis] source-archaeologist: projects/alpha/deliverables/analysis/analysis-source-archaeologist.json\n  [analysis] youtube-correlator: projects/alpha/deliverables/analysis/analysis-youtube-correlator.json\n",
+      "stderr": "",
+      "files_after": [
+        "data/archaeology.db",
+        "data/detected-signals.json",
+        "data/github-commits-with-stats.txt",
+        "data/github-commits.csv",
+        "deliverables/analysis/analysis-agentic-workflow.json",
+        "deliverables/analysis/analysis-formal-terms-mapper.json",
+        "deliverables/analysis/analysis-ml-pattern-mapper.json",
+        "deliverables/analysis/analysis-sdlc-gap-finder.json",
+        "deliverables/analysis/analysis-source-archaeologist.json",
+        "deliverables/analysis/analysis-youtube-correlator.json",
+        "project.json"
+      ]
+    },
+    {
+      "op": "visualize",
+      "args": {
+        "project": "alpha"
+      },
+      "returned": {
+        "status": "complete",
+        "project": "alpha",
+        "output_path": "<TMP>/ws/projects/alpha/deliverables/visuals/index.html"
+      },
+      "stdout": "",
+      "stderr": "",
+      "files_after": [
+        "data/archaeology.db",
+        "data/detected-signals.json",
+        "data/github-commits-with-stats.txt",
+        "data/github-commits.csv",
+        "deliverables/analysis/analysis-agentic-workflow.json",
+        "deliverables/analysis/analysis-formal-terms-mapper.json",
+        "deliverables/analysis/analysis-ml-pattern-mapper.json",
+        "deliverables/analysis/analysis-sdlc-gap-finder.json",
+        "deliverables/analysis/analysis-source-archaeologist.json",
+        "deliverables/analysis/analysis-youtube-correlator.json",
+        "deliverables/visuals/index.html",
+        "project.json"
+      ]
+    },
+    {
+      "op": "report",
+      "args": {
+        "project": "alpha",
+        "fmt": "markdown"
+      },
+      "returned": {
+        "status": "complete",
+        "format": "markdown",
+        "output_path": "<TMP>/ws/projects/alpha/deliverables/reports/ARCHAEOLOGY-REPORT.md"
+      },
+      "stdout": "",
+      "stderr": "",
+      "files_after": [
+        "data/archaeology.db",
+        "data/detected-signals.json",
+        "data/github-commits-with-stats.txt",
+        "data/github-commits.csv",
+        "deliverables/analysis/analysis-agentic-workflow.json",
+        "deliverables/analysis/analysis-formal-terms-mapper.json",
+        "deliverables/analysis/analysis-ml-pattern-mapper.json",
+        "deliverables/analysis/analysis-sdlc-gap-finder.json",
+        "deliverables/analysis/analysis-source-archaeologist.json",
+        "deliverables/analysis/analysis-youtube-correlator.json",
+        "deliverables/reports/ARCHAEOLOGY-REPORT.md",
+        "deliverables/visuals/index.html",
+        "project.json"
+      ]
+    },
+    {
+      "op": "report",
+      "args": {
+        "project": "alpha",
+        "fmt": "html"
+      },
+      "returned": {
+        "status": "complete",
+        "format": "html",
+        "output_path": "<TMP>/ws/projects/alpha/deliverables/visuals/report.html"
+      },
+      "stdout": "",
+      "stderr": "",
+      "files_after": [
+        "data/archaeology.db",
+        "data/detected-signals.json",
+        "data/github-commits-with-stats.txt",
+        "data/github-commits.csv",
+        "deliverables/analysis/analysis-agentic-workflow.json",
+        "deliverables/analysis/analysis-formal-terms-mapper.json",
+        "deliverables/analysis/analysis-ml-pattern-mapper.json",
+        "deliverables/analysis/analysis-sdlc-gap-finder.json",
+        "deliverables/analysis/analysis-source-archaeologist.json",
+        "deliverables/analysis/analysis-youtube-correlator.json",
+        "deliverables/reports/ARCHAEOLOGY-REPORT.md",
+        "deliverables/visuals/index.html",
+        "deliverables/visuals/report.html",
+        "project.json"
+      ]
+    },
+    {
+      "op": "audit",
+      "args": {
+        "project": "alpha"
+      },
+      "returned": {
+        "status": "complete",
+        "project": "alpha",
+        "total_checks": 2,
+        "passed": 0,
+        "failed": 2,
+        "findings": [
+          {
+            "check": "CANONICAL_MISSING",
+            "severity": "CRITICAL",
+            "message": "canonical-metrics.json is missing or invalid"
+          },
+          {
+            "check": "PROJECT_REPO_URL",
+            "severity": "MEDIUM",
+            "message": "repo_url should be a GitHub HTTPS URL"
+          }
+        ]
+      },
+      "stdout": "",
+      "stderr": "",
+      "files_after": [
+        "data/archaeology.db",
+        "data/detected-signals.json",
+        "data/github-commits-with-stats.txt",
+        "data/github-commits.csv",
+        "deliverables/analysis/analysis-agentic-workflow.json",
+        "deliverables/analysis/analysis-formal-terms-mapper.json",
+        "deliverables/analysis/analysis-ml-pattern-mapper.json",
+        "deliverables/analysis/analysis-sdlc-gap-finder.json",
+        "deliverables/analysis/analysis-source-archaeologist.json",
+        "deliverables/analysis/analysis-youtube-correlator.json",
+        "deliverables/reports/ARCHAEOLOGY-REPORT.md",
+        "deliverables/visuals/index.html",
+        "deliverables/visuals/report.html",
+        "project.json"
+      ]
+    },
+    {
+      "op": "run_pipeline",
+      "args": {
+        "repo": "<TMP>/repo",
+        "project": "beta"
+      },
+      "returned": {
+        "init": "created",
+        "mine": {
+          "status": "complete",
+          "project": "beta",
+          "commits_extracted": 5,
+          "csv_path": "<TMP>/ws/projects/beta/data/github-commits.csv"
+        },
+        "commits_extracted": 5,
+        "build_db": "complete",
+        "signals": 1,
+        "analysis": [
+          "sdlc-gap-finder",
+          "ml-pattern-mapper",
+          "agentic-workflow",
+          "formal-terms-mapper",
+          "source-archaeologist",
+          "youtube-correlator"
+        ],
+        "status": "complete",
+        "project": "beta"
+      },
+      "stdout": "Building archaeology DB: <TMP>/ws/projects/beta/data/archaeology.db\nProject root: <TMP>/ws/projects/beta\nData directory: <TMP>/ws/projects/beta/data\n\n--- Importing tables ---\n\n--- Audit files ---\n\n--- Indexes ---\n\n--- Full-text search ---\n\nTables (with row counts):\n  [{\"table\": \"commits\", \"count\": 5},\n   {\"table\": \"pipeline_runs\", \"count\": 0},\n   {\"table\": \"sqlite_sequence\", \"count\": 0},\n   {\"table\": \"pipeline_repo_results\", \"count\": 0},\n   {\"table\": \"commits_fts\", \"count\": 5},\n   {\"table\": \"commits_fts_segments\", \"count\": 0},\n   {\"table\": \"commits_fts_segdir\", \"count\": 1},\n   {\"table\": \"commits_fts_docsize\", \"count\": 5},\n   {\"table\": \"commits_fts_stat\", \"count\": 1}]\n\nIndexes:\n  [{\"table\": \"commits\", \"index_name\": \"idx_commits_author\", \"seqno\": 0, \"cid\": 3, \"name\": \"author\", \"desc\": 0, \"coll\": \"BINARY\", \"key\": 1},\n   {\"table\": \"commits\", \"index_name\": \"idx_commits_date\", \"seqno\": 0, \"cid\": 1, \"name\": \"date\", \"desc\": 0, \"coll\": \"BINARY\", \"key\": 1},\n   {\"table\": \"pipeline_runs\", \"index_name\": \"idx_pipeline_runs_status\", \"seqno\": 0, \"cid\": 2, \"name\": \"status\", \"desc\": 0, \"coll\": \"BINARY\", \"key\": 1},\n   {\"table\": \"pipeline_runs\", \"index_name\": \"idx_pipeline_runs_timestamp\", \"seqno\": 0, \"cid\": 1, \"name\": \"run_timestamp\", \"desc\": 0, \"coll\": \"BINARY\", \"key\": 1},\n   {\"table\": \"pipeline_repo_results\", \"index_name\": \"idx_pipeline_repo_results_run\", \"seqno\": 0, \"cid\": 1, \"name\": \"run_id\", \"desc\": 0, \"coll\": \"BINARY\", \"key\": 1},\n   {\"table\": \"pipeline_repo_results\", \"index_name\": \"idx_pipeline_repo_results_repo\", \"seqno\": 0, \"cid\": 2, \"name\": \"repo_name\", \"desc\": 0, \"coll\": \"BINARY\", \"key\": 1},\n   {\"table\": \"commits_fts_segdir\", \"index_name\": \"sqlite_autoindex_commits_fts_segdir_1\", \"seqno\": 0, \"cid\": 0, \"name\": \"level\", \"desc\": 0, \"coll\": \"BINARY\", \"key\": 1},\n   {\"table\": \"commits_fts_segdir\", \"index_name\": \"sqlite_autoindex_commits_fts_segdir_1\", \"seqno\": 1, \"cid\": 1, \"name\": \"idx\", \"desc\": 0, \"coll\": \"BINARY\", \"key\": 1}]\n\nFTS tables:\n  commits_fts\n  commits_fts_segments\n  commits_fts_segdir\n  commits_fts_docsize\n  commits_fts_stat\n\nDone. Database: <TMP>/ws/projects/beta/data/archaeology.db\nDetected 1 signals, 2 clusters\n  gap: 1 signals\n  Cluster: 2026-01-01 -> 2026-01-03 (3 commits, 3 days)\n  Cluster: 2026-02-20 -> 2026-02-21 (2 commits, 2 days)\nSaved to <TMP>/ws/projects/beta/data/detected-signals.json\n  [analysis] sdlc-gap-finder: projects/beta/deliverables/analysis/analysis-sdlc-gap-finder.json\n  [analysis] ml-pattern-mapper: projects/beta/deliverables/analysis/analysis-ml-pattern-mapper.json\n  [analysis] agentic-workflow: projects/beta/deliverables/analysis/analysis-agentic-workflow.json\n  [analysis] formal-terms-mapper: projects/beta/deliverables/analysis/analysis-formal-terms-mapper.json\n  [analysis] source-archaeologist: projects/beta/deliverables/analysis/analysis-source-archaeologist.json\n  [analysis] youtube-correlator: projects/beta/deliverables/analysis/analysis-youtube-correlator.json\n",
+      "stderr": "",
+      "files_after": [
+        "data/archaeology.db",
+        "data/detected-signals.json",
+        "data/github-commits-with-stats.txt",
+        "data/github-commits.csv",
+        "deliverables/analysis/analysis-agentic-workflow.json",
+        "deliverables/analysis/analysis-formal-terms-mapper.json",
+        "deliverables/analysis/analysis-ml-pattern-mapper.json",
+        "deliverables/analysis/analysis-sdlc-gap-finder.json",
+        "deliverables/analysis/analysis-source-archaeologist.json",
+        "deliverables/analysis/analysis-youtube-correlator.json",
+        "project.json"
+      ]
+    }
+  ],
+  "errors/cli": [
+    {
+      "op": "init",
+      "args": {
+        "project": "bare"
+      },
+      "exit_code": 0,
+      "output": "Created project 'bare' at projects/bare/\n",
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "op": "mine",
+      "args": {
+        "repo": "<TMP>/does-not-exist",
+        "project": "bare"
+      },
+      "exit_code": 1,
+      "output": "Repository not found: <TMP>/does-not-exist\n",
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "op": "mine",
+      "args": {
+        "repo": "<TMP>/plain",
+        "project": "bare"
+      },
+      "exit_code": 1,
+      "output": "Error: Not a git repository: <TMP>/plain\n",
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "op": "mine",
+      "args": {
+        "repo": "<TMP>/fakegit",
+        "project": "bare"
+      },
+      "exit_code": 1,
+      "output": "Extracting git log from <TMP>/fakegit...\nError: Git extraction failed: git log failed: fatal: not a git repository (or any of the parent directories): .git\n\n",
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "op": "mine",
+      "args": {
+        "repo": "<TMP>/repo",
+        "project": "ghost1"
+      },
+      "exit_code": 1,
+      "output": "Project 'ghost1' not found at projects/ghost1/\nRun 'devarch init ghost1' first.\n",
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "op": "mine",
+      "args": {
+        "repo": "<TMP>/plain",
+        "project": "ghost2"
+      },
+      "exit_code": 1,
+      "output": "Project 'ghost2' not found at projects/ghost2/\nRun 'devarch init ghost2' first.\n",
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "op": "build_db",
+      "args": {
+        "project": "ghost3"
+      },
+      "exit_code": 1,
+      "output": "Project 'ghost3' not found at projects/ghost3/\nRun 'devarch init ghost3' first.\n",
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "op": "build_db",
+      "args": {
+        "project": "bare"
+      },
+      "exit_code": 0,
+      "output": "Database built at projects/bare/data/archaeology.db\n",
+      "stdout": "Building archaeology DB: <TMP>/ws/projects/bare/data/archaeology.db\nProject root: <TMP>/ws/projects/bare\nData directory: <TMP>/ws/projects/bare/data\n\n--- Importing tables ---\n\n--- Audit files ---\n\n--- Indexes ---\n\n--- Full-text search ---\n\nTables (with row counts):\n  [{\"table\": \"pipeline_runs\", \"count\": 0},\n   {\"table\": \"sqlite_sequence\", \"count\": 0},\n   {\"table\": \"pipeline_repo_results\", \"count\": 0}]\n\nIndexes:\n  [{\"table\": \"pipeline_runs\", \"index_name\": \"idx_pipeline_runs_status\", \"seqno\": 0, \"cid\": 2, \"name\": \"status\", \"desc\": 0, \"coll\": \"BINARY\", \"key\": 1},\n   {\"table\": \"pipeline_runs\", \"index_name\": \"idx_pipeline_runs_timestamp\", \"seqno\": 0, \"cid\": 1, \"name\": \"run_timestamp\", \"desc\": 0, \"coll\": \"BINARY\", \"key\": 1},\n   {\"table\": \"pipeline_repo_results\", \"index_name\": \"idx_pipeline_repo_results_run\", \"seqno\": 0, \"cid\": 1, \"name\": \"run_id\", \"desc\": 0, \"coll\": \"BINARY\", \"key\": 1},\n   {\"table\": \"pipeline_repo_results\", \"index_name\": \"idx_pipeline_repo_results_repo\", \"seqno\": 0, \"cid\": 2, \"name\": \"repo_name\", \"desc\": 0, \"coll\": \"BINARY\", \"key\": 1}]\n\nDone. Database: <TMP>/ws/projects/bare/data/archaeology.db\n",
+      "stderr": ""
+    },
+    {
+      "op": "signals",
+      "args": {
+        "project": "ghost4"
+      },
+      "exit_code": 1,
+      "output": "Project 'ghost4' not found at projects/ghost4/\nRun 'devarch init ghost4' first.\n",
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "op": "signals",
+      "args": {
+        "project": "bare"
+      },
+      "exit_code": 0,
+      "output": "Detected 0 signals, 0 clusters\nSaved to <TMP>/ws/projects/bare/data/detected-signals.json\nNo significant patterns detected in the commit history.\n",
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "op": "analyze",
+      "args": {
+        "project": "ghost5"
+      },
+      "exit_code": 1,
+      "output": "Project 'ghost5' not found at projects/ghost5/\nRun 'devarch init ghost5' first.\n",
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "op": "analyze",
+      "args": {
+        "project": "bare",
+        "vectors": [
+          "no-such-vector"
+        ]
+      },
+      "exit_code": 1,
+      "output": "Unknown vector: no-such-vector\n",
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "op": "visualize",
+      "args": {
+        "project": "ghost6"
+      },
+      "exit_code": 1,
+      "output": "Project 'ghost6' not found at projects/ghost6/\nRun 'devarch init ghost6' first.\n",
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "op": "report",
+      "args": {
+        "project": "ghost7",
+        "fmt": "markdown"
+      },
+      "exit_code": 1,
+      "output": "Project 'ghost7' not found at projects/ghost7/\nRun 'devarch init ghost7' first.\n",
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "op": "audit",
+      "args": {
+        "project": "ghost8"
+      },
+      "exit_code": 1,
+      "output": "Forensic audit for 'ghost8'\nSummary: CRITICAL=1\nCRITICAL: PROJECT_MISSING: Project 'ghost8' does not exist [projects/ghost8]\n",
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "op": "init",
+      "args": {
+        "project": "../escape"
+      },
+      "exit_code": 0,
+      "output": "Created project '../escape' at projects/../escape/\n",
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "op": "init",
+      "args": {
+        "project": "bad name"
+      },
+      "exit_code": 0,
+      "output": "Created project 'bad name' at projects/bad name/\n",
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "op": "report",
+      "args": {
+        "project": "bare",
+        "fmt": "pdf"
+      },
+      "exit_code": 2,
+      "output": "Usage: main export-report [OPTIONS] PROJECT_NAME\nTry 'main export-report --help' for help.\n\nError: Invalid value for '--format': 'pdf' is not one of 'markdown', 'md', 'html'.\n",
+      "stdout": "",
+      "stderr": ""
+    }
+  ],
+  "errors/mcp": [
+    {
+      "op": "init",
+      "args": {
+        "project": "bare"
+      },
+      "returned": {
+        "status": "created",
+        "project": "bare",
+        "path": "<TMP>/ws/projects/bare"
+      },
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "op": "mine",
+      "args": {
+        "repo": "<TMP>/does-not-exist",
+        "project": "bare"
+      },
+      "returned": {
+        "error": "Repository not found: <TMP>/does-not-exist"
+      },
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "op": "mine",
+      "args": {
+        "repo": "<TMP>/plain",
+        "project": "bare"
+      },
+      "returned": {
+        "error": "Not a git repository: <TMP>/plain"
+      },
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "op": "mine",
+      "args": {
+        "repo": "<TMP>/fakegit",
+        "project": "bare"
+      },
+      "raised": [
+        "RuntimeError",
+        "git log failed: fatal: not a git repository (or any of the parent directories): .git\n"
+      ],
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "op": "mine",
+      "args": {
+        "repo": "<TMP>/repo",
+        "project": "ghost1"
+      },
+      "returned": {
+        "status": "complete",
+        "project": "ghost1",
+        "commits_extracted": 5,
+        "csv_path": "<TMP>/ws/projects/ghost1/data/github-commits.csv"
+      },
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "op": "mine",
+      "args": {
+        "repo": "<TMP>/plain",
+        "project": "ghost2"
+      },
+      "returned": {
+        "error": "Not a git repository: <TMP>/plain"
+      },
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "op": "build_db",
+      "args": {
+        "project": "ghost3"
+      },
+      "raised": [
+        "SystemExit",
+        "1"
+      ],
+      "stdout": "",
+      "stderr": "ERROR: Data directory not found: <TMP>/ws/projects/ghost3/data\n"
+    },
+    {
+      "op": "build_db",
+      "args": {
+        "project": "bare"
+      },
+      "returned": {
+        "status": "complete",
+        "project": "bare",
+        "database_path": "<TMP>/ws/projects/bare/data/archaeology.db"
+      },
+      "stdout": "Building archaeology DB: <TMP>/ws/projects/bare/data/archaeology.db\nProject root: <TMP>/ws/projects/bare\nData directory: <TMP>/ws/projects/bare/data\n\n--- Importing tables ---\n\n--- Audit files ---\n\n--- Indexes ---\n\n--- Full-text search ---\n\nTables (with row counts):\n  [{\"table\": \"pipeline_runs\", \"count\": 0},\n   {\"table\": \"sqlite_sequence\", \"count\": 0},\n   {\"table\": \"pipeline_repo_results\", \"count\": 0}]\n\nIndexes:\n  [{\"table\": \"pipeline_runs\", \"index_name\": \"idx_pipeline_runs_status\", \"seqno\": 0, \"cid\": 2, \"name\": \"status\", \"desc\": 0, \"coll\": \"BINARY\", \"key\": 1},\n   {\"table\": \"pipeline_runs\", \"index_name\": \"idx_pipeline_runs_timestamp\", \"seqno\": 0, \"cid\": 1, \"name\": \"run_timestamp\", \"desc\": 0, \"coll\": \"BINARY\", \"key\": 1},\n   {\"table\": \"pipeline_repo_results\", \"index_name\": \"idx_pipeline_repo_results_run\", \"seqno\": 0, \"cid\": 1, \"name\": \"run_id\", \"desc\": 0, \"coll\": \"BINARY\", \"key\": 1},\n   {\"table\": \"pipeline_repo_results\", \"index_name\": \"idx_pipeline_repo_results_repo\", \"seqno\": 0, \"cid\": 2, \"name\": \"repo_name\", \"desc\": 0, \"coll\": \"BINARY\", \"key\": 1}]\n\nDone. Database: <TMP>/ws/projects/bare/data/archaeology.db\n",
+      "stderr": ""
+    },
+    {
+      "op": "signals",
+      "args": {
+        "project": "ghost4"
+      },
+      "returned": {
+        "error": "Database not found. Run build-db first."
+      },
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "op": "signals",
+      "args": {
+        "project": "bare"
+      },
+      "returned": {
+        "status": "complete",
+        "project": "bare",
+        "signal_count": 0,
+        "output_path": "<TMP>/ws/projects/bare/data/detected-signals.json"
+      },
+      "stdout": "Detected 0 signals, 0 clusters\nSaved to <TMP>/ws/projects/bare/data/detected-signals.json\n",
+      "stderr": ""
+    },
+    {
+      "op": "analyze",
+      "args": {
+        "project": "ghost5"
+      },
+      "raised": [
+        "ValueError",
+        "Project 'ghost5' not found"
+      ],
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "op": "analyze",
+      "args": {
+        "project": "bare",
+        "vectors": [
+          "no-such-vector"
+        ]
+      },
+      "raised": [
+        "ValueError",
+        "Unknown analysis vector(s): no-such-vector"
+      ],
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "op": "visualize",
+      "args": {
+        "project": "ghost6"
+      },
+      "returned": {
+        "error": "Project 'ghost6' not found"
+      },
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "op": "report",
+      "args": {
+        "project": "ghost7",
+        "fmt": "markdown"
+      },
+      "returned": {
+        "error": "Project 'ghost7' not found"
+      },
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "op": "audit",
+      "args": {
+        "project": "ghost8"
+      },
+      "returned": {
+        "status": "complete",
+        "project": "ghost8",
+        "total_checks": 1,
+        "passed": 0,
+        "failed": 1,
+        "findings": [
+          {
+            "check": "PROJECT_MISSING",
+            "severity": "CRITICAL",
+            "message": "Project 'ghost8' does not exist"
+          }
+        ]
+      },
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "op": "init",
+      "args": {
+        "project": "../escape"
+      },
+      "raised": [
+        "ValueError",
+        "Project name contains invalid characters: '../escape'"
+      ],
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "op": "init",
+      "args": {
+        "project": "bad name"
+      },
+      "raised": [
+        "ValueError",
+        "Project name contains invalid characters: 'bad name'"
+      ],
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "op": "report",
+      "args": {
+        "project": "bare",
+        "fmt": "pdf"
+      },
+      "returned": {
+        "error": "Invalid format 'pdf'. Use 'html' or 'markdown'."
+      },
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "op": "run_pipeline",
+      "args": {
+        "repo": "<TMP>/plain",
+        "project": "gamma"
+      },
+      "returned": {
+        "init": "created",
+        "mine": {
+          "error": "Not a git repository: <TMP>/plain"
+        },
+        "status": "failed",
+        "failed_at": "mine"
+      },
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "op": "run_pipeline",
+      "args": {
+        "repo": "<TMP>/fakegit",
+        "project": "delta"
+      },
+      "raised": [
+        "RuntimeError",
+        "git log failed: fatal: not a git repository (or any of the parent directories): .git\n"
+      ],
+      "stdout": "",
+      "stderr": ""
+    }
+  ]
+}
