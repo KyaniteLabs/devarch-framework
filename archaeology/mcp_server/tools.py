@@ -175,7 +175,7 @@ def devarch_audit(project_name: str, fail_on: str = "HIGH") -> dict[str, Any]:
     ``fail_on`` is accepted for tool-signature compatibility; this tool has
     always reported every finding and never used it to decide a verdict.
     """
-    findings = pipeline.audit(_ref(project_name), fail_on).findings
+    findings = pipeline.audit(_ref(project_name), fail_on=None).findings
 
     passed = sum(1 for f in findings if f.severity == "PASS")
     failed = sum(1 for f in findings if f.severity != "PASS")

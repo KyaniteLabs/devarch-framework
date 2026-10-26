@@ -256,6 +256,12 @@ def test_audit_reports_findings_and_blocking(built):
     assert pipeline.audit(ref, "CRITICAL").blocking == (result.summary["CRITICAL"] > 0)
 
 
+def test_audit_without_fail_on_skips_the_verdict(built):
+    _, ref = built
+    result = pipeline.audit(ref, None)
+    assert result.findings and result.blocking is None
+
+
 def test_audit_of_a_missing_project_is_a_critical_finding(ws):
     result = pipeline.audit(ProjectRef.for_cli("ghost"))
     assert [f.code for f in result.findings] == ["PROJECT_MISSING"]

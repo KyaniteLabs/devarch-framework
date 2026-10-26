@@ -604,17 +604,21 @@ def render_report(project: ProjectRef, fmt: str = "html") -> ReportResult:
 class AuditResult:
     findings: list
     summary: dict
-    blocking: bool
+    # None when no fail_on level was given: the caller only wants findings.
+    blocking: bool | None
 
 
-def audit(project: ProjectRef, fail_on: str = "HIGH") -> AuditResult:
-    """Run the forensic audit from the project's root."""
+def audit(project: ProjectRef, fail_on: str | None = "HIGH") -> AuditResult:
+    """Run the forensic audit from the project's root.
+
+    ``fail_on`` sets the severity that makes the result blocking; pass None to
+    skip that verdict entirely (the MCP tool reports findings only).
+    """
     from archaeology.audit import has_blocking_findings, run_audit, summarize
 
     findings = run_audit(project.name, project.root())
-    return AuditResult(
-        findings, summarize(findings), has_blocking_findings(findings, fail_on=fail_on),
-    )
+    blocking = None if fail_on is None else has_blocking_findings(findings, fail_on=fail_on)
+    return AuditResult(findings, summarize(findings), blocking)
 
 
 # ── run-pipeline ──────────────────────────────────────────────────────────────

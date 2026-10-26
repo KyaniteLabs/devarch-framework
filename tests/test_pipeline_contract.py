@@ -280,3 +280,19 @@ def test_adapter_outcomes_match_golden(tmp_path_factory, monkeypatch, capfd):
         GOLDEN.write_text(actual, encoding="utf-8")
     assert GOLDEN.exists(), "golden missing; run with UPDATE_GOLDEN=1"
     assert actual == GOLDEN.read_text(encoding="utf-8")
+
+
+def test_mcp_audit_never_evaluates_fail_on(tmp_path, monkeypatch):
+    """The MCP audit tool reports findings only; fail_on is accepted but unused.
+
+    Review of the pipeline refactor caught a regression: the shared service
+    evaluated fail_on for every caller, so an unknown level raised KeyError
+    over MCP where it used to return the normal result.
+    """
+    monkeypatch.setenv("DEVARCH_WORKSPACE", str(tmp_path))
+    (tmp_path / "projects").mkdir()
+    monkeypatch.chdir(tmp_path)
+    mcp.devarch_init("audited", "d", "u")
+    baseline = mcp.devarch_audit("audited", "HIGH")
+    assert baseline["status"] == "complete"
+    assert mcp.devarch_audit("audited", "BOGUS") == baseline
