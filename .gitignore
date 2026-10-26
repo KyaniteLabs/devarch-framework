@@ -107,3 +107,7 @@ projects/*/output/
 
 # Mutation testing (mutmut)
 mutants/
+
+# Stage working artifacts (ICM L4) are generated locally, never committed.
+stages/*/output/*
+!stages/*/output/.gitkeep
