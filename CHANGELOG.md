@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.3.1] - Unreleased (staged; no tag or release yet — no tags exist in this repo)
 
 ### Security
+- **CLI project-name validation**: the CLI now validates project names the way the MCP server does. `devarch init ../escape` used to create `projects/../escape`, outside `projects/`, and `demo --project ../x --force` could write files there. Every CLI command that takes a project name (`init`, `demo`, `audit`, and the commands that open an existing project) rejects unsafe names before any write, with `Error: Project name …` and exit 1. Allowed names are 1–100 characters from `A–Z a–z 0–9 . _ -`, and no path traversal. Behaviour change: names with spaces or other characters, which MCP never accepted, are now refused by the CLI too.
 - **Path traversal protection**: Added `validate_project_name()` to MCP server — blocks `..`, `/`, and non-alphanumeric characters in project names
 - **Workspace validation**: `DEVARCH_WORKSPACE` env var now verified to exist and be a directory
 - **Vector name validation**: MCP `query_analysis` tool validates vector names against known list, preventing injection

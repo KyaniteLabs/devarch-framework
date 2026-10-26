@@ -135,7 +135,15 @@ class ProjectRef:
 
     @classmethod
     def for_cli(cls, name: str, must_exist: bool = True) -> "ProjectRef":
-        """``projects/<name>`` relative to the cwd; by default the project must exist."""
+        """``projects/<name>`` relative to the cwd; by default the project must exist.
+
+        The name is validated like a workspace name, so ``../x`` and other
+        unsafe names can never resolve outside ``projects/``.
+        """
+        try:
+            validate_project_name(name)
+        except ValueError as e:
+            raise PipelineError(str(e), kind="invalid-name") from None
         return cls(name, workspace=False, must_exist=must_exist)
 
     @classmethod
