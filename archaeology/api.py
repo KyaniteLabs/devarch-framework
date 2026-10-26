@@ -21,11 +21,12 @@ from http.server import BaseHTTPRequestHandler
 from pathlib import Path
 from urllib.parse import urlparse
 
+from archaeology import __version__
+
 ROOT = Path(__file__).resolve().parents[1]  # dev-archaeology/
 PROJECTS_DIR = ROOT / "projects"
 BRIDGE_PATH = ROOT / "global" / "data" / "factory-bridge.json"
 
-__version__ = "1.0.0"
 
 
 def _validate_project_name(name):
