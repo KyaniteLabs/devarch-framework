@@ -26,7 +26,7 @@ def create_demo_project(
     project_root = root / "projects" / project_name
     if project_root.exists() and not force:
         raise FileExistsError(
-            f"Demo project already exists at {project_root}. Use force=True to overwrite."
+            f"Demo project already exists at {project_root}. Use --force to overwrite."
         )
 
     data_dir = project_root / "data"
