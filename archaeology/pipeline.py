@@ -3,9 +3,10 @@
 The click CLI (``archaeology/cli.py``) and the MCP tools
 (``archaeology/mcp_server/tools.py``) are thin adapters over this module. It
 owns project-directory resolution, input validation and each operation
-(init, mine, build-db, signals, analyze, visualize, report, audit and the
-mine-to-analyze run). Adapters keep only presentation: click parsing, echo and
-exit codes on one side, dict shaping on the other.
+(init, mine, build-db, signals, analyze, visualize, report, audit, the
+mine-to-analyze run, and the CLI-only verbs serve, cascade and sync).
+Adapters keep only presentation: click parsing, echo and exit codes on one
+side, dict shaping on the other.
 
 Caller-fixable failures raise ``PipelineError``. Its ``kind`` lets an adapter
 choose its own wording where the two surfaces have always worded the same

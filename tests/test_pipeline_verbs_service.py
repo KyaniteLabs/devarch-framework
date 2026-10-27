@@ -182,6 +182,15 @@ def test_prepare_serve_builds_command_and_metadata(tmp_path, monkeypatch):
     plain = pipeline.prepare_serve(ref, 8124, False)
     assert "--cors" not in plain.cmd
 
+    # a project-specific metadata file wins over the workspace default and
+    # is used in place (no temp copy, nothing to clean up)
+    proj_meta = ws / "projects" / "alpha" / "datasette-metadata.yaml"
+    proj_meta.write_text('title: "Alpha custom"\n', encoding="utf-8")
+    own = pipeline.prepare_serve(ref, 8125, False)
+    i = own.cmd.index("--metadata") + 1
+    assert own.cmd[i] == os.path.join("projects", "alpha", "datasette-metadata.yaml")
+    assert own.temp_metadata is False
+
 
 # ── cascade ────────────────────────────────────────────────────────────────────
 
