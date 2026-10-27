@@ -134,6 +134,13 @@ class Env:
             text = text.replace(needle, tag)
         # serve generates a random temp metadata filename per run
         text = re.sub(r"arch-metadata-\w+\.yaml", "arch-metadata-<RAND>.yaml", text)
+        # The cascade verb pins the db-builder subprocess's failure payload,
+        # whose traceback text varies by interpreter and install location:
+        # the venv's site-packages path, runpy's stdlib line numbers, and
+        # traceback caret alignment all differ across Python versions.
+        text = re.sub(r"\S*/site-packages", "<VENV>", text)
+        text = re.sub(r'(File "<frozen runpy>", line )\d+', r"\1<N>", text)
+        text = re.sub(r"^(\s*)[~^]{3,}\s*$", r"\1<CARETS>", text, flags=re.M)
         return text
 
     def mask_obj(self, obj):
