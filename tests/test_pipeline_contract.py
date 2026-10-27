@@ -14,8 +14,10 @@ places where the two adapters disagree. Regenerate it only on purpose:
 
 import json
 import os
+import re
 import shutil
 import subprocess
+import tempfile
 from pathlib import Path
 
 import pytest
@@ -127,8 +129,22 @@ class Env:
         for needle, tag in (
             (str(self.root.resolve()), "<TMP>"), (str(self.root), "<TMP>"),
             (str(PKG_ROOT), "<PKG>"),
+            (str(tempfile.gettempdir()), "<TMPDIR>"),
         ):
             text = text.replace(needle, tag)
+        # serve generates a random temp metadata filename per run
+        text = re.sub(r"arch-metadata-\w+\.yaml", "arch-metadata-<RAND>.yaml", text)
+        # The cascade verb pins the db-builder subprocess's failure payload,
+        # whose traceback text varies by interpreter and install location:
+        # the venv's site-packages path, runpy's stdlib line numbers, and
+        # traceback caret alignment all differ across Python versions.
+        text = re.sub(r"\S*/site-packages", "<VENV>", text)
+        text = re.sub(r'(File "<frozen runpy>", line )\d+', r"\1<N>", text)
+        # dependency-internal frames (click, sqlite_utils) move on upgrades
+        text = re.sub(r'(File "<VENV>[^"]+", line )\d+', r"\1<N>", text)
+        # caret lines differ in PRESENCE across Python versions (3.12 anchors
+        # fewer frames than 3.15), so drop them rather than normalize them
+        text = re.sub(r"^[ \t]*[~^]{3,}[ \t]*\n", "", text, flags=re.M)
         return text
 
     def mask_obj(self, obj):
@@ -269,7 +285,109 @@ def _run_all(tmp_path_factory, monkeypatch, capfd):
             with monkeypatch.context() as mp:
                 env = Env(root, mp, template_repo)
                 outcome[f"{scenario}/{adapter}"] = fn(env, capfd, adapter)
+    root = tmp_path_factory.mktemp("verbs-cli")
+    with monkeypatch.context() as mp:
+        env = Env(root, mp, template_repo)
+        outcome["verbs/cli"] = _verbs(env, capfd)
     return outcome
+
+
+# ── cascade / serve / sync (CLI-only verbs) ───────────────────────────────────
+#
+# These three verbs have no MCP surface, so they are characterized through the
+# CLI alone. ``serve`` never launches Datasette here: ``subprocess.run`` in the
+# CLI module is replaced with a capturer that records the built command and the
+# generated metadata file. ``sync`` runs only its hermetic error path, because
+# the command resolves its profile from the package's ``config/`` first, which
+# names the developer's real projects; the full flow is covered by the service
+# interface tests.
+
+ERAS_JSON = {
+    "first_commit_date": "2026-01-01",
+    "eras": [
+        {"id": 1, "name": "Dawn", "dates": "2026-01-01 to 2026-01-31", "commits": 3},
+        {"id": 2, "name": "Growth", "dates": "2026-02-01 to 2026-02-28", "commits": 2},
+    ],
+}
+
+
+def _capture_serve(monkeypatch):
+    """Replace the CLI's Datasette launch with a command/metadata capturer."""
+    captured = {}
+
+    def fake_run(cmd, *args, **kwargs):
+        captured["cmd"] = list(cmd)
+        meta = None
+        for i, part in enumerate(cmd):
+            if part == "--metadata" and i + 1 < len(cmd):
+                p = Path(cmd[i + 1])
+                if p.exists():
+                    meta = p.read_text()
+        captured["metadata"] = meta
+        return subprocess.CompletedProcess(cmd, 0)
+
+    monkeypatch.setattr("archaeology.cli.subprocess.run", fake_run)
+    return captured
+
+
+def _verbs(env, capfd):
+    from archaeology import pipeline as svc
+
+    # alpha: a project with mined data and a built database (state prep only).
+    ref = svc.ProjectRef.for_cli("alpha", must_exist=False)
+    svc.init(ref, "Alpha", "https://example.com/a")
+    svc.mine(str(env.repo), ref, expand_repo_path=False)
+    svc.build_db(ref)
+    # bare: a project with no data at all.
+    svc.init(svc.ProjectRef.for_cli("bare", must_exist=False), "Bare", "")
+
+    out = []
+
+    def run(op, args, **extra):
+        capfd.readouterr()
+        rec = {"op": op, "args": env.mask_obj({"args": args, **extra})}
+        result = CliRunner().invoke(cli_main, [op, *args])
+        rec["exit_code"] = result.exit_code
+        rec["output"] = env.mask(result.output)
+        if result.exception and not isinstance(result.exception, SystemExit):
+            rec["exception"] = [type(result.exception).__name__, env.mask(result.exception)]
+        captured = capfd.readouterr()
+        rec["stdout"] = env.mask(captured.out)
+        rec["stderr"] = env.mask(captured.err)
+        out.append(rec)
+        return rec
+
+    # serve: missing project, project without a database, project with one.
+    run("serve", ["ghost9", "--port", "8021"])
+    run("serve", ["bare", "--port", "8022"])
+    env.ws.joinpath("config").mkdir(exist_ok=True)
+    env.ws.joinpath("config", "datasette-metadata.yaml").write_text(
+        'title: "Archaeology Database"\ndescription: test\n', encoding="utf-8")
+    with env.monkeypatch.context() as mp:
+        cap = _capture_serve(mp)
+        rec = run("serve", ["alpha", "--port", "8023", "--unsafe-cors"])
+        rec["serve_cmd"] = env.mask_obj(cap.get("cmd"))
+        rec["serve_metadata"] = env.mask(cap.get("metadata"))
+    env.ws.joinpath("config", "datasette-metadata.yaml").unlink()
+
+    # cascade: missing project, no eras file, full run, dry run.
+    run("cascade", ["ghost10"])
+    run("cascade", ["alpha"])
+    pj_path = env.ws / "projects" / "alpha" / "project.json"
+    pj = json.loads(pj_path.read_text())
+    pj["repo_path"] = str(env.repo)
+    pj_path.write_text(json.dumps(pj, indent=2))
+    run("cascade", ["alpha"])
+    (env.ws / "projects" / "alpha" / "data" / "commit-eras.json").write_text(
+        json.dumps(ERAS_JSON))
+    rec = run("cascade", ["alpha"])
+    rec["files_after"] = env.files("alpha")
+    run("cascade", ["alpha", "--dry-run"])
+    run("cascade", ["alpha", "--skip-mine", "--dry-run"])
+
+    # sync: hermetic error path only (one unknown name; set order is unstable).
+    run("sync", ["--project", "ghostproj"])
+    return out
 
 
 # ── Tests ─────────────────────────────────────────────────────────────────────
