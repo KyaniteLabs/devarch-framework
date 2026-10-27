@@ -162,8 +162,8 @@ def export_markdown_report(
 
     out.append("## Provenance\n\n")
     out.append(_bullet(f"Source scope: {canonical.get('source_scope', 'project data')}"))
-    out.append(_bullet("Generated from automated `archaeology analyze` JSON outputs."))
-    out.append(_bullet("Run `archaeology audit <project> --fail-on HIGH` before publishing."))
+    out.append(_bullet("Generated from automated `devarch analyze` JSON outputs."))
+    out.append(_bullet("Run `devarch audit <project> --fail-on HIGH` before publishing."))
 
     if output_path is None:
         output_path = deliverables / "reports" / "ARCHAEOLOGY-REPORT.md"

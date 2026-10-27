@@ -105,7 +105,7 @@ def prepare_global_visualization_data(global_dir, top_n=None, year=None):
 
     if not commits_csv.exists():
         raise FileNotFoundError(
-            f"No data in {data_dir}. Run 'archaeology fetch-github' or 'archaeology sync' first."
+            f"No data in {data_dir}. Run 'devarch fetch-github' or 'devarch sync' first."
         )
 
     # Load raw data
@@ -758,7 +758,7 @@ def prepare_dashboard_data(global_dir, top_n=None, year=None):
 
     if not github_json.exists():
         raise FileNotFoundError(
-            f"No GitHub data found at {github_json}. Run 'archaeology fetch-github' first."
+            f"No GitHub data found at {github_json}. Run 'devarch fetch-github' first."
         )
 
     with open(github_json, encoding="utf-8") as f:

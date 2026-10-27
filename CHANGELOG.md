@@ -1,5 +1,7 @@
 # 0.4.1 — Unreleased readiness candidate
 
+- Name the installed `devarch` binary in every CLI error/hint (was the retired `archaeology` name); replace PyPI badges and links — the package is not published — with GitHub release equivalents; point the docs page canonical at the live GitHub repo; keep the public source line GitHub-only.
+
 - Bind analysis, reports and visualizations to exact inputs; reject stale A-to-B runs.
 - Disable unsafe legacy dashboard/static publishing, cascade and opportunity profiling before side effects; remove the active Markdown viewer and wildcard API CORS.
 - Validate installed history HTML without a source-relative Node dependency.

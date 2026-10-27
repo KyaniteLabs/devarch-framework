@@ -2,8 +2,8 @@
 
 **TL;DR:** DevArch Framework — local git repository archaeology: mine commit history into SQLite, detect development signals, run analysis vectors, and generate reports. Best for engineers, researchers, and AI agents who need to understand how a codebase evolved.
 
-[![PyPI version](https://img.shields.io/pypi/v/devarch-framework.svg)](https://pypi.org/project/devarch-framework/)
-[![Python](https://img.shields.io/pypi/pyversions/devarch-framework.svg)](https://pypi.org/project/devarch-framework/)
+[![GitHub release](https://img.shields.io/github/v/release/KyaniteLabs/devarch-framework)](https://github.com/KyaniteLabs/devarch-framework/releases)
+[![Python](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
 [![GitHub stars](https://img.shields.io/github/stars/KyaniteLabs/devarch-framework.svg?style=social)](https://github.com/KyaniteLabs/devarch-framework)
 
@@ -361,7 +361,7 @@ More from [KyaniteLabs](https://kyanitelabs.tech). Related projects:
 | **Category** | git repository archaeology framework (CLI + Python package) |
 | **Best for** | engineers, researchers, and AI agents who need to understand how a codebase evolved |
 | **Not** | a productivity-scoring tool or a hosted analytics service |
-| **Source** | [GitHub](https://github.com/KyaniteLabs/devarch-framework) · [Forgejo](https://git.kyanitelabs.tech/KyaniteLabs/devarch-framework) (private, maintainers only) |
+| **Source** | [GitHub](https://github.com/KyaniteLabs/devarch-framework) |
 | **Keywords** | git history analysis, repository archaeology, commit mining, development signals, engineering narrative reports |
 
 ## Who it's for
