@@ -5,7 +5,7 @@
 - Bind analysis, reports and visualizations to exact inputs; reject stale A-to-B runs.
 - Disable unsafe legacy dashboard/static publishing, cascade and opportunity profiling before side effects; remove the active Markdown viewer and wildcard API CORS.
 - Validate installed history HTML without a source-relative Node dependency.
-- Correct package/documentation metadata to the existing Apache-2.0 LICENSE; no relicensing.
+- Correct package/documentation metadata to Apache-2.0. Released under Apache-2.0 since 2026-06-02 (PR #54); the initial MIT grant from 2026-04-29 remains in effect for copies obtained before that date.
 - Add installed-wheel checks to native Python3.12 CI and remove suppressed CI failures.
 
 # 0.4.0 — Evidence integrity

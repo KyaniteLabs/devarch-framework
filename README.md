@@ -300,7 +300,7 @@ _config/              -- Developer profile templates
 
 ## License
 
-Apache-2.0 — see the existing LICENSE file. Metadata was corrected; the repository has not been relicensed.
+Released under Apache-2.0 since 2026-06-02 (PR #54); the initial MIT grant from 2026-04-29 remains in effect for copies obtained before that date.
 
 ## Support
 
