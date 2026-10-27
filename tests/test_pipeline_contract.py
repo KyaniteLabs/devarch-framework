@@ -142,7 +142,9 @@ class Env:
         text = re.sub(r'(File "<frozen runpy>", line )\d+', r"\1<N>", text)
         # dependency-internal frames (click, sqlite_utils) move on upgrades
         text = re.sub(r'(File "<VENV>[^"]+", line )\d+', r"\1<N>", text)
-        text = re.sub(r"^(\s*)[~^]{3,}\s*$", r"\1<CARETS>", text, flags=re.M)
+        # caret lines differ in PRESENCE across Python versions (3.12 anchors
+        # fewer frames than 3.15), so drop them rather than normalize them
+        text = re.sub(r"^[ \t]*[~^]{3,}[ \t]*\n", "", text, flags=re.M)
         return text
 
     def mask_obj(self, obj):
