@@ -1,5 +1,7 @@
 # 0.4.1 — Unreleased readiness candidate
 
+- Fix QA regressions from #90: `global-viz` and `multi-project-dashboard` now resolve their templates against the installed package (they failed outside the repo source root); `sync` accepts the README-documented `path` profile key as an alias for `repo_path` and reports malformed project entries with actionable errors instead of a `KeyError` traceback; `serve` passes datasette's `--setting` as two arguments so the server actually starts.
+
 - Name the installed `devarch` binary in every CLI error/hint (was the retired `archaeology` name); replace PyPI badges and links — the package is not published — with GitHub release equivalents; point the docs page canonical at the live GitHub repo; keep the public source line GitHub-only.
 
 - Bind analysis, reports and visualizations to exact inputs; reject stale A-to-B runs.
