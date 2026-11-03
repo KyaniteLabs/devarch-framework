@@ -31,11 +31,16 @@ def _parse_commit_date(value: Any, commit_hash: Any) -> date:
     try:
         # Keep the calendar date supplied by Git, matching legacy display semantics.
         return datetime.fromisoformat(iso_value).date()
-    except ValueError as exc:
+    except ValueError as iso_error:
+        for date_format in ("%Y-%m-%d %H:%M:%S %z", "%Y-%m-%d"):
+            try:
+                return datetime.strptime(date_value, date_format).date()
+            except ValueError:
+                continue
         raise ValueError(
             f"Invalid commit date for commit {commit_hash!r}: {value!r}; "
             "expected an ISO-8601 timestamp or Git-log date."
-        ) from exc
+        ) from iso_error
 
 
 def analyze_agent_benchmarks(db_path: str) -> Dict[str, Any]:
