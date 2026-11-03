@@ -16,7 +16,7 @@ setup(
     ],
     extras_require={
         "dev": ["pytest>=8.0", "ruff==0.16.10"],
-        "mcp": ["mcp[cli]>=1.0,<2"],
+        "mcp": ["mcp[cli]>=1.0,<3"],
     },
     entry_points={
         "console_scripts": [
