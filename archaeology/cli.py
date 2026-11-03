@@ -33,6 +33,18 @@ def _viz_template_path(filename):
     return Path(__file__).parent / "visualization" / filename
 
 
+def _is_nonempty_string(value):
+    return isinstance(value, str) and bool(value.strip())
+
+
+def _invalid_value_desc(value):
+    if value is None:
+        return "null"
+    if isinstance(value, str):
+        return "an empty or whitespace-only string"
+    return type(value).__name__
+
+
 @click.group()
 @click.version_option(package_name="devarch-framework")
 def main():
@@ -782,8 +794,22 @@ def sync(projects, skip_mine, skip_signals, verbose):
         click.echo(f"Error: Invalid JSON in {profile_path}: {e}", err=True)
         sys.exit(1)
 
+    if not isinstance(profile, dict):
+        click.echo(
+            f"Error: profile.json must contain a JSON object, got {type(profile).__name__}.",
+            err=True,
+        )
+        sys.exit(1)
+
     registered = profile.get("projects", [])
     sync_cfg = profile.get("sync", {})
+
+    if not isinstance(registered, list):
+        click.echo(
+            f"Error: 'projects' in profile.json must be a list, got {type(registered).__name__}.",
+            err=True,
+        )
+        sys.exit(1)
 
     if not registered:
         click.echo("No projects registered in profile.json.")
@@ -791,17 +817,35 @@ def sync(projects, skip_mine, skip_signals, verbose):
 
     # Validate entries and accept the README-documented "path" alias for the
     # canonical "repo_path" key before any code reads a project entry, so a
-    # malformed profile fails with an actionable message instead of a KeyError.
+    # malformed profile fails with an actionable message instead of a KeyError
+    # or TypeError. Names and effective locations must be nonempty strings,
+    # checked before project filtering and before any filesystem writes.
     problems = []
     for i, proj in enumerate(registered):
         if not isinstance(proj, dict):
             problems.append(f"projects[{i}] must be an object, got {type(proj).__name__}")
             continue
-        label = proj.get("name") or f"projects[{i}]"
-        if not proj.get("name"):
+        name = proj.get("name")
+        label = name if _is_nonempty_string(name) else f"projects[{i}]"
+        if "name" not in proj:
             problems.append(f"{label}: missing required key 'name'")
-        if "repo_path" not in proj and "path" not in proj:
+        elif not _is_nonempty_string(name):
+            problems.append(
+                f"{label}: 'name' must be a nonempty string, got {_invalid_value_desc(name)}"
+            )
+        if "repo_path" in proj:
+            location_key, location = "repo_path", proj["repo_path"]
+        elif "path" in proj:
+            location_key, location = "path", proj["path"]
+        else:
+            location_key, location = None, None
+        if location_key is None:
             problems.append(f"{label}: missing required key 'repo_path' (or 'path')")
+        elif not _is_nonempty_string(location):
+            problems.append(
+                f"{label}: '{location_key}' must be a nonempty string, "
+                f"got {_invalid_value_desc(location)}"
+            )
     if problems:
         click.echo("Invalid project entries in profile.json:", err=True)
         for problem in problems:

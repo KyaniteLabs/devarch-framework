@@ -198,6 +198,110 @@ def test_sync_rejects_non_object_entry_with_actionable_error(tmp_path, monkeypat
     assert "projects[0]" in result.output
 
 
+@pytest.mark.parametrize(
+    ("entry", "expected_key"),
+    [
+        ({"name": "qa-proj", "path": None}, "path"),
+        ({"name": "qa-proj", "repo_path": None}, "repo_path"),
+        ({"name": "qa-proj", "path": 123}, "path"),
+        ({"name": "qa-proj", "repo_path": 123}, "repo_path"),
+        ({"name": "qa-proj", "path": ""}, "path"),
+        ({"name": "qa-proj", "repo_path": "   "}, "repo_path"),
+    ],
+)
+def test_sync_rejects_invalid_location_values(tmp_path, monkeypatch, entry, expected_key):
+    """null / wrong-type / empty locations must fail before any writes."""
+    monkeypatch.chdir(tmp_path)
+    _hide_repo_profile(monkeypatch)
+    _write_profile(tmp_path, {"projects": [entry]})
+
+    result = CliRunner().invoke(main, ["sync", "--project", "qa-proj"])
+
+    assert result.exit_code == 1
+    assert "Traceback" not in result.output
+    assert "qa-proj" in result.output
+    assert f"'{expected_key}'" in result.output
+    assert "nonempty string" in result.output
+    # Validation must fire before project directories are created.
+    assert not (tmp_path / "projects").exists()
+
+
+@pytest.mark.parametrize(
+    ("name_value", "expected_frag"),
+    [
+        (["qa-proj"], "list"),
+        (123, "int"),
+        (None, "null"),
+        ("", "empty or whitespace-only string"),
+        ("   ", "empty or whitespace-only string"),
+    ],
+)
+def test_sync_rejects_malformed_names(tmp_path, monkeypatch, name_value, expected_frag):
+    """Non-string names must fail before set-hashing in project filtering."""
+    monkeypatch.chdir(tmp_path)
+    _hide_repo_profile(monkeypatch)
+    _write_profile(tmp_path, {"projects": [{"name": name_value, "repo_path": "/tmp/x"}]})
+
+    result = CliRunner().invoke(main, ["sync", "--project", "qa-proj"])
+
+    assert result.exit_code == 1
+    assert "Traceback" not in result.output
+    assert "projects[0]" in result.output
+    assert "'name'" in result.output
+    assert expected_frag in result.output
+    assert not (tmp_path / "projects").exists()
+
+
+def test_sync_repo_path_takes_precedence_over_path_alias(tmp_path, monkeypatch):
+    """With both keys present, canonical repo_path wins and path is ignored."""
+    monkeypatch.chdir(tmp_path)
+    _hide_repo_profile(monkeypatch)
+    repo = _make_git_repo(tmp_path / "source" / "real")
+    _write_profile(
+        tmp_path,
+        {
+            "projects": [{"name": "qa-proj", "path": "/not/a/repo", "repo_path": str(repo)}],
+            "sync": {"run_signals": False, "run_analysis": False},
+        },
+    )
+
+    result = CliRunner().invoke(main, ["sync", "--project", "qa-proj"])
+
+    assert result.exit_code == 0, result.output
+    assert "Sync complete." in result.output
+    project_config = json.loads(
+        (tmp_path / "projects" / "qa-proj" / "project.json").read_text(encoding="utf-8")
+    )
+    assert project_config["repo_path"] == str(repo)
+
+
+def test_sync_rejects_non_list_projects_with_actionable_error(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    _hide_repo_profile(monkeypatch)
+    _write_profile(tmp_path, {"projects": {"name": "qa-proj"}})
+
+    result = CliRunner().invoke(main, ["sync"])
+
+    assert result.exit_code == 1
+    assert "Traceback" not in result.output
+    assert "'projects'" in result.output
+    assert "list" in result.output
+
+
+def test_sync_rejects_non_object_profile_with_actionable_error(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    _hide_repo_profile(monkeypatch)
+    config_dir = tmp_path / "config"
+    config_dir.mkdir(parents=True)
+    (config_dir / "profile.json").write_text('["not", "an", "object"]', encoding="utf-8")
+
+    result = CliRunner().invoke(main, ["sync"])
+
+    assert result.exit_code == 1
+    assert "Traceback" not in result.output
+    assert "JSON object" in result.output
+
+
 # ── D3: datasette --setting argument form ─────────────────────────────────────
 
 
