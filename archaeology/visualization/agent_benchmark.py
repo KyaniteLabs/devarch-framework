@@ -5,7 +5,9 @@ development eras, providing insights into AI agent contribution patterns.
 """
 
 import json
+import re
 import sqlite3
+from datetime import date, datetime
 from pathlib import Path
 from typing import Any, Dict
 
@@ -16,35 +18,31 @@ from archaeology.visualization.design_system import (
 )
 
 
+def _parse_commit_date(value: Any, commit_hash: Any) -> date:
+    """Parse ISO-8601 and legacy Git-log commit dates or reject the row."""
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(
+            f"Invalid commit date for commit {commit_hash!r}: {value!r}; "
+            "expected an ISO-8601 timestamp or Git-log date."
+        )
+
+    date_value = value.strip()
+    iso_value = f"{date_value[:-1]}+00:00" if date_value.endswith(("Z", "z")) else date_value
+    try:
+        # Keep the calendar date supplied by Git, matching legacy display semantics.
+        return datetime.fromisoformat(iso_value).date()
+    except ValueError as exc:
+        raise ValueError(
+            f"Invalid commit date for commit {commit_hash!r}: {value!r}; "
+            "expected an ISO-8601 timestamp or Git-log date."
+        ) from exc
+
+
 def analyze_agent_benchmarks(db_path: str) -> Dict[str, Any]:
-    """Analyze agent performance metrics from archaeology database.
+    """Analyze benchmark metrics; reject malformed commit dates with row context.
 
-    Args:
-        db_path: Path to archaeology.db SQLite database
-
-    Returns:
-        Dictionary containing benchmark data for all agents:
-        {
-            "agents": [
-                {
-                    "name": "Agent Name",
-                    "total_commits": 123,
-                    "commits_per_era": {"era_name": count, ...},
-                    "avg_files_changed": 2.5,
-                    "rework_rate": 0.15,
-                    "avg_message_length": 45.3,
-                    "first_commit": "2026-03-19",
-                    "last_commit": "2026-04-30"
-                },
-                ...
-            ],
-            "eras": ["era1", "era2", ...],
-            "meta": {
-                "total_commits": 803,
-                "total_agents": 5,
-                "date_range": "2026-02-28 to 2026-05-01"
-            }
-        }
+    Empty databases return zero metrics and an ``Unknown`` date range. A malformed
+    date in a non-empty database raises ``ValueError`` instead of dropping rows.
     """
     conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
@@ -103,9 +101,6 @@ def analyze_agent_benchmarks(db_path: str) -> Dict[str, Any]:
             )
 
     # Map commits to eras
-    import re
-    from datetime import datetime
-
     def parse_abbreviated_date(date_str: str) -> datetime:
         """Parse dates like 'Feb 28, 2026' or 'Mar 19, 2026'."""
         # Remove weekday names if present
@@ -143,21 +138,15 @@ def analyze_agent_benchmarks(db_path: str) -> Dict[str, Any]:
     for commit in commits:
         author = normalize_author(commit["author"])
         commit_date_str = commit["date"]
-
-        # Parse commit date
-        try:
-            # Git log format: "2026-03-19 21:30:56 -0700"
-            commit_date = datetime.strptime(commit_date_str.split()[0], "%Y-%m-%d")
-        except (ValueError, IndexError):
-            continue
+        commit_date = _parse_commit_date(commit_date_str, commit["hash"])
 
         # Find which era this commit belongs to
         commit_era = None
         for era_mapping in era_mappings:
             if era_mapping["start"] and era_mapping["end"]:
                 try:
-                    start_dt = parse_abbreviated_date(era_mapping["start"])
-                    end_dt = parse_abbreviated_date(era_mapping["end"])
+                    start_dt = parse_abbreviated_date(era_mapping["start"]).date()
+                    end_dt = parse_abbreviated_date(era_mapping["end"]).date()
                     if start_dt <= commit_date <= end_dt:
                         commit_era = era_mapping["name"]
                         break
@@ -172,14 +161,14 @@ def analyze_agent_benchmarks(db_path: str) -> Dict[str, Any]:
                 "commits_per_era": {},
                 "message_lengths": [],
                 "rework_commits": 0,
-                "first_commit": commit_date_str,
-                "last_commit": commit_date_str,
+                "first_commit": commit_date,
+                "last_commit": commit_date,
                 "all_dates": [],
             }
 
         # Update stats
         agent_stats[author]["total_commits"] += 1
-        agent_stats[author]["all_dates"].append(commit_date_str)
+        agent_stats[author]["all_dates"].append(commit_date)
 
         if commit_era:
             if commit_era not in agent_stats[author]["commits_per_era"]:
@@ -194,17 +183,11 @@ def analyze_agent_benchmarks(db_path: str) -> Dict[str, Any]:
         if re.search(r"\bfix|revert|oops|undo\b", message, re.IGNORECASE):
             agent_stats[author]["rework_commits"] += 1
 
-        # Update date range
-        try:
-            commit_dt = datetime.strptime(commit_date_str.split()[0], "%Y-%m-%d")
-            first_dt = datetime.strptime(agent_stats[author]["first_commit"].split()[0], "%Y-%m-%d")
-            last_dt = datetime.strptime(agent_stats[author]["last_commit"].split()[0], "%Y-%m-%d")
-            if commit_dt < first_dt:
-                agent_stats[author]["first_commit"] = commit_date_str
-            if commit_dt > last_dt:
-                agent_stats[author]["last_commit"] = commit_date_str
-        except (ValueError, IndexError):
-            pass
+        # Update per-agent date range.
+        if commit_date < agent_stats[author]["first_commit"]:
+            agent_stats[author]["first_commit"] = commit_date
+        if commit_date > agent_stats[author]["last_commit"]:
+            agent_stats[author]["last_commit"] = commit_date
 
     # Compute final metrics per agent
     agents_list = []
@@ -218,17 +201,8 @@ def analyze_agent_benchmarks(db_path: str) -> Dict[str, Any]:
             stats["rework_commits"] / stats["total_commits"] if stats["total_commits"] > 0 else 0
         )
 
-        # Parse first and last commit dates for display
-        try:
-            first_date = datetime.strptime(stats["first_commit"].split()[0], "%Y-%m-%d").strftime(
-                "%Y-%m-%d"
-            )
-            last_date = datetime.strptime(stats["last_commit"].split()[0], "%Y-%m-%d").strftime(
-                "%Y-%m-%d"
-            )
-        except (ValueError, IndexError):
-            first_date = stats["first_commit"][:10]
-            last_date = stats["last_commit"][:10]
+        first_date = stats["first_commit"].isoformat()
+        last_date = stats["last_commit"].isoformat()
 
         agent_data = {
             "name": agent_name,
@@ -255,14 +229,7 @@ def analyze_agent_benchmarks(db_path: str) -> Dict[str, Any]:
 
     date_range = "Unknown"
     if all_dates:
-        try:
-            dates_sorted = sorted(
-                set(datetime.strptime(d.split()[0], "%Y-%m-%d") for d in all_dates)
-            )
-            if dates_sorted:
-                date_range = f"{dates_sorted[0].strftime('%Y-%m-%d')} to {dates_sorted[-1].strftime('%Y-%m-%d')}"
-        except ValueError:
-            pass
+        date_range = f"{min(all_dates).isoformat()} to {max(all_dates).isoformat()}"
 
     return {
         "agents": agents_list,
