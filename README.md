@@ -208,6 +208,10 @@ devarch sync --project project-one --project project-two
 devarch sync --skip-mine
 ```
 
+Each project needs a `name` and a repository location. `path` (shown above) and
+`repo_path` are both accepted for the location; `repo_path` is the canonical
+key used by the shipped `config/profile.json`.
+
 ## Database Inspection
 
 Start a Datasette server to inspect your archaeology database:
