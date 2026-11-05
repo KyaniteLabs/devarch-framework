@@ -358,8 +358,12 @@ def test_failed_remine_refuses_report_with_old_derived(plugin, tmp_path, hermes_
     coverage = json.loads((project_dir / "data" / "coverage.json").read_text(encoding="utf-8"))
     assert coverage.get("commit_count") == 1
     assert coverage.get("mining_status") == "incomplete"
-    # Derived DB must not remain from the prior generation.
-    assert not (project_dir / "data" / "archaeology.db").exists()
+    assert not coverage.get("derived_sha256")
+    # Canonical DB should be gone; Windows may leave a truncated/locked leftover or
+    # a .stale-* rename aside — neither may remain bound as a complete generation.
+    db_path = project_dir / "data" / "archaeology.db"
+    if db_path.exists():
+        assert db_path.stat().st_size == 0
     assert not (project_dir / "deliverables" / "canonical-metrics.json").exists()
 
     refused = plugin.report("remine")

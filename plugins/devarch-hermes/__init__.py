@@ -396,18 +396,43 @@ _DERIVED_REL_PATHS = (
 )
 
 
+def _remove_file(path: Path) -> None:
+    """Best-effort delete that tolerates Windows SQLite file locks (WinError 32)."""
+    if not path.is_file():
+        return
+    try:
+        path.unlink()
+        return
+    except PermissionError:
+        pass
+    except OSError:
+        pass
+    # Rename aside so a new archaeology.db can be created at the canonical path.
+    trash = path.with_name(f".{path.name}.stale-{uuid.uuid4().hex}")
+    try:
+        path.replace(trash)
+    except OSError:
+        try:
+            path.write_bytes(b"")
+        except OSError:
+            logger.debug("devarch: could not clear locked file %s", path, exc_info=True)
+        return
+    try:
+        trash.unlink()
+    except OSError:
+        # Leftover trash is harmless; next remine uses a fresh uuid name.
+        logger.debug("devarch: deferred delete of %s", trash, exc_info=True)
+
+
 def _invalidate_derived_artifacts(project_dir: Path) -> None:
     """Drop derived evidence so a failed remine cannot export a mixed generation.
 
     Preserves human-authored commit-eras.json. Generated clusters live in gap-clusters.json.
     """
     for rel in _DERIVED_REL_PATHS:
-        path = project_dir / rel
-        if path.is_file():
-            path.unlink()
-        side = Path(str(path) + ".provenance.json")
-        if side.is_file():
-            side.unlink()
+        target = project_dir / rel
+        _remove_file(target)
+        _remove_file(Path(str(target) + ".provenance.json"))
     for pattern in (
         "deliverables/analysis-*.json",
         "deliverables/analysis/analysis-*.json",
@@ -416,9 +441,8 @@ def _invalidate_derived_artifacts(project_dir: Path) -> None:
         "deliverables/reports/*",
         "deliverables/visuals/*",
     ):
-        for path in project_dir.glob(pattern):
-            if path.is_file():
-                path.unlink()
+        for target in project_dir.glob(pattern):
+            _remove_file(target)
 
 
 def _bind_mining_manifest(
