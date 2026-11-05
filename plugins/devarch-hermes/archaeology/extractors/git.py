@@ -50,7 +50,11 @@ def _git_dir(repo_path: str) -> Path:
 def incomplete_object_reason(repo_path: str) -> str | None:
     """Return an actionable error if the repo would lazy-fetch missing objects."""
     git_dir = _git_dir(repo_path)
-    promisor_packs = list((git_dir / "objects" / "pack").glob("*.promisor")) if (git_dir / "objects" / "pack").is_dir() else []
+    promisor_packs = (
+        list((git_dir / "objects" / "pack").glob("*.promisor"))
+        if (git_dir / "objects" / "pack").is_dir()
+        else []
+    )
     if promisor_packs:
         return (
             "Refusing incomplete-object / partial (promisor) clone — mining is local-only "
@@ -61,7 +65,9 @@ def incomplete_object_reason(repo_path: str) -> str | None:
     # remote.*.promisor config (exit 1 = none)
     out = _git(repo_path, "config", "--get-regexp", r"^remote\..*\.promisor$", check=False)
     # Also probe filter config
-    filt = _git(repo_path, "config", "--get", "remote.origin.partialclonefilter", check=False).strip()
+    filt = _git(
+        repo_path, "config", "--get", "remote.origin.partialclonefilter", check=False
+    ).strip()
     promisor_cfg = _git(repo_path, "config", "--get-regexp", r"\.promisor$", check=False).strip()
     if filt or promisor_cfg or out.strip():
         return (
@@ -73,7 +79,15 @@ def incomplete_object_reason(repo_path: str) -> str | None:
     count = int(_git(repo_path, "rev-list", "--all", "--count").strip() or "0")
     if count:
         probe = subprocess.run(
-            ["git", "-C", str(Path(repo_path).expanduser()), "rev-list", "--objects", "--all", "--missing=print"],
+            [
+                "git",
+                "-C",
+                str(Path(repo_path).expanduser()),
+                "rev-list",
+                "--objects",
+                "--all",
+                "--missing=print",
+            ],
             capture_output=True,
             text=True,
             encoding="utf-8",

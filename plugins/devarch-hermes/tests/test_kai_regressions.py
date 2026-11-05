@@ -12,16 +12,13 @@ from pathlib import Path
 import pytest
 
 PLUGIN_DIR = Path(__file__).resolve().parents[1]
-if str(PLUGIN_DIR) not in sys.path:
-    sys.path.insert(0, str(PLUGIN_DIR))
 
-# Isolate plugin-data under tmp paths via HERMES_HOME.
+
 @pytest.fixture
 def hermes_home(tmp_path, monkeypatch):
     home = tmp_path / "hermes-home"
     home.mkdir()
     monkeypatch.setenv("HERMES_HOME", str(home))
-    # Ensure cwd mutation would be detectable and is NOT used.
     start_cwd = os.getcwd()
     yield home
     assert os.getcwd() == start_cwd
@@ -29,45 +26,66 @@ def hermes_home(tmp_path, monkeypatch):
 
 @pytest.fixture
 def plugin(hermes_home):
-    import importlib
-
-    # Fresh module each test so module-level state is clean.
-    if "plugins.devarch_hermes_under_test" in sys.modules:
-        del sys.modules["plugins.devarch_hermes_under_test"]
-    # Load __init__.py as a top-level-ish module name
+    """Load the plugin module without permanently shadowing framework archaeology."""
     import importlib.util
 
-    spec = importlib.util.spec_from_file_location("devarch_hermes_plugin", PLUGIN_DIR / "__init__.py")
+    import archaeology
+
+    framework_file = Path(archaeology.__file__).resolve()
+    assert "plugins/devarch-hermes" not in str(framework_file).replace("\\", "/")
+
+    for key in list(sys.modules):
+        if key == "devarch_hermes_plugin" or key.startswith("devarch_hermes_plugin."):
+            del sys.modules[key]
+
+    # Avoid leftover plugin-dir path entries from importlib/path side effects.
+    plugin_resolved = PLUGIN_DIR.resolve()
+    sys.path[:] = [entry for entry in sys.path if Path(entry).resolve() != plugin_resolved]
+
+    spec = importlib.util.spec_from_file_location(
+        "devarch_hermes_plugin", PLUGIN_DIR / "__init__.py"
+    )
     mod = importlib.util.module_from_spec(spec)
     sys.modules["devarch_hermes_plugin"] = mod
+    assert spec.loader is not None
     spec.loader.exec_module(mod)
-    return mod
 
+    import archaeology as arch_after
 
-def _git(repo: Path, *args: str, env: dict | None = None) -> str:
-    result = subprocess.run(
-        ["git", "-C", str(repo), *args],
-        capture_output=True,
-        text=True,
-        check=True,
-        env=env,
-    )
-    return result.stdout
+    assert Path(arch_after.__file__).resolve() == framework_file
+    assert plugin_resolved not in Path(arch_after.__file__).resolve().parents
+
+    yield mod
+
+    sys.modules.pop("devarch_hermes_plugin", None)
+    # conftest autouse fixture also re-asserts framework archaeology after the test.
 
 
 def _init_repo(path: Path, commits: list[tuple[str, str]]) -> Path:
     """Create a repo with dated commits: list of (iso_date, message)."""
     path.mkdir(parents=True, exist_ok=True)
     env = os.environ.copy()
-    env.update({
-        "GIT_AUTHOR_NAME": "Kai Tester",
-        "GIT_AUTHOR_EMAIL": "kai@example.com",
-        "GIT_COMMITTER_NAME": "Kai Tester",
-        "GIT_COMMITTER_EMAIL": "kai@example.com",
-    })
+    env.update(
+        {
+            "GIT_AUTHOR_NAME": "Kai Tester",
+            "GIT_AUTHOR_EMAIL": "kai@example.com",
+            "GIT_COMMITTER_NAME": "Kai Tester",
+            "GIT_COMMITTER_EMAIL": "kai@example.com",
+        }
+    )
     subprocess.run(["git", "init"], cwd=path, check=True, capture_output=True)
-    subprocess.run(["git", "config", "user.email", "kai@example.com"], cwd=path, check=True, capture_output=True)
-    subprocess.run(["git", "config", "user.name", "Kai Tester"], cwd=path, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "config", "user.email", "kai@example.com"],
+        cwd=path,
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run(
+        ["git", "config", "user.name", "Kai Tester"],
+        cwd=path,
+        check=True,
+        capture_output=True,
+    )
     for idx, (date, message) in enumerate(commits):
         fname = path / f"f{idx}.txt"
         fname.write_text(f"{message}\n", encoding="utf-8")
@@ -86,29 +104,44 @@ def _init_repo(path: Path, commits: list[tuple[str, str]]) -> Path:
 
 # --- P1.1 gateway ContextVars ------------------------------------------------
 
+
 def test_gateway_reads_session_contextvars(plugin, monkeypatch, hermes_home):
     """Hermes 0.21.6 binds platform via ContextVars; slash must refuse on telegram."""
-    # Simulate gateway.session_context without requiring full Hermes install.
     import types
     from contextvars import ContextVar
 
     _plat = ContextVar("HERMES_SESSION_PLATFORM", default=object())
-    UNSET = object()
-    _plat.set(UNSET)
+    unset = object()
+    _plat.set(unset)
 
     def get_session_env(name, default=""):
         if name == "HERMES_SESSION_PLATFORM":
             val = _plat.get()
-            if val is UNSET:
+            if val is unset:
                 return os.getenv(name, default)
             return val
         return os.getenv(name, default)
 
     def session_is_messaging_surface():
-        plat = (os.getenv("HERMES_PLATFORM") or get_session_env("HERMES_SESSION_PLATFORM", "")).strip().lower()
+        plat = (
+            (os.getenv("HERMES_PLATFORM") or get_session_env("HERMES_SESSION_PLATFORM", ""))
+            .strip()
+            .lower()
+        )
         return bool(plat) and plat not in {
-            "", "api_server", "cli", "codex", "desktop", "gateway", "kanban", "local",
-            "msgraph_webhook", "tool", "tui", "webhook", "acp",
+            "",
+            "api_server",
+            "cli",
+            "codex",
+            "desktop",
+            "gateway",
+            "kanban",
+            "local",
+            "msgraph_webhook",
+            "tool",
+            "tui",
+            "webhook",
+            "acp",
         }
 
     fake = types.ModuleType("gateway")
@@ -119,7 +152,6 @@ def test_gateway_reads_session_contextvars(plugin, monkeypatch, hermes_home):
     sys.modules["gateway"] = fake
     sys.modules["gateway.session_context"] = fake_sc
 
-    # Clear env so only ContextVar matters (Kai reproduction).
     monkeypatch.delenv("HERMES_PLATFORM", raising=False)
     monkeypatch.delenv("HERMES_SESSION_PLATFORM", raising=False)
 
@@ -127,12 +159,16 @@ def test_gateway_reads_session_contextvars(plugin, monkeypatch, hermes_home):
     _plat.set("telegram")
     assert plugin._on_gateway() is True
 
-    # Slash refuses mine on gateway.
     out = plugin._slash(f"mine {hermes_home}")
-    assert "disabled on gateway" in out.lower() or "refused" in out.lower() or "disabled" in out.lower()
+    assert (
+        "disabled on gateway" in out.lower()
+        or "refused" in out.lower()
+        or "disabled" in out.lower()
+    )
 
 
-# --- P1.2 concurrent cwd -----------------------------------------------------
+# --- P1.2 concurrent cwd + stdout/stderr ------------------------------------
+
 
 def test_concurrent_calls_do_not_mutate_cwd_or_env(plugin, tmp_path, hermes_home):
     repo = _init_repo(
@@ -144,8 +180,8 @@ def test_concurrent_calls_do_not_mutate_cwd_or_env(plugin, tmp_path, hermes_home
         ],
     )
     start_cwd = os.getcwd()
-    assert "DEVARCH_WORKSPACE" not in os.environ or True
     saved_env = os.environ.get("DEVARCH_WORKSPACE")
+    real_out, real_err = sys.stdout, sys.stderr
 
     barrier = threading.Barrier(2)
     errors: list[str] = []
@@ -153,10 +189,8 @@ def test_concurrent_calls_do_not_mutate_cwd_or_env(plugin, tmp_path, hermes_home
     def worker(name: str):
         try:
             barrier.wait(timeout=5)
-            # Overlap workspace usage
             res = plugin.mine(str(repo), project=name)
             if not res.get("ok"):
-                # DB deps may be missing in some envs; cwd must still be untouched.
                 errors.append(f"{name}: mine not ok: {res.get('error')}")
             barrier.wait(timeout=30)
             if os.getcwd() != start_cwd:
@@ -164,6 +198,8 @@ def test_concurrent_calls_do_not_mutate_cwd_or_env(plugin, tmp_path, hermes_home
             now_env = os.environ.get("DEVARCH_WORKSPACE")
             if now_env != saved_env:
                 errors.append(f"{name}: DEVARCH_WORKSPACE mutated to {now_env!r}")
+            if sys.stdout is not real_out or sys.stderr is not real_err:
+                errors.append(f"{name}: stdout/stderr replaced during mine")
         except Exception as exc:  # noqa: BLE001
             errors.append(f"{name}: {type(exc).__name__}: {exc}")
 
@@ -175,12 +211,56 @@ def test_concurrent_calls_do_not_mutate_cwd_or_env(plugin, tmp_path, hermes_home
     t2.join(timeout=60)
     assert os.getcwd() == start_cwd
     assert os.environ.get("DEVARCH_WORKSPACE") == saved_env
-    # Soft-assert mine outcomes when sqlite-utils present
-    cwd_errors = [e for e in errors if "cwd" in e or "DEVARCH_WORKSPACE" in e]
+    assert sys.stdout is real_out
+    assert sys.stderr is real_err
+    cwd_errors = [e for e in errors if "cwd" in e or "DEVARCH_WORKSPACE" in e or "stdout" in e]
     assert not cwd_errors, cwd_errors
 
 
+def test_concurrent_mine_leaves_host_streams_intact(plugin, tmp_path, hermes_home, monkeypatch):
+    """Kai probe: two-thread mine must not leave sys.stdout/sys.stderr as StringIO."""
+    repo = _init_repo(
+        tmp_path / "repo",
+        [
+            ("2026-01-01T12:00:00", "one"),
+            ("2026-01-02T12:00:00", "two"),
+        ],
+    )
+    real_out, real_err = sys.stdout, sys.stderr
+    barrier = threading.Barrier(2)
+    errors: list[str] = []
+
+    def coordinating_build_db(**_kwargs):
+        barrier.wait(timeout=5)
+        # No DB file → mine returns failure, but redirects (if any) already ran.
+        return None
+
+    monkeypatch.setattr("archaeology.db.builder.build_db", coordinating_build_db)
+    import archaeology.db.builder as builder
+
+    monkeypatch.setattr(builder, "build_db", coordinating_build_db)
+
+    def worker(name: str):
+        try:
+            plugin.mine(str(repo), project=name)
+        except Exception as exc:  # noqa: BLE001
+            errors.append(f"{name}: {exc}")
+
+    t1 = threading.Thread(target=worker, args=("streamA",))
+    t2 = threading.Thread(target=worker, args=("streamB",))
+    t1.start()
+    t2.start()
+    t1.join(timeout=30)
+    t2.join(timeout=30)
+    assert not errors, errors
+    assert sys.stdout is real_out
+    assert sys.stderr is real_err
+    assert type(sys.stdout).__name__ != "StringIO"
+    assert type(sys.stderr).__name__ != "StringIO"
+
+
 # --- P1.3 evidence binding ---------------------------------------------------
+
 
 def test_mining_writes_coverage_and_enables_binding(plugin, tmp_path, hermes_home):
     pytest.importorskip("sqlite_utils")
@@ -195,15 +275,16 @@ def test_mining_writes_coverage_and_enables_binding(plugin, tmp_path, hermes_hom
     res = plugin.mine(str(repo), project="bindme")
     assert res.get("ok"), res
     project_dir = plugin._project_dir("bindme")
-    assert (project_dir / "data" / "coverage.json").is_file()
+    coverage = json.loads((project_dir / "data" / "coverage.json").read_text(encoding="utf-8"))
+    assert coverage.get("mining_status") == "complete"
+    assert coverage.get("mining_generation")
+    assert coverage.get("derived_sha256", {}).get("archaeology.db")
     config = json.loads((project_dir / "project.json").read_text(encoding="utf-8"))
     assert config.get("mined_history_manifest_required") is True
     from archaeology.provenance import requires_binding
 
     assert requires_binding(project_dir) is True
 
-    # Stale CSV must make report fail once binding is on and a bound artifact exists.
-    # First produce signals + report so a provenance sidecar exists.
     sig = plugin.signals("bindme")
     assert sig.get("ok"), sig
     rep = plugin.report("bindme")
@@ -212,10 +293,90 @@ def test_mining_writes_coverage_and_enables_binding(plugin, tmp_path, hermes_hom
     csv_path.write_text(csv_path.read_text(encoding="utf-8") + "# tampered\n", encoding="utf-8")
     stale = plugin.report("bindme")
     assert not stale.get("ok"), stale
-    assert "stale" in str(stale.get("error", "")).lower() or "binding" in str(stale.get("error", "")).lower() or "modified" in str(stale.get("error", "")).lower() or "unbound" in str(stale.get("error", "")).lower()
+    err = str(stale.get("error", "")).lower()
+    assert "stale" in err or "binding" in err or "modified" in err or "unbound" in err
+
+
+def test_failed_remine_refuses_report_with_old_derived(plugin, tmp_path, hermes_home, monkeypatch):
+    """Kai probe: 3-commit mine → failed 1-commit remine → report must refuse old metrics."""
+    pytest.importorskip("sqlite_utils")
+    three = _init_repo(
+        tmp_path / "three",
+        [
+            ("2026-01-01T12:00:00", "a"),
+            ("2026-01-02T12:00:00", "b"),
+            ("2026-02-15T12:00:00", "c after gap"),
+        ],
+    )
+    one = _init_repo(
+        tmp_path / "one",
+        [("2026-03-01T12:00:00", "solo")],
+    )
+    first = plugin.mine(str(three), project="remine")
+    assert first.get("ok"), first
+    project_dir = plugin._project_dir("remine")
+    # Build signals so report has a 31-day gap story under the first generation.
+    sig = plugin.signals("remine", min_gap_days=14)
+    assert sig.get("ok"), sig
+    ok_report = plugin.report("remine")
+    assert ok_report.get("ok"), ok_report
+    md = ok_report.get("markdown") or ""
+    assert "3" in md or "gap" in md.lower()
+
+    old_metrics = project_dir / "deliverables" / "canonical-metrics.json"
+    # Seed canonical metrics as Kai's fixture did if builder didn't write them.
+    if not old_metrics.is_file():
+        old_metrics.parent.mkdir(parents=True, exist_ok=True)
+        old_metrics.write_text(
+            json.dumps(
+                {
+                    "total_commits": 3,
+                    "span_days": 45,
+                    "active_days": 3,
+                    "mining_generation": json.loads(
+                        (project_dir / "data" / "coverage.json").read_text(encoding="utf-8")
+                    ).get("mining_generation"),
+                }
+            ),
+            encoding="utf-8",
+        )
+        # Re-export once so the report path is warm; ignore binding on this helper seed.
+        plugin.report("remine")
+
+    def boom(*_a, **_k):
+        raise RuntimeError("simulated remine db failure (sqlite-utils missing)")
+
+    monkeypatch.setattr("archaeology.db.builder.build_db", boom)
+    import archaeology.db.builder as builder
+
+    monkeypatch.setattr(builder, "build_db", boom)
+
+    remine = plugin.mine(str(one), project="remine")
+    assert remine.get("ok") is False
+    assert remine.get("status") == "failed"
+
+    coverage = json.loads((project_dir / "data" / "coverage.json").read_text(encoding="utf-8"))
+    assert coverage.get("commit_count") == 1
+    assert coverage.get("mining_status") == "incomplete"
+    # Derived DB must not remain from the prior generation.
+    assert not (project_dir / "data" / "archaeology.db").exists()
+    assert not (project_dir / "deliverables" / "canonical-metrics.json").exists()
+
+    refused = plugin.report("remine")
+    assert refused.get("ok") is False, refused
+    err = str(refused.get("error", "")).lower()
+    assert (
+        "incomplete" in err
+        or "generation" in err
+        or "remine" in err
+        or "unbound" in err
+        or "derived" in err
+        or "archaeology.db" in err
+    )
 
 
 # --- P1.4 failed stages honesty ---------------------------------------------
+
 
 def test_db_build_failure_is_not_ok_complete(plugin, tmp_path, hermes_home, monkeypatch):
     repo = _init_repo(
@@ -231,7 +392,6 @@ def test_db_build_failure_is_not_ok_complete(plugin, tmp_path, hermes_home, monk
         raise RuntimeError("simulated db failure (no such table: commits)")
 
     monkeypatch.setattr("archaeology.db.builder.build_db", boom)
-    # Force import path used inside mine
     import archaeology.db.builder as builder
 
     monkeypatch.setattr(builder, "build_db", boom)
@@ -242,20 +402,23 @@ def test_db_build_failure_is_not_ok_complete(plugin, tmp_path, hermes_home, monk
 
 
 def test_analysis_error_values_are_not_success(plugin):
-    classified = plugin._classify_analysis({
-        "sdlc-gap-finder": "ERROR: no such table: commits",
-        "ml-pattern-mapper": "ERROR: no such table: commits",
-        "agentic-workflow": "ERROR: no such table: commits",
-        "formal-terms-mapper": "ERROR: no such table: commits",
-        "source-archaeologist": "ERROR: no such table: commits",
-        "youtube-correlator": "ERROR: no such table: commits",
-    })
+    classified = plugin._classify_analysis(
+        {
+            "sdlc-gap-finder": "ERROR: no such table: commits",
+            "ml-pattern-mapper": "ERROR: no such table: commits",
+            "agentic-workflow": "ERROR: no such table: commits",
+            "formal-terms-mapper": "ERROR: no such table: commits",
+            "source-archaeologist": "ERROR: no such table: commits",
+            "youtube-correlator": "ERROR: no such table: commits",
+        }
+    )
     assert classified["ok"] is False
     assert classified["vectors_run"] == []
     assert len(classified["vector_errors"]) == 6
 
 
 # --- P2.5 report includes signals -------------------------------------------
+
 
 def test_report_includes_detected_signals_and_clusters(plugin, tmp_path, hermes_home):
     pytest.importorskip("sqlite_utils")
@@ -264,7 +427,7 @@ def test_report_includes_detected_signals_and_clusters(plugin, tmp_path, hermes_
         [
             ("2026-01-01T12:00:00", "start"),
             ("2026-01-02T12:00:00", "early"),
-            ("2026-02-15T12:00:00", "after 31-day gap"),  # >=31 day gap
+            ("2026-02-15T12:00:00", "after 31-day gap"),
         ],
     )
     mined = plugin.mine(str(repo), project="gaps")
@@ -273,22 +436,63 @@ def test_report_includes_detected_signals_and_clusters(plugin, tmp_path, hermes_
     assert sig.get("ok"), sig
     assert sig.get("signal_count", 0) >= 1
     assert sig.get("cluster_count", 0) >= 2
+    assert (plugin._project_dir("gaps") / "data" / "gap-clusters.json").is_file()
     rep = plugin.report("gaps")
     assert rep.get("ok"), rep
     md = rep.get("markdown") or ""
     assert "Detected Signals" in md or "signal" in md.lower()
     assert "Era Semantics" in md or "gap" in md.lower()
-    # Should not instruct citing nonexistent curated eras exclusively
     assert "gap" in md.lower() or "cluster" in md.lower()
 
 
+def test_signals_preserve_curated_eras(plugin, tmp_path, hermes_home):
+    """Kai probe: signals must not destroy human-authored commit-eras.json."""
+    pytest.importorskip("sqlite_utils")
+    repo = _init_repo(
+        tmp_path / "repo",
+        [
+            ("2026-01-01T12:00:00", "start"),
+            ("2026-01-02T12:00:00", "early"),
+            ("2026-02-15T12:00:00", "after gap"),
+        ],
+    )
+    mined = plugin.mine(str(repo), project="curated")
+    assert mined.get("ok"), mined
+    eras_path = plugin._project_dir("curated") / "data" / "commit-eras.json"
+    curated = {
+        "project": "curated",
+        "total_commits": 3,
+        "eras": [
+            {
+                "id": 1,
+                "name": "Curated architecture migration",
+                "dates": "2026-01-01 to 2026-02-15",
+                "commits": 3,
+                "description": "Human-authored era narrative",
+                "kind": "curated",
+            }
+        ],
+        "era_semantics": "Human-authored development eras.",
+    }
+    eras_path.write_text(json.dumps(curated, indent=2), encoding="utf-8")
+    sig = plugin.signals("curated", min_gap_days=14)
+    assert sig.get("ok"), sig
+    preserved = json.loads(eras_path.read_text(encoding="utf-8"))
+    names = [e.get("name") for e in preserved.get("eras", [])]
+    assert "Curated architecture migration" in names
+    clusters_path = plugin._project_dir("curated") / "data" / "gap-clusters.json"
+    assert clusters_path.is_file()
+    clusters = json.loads(clusters_path.read_text(encoding="utf-8"))
+    assert clusters.get("cluster_count", 0) >= 1 or clusters.get("eras")
+
+
 # --- P2.6 ledger concurrency -------------------------------------------------
+
 
 def test_parallel_ledger_hooks_keep_both_entries(plugin, hermes_home):
     barrier = threading.Barrier(2)
 
     def hook(n: int):
-        # Synchronize so both reads would race without a lock.
         barrier.wait(timeout=5)
         plugin._on_post_tool(
             "devarch_report",
@@ -309,23 +513,25 @@ def test_parallel_ledger_hooks_keep_both_entries(plugin, hermes_home):
 
 # --- P2.7 JSON truncation stays valid ----------------------------------------
 
+
 def test_output_cap_keeps_valid_json_envelope(plugin, hermes_home):
-    # Seed many projects so list exceeds MAX_OUT if naively dumped.
     ws = plugin._workspace() / "projects"
     for i in range(100):
         d = ws / f"proj-{i:03d}-{'x' * 40}"
         d.mkdir(parents=True, exist_ok=True)
         (d / "project.json").write_text(
-            json.dumps({
-                "name": d.name,
-                "description": "d" * 80,
-                "repo_url": f"file:///tmp/{d.name}",
-            }),
+            json.dumps(
+                {
+                    "name": d.name,
+                    "description": "d" * 80,
+                    "repo_url": f"file:///tmp/{d.name}",
+                }
+            ),
             encoding="utf-8",
         )
     raw = plugin._tool_list({})
     assert len(raw) <= plugin.MAX_OUT
-    payload = json.loads(raw)  # must not raise
+    payload = json.loads(raw)
     assert isinstance(payload, dict)
     assert "ok" in payload
     if payload.get("truncated"):
@@ -334,8 +540,8 @@ def test_output_cap_keeps_valid_json_envelope(plugin, hermes_home):
 
 # --- P2.8 partial clone refusal ---------------------------------------------
 
+
 def test_partial_clone_is_refused(plugin, tmp_path, hermes_home):
-    # Build a normal repo, then mark it as promisor via config + empty promisor pack marker.
     src = _init_repo(
         tmp_path / "src",
         [
@@ -344,10 +550,7 @@ def test_partial_clone_is_refused(plugin, tmp_path, hermes_home):
             ("2026-01-03T12:00:00", "three"),
         ],
     )
-    # Clone as partial (blob:none) into dest via local file:// protocol.
     dest = tmp_path / "partial"
-    # Some environments may not support partial clone filters on file://; fall back to
-    # planting promisor config + a .promisor pack marker.
     try:
         subprocess.run(
             ["git", "clone", "--filter=blob:none", f"file://{src}", str(dest)],
@@ -357,9 +560,18 @@ def test_partial_clone_is_refused(plugin, tmp_path, hermes_home):
     except subprocess.CalledProcessError:
         dest.mkdir(parents=True, exist_ok=True)
         subprocess.run(["git", "init"], cwd=dest, check=True, capture_output=True)
-        # Copy objects lightly then mark promisor
-        subprocess.run(["git", "remote", "add", "origin", str(src)], cwd=dest, check=True, capture_output=True)
-        subprocess.run(["git", "config", "remote.origin.promisor", "true"], cwd=dest, check=True, capture_output=True)
+        subprocess.run(
+            ["git", "remote", "add", "origin", str(src)],
+            cwd=dest,
+            check=True,
+            capture_output=True,
+        )
+        subprocess.run(
+            ["git", "config", "remote.origin.promisor", "true"],
+            cwd=dest,
+            check=True,
+            capture_output=True,
+        )
         subprocess.run(
             ["git", "config", "remote.origin.partialclonefilter", "blob:none"],
             cwd=dest,
@@ -370,19 +582,33 @@ def test_partial_clone_is_refused(plugin, tmp_path, hermes_home):
         pack_dir.mkdir(parents=True, exist_ok=True)
         (pack_dir / "pack-deadbeef.promisor").write_text("", encoding="utf-8")
 
-    from archaeology.extractors.git import incomplete_object_reason
-
-    reason = incomplete_object_reason(str(dest))
-    # If clone succeeded as partial, reason should be set; if we planted markers, also set.
+    reason = plugin._incomplete_object_reason(str(dest))
     assert reason, f"expected incomplete reason, got {reason!r}; dest={dest}"
     res = plugin.mine(str(dest), project="partial")
     assert res.get("ok") is False
-    assert "partial" in str(res.get("error", "")).lower() or "promisor" in str(res.get("error", "")).lower() or "incomplete" in str(res.get("error", "")).lower()
+    err = str(res.get("error", "")).lower()
+    assert "partial" in err or "promisor" in err or "incomplete" in err
 
 
-# --- lint / import hygiene smoke --------------------------------------------
+# --- import isolation --------------------------------------------------------
 
-def test_wrapper_imports_sorted_for_ruff_i001():
-    # Structural smoke: future + stdlib import block should sort redirect_stderr first.
+
+def test_plugin_load_does_not_shadow_framework_archaeology(plugin):
+    import archaeology
+
+    arch_path = Path(archaeology.__file__).resolve()
+    assert "plugins/devarch-hermes" not in str(arch_path)
+    # Visualization templates exist only on the framework package.
+    viz = arch_path.parent / "visualization"
+    assert (
+        (viz / "global-template.html").is_file()
+        or (arch_path.parent / "templates").exists()
+        or True
+    )
+    assert (viz / "multi-project-dashboard.html").is_file()
+
+
+def test_wrapper_has_no_process_global_stream_redirect():
     text = (PLUGIN_DIR / "__init__.py").read_text(encoding="utf-8")
-    assert "from contextlib import redirect_stderr, redirect_stdout" in text
+    assert "redirect_stdout" not in text
+    assert "redirect_stderr" not in text

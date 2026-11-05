@@ -18,25 +18,44 @@ workspace routing — absolute project paths only.
 from __future__ import annotations
 
 import hashlib
-import io
 import json
 import logging
 import os
 import re
 import shlex
+import subprocess
 import sys
 import tempfile
 import threading
 import time
-from contextlib import redirect_stderr, redirect_stdout
+import uuid
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-# Vendored archaeology/ lives beside this file; ensure absolute imports resolve
-# after Hermes installs only the plugin subdirectory.
+# Vendored archaeology/ lives beside this file. Prefer an already-installed
+# framework package; only expose the vendor copy when nothing else provides it
+# (Hermes plugin-only install). Never shadow the repo's root archaeology package.
 _PLUGIN_DIR = Path(__file__).resolve().parent
-if str(_PLUGIN_DIR) not in sys.path:
-    sys.path.insert(0, str(_PLUGIN_DIR))
+
+
+def _ensure_archaeology_importable() -> None:
+    vendor_root = (_PLUGIN_DIR / "archaeology").resolve()
+    try:
+        import archaeology as arch  # noqa: WPS433
+
+        arch_file = Path(getattr(arch, "__file__", "") or "").resolve()
+        if arch_file.parent == vendor_root:
+            return
+        # Framework (or another non-vendor) archaeology already wins — do not shadow.
+        return
+    except ImportError:
+        pass
+    plugin_dir = str(_PLUGIN_DIR)
+    if plugin_dir not in sys.path:
+        sys.path.insert(0, plugin_dir)
+
+
+_ensure_archaeology_importable()
 
 logger = logging.getLogger(__name__)
 
@@ -51,10 +70,23 @@ DEFAULTS: Dict[str, Any] = {
 LEDGER_MAX = 200
 MAX_OUT = 20000
 _PROJECT_RE = re.compile(r"^[a-zA-Z0-9._-]{1,100}$")
-_LOCAL_SURFACES = frozenset({
-    "", "api_server", "cli", "codex", "desktop", "gateway", "kanban", "local",
-    "msgraph_webhook", "tool", "tui", "webhook", "acp",
-})
+_LOCAL_SURFACES = frozenset(
+    {
+        "",
+        "api_server",
+        "cli",
+        "codex",
+        "desktop",
+        "gateway",
+        "kanban",
+        "local",
+        "msgraph_webhook",
+        "tool",
+        "tui",
+        "webhook",
+        "acp",
+    }
+)
 
 _ARCH_RE = re.compile(
     r"\b(?:"
@@ -71,6 +103,7 @@ _ledger_lock = threading.Lock()
 
 
 # --- config / storage -------------------------------------------------------
+
 
 def _cfg(key: str) -> Any:
     try:
@@ -117,7 +150,9 @@ def _save_json(path: Path, payload: Any) -> None:
     """Atomic write with a unique temp name (safe under concurrent callers)."""
     path.parent.mkdir(parents=True, exist_ok=True)
     fd, tmp_name = tempfile.mkstemp(
-        prefix=f".{path.name}.", suffix=".tmp", dir=str(path.parent),
+        prefix=f".{path.name}.",
+        suffix=".tmp",
+        dir=str(path.parent),
     )
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as handle:
@@ -143,21 +178,26 @@ def _on_gateway() -> bool:
         if session_is_messaging_surface():
             return True
         plat = (
-            os.environ.get("HERMES_PLATFORM")
-            or get_session_env("HERMES_SESSION_PLATFORM", "")
-            or get_session_env("HERMES_SESSION_SOURCE", "")
-            or ""
-        ).strip().lower()
+            (
+                os.environ.get("HERMES_PLATFORM")
+                or get_session_env("HERMES_SESSION_PLATFORM", "")
+                or get_session_env("HERMES_SESSION_SOURCE", "")
+                or ""
+            )
+            .strip()
+            .lower()
+        )
     except Exception:
         plat = (
-            os.environ.get("HERMES_PLATFORM")
-            or os.environ.get("HERMES_SESSION_PLATFORM")
-            or ""
-        ).strip().lower()
+            (os.environ.get("HERMES_PLATFORM") or os.environ.get("HERMES_SESSION_PLATFORM") or "")
+            .strip()
+            .lower()
+        )
     return bool(plat) and plat not in _LOCAL_SURFACES
 
 
 # --- helpers ----------------------------------------------------------------
+
 
 def _project_name(raw: Optional[str]) -> str:
     name = str(raw if raw not in (None, "") else _cfg("default_project")).strip() or "session"
@@ -209,11 +249,70 @@ def _reject_shallow(cov: Dict[str, Any]) -> Optional[str]:
     return None
 
 
+def _incomplete_object_reason(repo_path: str) -> Optional[str]:
+    """Refuse promisor/partial clones that would lazy-fetch missing blobs.
+
+    Implemented in the plugin so framework archaeology need not be shadowed just
+    to pick up the vendor-only helper during the monorepo test suite.
+    """
+    try:
+        from archaeology.extractors.git import incomplete_object_reason as vendor_fn
+
+        return vendor_fn(repo_path)
+    except ImportError:
+        pass
+
+    repo = Path(repo_path).expanduser()
+    try:
+        raw = subprocess.run(
+            ["git", "-C", str(repo), "rev-parse", "--git-dir"],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=60,
+            env={**os.environ, "GIT_NO_LAZY_FETCH": "1", "GIT_TERMINAL_PROMPT": "0"},
+        )
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        return None
+    if raw.returncode != 0:
+        return None
+    git_dir = Path(raw.stdout.strip())
+    if not git_dir.is_absolute():
+        git_dir = (repo / git_dir).resolve()
+    pack = git_dir / "objects" / "pack"
+    if pack.is_dir() and list(pack.glob("*.promisor")):
+        return (
+            "Refusing incomplete-object / partial (promisor) clone — mining is local-only "
+            "and must not fetch missing blobs. Re-clone with full objects and retry."
+        )
+    env = {**os.environ, "GIT_NO_LAZY_FETCH": "1", "GIT_TERMINAL_PROMPT": "0"}
+
+    def _cfg(*args: str) -> str:
+        r = subprocess.run(
+            ["git", "-C", str(repo), "config", *args],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=60,
+            env=env,
+        )
+        return r.stdout if r.returncode == 0 else ""
+
+    filt = _cfg("--get", "remote.origin.partialclonefilter").strip()
+    promisor_cfg = _cfg("--get-regexp", r"\.promisor$").strip()
+    if filt or promisor_cfg:
+        return (
+            "Refusing partial clone (promisor/filter configured) — mining is local-only "
+            "and must not fetch missing blobs. Re-clone without `--filter`/`--partial` and retry."
+        )
+    return None
+
+
 def _reject_incomplete(repo: Path) -> Optional[str]:
     """Refuse promisor/partial clones that would lazy-fetch missing blobs."""
-    from archaeology.extractors.git import incomplete_object_reason
-
-    return incomplete_object_reason(str(repo))
+    return _incomplete_object_reason(str(repo))
 
 
 def version() -> Dict[str, Any]:
@@ -247,16 +346,23 @@ def list_projects() -> Dict[str, Any]:
             if not project_dir.is_dir() or project_dir.name.startswith((".", "_")):
                 continue
             config = _load_json(project_dir / "project.json", {}) or {}
-            projects.append({
-                "name": project_dir.name,
-                "path": str(project_dir),
-                "has_data": (project_dir / "data").exists(),
-                "has_deliverables": (project_dir / "deliverables").exists(),
-                "has_database": (project_dir / "data" / "archaeology.db").exists(),
-                "description": config.get("description", ""),
-                "repo_url": config.get("repo_url", ""),
-            })
-    return {"ok": True, "projects": projects, "count": len(projects), "workspace": str(_workspace())}
+            projects.append(
+                {
+                    "name": project_dir.name,
+                    "path": str(project_dir),
+                    "has_data": (project_dir / "data").exists(),
+                    "has_deliverables": (project_dir / "deliverables").exists(),
+                    "has_database": (project_dir / "data" / "archaeology.db").exists(),
+                    "description": config.get("description", ""),
+                    "repo_url": config.get("repo_url", ""),
+                }
+            )
+    return {
+        "ok": True,
+        "projects": projects,
+        "count": len(projects),
+        "workspace": str(_workspace()),
+    }
 
 
 def _init_project(project: str, description: str = "", repo_url: str = "") -> Dict[str, Any]:
@@ -281,12 +387,56 @@ def _init_project(project: str, description: str = "", repo_url: str = "") -> Di
     return {"status": "created", "project": project, "path": str(project_dir)}
 
 
-def _bind_mining_manifest(project_dir: Path, repo: Path, cov: Dict[str, Any],
-                          csv_path: Path, stats_path: Path) -> Dict[str, Any]:
+_DERIVED_REL_PATHS = (
+    "data/archaeology.db",
+    "data/detected-signals.json",
+    "data/gap-clusters.json",
+    "deliverables/canonical-metrics.json",
+    "deliverables/data.json",
+)
+
+
+def _invalidate_derived_artifacts(project_dir: Path) -> None:
+    """Drop derived evidence so a failed remine cannot export a mixed generation.
+
+    Preserves human-authored commit-eras.json. Generated clusters live in gap-clusters.json.
+    """
+    for rel in _DERIVED_REL_PATHS:
+        path = project_dir / rel
+        if path.is_file():
+            path.unlink()
+        side = Path(str(path) + ".provenance.json")
+        if side.is_file():
+            side.unlink()
+    for pattern in (
+        "deliverables/analysis-*.json",
+        "deliverables/analysis/analysis-*.json",
+        "deliverables/analysis-*.json.provenance.json",
+        "deliverables/analysis/*.provenance.json",
+        "deliverables/reports/*",
+        "deliverables/visuals/*",
+    ):
+        for path in project_dir.glob(pattern):
+            if path.is_file():
+                path.unlink()
+
+
+def _bind_mining_manifest(
+    project_dir: Path,
+    repo: Path,
+    cov: Dict[str, Any],
+    csv_path: Path,
+    stats_path: Path,
+    *,
+    generation: str,
+    status: str = "incomplete",
+    derived_sha256: Optional[Dict[str, str]] = None,
+) -> Dict[str, Any]:
     """Mirror the canonical CLI: coverage.json + mined_history_manifest_required + hashes."""
     from archaeology.extractors.git import repository_coverage
 
     post = repository_coverage(str(repo))
+
     # Compare identity fields; ignore any future artifact_sha256 on either side.
     def _identity(c: Dict[str, Any]) -> Dict[str, Any]:
         return {
@@ -307,6 +457,13 @@ def _bind_mining_manifest(project_dir: Path, repo: Path, cov: Dict[str, Any],
         csv_path.name: hashlib.sha256(csv_path.read_bytes()).hexdigest(),
         stats_path.name: hashlib.sha256(stats_path.read_bytes()).hexdigest(),
     }
+    coverage["mining_generation"] = generation
+    coverage["mining_status"] = status
+    if derived_sha256 is not None:
+        coverage["derived_sha256"] = derived_sha256
+    elif "derived_sha256" in coverage:
+        # Incomplete rebuild must not keep prior derived bindings.
+        coverage.pop("derived_sha256", None)
     _save_json(project_dir / "data" / "coverage.json", coverage)
 
     config_path = project_dir / "project.json"
@@ -348,17 +505,28 @@ def mine(repo_path: str, project: Optional[str] = None) -> Dict[str, Any]:
     data_dir.mkdir(parents=True, exist_ok=True)
     csv_path = data_dir / "github-commits.csv"
     stats_path = data_dir / "github-commits-with-stats.txt"
+    generation = uuid.uuid4().hex
+    # Invalidate before writing a new coverage manifest so a failed remine cannot
+    # leave old DB/metrics/signals paired with new raw hashes.
+    _invalidate_derived_artifacts(project_dir)
     try:
         extracted = extract_git_log(str(repo), str(csv_path))
         extract_git_log_with_stats(str(repo), str(stats_path))
-        coverage = _bind_mining_manifest(project_dir, repo, cov, csv_path, stats_path)
+        coverage = _bind_mining_manifest(
+            project_dir,
+            repo,
+            cov,
+            csv_path,
+            stats_path,
+            generation=generation,
+            status="incomplete",
+        )
     except Exception as exc:
         return {"ok": False, "error": f"{type(exc).__name__}: {exc}", "coverage": cov}
 
     try:
-        sink = io.StringIO()
-        with redirect_stdout(sink), redirect_stderr(sink):
-            build_db(project_root=project_dir, verbose=False)
+        # Quiet via verbose=False only — never mutate process-wide stdout/stderr.
+        build_db(project_root=project_dir, verbose=False)
         db_path = project_dir / "data" / "archaeology.db"
         if not db_path.exists():
             return {
@@ -370,9 +538,24 @@ def mine(repo_path: str, project: Optional[str] = None) -> Dict[str, Any]:
                     "commit_count": coverage.get("commit_count"),
                     "shallow": coverage.get("shallow"),
                     "head": coverage.get("head"),
+                    "mining_status": "incomplete",
+                    "mining_generation": generation,
                 },
                 "commits_extracted": extracted,
             }
+        derived = {
+            "archaeology.db": hashlib.sha256(db_path.read_bytes()).hexdigest(),
+        }
+        coverage = _bind_mining_manifest(
+            project_dir,
+            repo,
+            cov,
+            csv_path,
+            stats_path,
+            generation=generation,
+            status="complete",
+            derived_sha256=derived,
+        )
         db_status = "complete"
     except Exception as exc:
         return {
@@ -386,6 +569,8 @@ def mine(repo_path: str, project: Optional[str] = None) -> Dict[str, Any]:
                 "commit_count": coverage.get("commit_count"),
                 "shallow": coverage.get("shallow"),
                 "head": coverage.get("head"),
+                "mining_status": "incomplete",
+                "mining_generation": generation,
             },
             "database": f"failed: {type(exc).__name__}: {exc}",
         }
@@ -401,6 +586,8 @@ def mine(repo_path: str, project: Optional[str] = None) -> Dict[str, Any]:
             "shallow": coverage.get("shallow"),
             "scope": coverage.get("scope"),
             "head": coverage.get("head"),
+            "mining_generation": generation,
+            "mining_status": "complete",
         },
         "database": db_status,
         "evidence_binding": True,
@@ -411,11 +598,11 @@ def mine(repo_path: str, project: Optional[str] = None) -> Dict[str, Any]:
     return res
 
 
-def _write_cluster_eras(project_dir: Path, project: str, detection: Dict[str, Any]) -> None:
-    """Persist gap-based clusters as commit-eras.json with honest semantics.
+def _write_gap_clusters(project_dir: Path, project: str, detection: Dict[str, Any]) -> None:
+    """Persist gap-based clusters to gap-clusters.json — never overwrite curated eras.
 
     Signal detection does not invent narrative eras. Clusters are gap-separated
-    commit groupings; the report labels them as such.
+    commit groupings stored separately from human-authored commit-eras.json.
     """
     clusters = detection.get("cluster_summary") or []
     signals = detection.get("signals") or []
@@ -425,32 +612,38 @@ def _write_cluster_eras(project_dir: Path, project: str, detection: Dict[str, An
         start = cluster.get("start_date") or "?"
         end = cluster.get("end_date") or start
         dates = start if start == end else f"{start} to {end}"
-        eras.append({
-            "id": idx,
-            "name": f"Cluster {idx}",
-            "dates": dates,
-            "commits": cluster.get("commit_count"),
-            "description": (
-                f"Gap-separated activity cluster ({cluster.get('active_days', '?')} active days; "
-                f"primary author={cluster.get('primary_author') or 'unknown'})."
-            ),
-            "narrative_arc": (
-                "Automated cluster from commit-date gaps — not a curated human era narrative."
-            ),
-            "kind": "gap_cluster",
-        })
+        eras.append(
+            {
+                "id": idx,
+                "name": f"Cluster {idx}",
+                "dates": dates,
+                "commits": cluster.get("commit_count"),
+                "description": (
+                    f"Gap-separated activity cluster ({cluster.get('active_days', '?')} active days; "
+                    f"primary author={cluster.get('primary_author') or 'unknown'})."
+                ),
+                "narrative_arc": (
+                    "Automated cluster from commit-date gaps — not a curated human era narrative."
+                ),
+                "kind": "gap_cluster",
+            }
+        )
+    coverage = _load_json(project_dir / "data" / "coverage.json", {}) or {}
+    generation = coverage.get("mining_generation")
     payload = {
         "project": project,
         "total_commits": total,
         "eras": eras,
         "era_semantics": (
             "gap_clusters: clusters are heuristic groupings separated by multi-day gaps. "
-            "They are not curated development eras. Curated eras require human narrative judgment."
+            "They are not curated development eras. Curated eras require human narrative judgment "
+            "and live in commit-eras.json (never overwritten by signals)."
         ),
         "signal_count": len(signals),
         "cluster_count": len(clusters),
+        "mining_generation": generation,
     }
-    _save_json(project_dir / "data" / "commit-eras.json", payload)
+    _save_json(project_dir / "data" / "gap-clusters.json", payload)
 
 
 def signals(project: Optional[str] = None, min_gap_days: Optional[int] = None) -> Dict[str, Any]:
@@ -469,7 +662,14 @@ def signals(project: Optional[str] = None, min_gap_days: Optional[int] = None) -
         out = detector.detect()
         out_path = project_dir / "data" / "detected-signals.json"
         detector.save(out_path, out)
-        _write_cluster_eras(project_dir, proj, out if isinstance(out, dict) else {})
+        if isinstance(out, dict):
+            coverage = _load_json(project_dir / "data" / "coverage.json", {}) or {}
+            generation = coverage.get("mining_generation")
+            if generation and "mining_generation" not in out:
+                out = dict(out)
+                out["mining_generation"] = generation
+                _save_json(out_path, out)
+        _write_gap_clusters(project_dir, proj, out if isinstance(out, dict) else {})
     except Exception as exc:
         return {"ok": False, "error": f"{type(exc).__name__}: {exc}"}
     signal_list = out.get("signals", []) if isinstance(out, dict) else (out or [])
@@ -477,22 +677,28 @@ def signals(project: Optional[str] = None, min_gap_days: Optional[int] = None) -
     summary = []
     for s in list(signal_list)[:25]:
         if isinstance(s, dict):
-            summary.append({
-                "type": s.get("type") or s.get("kind") or s.get("signal"),
-                "date": s.get("date") or s.get("when"),
-                "detail": str(s.get("description") or s.get("detail") or s.get("message") or s)[:240],
-            })
+            summary.append(
+                {
+                    "type": s.get("type") or s.get("kind") or s.get("signal"),
+                    "date": s.get("date") or s.get("when"),
+                    "detail": str(s.get("description") or s.get("detail") or s.get("message") or s)[
+                        :240
+                    ],
+                }
+            )
         else:
             summary.append({"detail": str(s)[:240]})
     cluster_summary = []
     for c in list(clusters)[:25]:
         if isinstance(c, dict):
-            cluster_summary.append({
-                "start_date": c.get("start_date"),
-                "end_date": c.get("end_date"),
-                "commit_count": c.get("commit_count"),
-                "active_days": c.get("active_days"),
-            })
+            cluster_summary.append(
+                {
+                    "start_date": c.get("start_date"),
+                    "end_date": c.get("end_date"),
+                    "commit_count": c.get("commit_count"),
+                    "active_days": c.get("active_days"),
+                }
+            )
     return {
         "ok": True,
         "status": "complete",
@@ -611,8 +817,13 @@ def pipeline(repo_path: str, project: Optional[str] = None) -> Dict[str, Any]:
         result = runner.run_all(vectors=None)
         analysis = _classify_analysis(result)
     except Exception as exc:
-        analysis = {"ok": False, "partial": False, "error": f"{type(exc).__name__}: {exc}",
-                    "vectors_run": [], "vector_errors": {}}
+        analysis = {
+            "ok": False,
+            "partial": False,
+            "error": f"{type(exc).__name__}: {exc}",
+            "vectors_run": [],
+            "vector_errors": {},
+        }
 
     rep = report(proj, fmt="markdown")
     stages_ok = bool(rep.get("ok"))
@@ -700,11 +911,15 @@ def _append_ledger(entry: Dict[str, Any]) -> None:
         _save_json(_ledger_path(), ledger[-LEDGER_MAX:])
 
 
-def _on_post_tool(tool_name: str = "", args: Optional[Dict[str, Any]] = None, result: Any = None,
-                  **_: Any) -> None:
+def _on_post_tool(
+    tool_name: str = "", args: Optional[Dict[str, Any]] = None, result: Any = None, **_: Any
+) -> None:
     try:
         if tool_name not in {
-            "devarch_mine", "devarch_signals", "devarch_report", "devarch_pipeline",
+            "devarch_mine",
+            "devarch_signals",
+            "devarch_report",
+            "devarch_pipeline",
         }:
             return None
         payload = result
@@ -721,9 +936,12 @@ def _on_post_tool(tool_name: str = "", args: Optional[Dict[str, Any]] = None, re
             "project": str((args or {}).get("project") or payload.get("project") or "")[:80],
             "repo": str((args or {}).get("repo_path") or "")[:300],
             "ok": bool(payload.get("ok")),
-            "commits": payload.get("commits_extracted") or (payload.get("mine") or {}).get("commits_extracted"),
-            "signals": payload.get("signal_count") or (payload.get("signals") or {}).get("signal_count"),
-            "output_path": payload.get("output_path") or (payload.get("report") or {}).get("output_path"),
+            "commits": payload.get("commits_extracted")
+            or (payload.get("mine") or {}).get("commits_extracted"),
+            "signals": payload.get("signal_count")
+            or (payload.get("signals") or {}).get("signal_count"),
+            "output_path": payload.get("output_path")
+            or (payload.get("report") or {}).get("output_path"),
         }
         _append_ledger(entry)
     except Exception:
@@ -962,6 +1180,7 @@ def _wrap(fn):
         except Exception as exc:
             logger.debug("devarch tool failed", exc_info=True)
             return json.dumps({"ok": False, "error": f"{type(exc).__name__}: {exc}"})
+
     return handler
 
 
@@ -1042,7 +1261,11 @@ def _slash(raw_args: str) -> str:
             if not rest:
                 return "Usage: /devarch mine <repo-path> [project]"
             res = mine(rest[0], rest[1] if len(rest) > 1 else None)
-            _on_post_tool("devarch_mine", {"repo_path": rest[0], "project": rest[1] if len(rest) > 1 else None}, res)
+            _on_post_tool(
+                "devarch_mine",
+                {"repo_path": rest[0], "project": rest[1] if len(rest) > 1 else None},
+                res,
+            )
             return _fmt(res)
         if cmd == "pipeline":
             if not rest:
@@ -1064,6 +1287,7 @@ def _slash(raw_args: str) -> str:
 
 # --- register ---------------------------------------------------------------
 
+
 def register(ctx) -> None:
     global _ctx
     _ctx = ctx
@@ -1084,8 +1308,12 @@ def register(ctx) -> None:
         (VERSION_SCHEMA, _tool_version, "ℹ️"),
     ):
         ctx.register_tool(
-            name=schema["name"], toolset="devarch", schema=schema, handler=handler,
-            description=schema["description"], emoji=emoji,
+            name=schema["name"],
+            toolset="devarch",
+            schema=schema,
+            handler=handler,
+            description=schema["description"],
+            emoji=emoji,
         )
     skills_dir = Path(__file__).parent / "skills"
     if skills_dir.is_dir():

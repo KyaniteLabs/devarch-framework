@@ -22,8 +22,8 @@ tar -C archaeology -cf - \
 
 ## Plugin-local patches (KLH-328 Kai review)
 
-Applied on top of the pinned vendor copy for the Hermes wrap:
+Applied on top of the pinned vendor copy for the Hermes wrap (kept in sync with matching framework `archaeology/` fixes where noted):
 
 - `extractors/git.py` — `GIT_NO_LAZY_FETCH=1` on all git invocations; `incomplete_object_reason()` refuses promisor/partial/missing-object repos (local-only contract).
-- `report.py` — include measured `detected-signals.json` evidence; honest era/cluster semantics; `verify_analyses(require=…)` only when analysis artifacts exist.
-- `provenance.py` — `verify_mining_inputs()` enforces coverage.json artifact_sha256 before export.
+- `report.py` — include measured `detected-signals.json` + `gap-clusters.json`; honest era/cluster semantics; curated `commit-eras.json` preserved; `verify_mining_inputs` + `verify_derived_stage`; `verify_analyses(require=…)` only when analysis artifacts exist.
+- `provenance.py` — `verify_mining_inputs()` + `verify_derived_stage()` bind raw hashes and derived DB/metrics/signals to a mining generation so a failed remine cannot export mixed evidence.
