@@ -1,0 +1,44 @@
+name: devarch
+version: "0.1.0"
+manifest_version: 2
+description: "DevArch for Hermes: git-repository archaeology — mine local commit history into a SQLite ledger, detect development signals (gaps, velocity shifts, author changes), and export an evidence-backed eras/signals markdown report before the agent touches the code. Adds pre_llm_call archaeology brief, post_tool_call report ledger, /devarch (mine/signals/report/pipeline/list/version/status/help), tools devarch_mine / devarch_signals / devarch_report / devarch_pipeline / devarch_list / devarch_version, and a bundled devarch skill. Disclosure — vendors the DevArch `archaeology` package (pinned commit b44430e198e45bfaee1edb2f3473f7d50ce17bc2 / v0.4.1) inside this plugin directory and installs PyPI deps `click`, `sqlite-utils`, `datasette` into the Hermes venv on `hermes plugins install` / `validate --install-deps` (needs git + Python >=3.10); mining is local-only (reads the git repo you name via the git CLI, no network fetch); rejects shallow clones; analysis vectors are keyword investigation leads, not verified conclusions; project DBs, signals, reports and the ledger live under <HERMES_HOME>/plugin-data/devarch/; no telemetry; slash mine/pipeline/report refused on gateway platforms unless opted in."
+author: "Kyanite Labs"
+license: Apache-2.0
+homepage: https://github.com/KyaniteLabs/devarch-framework/tree/main/plugins/devarch-hermes
+tags: [git, archaeology, history, signals, eras, local-first, report]
+requires_hermes: ">=0.21.6"
+requires_env: []
+pip_dependencies:
+  - "click>=8.1"
+  - "sqlite-utils>=3.0"
+  - "datasette>=0.64.0"
+provides_tools:
+  - devarch_mine
+  - devarch_signals
+  - devarch_report
+  - devarch_pipeline
+  - devarch_list
+  - devarch_version
+provides_hooks:
+  - pre_llm_call
+  - post_tool_call
+hooks:
+  - pre_llm_call
+  - post_tool_call
+config_schema:
+  inject_on_archaeology:
+    type: bool
+    default: true
+    description: "When true, pre_llm_call injects an archaeology brief if the message asks about repo history / evolution / eras."
+  allow_repo_slash_on_gateway:
+    type: bool
+    default: false
+    description: "When false, /devarch mine|pipeline|report are refused on gateway platforms (local filesystem + git access)."
+  max_commits_warn:
+    type: int
+    default: 5000
+    description: "Soft warning threshold; mining still runs, but the response notes when local commit count exceeds this."
+  default_project:
+    type: str
+    default: "session"
+    description: "Default DevArch project name when the caller omits project."
