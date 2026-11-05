@@ -1,11 +1,24 @@
 """Git log extraction for archaeology pipeline."""
 
 import csv
+import os
 import subprocess
 from pathlib import Path
 
+# Never allow promisor/partial clones to pull missing blobs during mining.
+_LOCAL_GIT_ENV = {
+    "GIT_NO_LAZY_FETCH": "1",
+    "GIT_TERMINAL_PROMPT": "0",
+}
 
-def _git(repo_path: str, *args: str) -> str:
+
+def _git_env() -> dict:
+    env = os.environ.copy()
+    env.update(_LOCAL_GIT_ENV)
+    return env
+
+
+def _git(repo_path: str, *args: str, check: bool = True) -> str:
     """Read Git metadata without invoking a shell or repository hooks."""
     try:
         result = subprocess.run(
@@ -15,14 +28,68 @@ def _git(repo_path: str, *args: str) -> str:
             encoding="utf-8",
             errors="replace",
             timeout=300,
+            env=_git_env(),
         )
     except FileNotFoundError as exc:
         raise RuntimeError("git binary not found. Install git and ensure it's on PATH.") from exc
     except subprocess.TimeoutExpired as exc:
         raise RuntimeError("git read timed out after 300s") from exc
-    if result.returncode:
+    if check and result.returncode:
         raise RuntimeError(f"git {args[0]} failed: {result.stderr.strip()}")
     return result.stdout
+
+
+def _git_dir(repo_path: str) -> Path:
+    raw = _git(repo_path, "rev-parse", "--git-dir").strip()
+    p = Path(raw)
+    if not p.is_absolute():
+        p = Path(repo_path).expanduser().resolve() / p
+    return p.resolve()
+
+
+def incomplete_object_reason(repo_path: str) -> str | None:
+    """Return an actionable error if the repo would lazy-fetch missing objects."""
+    git_dir = _git_dir(repo_path)
+    promisor_packs = list((git_dir / "objects" / "pack").glob("*.promisor")) if (git_dir / "objects" / "pack").is_dir() else []
+    if promisor_packs:
+        return (
+            "Refusing incomplete-object / partial (promisor) clone — mining is local-only "
+            "and must not fetch missing blobs. Re-clone with full objects "
+            "(`git clone --no-partial` / omit `--filter`) or run "
+            "`git fetch --refetch` / `git sparse-checkout disable` as appropriate, then retry."
+        )
+    # remote.*.promisor config (exit 1 = none)
+    out = _git(repo_path, "config", "--get-regexp", r"^remote\..*\.promisor$", check=False)
+    # Also probe filter config
+    filt = _git(repo_path, "config", "--get", "remote.origin.partialclonefilter", check=False).strip()
+    promisor_cfg = _git(repo_path, "config", "--get-regexp", r"\.promisor$", check=False).strip()
+    if filt or promisor_cfg or out.strip():
+        return (
+            "Refusing partial clone (promisor/filter configured) — mining is local-only "
+            "and must not fetch missing blobs. Re-clone without `--filter`/`--partial` and retry."
+        )
+    # With GIT_NO_LAZY_FETCH=1, missing blobs make shortstat fail rather than fetch.
+    # Probe HEAD tree readability when commits exist.
+    count = int(_git(repo_path, "rev-list", "--all", "--count").strip() or "0")
+    if count:
+        probe = subprocess.run(
+            ["git", "-C", str(Path(repo_path).expanduser()), "rev-list", "--objects", "--all", "--missing=print"],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=120,
+            env=_git_env(),
+        )
+        if probe.returncode == 0:
+            missing = [ln for ln in probe.stdout.splitlines() if ln.startswith("?")]
+            if missing:
+                return (
+                    f"Refusing incomplete-object repository ({len(missing)} missing object(s)). "
+                    "Mining is local-only and will not fetch. Restore full objects and retry."
+                )
+        # Some git versions lack --missing=print; fall through.
+    return None
 
 
 def repository_coverage(repo_path: str) -> dict:
@@ -56,6 +123,10 @@ def extract_git_log(repo_path: str, output_path: str, verbose: bool = False) -> 
 
     from ..utils import atomic_write
 
+    reason = incomplete_object_reason(repo_path)
+    if reason:
+        raise RuntimeError(reason)
+
     raw = _git(repo_path, "log", "-z", "--all", "--format=%H%x00%aI%x00%s%x00%an")
     fields = raw.split("\0")
     if fields[-1] == "":
@@ -82,11 +153,21 @@ def extract_git_log(repo_path: str, output_path: str, verbose: bool = False) -> 
 
 
 def extract_git_log_with_stats(repo_path: str, output_path: str, verbose: bool = False) -> int:
-    """Extract git log with file change stats."""
+    """Extract git log with file change stats (local-only; no lazy fetch)."""
+    reason = incomplete_object_reason(repo_path)
+    if reason:
+        raise RuntimeError(reason)
+
     cmd = ["git", "-C", repo_path, "log", "--format=%H%x1f%ai%x1f%s%x1f%an", "--shortstat", "--all"]
     try:
         result = subprocess.run(
-            cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=300
+            cmd,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=300,
+            env=_git_env(),
         )
     except FileNotFoundError:
         raise RuntimeError("git binary not found. Install git and ensure it's on PATH.")
@@ -94,7 +175,14 @@ def extract_git_log_with_stats(repo_path: str, output_path: str, verbose: bool =
         raise RuntimeError("git log timed out after 300s. Repository may be too large.")
 
     if result.returncode != 0:
-        raise RuntimeError(f"git log failed: {result.stderr}")
+        err = (result.stderr or "").strip()
+        if "promisor" in err.lower() or "lazy" in err.lower() or "missing" in err.lower():
+            raise RuntimeError(
+                "git log --shortstat failed because objects are missing; "
+                "refusing to fetch. Restore a complete local clone and retry. "
+                f"Detail: {err}"
+            )
+        raise RuntimeError(f"git log failed: {err}")
 
     Path(output_path).parent.mkdir(parents=True, exist_ok=True)
     with open(output_path, "w", encoding="utf-8") as f:
@@ -115,6 +203,7 @@ def get_repo_list(repo_path: str) -> list[str]:
             text=True,
             cwd=repo_path,
             timeout=60,
+            env=_git_env(),
         )
     except FileNotFoundError:
         raise RuntimeError("gh CLI not found. Install GitHub CLI and ensure it's on PATH.")

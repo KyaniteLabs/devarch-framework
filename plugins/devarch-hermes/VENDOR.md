@@ -19,3 +19,11 @@ tar -C archaeology -cf - \
   --exclude='visualization/multi-project-dashboard.html' \
   . | tar -C plugins/devarch-hermes/archaeology -xf -
 ```
+
+## Plugin-local patches (KLH-328 Kai review)
+
+Applied on top of the pinned vendor copy for the Hermes wrap:
+
+- `extractors/git.py` — `GIT_NO_LAZY_FETCH=1` on all git invocations; `incomplete_object_reason()` refuses promisor/partial/missing-object repos (local-only contract).
+- `report.py` — include measured `detected-signals.json` evidence; honest era/cluster semantics; `verify_analyses(require=…)` only when analysis artifacts exist.
+- `provenance.py` — `verify_mining_inputs()` enforces coverage.json artifact_sha256 before export.

@@ -91,3 +91,27 @@ def verify_artifact(project, artifact):
         current = {str(p.relative_to(project)): digest(p) for p in analysis_paths(project)}
         if binding["analysis"] != current:
             raise ValueError(f"Stale analysis inputs for artifact: {artifact.name}; re-export")
+
+def verify_mining_inputs(project):
+    """Fail when mined CSV/stats no longer match coverage.json artifact hashes."""
+    project = Path(project)
+    if not requires_binding(project):
+        return
+    coverage_path = project / "data" / "coverage.json"
+    if not coverage_path.is_file():
+        raise ValueError("Missing data/coverage.json for bound mining project")
+    try:
+        coverage = json.loads(coverage_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        raise ValueError("Invalid data/coverage.json") from exc
+    hashes = coverage.get("artifact_sha256") if isinstance(coverage, dict) else None
+    if not isinstance(hashes, dict) or not hashes:
+        raise ValueError("Mining coverage missing artifact_sha256 bindings")
+    for name, expected in hashes.items():
+        path = project / "data" / name
+        actual = digest(path)
+        if actual != expected:
+            raise ValueError(
+                f"Stale or modified mining artifact: {name}; remine before export"
+            )
+
