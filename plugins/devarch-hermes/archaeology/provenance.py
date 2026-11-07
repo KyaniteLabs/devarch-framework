@@ -168,6 +168,7 @@ def verify_derived_stage(project):
         "deliverables/canonical-metrics.json",
         "data/detected-signals.json",
         "data/gap-clusters.json",
+        "deliverables/data.json",
     ):
         path = project / rel
         if not path.is_file():
@@ -176,10 +177,27 @@ def verify_derived_stage(project):
             payload = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, ValueError) as exc:
             raise ValueError(f"Invalid derived artifact: {rel}") from exc
-        if isinstance(payload, dict):
-            marked = payload.get("mining_generation")
-            if marked is not None and marked != generation:
-                raise ValueError(
-                    f"Derived artifact {rel} belongs to a different mining generation; "
-                    "rebuild signals/metrics before export"
-                )
+        if not isinstance(payload, dict) or payload.get("mining_generation") != generation:
+            raise ValueError(f"Unbound derived artifact: {rel}; rebuild signals/metrics")
+        sidecar = path.with_name(path.name + ".generation.json")
+        try:
+            binding = json.loads(sidecar.read_text(encoding="utf-8"))
+        except (OSError, ValueError) as exc:
+            raise ValueError(f"Missing derived content binding: {rel}") from exc
+        if binding != {"mining_generation": generation, "sha256": digest(path)}:
+            raise ValueError(f"Modified derived artifact: {rel}; rebuild signals/metrics")
+
+
+def bind_derived_artifact(project, artifact):
+    project, artifact = Path(project), Path(artifact)
+    coverage_path = project / "data" / "coverage.json"
+    if not coverage_path.is_file():
+        return
+    generation = _load_coverage(project).get("mining_generation")
+    if not generation:
+        return
+    payload = json.loads(artifact.read_text(encoding="utf-8"))
+    payload["mining_generation"] = generation
+    atomic_write(artifact, json.dumps(payload, indent=2))
+    binding = {"mining_generation": generation, "sha256": digest(artifact)}
+    atomic_write(str(artifact) + ".generation.json", json.dumps(binding, indent=2))

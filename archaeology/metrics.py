@@ -34,6 +34,10 @@ def write_metrics(project_root: Path, db_path: Path) -> dict:
             indent=2,
         ),
     )
+    from .provenance import bind_derived_artifact
+
+    bind_derived_artifact(project_root, project_root / "deliverables" / "canonical-metrics.json")
+    bind_derived_artifact(project_root, project_root / "deliverables" / "data.json")
     return metrics
 
 

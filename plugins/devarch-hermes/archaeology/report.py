@@ -8,7 +8,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from archaeology.visualization.design_system import (
+from .visualization.design_system import (
     THEME_SWITCHER_HTML,
     body_end_bundle,
     head_bundle,
@@ -91,6 +91,20 @@ def export_markdown_report(
 
     out.append(
         "Automated vectors are commit-keyword investigation leads, not verified source findings, causal explanations, session measurements or implementation-quality scores. Missing evidence is not absence.\n\n"
+    )
+    coverage = _load_json(data_dir / "coverage.json") or {}
+    out.append("## Local History Coverage\n\n")
+    out.append(f"Scope: {coverage.get('scope', 'not recorded')}\n\n")
+    out.append(
+        f"Sampled history: {coverage.get('sampled', False)}; extracted "
+        f"{coverage.get('extracted_count', coverage.get('commit_count', 'unknown'))} of "
+        f"{coverage.get('commit_count', 'unknown')} locally reachable commits; "
+        f"cap={coverage.get('max_commits', 'none')}. "
+        "Metrics, signals and clusters describe only this extraction, not all history.\n\n"
+    )
+    out.append(
+        f"Local refs recorded: {len(coverage.get('refs', []))}. "
+        "Deleted/inaccessible/unfetched refs are outside coverage; no remote fetch.\n\n"
     )
     out.append("## Canonical Metrics\n\n")
     metric_rows = [

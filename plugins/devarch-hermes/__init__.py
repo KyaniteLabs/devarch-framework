@@ -32,30 +32,33 @@ import uuid
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-# Vendored archaeology/ lives beside this file. Prefer an already-installed
-# framework package; only expose the vendor copy when nothing else provides it
-# (Hermes plugin-only install). Never shadow the repo's root archaeology package.
+# Load only our patched vendor, without replacing an installed archaeology package.
 _PLUGIN_DIR = Path(__file__).resolve().parent
 
 
-def _ensure_archaeology_importable() -> None:
-    vendor_root = (_PLUGIN_DIR / "archaeology").resolve()
-    try:
-        import archaeology as arch  # noqa: WPS433
+def _load_vendor() -> None:
+    import importlib.util
 
-        arch_file = Path(getattr(arch, "__file__", "") or "").resolve()
-        if arch_file.parent == vendor_root:
-            return
-        # Framework (or another non-vendor) archaeology already wins — do not shadow.
+    name = "_devarch_vendor"
+    root = _PLUGIN_DIR / "archaeology"
+    existing = sys.modules.get(name)
+    if existing is not None:
+        if Path(existing.__file__).resolve() != (root / "__init__.py").resolve():
+            raise ImportError("DevArch vendor namespace belongs to another installation")
         return
-    except ImportError:
-        pass
-    plugin_dir = str(_PLUGIN_DIR)
-    if plugin_dir not in sys.path:
-        sys.path.insert(0, plugin_dir)
+    spec = importlib.util.spec_from_file_location(
+        name, root / "__init__.py", submodule_search_locations=[str(root)]
+    )
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[name] = module
+    try:
+        spec.loader.exec_module(module)
+    except BaseException:
+        sys.modules.pop(name, None)
+        raise
 
 
-_ensure_archaeology_importable()
+_load_vendor()
 
 logger = logging.getLogger(__name__)
 
@@ -65,6 +68,7 @@ DEFAULTS: Dict[str, Any] = {
     "inject_on_archaeology": True,
     "allow_repo_slash_on_gateway": False,
     "max_commits_warn": 5000,
+    "max_commits": 500,
     "default_project": "session",
 }
 LEDGER_MAX = 200
@@ -100,6 +104,56 @@ _ARCH_RE = re.compile(
 
 _ctx = None
 _ledger_lock = threading.Lock()
+_project_locks = {}
+_project_locks_guard = threading.Lock()
+_transaction_state = threading.local()
+
+
+def _project_transaction(function):
+    from functools import wraps
+    from inspect import signature
+
+    call_signature = signature(function)
+
+    @wraps(function)
+    def serialized(*args, **kwargs):
+        arguments = call_signature.bind(*args, **kwargs)
+        project = _project_name(arguments.arguments.get("project"))
+        key = str(_project_dir(project))
+        with _project_locks_guard:
+            lock = _project_locks.setdefault(key, threading.RLock())
+        with lock:
+            active = getattr(_transaction_state, "active", set())
+            if key in active:
+                return function(*args, **kwargs)
+            # Keep lock files outside mutable project generations. OS locks also
+            # serialize independent Hermes processes sharing a profile data dir.
+            lock_dir = _workspace() / ".locks"
+            lock_dir.mkdir(exist_ok=True)
+            with (lock_dir / f"{project}.lock").open("a+b") as handle:
+                if os.name == "nt":
+                    import msvcrt
+
+                    handle.write(b"\0")
+                    handle.flush()
+                    handle.seek(0)
+                    msvcrt.locking(handle.fileno(), msvcrt.LK_LOCK, 1)
+                else:
+                    import fcntl
+
+                    fcntl.flock(handle, fcntl.LOCK_EX)
+                _transaction_state.active = active | {key}
+                try:
+                    return function(*args, **kwargs)
+                finally:
+                    _transaction_state.active = active
+                    if os.name == "nt":
+                        handle.seek(0)
+                        msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
+                    else:
+                        fcntl.flock(handle, fcntl.LOCK_UN)
+
+    return serialized
 
 
 # --- config / storage -------------------------------------------------------
@@ -173,10 +227,8 @@ def _on_gateway() -> bool:
     os.environ. Prefer gateway.session_context helpers; fall back to env.
     """
     try:
-        from gateway.session_context import get_session_env, session_is_messaging_surface
+        from gateway.session_context import get_session_env
 
-        if session_is_messaging_surface():
-            return True
         plat = (
             (
                 os.environ.get("HERMES_PLATFORM")
@@ -235,7 +287,7 @@ def _resolve_repo(repo_path: str) -> Path:
 
 
 def _coverage(repo: Path) -> Dict[str, Any]:
-    from archaeology.extractors.git import repository_coverage
+    from _devarch_vendor.extractors.git import repository_coverage
 
     return repository_coverage(str(repo))
 
@@ -256,7 +308,7 @@ def _incomplete_object_reason(repo_path: str) -> Optional[str]:
     to pick up the vendor-only helper during the monorepo test suite.
     """
     try:
-        from archaeology.extractors.git import incomplete_object_reason as vendor_fn
+        from _devarch_vendor.extractors.git import incomplete_object_reason as vendor_fn
 
         return vendor_fn(repo_path)
     except ImportError:
@@ -317,7 +369,7 @@ def _reject_incomplete(repo: Path) -> Optional[str]:
 
 def version() -> Dict[str, Any]:
     try:
-        from archaeology import __version__ as ver
+        from _devarch_vendor import __version__ as ver
     except Exception as exc:
         return {
             "ok": False,
@@ -457,7 +509,7 @@ def _bind_mining_manifest(
     derived_sha256: Optional[Dict[str, str]] = None,
 ) -> Dict[str, Any]:
     """Mirror the canonical CLI: coverage.json + mined_history_manifest_required + hashes."""
-    from archaeology.extractors.git import repository_coverage
+    from _devarch_vendor.extractors.git import repository_coverage
 
     post = repository_coverage(str(repo))
 
@@ -498,11 +550,18 @@ def _bind_mining_manifest(
     return coverage
 
 
+@_project_transaction
 def mine(repo_path: str, project: Optional[str] = None) -> Dict[str, Any]:
     """Mine local git history into a DevArch project under plugin-data."""
     proj = _project_name(project)
     repo = _resolve_repo(repo_path)
     cov = _coverage(repo)
+    cap = int(_cfg("max_commits"))
+    if cap < 1:
+        return {"ok": False, "error": "max_commits must be a positive integer"}
+    cov["max_commits"] = cap
+    cov["extracted_count"] = min(int(cov.get("commit_count") or 0), cap)
+    cov["sampled"] = int(cov.get("commit_count") or 0) > cap
     shallow_err = _reject_shallow(cov)
     if shallow_err:
         return {"ok": False, "error": shallow_err, "coverage": cov}
@@ -521,8 +580,8 @@ def mine(repo_path: str, project: Optional[str] = None) -> Dict[str, Any]:
 
     _init_project(proj, description=f"Hermes archaeology of {repo}", repo_url=str(repo))
 
-    from archaeology.db.builder import build_db
-    from archaeology.extractors.git import extract_git_log, extract_git_log_with_stats
+    from _devarch_vendor.db.builder import build_db
+    from _devarch_vendor.extractors.git import extract_git_log, extract_git_log_with_stats
 
     project_dir = _project_dir(proj)
     data_dir = project_dir / "data"
@@ -534,8 +593,8 @@ def mine(repo_path: str, project: Optional[str] = None) -> Dict[str, Any]:
     # leave old DB/metrics/signals paired with new raw hashes.
     _invalidate_derived_artifacts(project_dir)
     try:
-        extracted = extract_git_log(str(repo), str(csv_path))
-        extract_git_log_with_stats(str(repo), str(stats_path))
+        extracted = extract_git_log(str(repo), str(csv_path), max_commits=cap)
+        extract_git_log_with_stats(str(repo), str(stats_path), max_commits=cap)
         coverage = _bind_mining_manifest(
             project_dir,
             repo,
@@ -606,6 +665,9 @@ def mine(repo_path: str, project: Optional[str] = None) -> Dict[str, Any]:
         "repo": str(repo),
         "commits_extracted": extracted,
         "coverage": {
+            "extracted_count": extracted,
+            "sampled": cov["sampled"],
+            "max_commits": cap,
             "commit_count": coverage.get("commit_count"),
             "shallow": coverage.get("shallow"),
             "scope": coverage.get("scope"),
@@ -670,9 +732,10 @@ def _write_gap_clusters(project_dir: Path, project: str, detection: Dict[str, An
     _save_json(project_dir / "data" / "gap-clusters.json", payload)
 
 
+@_project_transaction
 def signals(project: Optional[str] = None, min_gap_days: Optional[int] = None) -> Dict[str, Any]:
     proj = _project_name(project)
-    from archaeology.classifiers.era_detector import SignalDetector
+    from _devarch_vendor.classifiers.era_detector import SignalDetector
 
     project_dir = _project_dir(proj)
     db_path = project_dir / "data" / "archaeology.db"
@@ -682,6 +745,14 @@ def signals(project: Optional[str] = None, min_gap_days: Optional[int] = None) -
     if min_gap_days is not None:
         config["min_gap_days"] = int(min_gap_days)
     try:
+        from _devarch_vendor.provenance import (
+            bind_derived_artifact,
+            verify_derived_stage,
+            verify_mining_inputs,
+        )
+
+        verify_mining_inputs(project_dir)
+        verify_derived_stage(project_dir)
         detector = SignalDetector(db_path, config=config or None)
         out = detector.detect()
         out_path = project_dir / "data" / "detected-signals.json"
@@ -694,6 +765,8 @@ def signals(project: Optional[str] = None, min_gap_days: Optional[int] = None) -
                 out["mining_generation"] = generation
                 _save_json(out_path, out)
         _write_gap_clusters(project_dir, proj, out if isinstance(out, dict) else {})
+        bind_derived_artifact(project_dir, out_path)
+        bind_derived_artifact(project_dir, project_dir / "data" / "gap-clusters.json")
     except Exception as exc:
         return {"ok": False, "error": f"{type(exc).__name__}: {exc}"}
     signal_list = out.get("signals", []) if isinstance(out, dict) else (out or [])
@@ -740,6 +813,7 @@ def signals(project: Optional[str] = None, min_gap_days: Optional[int] = None) -
     }
 
 
+@_project_transaction
 def report(project: Optional[str] = None, fmt: str = "markdown") -> Dict[str, Any]:
     """Export a markdown (default) or html report; return a truncated body for the session."""
     proj = _project_name(project)
@@ -749,7 +823,7 @@ def report(project: Optional[str] = None, fmt: str = "markdown") -> Dict[str, An
     if fmt == "md":
         fmt = "markdown"
 
-    from archaeology.report import _markdown_to_html, export_markdown_report
+    from _devarch_vendor.report import _markdown_to_html, export_markdown_report
 
     project_dir = _project_dir(proj)
     if not project_dir.exists():
@@ -822,6 +896,7 @@ def _classify_analysis(result: Any) -> Dict[str, Any]:
     }
 
 
+@_project_transaction
 def pipeline(repo_path: str, project: Optional[str] = None) -> Dict[str, Any]:
     """mine → signals → markdown report (analyze vectors optional / best-effort)."""
     proj = _project_name(project)
@@ -834,7 +909,7 @@ def pipeline(repo_path: str, project: Optional[str] = None) -> Dict[str, Any]:
 
     analysis: Dict[str, Any]
     try:
-        from archaeology.analysis_runner import AnalysisRunner
+        from _devarch_vendor.analysis_runner import AnalysisRunner
 
         project_dir = _project_dir(proj)
         runner = AnalysisRunner(proj, str(project_dir), verbose=False)
@@ -1222,7 +1297,7 @@ _SAFE_SLASH = {"mine", "signals", "report", "pipeline", "list", "version", "stat
 _REPO_SLASH = {"mine", "pipeline", "report"}  # touch local FS / produce artifacts
 _HELP = (
     "/devarch — git repository archaeology (local-only)\n"
-    "  /devarch mine <repo-path> [project]     Mine full history (rejects shallow/promisor)\n"
+    "  /devarch mine <repo-path> [project]     Mine capped local history (rejects shallow/promisor)\n"
     "  /devarch signals [project]              Detect development signals (leads)\n"
     "  /devarch report [project] [markdown|html]\n"
     "  /devarch pipeline <repo-path> [project] Mine → signals → report\n"

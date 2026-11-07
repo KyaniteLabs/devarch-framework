@@ -9,9 +9,9 @@ tags: [git, archaeology, history, signals, eras, local-first, report]
 requires_hermes: ">=0.21.6"
 requires_env: []
 pip_dependencies:
-  - "click>=8.1"
-  - "sqlite-utils>=3.0"
-  - "datasette>=0.64.0"
+  - "click==8.1.8"
+  - "sqlite-utils==3.38"
+  - "datasette==0.65.5"
 provides_tools:
   - devarch_mine
   - devarch_signals
@@ -26,6 +26,10 @@ hooks:
   - pre_llm_call
   - post_tool_call
 config_schema:
+  max_commits:
+    type: int
+    default: 500
+    description: "Hard extraction cap across local refs; reports explicitly label sampled history. Must be positive."
   inject_on_archaeology:
     type: bool
     default: true

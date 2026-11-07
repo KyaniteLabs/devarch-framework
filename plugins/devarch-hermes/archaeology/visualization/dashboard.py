@@ -12,7 +12,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from archaeology.visualization.design_system import (
+from .design_system import (
     THEME_SWITCHER_HTML,
     body_end_bundle,
     head_bundle,

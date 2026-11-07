@@ -235,8 +235,8 @@ def test_concurrent_mine_leaves_host_streams_intact(plugin, tmp_path, hermes_hom
         # No DB file → mine returns failure, but redirects (if any) already ran.
         return None
 
-    monkeypatch.setattr("archaeology.db.builder.build_db", coordinating_build_db)
-    import archaeology.db.builder as builder
+    monkeypatch.setattr("_devarch_vendor.db.builder.build_db", coordinating_build_db)
+    import _devarch_vendor.db.builder as builder
 
     monkeypatch.setattr(builder, "build_db", coordinating_build_db)
 
@@ -346,8 +346,8 @@ def test_failed_remine_refuses_report_with_old_derived(plugin, tmp_path, hermes_
     def boom(*_a, **_k):
         raise RuntimeError("simulated remine db failure (sqlite-utils missing)")
 
-    monkeypatch.setattr("archaeology.db.builder.build_db", boom)
-    import archaeology.db.builder as builder
+    monkeypatch.setattr("_devarch_vendor.db.builder.build_db", boom)
+    import _devarch_vendor.db.builder as builder
 
     monkeypatch.setattr(builder, "build_db", boom)
 
@@ -395,8 +395,8 @@ def test_db_build_failure_is_not_ok_complete(plugin, tmp_path, hermes_home, monk
     def boom(*_a, **_k):
         raise RuntimeError("simulated db failure (no such table: commits)")
 
-    monkeypatch.setattr("archaeology.db.builder.build_db", boom)
-    import archaeology.db.builder as builder
+    monkeypatch.setattr("_devarch_vendor.db.builder.build_db", boom)
+    import _devarch_vendor.db.builder as builder
 
     monkeypatch.setattr(builder, "build_db", boom)
     res = plugin.mine(str(repo), project="faildb")

@@ -9,6 +9,8 @@ from pathlib import Path
 _LOCAL_GIT_ENV = {
     "GIT_NO_LAZY_FETCH": "1",
     "GIT_TERMINAL_PROMPT": "0",
+    "GIT_ALLOW_PROTOCOL": "",
+    "GIT_OPTIONAL_LOCKS": "0",
 }
 
 
@@ -125,7 +127,9 @@ def repository_coverage(repo_path: str) -> dict:
     }
 
 
-def extract_git_log(repo_path: str, output_path: str, verbose: bool = False) -> int:
+def extract_git_log(
+    repo_path: str, output_path: str, verbose: bool = False, max_commits: int = 0
+) -> int:
     """Extract every reachable commit, with NUL-delimited fields and UTC dates.
 
     Subjects can contain tabs, pipes and unit separators. Git NUL delimiters
@@ -141,7 +145,8 @@ def extract_git_log(repo_path: str, output_path: str, verbose: bool = False) -> 
     if reason:
         raise RuntimeError(reason)
 
-    raw = _git(repo_path, "log", "-z", "--all", "--format=%H%x00%aI%x00%s%x00%an")
+    limit = [f"--max-count={max_commits}"] if max_commits > 0 else []
+    raw = _git(repo_path, "log", "-z", "--all", *limit, "--format=%H%x00%aI%x00%s%x00%an")
     fields = raw.split("\0")
     if fields[-1] == "":
         fields.pop()
@@ -157,7 +162,7 @@ def extract_git_log(repo_path: str, output_path: str, verbose: bool = False) -> 
         )
         writer.writerow([sha, normalized, subject, author])
     count = len(fields) // 4
-    expected = int(_git(repo_path, "rev-list", "--all", "--count").strip())
+    expected = int(_git(repo_path, "rev-list", "--all", *limit, "--count").strip())
     if count != expected:
         raise RuntimeError("Repository changed during extraction; retry against frozen refs")
     atomic_write(output_path, stream.getvalue())
@@ -166,13 +171,25 @@ def extract_git_log(repo_path: str, output_path: str, verbose: bool = False) -> 
     return count
 
 
-def extract_git_log_with_stats(repo_path: str, output_path: str, verbose: bool = False) -> int:
+def extract_git_log_with_stats(
+    repo_path: str, output_path: str, verbose: bool = False, max_commits: int = 0
+) -> int:
     """Extract git log with file change stats (local-only; no lazy fetch)."""
     reason = incomplete_object_reason(repo_path)
     if reason:
         raise RuntimeError(reason)
 
-    cmd = ["git", "-C", repo_path, "log", "--format=%H%x1f%ai%x1f%s%x1f%an", "--shortstat", "--all"]
+    limit = [f"--max-count={max_commits}"] if max_commits > 0 else []
+    cmd = [
+        "git",
+        "-C",
+        repo_path,
+        "log",
+        "--format=%H%x1f%ai%x1f%s%x1f%an",
+        "--shortstat",
+        "--all",
+        *limit,
+    ]
     try:
         result = subprocess.run(
             cmd,
@@ -204,7 +221,7 @@ def extract_git_log_with_stats(repo_path: str, output_path: str, verbose: bool =
 
     if verbose:
         print(f"Extracted git log with stats from {repo_path}")
-    return int(_git(repo_path, "rev-list", "--all", "--count").strip())
+    return int(_git(repo_path, "rev-list", "--all", *limit, "--count").strip())
 
 
 def get_repo_list(repo_path: str) -> list[str]:

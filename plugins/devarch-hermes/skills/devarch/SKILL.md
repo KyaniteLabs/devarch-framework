@@ -16,7 +16,7 @@ Three laws:
 ## Workflow
 1. Confirm a local git path (worktree with `.git`, or bare repo).
 2. Prefer `devarch_pipeline` with `repo_path` (and an optional `project` name). Fall back to `devarch_mine` → `devarch_signals` → `devarch_report`.
-3. Lead the answer with eras + top signals from the report markdown; cite the `output_path` under plugin-data.
+3. Lead with measured signals and gap-separated clusters; call them curated eras only when a human-authored era file exists. State sampled versus full local coverage and cite the report `output_path`.
 4. If mine fails for shallow history, tell the user to `git fetch --unshallow` (or reclone full) and stop.
 5. Do not modify the target repository.
 

@@ -1,62 +1,111 @@
-# DevArch for Hermes (native plugin)
+# DevArch for Hermes
 
-**Git repository archaeology** — mine a local checkout's full commit history, detect development signals (gaps, velocity shifts, author changes), and export an evidence-backed eras/signals report before the agent touches the code. Wraps DevArch Framework `v0.4.1` pinned to commit `b44430e198e45bfaee1edb2f3473f7d50ce17bc2`.
+**Disclosure first:** this Apache-2.0 plugin vendors DevArch v0.4.1 from
+`b44430e198e45bfaee1edb2f3473f7d50ce17bc2` plus the patches in VENDOR.md.
+Installation downloads the exact `click`, `sqlite-utils`, and `datasette` versions
+in plugin.yaml from PyPI. Invocation uses the DevArch Python API directly, not
+`devarch` or its MCP server. Framework internals launch local Git and
+`python -m sqlite_utils` subprocesses. No account, API key, model call or paid
+service is needed. Child processes inherit the host environment; this is **not**
+a credential sandbox. Mining disables Git transports and lazy fetches, refuses
+shallow/promisor/missing-object repositories, and never fetches remotes.
 
-| Surface | What it does |
+Reads target Git history; writes SQLite, extracted data, reports, lock files and
+a summary ledger only under `<HERMES_HOME>/plugin-data/devarch/`. No telemetry.
+Optional HTML reports reference shared design-system web fonts when opened in a
+browser; use the Markdown report for an entirely offline viewing path.
+
+## Why native, rather than an MCP wrapper?
+
+The `pre_llm_call` hook recognizes history/evolution questions and injects an
+archaeology brief before Hermes guesses at an answer. Tools measure history;
+`post_tool_call` records a profile-local summary ledger. `/devarch` and a bundled
+skill complete the same workflow without starting an MCP server.
+
+| Surface | Behavior |
 |---|---|
-| `pre_llm_call` | When a message asks about repo history / evolution / eras, injects an archaeology brief |
-| `post_tool_call` | Appends mine/report summaries (project, commits, signal count, paths — **no commit bodies**) to a ledger |
-| `/devarch mine\|signals\|report\|pipeline\|list\|version\|status\|help` | Gateway-safe by default: `mine`/`pipeline`/`report` refused on gateway unless `allow_repo_slash_on_gateway: true` |
-| `devarch_mine` | Mine full local history into plugin-data (rejects shallow clones) |
-| `devarch_signals` | Heuristic signal detection (investigation leads) |
-| `devarch_report` | Markdown/HTML report with truncated body for the session |
-| `devarch_pipeline` | One-shot mine → signals → (best-effort) vectors → report |
-| `devarch_list` / `devarch_version` | Projects under plugin-data / framework version |
-| Skill `devarch:devarch` | Ask → pipeline → lead-with-eras/signals workflow |
+| `devarch_mine` | Extract local commits into SQLite; capped at 500 by default |
+| `devarch_signals` | Measured gaps, velocity/author shifts and gap clusters |
+| `devarch_report` | Markdown in the session, optional HTML path |
+| `devarch_pipeline` | Mine → signals → six best-effort analysis vectors → report |
+| `devarch_list`, `devarch_version` | Project inventory and vendor source pin |
+| `/devarch` | mine, signals, report, pipeline, list, version, status, help |
+| Hooks | archaeology brief and mine/report summary ledger |
 
-## Install
+## Install and run
 
-```bash
+Requires Git, Python >=3.10 and Hermes >=0.21.6. Catalog installation must pin the
+**accepted merge SHA**, not a moving branch. Before catalog submission, use the
+exact reviewed checkout locally:
+
+```sh
+hermes plugins validate /path/to/devarch-framework/plugins/devarch-hermes --install-deps --json
 hermes plugins install KyaniteLabs/devarch-framework --subdir plugins/devarch-hermes
 hermes plugins enable devarch
 ```
 
-Requires **Python ≥ 3.10**, `git` on PATH, and the `pip_dependencies` install of `devarch-framework` (runs on `plugins install` / `validate --install-deps`).
-
-## Disclosure
-
-- **Vendored code:** this plugin ships the DevArch `archaeology` package pinned to commit `b44430e198e45bfaee1edb2f3473f7d50ce17bc2` (see `VENDOR.md`). PyPI deps `click`, `sqlite-utils`, `datasette` install into the Hermes venv on `plugins install` / `validate --install-deps`.
-- **Network:** mining is **local-only** — it runs `git` against the checkout you name and never fetches remotes. No telemetry.
-- **Filesystem:** project DBs, signals, reports and the ledger live under `<HERMES_HOME>/plugin-data/devarch/` (per profile). The target repo is read-only.
-- **Integrity:** shallow clones are refused; coverage (refs, commit count, head) is recorded beside the extraction. Analysis vectors are **keyword investigation leads**, not verified conclusions or productivity measurements.
-- **Secrets:** no child process, no env scrubbing needed for a subprocess; no API keys required. Only public `ctx.*` APIs.
-- **Gateway:** `/devarch mine|pipeline|report` refused on gateway platforms unless `allow_repo_slash_on_gateway: true`. Agent tools still work.
-- **No background jobs;** nothing runs unless a hook matches or you call a tool/slash.
-
-## Settings (`plugins.entries.devarch.settings`)
-
-| Key | Default | Notes |
-|---|---|---|
-| `inject_on_archaeology` | `true` | pre_llm_call brief |
-| `allow_repo_slash_on_gateway` | `false` | gateway safety |
-| `max_commits_warn` | `5000` | soft warning only |
-| `default_project` | `session` | default project name |
-
-## Known issues
-
-- First `validate --install-deps` / install pulls datasette + sqlite-utils from PyPI.
-- Very large histories (>max_commits_warn) still mine but take wall-clock; prefer a dedicated project name.
-- No Desktop pane, 2:1 banner, or screenshots yet.
-- PyPI `devarch-framework` is not published at 0.4.1 yet; the plugin vendors the package instead. Datasette/sqlite-utils still need the usual ≥3-day age before catalog merge.
-
-## Demo (< 90s)
+The unpinned repository install above is for local development only. Follow
+`submission/CLICK-PACKET.md` for pinned catalog preparation.
 
 ```text
-/devarch version
-/devarch pipeline /path/to/some/repo demo
+/devarch pipeline /path/to/full/local/checkout demo
+/devarch report demo
 /devarch status
 ```
 
-Or ask the agent: "How did this codebase evolve?"
+Ask: “How did this codebase evolve?” The hook supplies the evidence-first brief;
+Hermes still needs a local repository path before mining.
 
-License: Apache-2.0 (same as DevArch Framework).
+## Integrity and concurrency
+
+- Reports disclose full local ref coverage **and the extracted sample count**.
+  Capped results are not a complete-history claim. Deleted, inaccessible and
+  unfetched refs remain outside coverage; shallow history is rejected, not
+  relabeled as sampling.
+- A per-project reentrant transaction covers mine, signals, export and the whole
+  pipeline, with thread and OS file locks. Separate projects remain independent.
+- Raw files, DB and present metrics/signals/clusters are checked against their
+  mining generation and hashes. Failed remining cannot export stale evidence.
+  This is consistency checking, not signed/tamper-proof forensic custody.
+- The patched vendor has an isolated namespace. An installed `archaeology` package
+  neither replaces it nor gets replaced by it.
+- Gap clusters are **not curated eras**. Human `commit-eras.json` survives mining
+  and signal detection. Vectors are keyword investigation leads, never causal
+  conclusions or productivity scores.
+- Gateway slash mine/pipeline/report are disabled by default. Agent tools retain
+  local filesystem authority; the slash restriction is not tool authorization.
+
+## Settings (`plugins.entries.devarch.settings`)
+
+| Key | Default | Meaning |
+|---|---|---|
+| `inject_on_archaeology` | true | Hook brief |
+| `allow_repo_slash_on_gateway` | false | Explicit slash opt-in |
+| `max_commits` | 500 | Positive hard extraction cap across local refs |
+| `max_commits_warn` | 5000 | Warn about full local history size |
+| `default_project` | session | Project used when omitted |
+
+## Verification
+
+From the framework root, with plugin dependencies and pytest/ruff installed:
+
+```sh
+PYTHONPATH="$PWD" python -m pytest -q --tb=short
+ruff check . && ruff format --check .
+hermes plugins validate plugins/devarch-hermes --json
+```
+
+Fresh-process plugin-only tests run with and without an incompatible installed
+framework. Deterministic schedules cover mine/mine, signals/mine and report/mine;
+content/generation/binding mutations are rejected. See the card's evidence packet
+for native PluginManager/tool-registry/hooks/slash execution, network tracing,
+hermes-agent demo timing, and installed-wheel P16/U7 replay. A native API harness
+is not a live deployed chat session or a post-merge Product acceptance.
+
+## Rollback
+
+Disable with `hermes plugins disable devarch`. Target repositories need no
+rollback because they are read-only. Preserve plugin-data if you need its
+reports; deleting that directory is a separate deliberate data-loss decision.
+
+Demo/capture and Simon-only catalog steps: `submission/`.
