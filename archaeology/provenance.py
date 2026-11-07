@@ -14,6 +14,7 @@ INPUTS = (
     "data/archaeology.db",
     "data/detected-signals.json",
     "data/commit-eras.json",
+    "data/gap-clusters.json",
     "deliverables/canonical-metrics.json",
     "deliverables/data.json",
 )
@@ -91,3 +92,112 @@ def verify_artifact(project, artifact):
         current = {str(p.relative_to(project)): digest(p) for p in analysis_paths(project)}
         if binding["analysis"] != current:
             raise ValueError(f"Stale analysis inputs for artifact: {artifact.name}; re-export")
+
+
+def _load_coverage(project):
+    coverage_path = Path(project) / "data" / "coverage.json"
+    if not coverage_path.is_file():
+        raise ValueError("Missing data/coverage.json for bound mining project")
+    try:
+        coverage = json.loads(coverage_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        raise ValueError("Invalid data/coverage.json") from exc
+    if not isinstance(coverage, dict):
+        raise ValueError("Invalid data/coverage.json")
+    return coverage
+
+
+def verify_mining_inputs(project):
+    """Fail when mined CSV/stats no longer match coverage.json artifact hashes."""
+    project = Path(project)
+    if not requires_binding(project):
+        return
+    coverage = _load_coverage(project)
+    hashes = coverage.get("artifact_sha256")
+    if not isinstance(hashes, dict) or not hashes:
+        raise ValueError("Mining coverage missing artifact_sha256 bindings")
+    for name, expected in hashes.items():
+        path = project / "data" / name
+        actual = digest(path)
+        if actual != expected:
+            raise ValueError(f"Stale or modified mining artifact: {name}; remine before export")
+
+
+def verify_derived_stage(project):
+    """Refuse export when DB/metrics/signals belong to a different or incomplete mining generation.
+
+    A failed remine may refresh coverage.json + raw CSV hashes while leaving an older
+    archaeology.db / metrics / signals tree in place. Export must not publish that mix.
+
+    Legacy CLI coverage (no mining_status / mining_generation) only requires that the
+    SQLite DB exist. Plugin mining always stamps generation + derived_sha256 and must
+    pass the full binding checks.
+    """
+    project = Path(project)
+    if not requires_binding(project):
+        return
+    coverage = _load_coverage(project)
+    status = coverage.get("mining_status")
+    generation = coverage.get("mining_generation")
+    db_path = project / "data" / "archaeology.db"
+
+    # Legacy manifests from the framework CLI mine path.
+    if status is None and generation is None:
+        if not db_path.is_file():
+            raise ValueError("Missing archaeology.db; remine before export")
+        return
+
+    if status != "complete":
+        raise ValueError(
+            "Mining rebuild incomplete or unbound; remine successfully before export "
+            f"(mining_status={status!r})"
+        )
+    if not generation:
+        raise ValueError("Mining coverage missing mining_generation; remine before export")
+    derived = coverage.get("derived_sha256")
+    if not isinstance(derived, dict) or not derived:
+        raise ValueError("Mining coverage missing derived_sha256 bindings; remine before export")
+    expected_db = derived.get("archaeology.db")
+    actual_db = digest(db_path)
+    if not expected_db or actual_db != expected_db:
+        raise ValueError(
+            "Stale or unbound archaeology.db for current mining generation; remine before export"
+        )
+    # Optional derived JSON must declare the same generation when present.
+    for rel in (
+        "deliverables/canonical-metrics.json",
+        "data/detected-signals.json",
+        "data/gap-clusters.json",
+        "deliverables/data.json",
+    ):
+        path = project / rel
+        if not path.is_file():
+            continue
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError) as exc:
+            raise ValueError(f"Invalid derived artifact: {rel}") from exc
+        if not isinstance(payload, dict) or payload.get("mining_generation") != generation:
+            raise ValueError(f"Unbound derived artifact: {rel}; rebuild signals/metrics")
+        sidecar = path.with_name(path.name + ".generation.json")
+        try:
+            binding = json.loads(sidecar.read_text(encoding="utf-8"))
+        except (OSError, ValueError) as exc:
+            raise ValueError(f"Missing derived content binding: {rel}") from exc
+        if binding != {"mining_generation": generation, "sha256": digest(path)}:
+            raise ValueError(f"Modified derived artifact: {rel}; rebuild signals/metrics")
+
+
+def bind_derived_artifact(project, artifact):
+    project, artifact = Path(project), Path(artifact)
+    coverage_path = project / "data" / "coverage.json"
+    if not coverage_path.is_file():
+        return
+    generation = _load_coverage(project).get("mining_generation")
+    if not generation:
+        return
+    payload = json.loads(artifact.read_text(encoding="utf-8"))
+    payload["mining_generation"] = generation
+    atomic_write(artifact, json.dumps(payload, indent=2))
+    binding = {"mining_generation": generation, "sha256": digest(artifact)}
+    atomic_write(str(artifact) + ".generation.json", json.dumps(binding, indent=2))

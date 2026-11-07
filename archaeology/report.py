@@ -49,14 +49,27 @@ def export_markdown_report(
     """Export a concise Markdown report from canonical metrics + analysis JSON."""
     project_root = Path(project_root)
     deliverables = project_root / "deliverables"
-    from .provenance import verify_analyses
+    from .provenance import (
+        analysis_paths,
+        verify_analyses,
+        verify_derived_stage,
+        verify_mining_inputs,
+    )
 
-    verify_analyses(project_root, require=True)
+    # Fail closed when mined CSV/stats diverge from coverage.json hashes.
+    verify_mining_inputs(project_root)
+    # Refuse mixed-generation export after a failed remine (old DB/metrics under new coverage).
+    verify_derived_stage(project_root)
+    # Require bound analyses only when analysis artifacts exist; signals-only
+    # reports remain valid after mine → signals.
+    verify_analyses(project_root, require=bool(analysis_paths(project_root)))
     analysis_dir = deliverables / "analysis"
     data_dir = project_root / "data"
     project = _load_json(project_root / "project.json") or {}
     canonical = _load_json(deliverables / "canonical-metrics.json") or {}
     eras = _load_json(data_dir / "commit-eras.json") or {}
+    gap_clusters = _load_json(data_dir / "gap-clusters.json") or {}
+    detected = _load_json(data_dir / "detected-signals.json") or {}
     # Look for analysis files in analysis/ subdirectory first, then fall back to deliverables root
     analysis_search = [analysis_dir, deliverables]
     analyses = {}
@@ -92,14 +105,91 @@ def export_markdown_report(
     out.append("\n")
 
     era_list = eras.get("eras") if isinstance(eras, dict) else []
-    if era_list:
+    cluster_file_list = gap_clusters.get("eras") if isinstance(gap_clusters, dict) else []
+    era_semantics = ""
+    if isinstance(gap_clusters, dict) and gap_clusters.get("era_semantics"):
+        era_semantics = str(gap_clusters.get("era_semantics") or "")
+    elif isinstance(eras, dict) and eras.get("era_semantics"):
+        era_semantics = str(eras.get("era_semantics") or "")
+    out.append("## Era Semantics\n\n")
+    if era_semantics:
+        out.append(f"{era_semantics}\n\n")
+    else:
+        out.append(
+            "Automated archaeology emits **signals** and **gap-separated clusters**. "
+            "Clusters are heuristic groupings, not curated human development eras. "
+            "A `commit-eras.json` narrative era list is optional and human-authored; "
+            "generated clusters live in `gap-clusters.json`.\n\n"
+        )
+
+    # Prefer curated human eras from commit-eras.json; never treat gap clusters as eras.
+    curated = [
+        e for e in (era_list or []) if isinstance(e, dict) and e.get("kind") != "gap_cluster"
+    ]
+    legacy_clusters_in_eras = [
+        e for e in (era_list or []) if isinstance(e, dict) and e.get("kind") == "gap_cluster"
+    ]
+    if curated:
         out.append("## Development Eras\n\n")
-        for era in era_list:
+        for era in curated:
             out.append(
                 _bullet(
-                    f"**Era {era.get('id')}: {era.get('name')}** — {era.get('dates', 'unknown dates')}; {era.get('commits', 'unknown')} commits. {era.get('description') or era.get('narrative_arc') or ''}"
+                    f"**Era {era.get('id')}: {era.get('name')}** — {era.get('dates', 'unknown dates')}; "
+                    f"{era.get('commits', 'unknown')} commits. "
+                    f"{era.get('description') or era.get('narrative_arc') or ''}"
                 )
             )
+        out.append("\n")
+
+    display_clusters = list(cluster_file_list or []) or list(legacy_clusters_in_eras or [])
+    if display_clusters:
+        out.append("## Gap-Separated Clusters\n\n")
+        for era in display_clusters:
+            if not isinstance(era, dict):
+                continue
+            out.append(
+                _bullet(
+                    f"**Cluster {era.get('id')}: {era.get('name')}** — {era.get('dates', 'unknown dates')}; "
+                    f"{era.get('commits', 'unknown')} commits. "
+                    f"{era.get('description') or era.get('narrative_arc') or ''}"
+                )
+            )
+        out.append("\n")
+
+    # Measured signals from detect_signals (always prefer evidence over silence).
+    signal_list = []
+    cluster_list = []
+    if isinstance(detected, dict):
+        signal_list = detected.get("signals") or []
+        cluster_list = detected.get("cluster_summary") or []
+    if signal_list or cluster_list:
+        out.append("## Detected Signals\n\n")
+        out.append(
+            f"Measured {len(signal_list)} signal(s) and {len(cluster_list)} gap cluster(s). "
+            "These are heuristic investigation leads, not verified conclusions.\n\n"
+        )
+        for sig in list(signal_list)[:25]:
+            if not isinstance(sig, dict):
+                out.append(_bullet(str(sig)[:240]))
+                continue
+            detail = sig.get("detail") or sig.get("description") or sig.get("message") or ""
+            out.append(
+                _bullet(
+                    f"**{sig.get('type') or sig.get('kind') or 'signal'}** "
+                    f"@ {sig.get('date') or sig.get('when') or 'unknown'}: {detail}"
+                )
+            )
+        if cluster_list and not display_clusters:
+            out.append("\n### Clusters (from signals)\n\n")
+            for cluster in list(cluster_list)[:25]:
+                if not isinstance(cluster, dict):
+                    continue
+                out.append(
+                    _bullet(
+                        f"{cluster.get('start_date')} → {cluster.get('end_date')} "
+                        f"({cluster.get('commit_count')} commits, {cluster.get('active_days')} active days)"
+                    )
+                )
         out.append("\n")
 
     sdlc = analyses.get("sdlc-gap-finder") or {}
