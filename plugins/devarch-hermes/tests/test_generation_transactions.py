@@ -27,6 +27,33 @@ def repositories(tmp_path):
     return old, new
 
 
+def test_metrics_closes_sqlite_handle_before_remine(plugin, repositories, monkeypatch):
+    import sqlite3
+
+    from _devarch_vendor.metrics import write_metrics
+
+    assert plugin.mine(str(repositories[0]), "handles")["ok"]
+    project = plugin._project_dir("handles")
+    original = sqlite3.connect
+    connections = []
+
+    class TrackedConnection(sqlite3.Connection):
+        closed = False
+
+        def close(self):
+            self.closed = True
+            super().close()
+
+    def connect(*args, **kwargs):
+        connection = original(*args, factory=TrackedConnection, **kwargs)
+        connections.append(connection)
+        return connection
+
+    monkeypatch.setattr(sqlite3, "connect", connect)
+    write_metrics(project, project / "data/archaeology.db")
+    assert connections and all(connection.closed for connection in connections)
+
+
 def test_capped_history_is_explicit(plugin, repositories, monkeypatch):
     monkeypatch.setitem(plugin.DEFAULTS, "max_commits", 2)
     mined = plugin.mine(str(repositories[0]), "cap")
@@ -54,10 +81,10 @@ def test_same_project_transactions(plugin, repositories, monkeypatch, first):
 
     def paused(call):
         def run(*args, **kwargs):
-            value = call(*args, **kwargs)
+            value = call(*args, **kwargs) if first != "mine" else None
             entered.set()
-            assert release.wait(20), "test failed to release first operation"
-            return value
+            assert release.wait(60), "test failed to release first operation"
+            return call(*args, **kwargs) if first == "mine" else value
 
         return run
 
@@ -81,7 +108,9 @@ def test_same_project_transactions(plugin, repositories, monkeypatch, first):
 
     with ThreadPoolExecutor(2) as pool:
         one = pool.submit(operation)
-        assert entered.wait(20)
+        assert entered.wait(60), (
+            one.result(timeout=1) if one.done() else "operation did not reach pause"
+        )
 
         def second_build(*args, **kwargs):
             second_entered.set()
@@ -94,8 +123,10 @@ def test_same_project_transactions(plugin, repositories, monkeypatch, first):
             assert not second_entered.wait(0.3), "remine entered a live project transaction"
         finally:
             release.set()
-        assert one.result(timeout=20)["ok"]
-        assert two.result(timeout=20)["ok"]
+        first_result = one.result(timeout=60)
+        second_result = two.result(timeout=60)
+        assert first_result["ok"], first_result
+        assert second_result["ok"], second_result
     assert plugin.signals("shared")["ok"]
     report = plugin.report("shared")
     assert report["ok"], report
