@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import importlib.util
 import os
+import shlex
 import shutil
 import subprocess
 import sys
@@ -111,8 +112,10 @@ def main() -> int:
         repo = home / "repo"
         _repo(repo)
         slash = ctx.commands["devarch"]
-        piped = slash(f"pipeline {repo} demo")
-        if piped.startswith("DevArch failed") or piped.startswith("DevArch error"):
+        # shlex.split treats backslashes as escapes. Quote so Windows paths survive.
+        piped = slash("pipeline " + shlex.quote(str(repo)) + " demo")
+        database = plugin._project_dir("demo") / "data" / "archaeology.db"
+        if not database.is_file():
             print(piped, file=sys.stderr)
             return 1
         reported = slash("report demo")
