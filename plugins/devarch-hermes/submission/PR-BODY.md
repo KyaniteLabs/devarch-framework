@@ -26,10 +26,14 @@ accepted merge SHA, capture/banner URLs and the real <90s video URL here.
 
 Engineering component evidence: deterministic same-project concurrency,
 installed-framework isolation, present-derived generation/content binding tests;
-full suite and lint/format; native PluginManager/tools/hooks/slash and actual
-ContextVar refusal; capped hermes-agent archaeology; zero observed IP connection
-attempts in the traced invocation; installed-wheel 89-row P16/U7 replay. These
-receipts are not a live gateway-chat deployment or full post-merge Product QA.
+messaging-source slash refusal; cross-process report ledger; signal rebuild
+without remine; full suite and lint/format; native plugin.yaml hooks; the
+installed-wheel P16/U7 replay receipt at
+`plugins/devarch-hermes/submission/P16-U7-RECEIPT.md` in the implementation PR.
+These receipts are not a live gateway-chat deployment or full post-merge Product QA.
+
+This file is draft text for Simon to paste when he opens the catalog pull
+request. Nothing in this repository submits or publishes that request.
 
 ## Rollback
 

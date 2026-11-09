@@ -7,6 +7,7 @@ import os
 import subprocess
 import sys
 import threading
+import time
 from pathlib import Path
 
 import pytest
@@ -149,8 +150,8 @@ def test_gateway_reads_session_contextvars(plugin, monkeypatch, hermes_home):
     fake_sc.get_session_env = get_session_env
     fake_sc.session_is_messaging_surface = session_is_messaging_surface
     fake_sc.set_session_vars = lambda **kw: _plat.set(kw.get("platform", ""))
-    sys.modules["gateway"] = fake
-    sys.modules["gateway.session_context"] = fake_sc
+    monkeypatch.setitem(sys.modules, "gateway", fake)
+    monkeypatch.setitem(sys.modules, "gateway.session_context", fake_sc)
 
     monkeypatch.delenv("HERMES_PLATFORM", raising=False)
     monkeypatch.delenv("HERMES_SESSION_PLATFORM", raising=False)
@@ -616,3 +617,241 @@ def test_wrapper_has_no_process_global_stream_redirect():
     text = (PLUGIN_DIR / "__init__.py").read_text(encoding="utf-8")
     assert "redirect_stdout" not in text
     assert "redirect_stderr" not in text
+
+
+# --- fourth review: messaging source, ledger process lock, signal rebuild ---
+
+_LEDGER_CHILD = """
+import importlib.util
+import os
+import sys
+from pathlib import Path
+
+home, plugin_init, status_dir, project = sys.argv[1:5]
+os.environ["HERMES_HOME"] = home
+status = Path(status_dir)
+spec = importlib.util.spec_from_file_location("devarch_hermes_plugin", plugin_init)
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+(status / f"before-{project}").write_text("1", encoding="utf-8")
+module._append_ledger(
+    {
+        "tool": "devarch_report",
+        "project": project,
+        "ok": True,
+        "output_path": f"/tmp/{project}.md",
+    }
+)
+(status / f"after-{project}").write_text("1", encoding="utf-8")
+"""
+
+
+def _wait_for(path: Path, timeout: float = 10) -> None:
+    deadline = time.time() + timeout
+    while not path.exists():
+        if time.time() > deadline:
+            raise AssertionError(f"timed out waiting for {path}")
+        time.sleep(0.05)
+
+
+def _install_session(monkeypatch, plugin, platform: str, source: str, helper: str) -> None:
+    """Install a Hermes-shaped session_context. helper: real, platform-only, or absent."""
+    import types
+    from contextvars import ContextVar
+
+    unset = object()
+    plat = ContextVar("HERMES_SESSION_PLATFORM", default=unset)
+    src = ContextVar("HERMES_SESSION_SOURCE", default=unset)
+    plat.set(platform)
+    src.set(source)
+    local = set(plugin._LOCAL_SURFACES)
+
+    def get_session_env(name, default=""):
+        var = {"HERMES_SESSION_PLATFORM": plat, "HERMES_SESSION_SOURCE": src}.get(name)
+        if var is None:
+            return os.getenv(name, default)
+        value = var.get()
+        if value is unset:
+            return os.getenv(name, default)
+        return value
+
+    def real_helper():
+        platform_ident = os.getenv("HERMES_PLATFORM") or get_session_env(
+            "HERMES_SESSION_PLATFORM", ""
+        )
+        idents = (platform_ident, get_session_env("HERMES_SESSION_SOURCE", ""))
+        return any(
+            (cleaned := str(ident or "").strip().lower()) and cleaned not in local
+            for ident in idents
+        )
+
+    def platform_only():
+        plat_value = (
+            os.getenv("HERMES_PLATFORM") or get_session_env("HERMES_SESSION_PLATFORM", "") or ""
+        )
+        cleaned = str(plat_value).strip().lower()
+        return bool(cleaned) and cleaned not in local
+
+    fake = types.ModuleType("gateway")
+    fake_sc = types.ModuleType("gateway.session_context")
+    fake_sc.get_session_env = get_session_env
+    if helper == "real":
+        fake_sc.session_is_messaging_surface = real_helper
+    elif helper == "platform-only":
+        fake_sc.session_is_messaging_surface = platform_only
+    monkeypatch.setitem(sys.modules, "gateway", fake)
+    monkeypatch.setitem(sys.modules, "gateway.session_context", fake_sc)
+    monkeypatch.delenv("HERMES_PLATFORM", raising=False)
+    monkeypatch.delenv("HERMES_SESSION_PLATFORM", raising=False)
+    monkeypatch.delenv("HERMES_SESSION_SOURCE", raising=False)
+
+
+@pytest.mark.parametrize(
+    ("platform", "source", "helper"),
+    [
+        ("gateway", "telegram", "real"),
+        ("cli", "slack", "real"),
+        ("gateway", "telegram", "platform-only"),
+        ("gateway", "telegram", "absent"),
+    ],
+)
+def test_messaging_source_refuses_slash_mine(
+    plugin, monkeypatch, hermes_home, tmp_path, platform, source, helper
+):
+    """A local platform does not hide a messaging source. Mine must not read git."""
+    _install_session(monkeypatch, plugin, platform, source, helper)
+    repo = _init_repo(tmp_path / "repo", [("2026-01-01T12:00:00", "one")])
+    assert plugin._on_gateway() is True
+    out = plugin._slash(f"mine {repo} gateway-proof")
+    assert "disabled on gateway" in out.lower()
+    assert not (plugin._project_dir("gateway-proof") / "data" / "github-commits.csv").exists()
+
+
+def test_cli_without_messaging_source_is_not_a_gateway(plugin, monkeypatch, hermes_home):
+    _install_session(monkeypatch, plugin, "cli", "", "real")
+    assert plugin._on_gateway() is False
+
+
+def test_ledger_lock_blocks_another_process(plugin, hermes_home, tmp_path):
+    """A second process cannot finish its ledger write while this process holds the lock."""
+    status = tmp_path / "status"
+    status.mkdir()
+    script = tmp_path / "ledger_child.py"
+    script.write_text(_LEDGER_CHILD, encoding="utf-8")
+    lock_path = plugin._ledger_lock_path()
+    handle = lock_path.open("a+b")
+    plugin._exclusive_lock(handle)
+    proc = subprocess.Popen(
+        [
+            sys.executable,
+            str(script),
+            str(hermes_home),
+            str(PLUGIN_DIR / "__init__.py"),
+            str(status),
+            "blocked",
+        ]
+    )
+    try:
+        _wait_for(status / "before-blocked")
+        time.sleep(0.8)
+        assert not (status / "after-blocked").exists()
+        assert proc.poll() is None
+    finally:
+        plugin._exclusive_unlock(handle)
+        handle.close()
+        try:
+            proc.wait(timeout=15)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+            proc.wait(timeout=5)
+    assert proc.returncode == 0
+    assert (status / "after-blocked").exists()
+    ledger = plugin._load_json(plugin._ledger_path(), [])
+    assert [row.get("project") for row in ledger] == ["blocked"]
+
+
+def test_two_processes_keep_both_ledger_entries(plugin, hermes_home, tmp_path):
+    status = tmp_path / "status"
+    status.mkdir()
+    script = tmp_path / "ledger_child.py"
+    script.write_text(_LEDGER_CHILD, encoding="utf-8")
+    procs = []
+    for name in ("p1", "p2"):
+        procs.append(
+            subprocess.Popen(
+                [
+                    sys.executable,
+                    str(script),
+                    str(hermes_home),
+                    str(PLUGIN_DIR / "__init__.py"),
+                    str(status),
+                    name,
+                ]
+            )
+        )
+    for proc in procs:
+        proc.wait(timeout=20)
+        assert proc.returncode == 0
+    ledger = plugin._load_json(plugin._ledger_path(), [])
+    assert {row.get("project") for row in ledger} == {"p1", "p2"}
+
+
+def test_slash_report_writes_the_report_hook_ledger(plugin, hermes_home):
+    out = plugin._slash("report missing-project")
+    assert "not found" in out.lower() or "failed" in out.lower()
+    ledger = plugin._load_json(plugin._ledger_path(), [])
+    assert [row.get("tool") for row in ledger] == ["devarch_report"]
+    assert ledger[0]["ok"] is False
+
+
+def test_signals_rebuild_repairs_corrupt_bindings(plugin, tmp_path, hermes_home):
+    """Corrupt or missing signal bindings block export, then signals() repairs them."""
+    pytest.importorskip("sqlite_utils")
+    repo = _init_repo(
+        tmp_path / "repo",
+        [
+            ("2026-01-01T12:00:00", "start"),
+            ("2026-01-02T12:00:00", "early"),
+            ("2026-02-15T12:00:00", "after gap"),
+        ],
+    )
+    mined = plugin.mine(str(repo), project="repair")
+    assert mined.get("ok"), mined
+    assert plugin.signals("repair").get("ok")
+    project = plugin._project_dir("repair")
+    signals_path = project / "data" / "detected-signals.json"
+    original = signals_path.read_text(encoding="utf-8")
+    tampered = json.loads(original)
+    tampered["tampered"] = True
+    signals_path.write_text(json.dumps(tampered), encoding="utf-8")
+
+    refused = plugin.report("repair")
+    assert refused.get("ok") is False
+    assert "detected-signals" in str(refused.get("error", ""))
+
+    rebuilt = plugin.signals("repair")
+    assert rebuilt.get("ok") is True, rebuilt
+    restored = json.loads(signals_path.read_text(encoding="utf-8"))
+    assert "tampered" not in restored
+    assert plugin.report("repair").get("ok") is True
+
+    sidecar = project / "data" / "gap-clusters.json.generation.json"
+    sidecar.unlink()
+    assert plugin.report("repair").get("ok") is False
+    assert plugin.signals("repair").get("ok") is True
+    assert sidecar.is_file()
+    assert plugin.report("repair").get("ok") is True
+
+
+def test_demo_script_finishes_under_90_seconds():
+    script = PLUGIN_DIR / "submission" / "demo_under_90s.py"
+    proc = subprocess.run(
+        [sys.executable, str(script)],
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=90,
+    )
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+    assert "elapsed_seconds=" in proc.stdout
+    assert "report_hook=wired" in proc.stdout

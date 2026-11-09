@@ -99,7 +99,9 @@ Fresh-process plugin-only tests run with and without an incompatible installed
 framework. Deterministic schedules cover mine/mine, signals/mine and report/mine;
 content/generation/binding mutations are rejected. See the card's evidence packet
 for native PluginManager/tool-registry/hooks/slash execution, network tracing,
-hermes-agent demo timing, and installed-wheel P16/U7 replay. A native API harness
+hermes-agent demo timing, and the installed-wheel P16/U7 replay in
+`submission/P16-U7-RECEIPT.md`. Run `python plugins/devarch-hermes/submission/demo_under_90s.py`
+for the native hook path (it exits non-zero at 90 seconds). A native API harness
 is not a live deployed chat session or a post-merge Product acceptance.
 
 ## Rollback

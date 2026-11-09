@@ -123,7 +123,7 @@ def verify_mining_inputs(project):
             raise ValueError(f"Stale or modified mining artifact: {name}; remine before export")
 
 
-def verify_derived_stage(project):
+def verify_derived_stage(project, *, skip_rels=()):
     """Refuse export when DB/metrics/signals belong to a different or incomplete mining generation.
 
     A failed remine may refresh coverage.json + raw CSV hashes while leaving an older
@@ -132,6 +132,9 @@ def verify_derived_stage(project):
     Legacy CLI coverage (no mining_status / mining_generation) only requires that the
     SQLite DB exist. Plugin mining always stamps generation + derived_sha256 and must
     pass the full binding checks.
+
+    skip_rels lists artifacts the caller is about to regenerate (signal detection skips
+    detected-signals.json and gap-clusters.json). Export passes no skip list.
     """
     project = Path(project)
     if not requires_binding(project):
@@ -164,12 +167,15 @@ def verify_derived_stage(project):
             "Stale or unbound archaeology.db for current mining generation; remine before export"
         )
     # Optional derived JSON must declare the same generation when present.
+    skipped = {str(rel) for rel in skip_rels}
     for rel in (
         "deliverables/canonical-metrics.json",
         "data/detected-signals.json",
         "data/gap-clusters.json",
         "deliverables/data.json",
     ):
+        if rel in skipped:
+            continue
         path = project / rel
         if not path.is_file():
             continue

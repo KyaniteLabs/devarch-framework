@@ -26,7 +26,7 @@ Applied on top of the pinned vendor copy for the Hermes wrap (kept in sync with 
 
 - `extractors/git.py` — `GIT_NO_LAZY_FETCH=1` on all git invocations; `incomplete_object_reason()` refuses promisor/partial/missing-object repos (local-only contract).
 - `report.py` — include measured `detected-signals.json` + `gap-clusters.json`; honest era/cluster semantics; curated `commit-eras.json` preserved; `verify_mining_inputs` + `verify_derived_stage`; `verify_analyses(require=…)` only when analysis artifacts exist.
-- `provenance.py`, `metrics.py` — present derived metrics/signals/clusters require both the current generation and a content-hash sidecar (also synchronized to root framework). Optional absence does not exempt a present artifact.
+- `provenance.py`, `metrics.py` — present derived metrics/signals/clusters require both the current generation and a content-hash sidecar (also synchronized to root framework). Optional absence does not exempt a present artifact. Signal detection may skip the two signal files it is about to rewrite; export never skips them.
 - `extractors/git.py` — positive commit cap for both raw/stats extraction, disabled transports and optional Git locks; full ref coverage remains separately reported.
 - `report.py`, `visualization/dashboard.py`, `visualization/agent_benchmark.py` — package-relative imports support the isolated `_devarch_vendor` namespace. The wrapper never prefers an arbitrary installed framework.
 - Wrapper project transactions serialize full operations across threads/processes; complete pipelines retain the same lock across nested stages.

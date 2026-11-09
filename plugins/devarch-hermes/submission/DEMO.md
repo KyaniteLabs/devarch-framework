@@ -1,5 +1,15 @@
 # DevArch demo: hook first, under 90 seconds
 
+Executable check (temporary profile, five local commits, no Hermes install):
+
+```sh
+python plugins/devarch-hermes/submission/demo_under_90s.py
+```
+
+The process exits 0 only when native `plugin.yaml` hooks are registered, the
+archaeology brief fires, pipeline and `/devarch report` finish, the report
+ledger contains that report, and the elapsed time is under 90 seconds.
+
 ## Spoken/screen sequence (target 70–80s)
 
 - **0–12s:** Ask Hermes “How did this codebase evolve?” Show the native

@@ -73,6 +73,11 @@ DEFAULTS: Dict[str, Any] = {
 }
 LEDGER_MAX = 200
 MAX_OUT = 20000
+# Signal detection rewrites these. Export still requires them; rebuild must not.
+_SIGNAL_OUTPUTS = (
+    "data/detected-signals.json",
+    "data/gap-clusters.json",
+)
 _PROJECT_RE = re.compile(r"^[a-zA-Z0-9._-]{1,100}$")
 _LOCAL_SURFACES = frozenset(
     {
@@ -220,32 +225,67 @@ def _save_json(path: Path, payload: Any) -> None:
         raise
 
 
+def _session_context():
+    """Import Hermes session context, or None when this process has no gateway."""
+    try:
+        import importlib
+
+        return importlib.import_module("gateway.session_context")
+    except Exception:
+        return None
+
+
+def _read_session(get_session_env, name: str) -> str:
+    if get_session_env is not None:
+        try:
+            value = get_session_env(name, "")
+            if value is not None:
+                return str(value)
+        except Exception:
+            logger.debug("devarch: get_session_env failed for %s", name, exc_info=True)
+    return str(os.environ.get(name) or "")
+
+
+def _is_messaging_identity(ident: str) -> bool:
+    cleaned = ident.strip().lower()
+    return bool(cleaned) and cleaned not in _LOCAL_SURFACES
+
+
+def _messaging_idents(get_session_env) -> tuple[str, str]:
+    """Match Hermes session_is_messaging_surface: platform and source, separately.
+
+    HERMES_PLATFORM wins over the session platform. The source is still checked.
+    A local platform with a messaging source (gateway+telegram, cli+slack) is messaging.
+    """
+    platform = os.environ.get("HERMES_PLATFORM") or _read_session(
+        get_session_env, "HERMES_SESSION_PLATFORM"
+    )
+    source = _read_session(get_session_env, "HERMES_SESSION_SOURCE")
+    return str(platform or ""), str(source or "")
+
+
 def _on_gateway() -> bool:
     """True when the active Hermes session is a messaging/gateway surface.
 
-    Hermes >=0.21.6 stores session platform in task-local ContextVars, not only
-    os.environ. Prefer gateway.session_context helpers; fall back to env.
+    Hermes >=0.21.6 stores platform and source in task-local ContextVars.
+    Use session_is_messaging_surface when it exists, and also check both
+    identities here so a platform-only helper cannot hide a messaging source.
     """
-    try:
-        from gateway.session_context import get_session_env
-
-        plat = (
-            (
-                os.environ.get("HERMES_PLATFORM")
-                or get_session_env("HERMES_SESSION_PLATFORM", "")
-                or get_session_env("HERMES_SESSION_SOURCE", "")
-                or ""
-            )
-            .strip()
-            .lower()
-        )
-    except Exception:
-        plat = (
-            (os.environ.get("HERMES_PLATFORM") or os.environ.get("HERMES_SESSION_PLATFORM") or "")
-            .strip()
-            .lower()
-        )
-    return bool(plat) and plat not in _LOCAL_SURFACES
+    session_context = _session_context()
+    get_session_env = getattr(session_context, "get_session_env", None)
+    helper = getattr(session_context, "session_is_messaging_surface", None)
+    helper_messaging = None
+    if helper is not None:
+        try:
+            helper_messaging = bool(helper())
+        except Exception:
+            logger.debug("devarch: session_is_messaging_surface failed", exc_info=True)
+            helper_messaging = None
+    platform, source = _messaging_idents(get_session_env)
+    own = _is_messaging_identity(platform) or _is_messaging_identity(source)
+    if helper_messaging is None:
+        return own
+    return helper_messaging or own
 
 
 # --- helpers ----------------------------------------------------------------
@@ -752,7 +792,9 @@ def signals(project: Optional[str] = None, min_gap_days: Optional[int] = None) -
         )
 
         verify_mining_inputs(project_dir)
-        verify_derived_stage(project_dir)
+        # Rebuild replaces signal outputs. Require raw inputs, the DB, and metrics;
+        # do not require the files this call is about to rewrite.
+        verify_derived_stage(project_dir, skip_rels=_SIGNAL_OUTPUTS)
         detector = SignalDetector(db_path, config=config or None)
         out = detector.detect()
         out_path = project_dir / "data" / "detected-signals.json"
@@ -1001,13 +1043,55 @@ def _on_pre_llm(user_message: str = "", **_: Any) -> Optional[Dict[str, str]]:
     return None
 
 
+def _ledger_lock_path() -> Path:
+    lock_dir = _data_dir() / ".locks"
+    lock_dir.mkdir(parents=True, exist_ok=True)
+    return lock_dir / "report_ledger.lock"
+
+
+def _exclusive_lock(handle) -> None:
+    """Block until this process holds the profile ledger lock."""
+    if os.name == "nt":
+        import msvcrt
+
+        handle.seek(0, os.SEEK_END)
+        if handle.tell() == 0:
+            handle.write(b"\0")
+            handle.flush()
+        handle.seek(0)
+        msvcrt.locking(handle.fileno(), msvcrt.LK_LOCK, 1)
+        return
+    import fcntl
+
+    fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+
+
+def _exclusive_unlock(handle) -> None:
+    if os.name == "nt":
+        import msvcrt
+
+        handle.seek(0)
+        msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
+        return
+    import fcntl
+
+    fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+
+
 def _append_ledger(entry: Dict[str, Any]) -> None:
+    """Append one ledger row. The file lock covers separate Hermes processes."""
+    lock_path = _ledger_lock_path()
     with _ledger_lock:
-        ledger = _load_json(_ledger_path(), [])
-        if not isinstance(ledger, list):
-            ledger = []
-        ledger.append(entry)
-        _save_json(_ledger_path(), ledger[-LEDGER_MAX:])
+        with lock_path.open("a+b") as handle:
+            _exclusive_lock(handle)
+            try:
+                ledger = _load_json(_ledger_path(), [])
+                if not isinstance(ledger, list):
+                    ledger = []
+                ledger.append(entry)
+                _save_json(_ledger_path(), ledger[-LEDGER_MAX:])
+            finally:
+                _exclusive_unlock(handle)
 
 
 def _on_post_tool(
@@ -1348,14 +1432,19 @@ def _slash(raw_args: str) -> str:
         if cmd == "list":
             return _fmt(list_projects())
         if cmd == "signals":
-            return _fmt(signals(rest[0] if rest else None))
+            project = rest[0] if rest else None
+            res = signals(project)
+            _on_post_tool("devarch_signals", {"project": project}, res)
+            return _fmt(res)
         if cmd == "report":
             proj = rest[0] if rest and rest[0] not in {"markdown", "html", "md"} else None
             fmt = "markdown"
             for tok in rest:
                 if tok in {"markdown", "html", "md"}:
                     fmt = tok
-            return _fmt(report(proj, fmt))
+            res = report(proj, fmt)
+            _on_post_tool("devarch_report", {"project": proj, "fmt": fmt}, res)
+            return _fmt(res)
         if cmd == "mine":
             if not rest:
                 return "Usage: /devarch mine <repo-path> [project]"
