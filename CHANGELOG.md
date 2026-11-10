@@ -1,4 +1,14 @@
-# 0.4.1 — Unreleased readiness candidate
+# Changelog
+
+All notable changes to DevArch Framework will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [0.4.1] - Unreleased readiness candidate
+
+- Rename the repository to AG4TE (`KyaniteLabs/ag4te`). The `devarch` command and the `devarch-framework` package keep their names.
+- Add the AG4TE Hermes plugin (`plugins/ag4te-hermes`) and fix the commit data model: the Git extractor records email and parents, dates keep their UTC offset, era signals sort by instant, and SDLC practices are word-bounded with merges left out.
 
 - Fix QA regressions from #90: `global-viz` and `multi-project-dashboard` now resolve their templates against the installed package (they failed outside the repo source root); `sync` accepts the README-documented `path` profile key as an alias for `repo_path`, validates `name` and the repository location as nonempty strings before any filesystem writes, and reports malformed project entries with actionable errors instead of `KeyError`/`TypeError` tracebacks; `serve` passes datasette's `--setting` as two arguments so the server actually starts.
 - Parse ISO-8601 and legacy Git-log commit timestamps in agent benchmarks, and report malformed dates with commit context instead of silently dropping rows.
@@ -11,18 +21,11 @@
 - Correct package/documentation metadata to Apache-2.0. Released under Apache-2.0 since 2026-06-02 (PR #54); the initial MIT grant from 2026-04-29 remains in effect for copies obtained before that date.
 - Add installed-wheel checks to native Python3.12 CI and remove suppressed CI failures.
 
-# 0.4.0 — Evidence integrity
+## [0.4.0] - 2026-10-01 — Evidence integrity
 
 Fix full-history mining for bare repositories/worktrees, reject shallow coverage, bind extraction artifacts, reconcile CSV/SQLite metrics, and generate portable measured visualizations. Replace unsupported agent/ML/quality assertions with explicit uncertainty. See [release notes](docs/RELEASE_0.4.0.md) for output compatibility and validation.
 
-# Changelog
-
-All notable changes to DevArch Framework will be documented in this file.
-
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
-
-## [0.3.1] - Unreleased (staged; no tag or release yet — no tags exist in this repo)
+## [0.3.1] - 2026-05-12
 
 ### Changed
 - **Pipeline service owns every verb**: `cascade`, `sync` and `serve` moved from inline CLI orchestration onto `archaeology/pipeline.py` (`prepare_serve`, `cascade`, `sync`), joining init/mine/build-db/signals/analyze/visualize/report/audit. CLI output is byte-identical — pinned by the adapter characterization golden, extended to the three verbs — and the sync flow gained hermetic service-level tests (its profile resolution reads the package's own `config/profile.json` first, so the golden pins only its error path).
