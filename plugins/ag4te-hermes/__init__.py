@@ -89,16 +89,35 @@ _PREFIX_KIND = {
 }
 _CONVENTIONAL_RE = re.compile(r"^\s*([A-Za-z]+)(?:\([^)]*\))?!?\s*:")
 _WORD_KIND = (
-    (re.compile(r"^\s*(bump|upgrade|release|version)\b", re.I), "ops"),
-    (re.compile(r"^\s*(fix|fixes|fixed|repair|resolve|hotfix|correct)\b", re.I), "fix"),
     (
-        re.compile(r"^\s*(refactor|rename|move|extract|simplify|clean|tidy|restructure)\b", re.I),
+        re.compile(r"^\s*(bump|upgrade|release|version|pin|unpin|deploy|publish|install)\b", re.I),
+        "ops",
+    ),
+    (
+        re.compile(
+            r"^\s*(fix|fixes|fixed|repair|resolve|hotfix|correct|harden|catch|prevent|guard|handle"
+            r"|stop|undo|restore|avoid|accept|keep)\b",
+            re.I,
+        ),
+        "fix",
+    ),
+    (
+        re.compile(
+            r"^\s*(refactor|rename|move|extract|simplify|clean|tidy|restructure|drop|remove|delete"
+            r"|replace|switch|split|rewrite|rebuild|use|point|migrate|unify|trim)\b",
+            re.I,
+        ),
         "refactor",
     ),
     (re.compile(r"^\s*(test|tests|cover)\b", re.I), "test"),
     (re.compile(r"\b(readme|docs?|changelog|documentation)\b", re.I), "docs"),
+    (re.compile(r"^\s*(say|disclose|document|explain|clarify|describe|reword)\b", re.I), "docs"),
     (
-        re.compile(r"^\s*(add|adds|added|implement|introduce|create|support|new|feat)\b", re.I),
+        re.compile(
+            r"^\s*(add|adds|added|implement|introduce|create|support|new|feat|show|list|let|allow"
+            r"|enable|surface|display|build)\b",
+            re.I,
+        ),
         "feat",
     ),
 )

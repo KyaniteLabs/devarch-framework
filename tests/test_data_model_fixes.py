@@ -120,3 +120,30 @@ def test_extractor_writes_email_and_parents(tmp_path):
     header, row = out.read_text().splitlines()
     assert header == "hash,date,message,author,email,parents"
     assert row.split(",")[4] == "a@x.io"
+
+
+def test_kind_of_reads_plain_imperative_subjects():
+    assert kind_of("Drop the hover shine from the stylesheet") == "refactor"
+    assert kind_of("Harden every source against bad input") == "fix"
+    assert kind_of("Say once where a live prompt is waiting") == "docs"
+    assert kind_of("List agents paused on a live prompt") == "feat"
+    assert kind_of("Pin CI ruff to 0.16.10") == "ops"
+    assert kind_of("Desktop: card context panel") == "other"  # no verb, stays other
+    assert kind_of("Usage graph for agents") == "other"  # "use" is word-bounded
+
+
+def test_plugin_and_framework_classify_alike():
+    import importlib.util
+    from pathlib import Path
+
+    from archaeology.classifiers import work_kind
+
+    src = Path(__file__).resolve().parents[1] / "plugins" / "ag4te-hermes" / "__init__.py"
+    text = src.read_text()
+
+    def block(s):
+        start = s.index("_WORD_KIND = (")
+        return s[start : s.index("\n)\n", start)]
+
+    assert block(text) == block(Path(work_kind.__file__).read_text())
+    assert importlib.util.find_spec("archaeology.classifiers.work_kind") is not None
