@@ -38,7 +38,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 logger = logging.getLogger(__name__)
 
 PLUGIN_NAME = "ag4te"
-DEVARCH_PIN = "0f87d0557390d4195f95c445986b4338a83a6e1c"
+DEVARCH_PIN = "6dd229902ebcf33aeeb7c03d8574ac32db4ad883"
 DEFAULTS: Dict[str, Any] = {
     "devarch_command": f"uvx --from git+https://github.com/KyaniteLabs/ag4te@{DEVARCH_PIN} devarch",
     "repo_roots": "~/workspaces",
