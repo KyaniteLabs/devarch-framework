@@ -40,4 +40,4 @@ Framework side (`archaeology/`, commit c512180 on branch `ag4te-plugin`): all fi
 - Cognitive load is labelled honestly as a subject-length proxy. It excludes merges and uses the shared kind classifier.
 - Tests: 346 passed, 1 skipped. That includes 6 new data-model tests. The pipeline-contract golden test was already failing; it now passes, because its masks now cover dependency and package line numbers.
 
-The plugin now pins DevArch c5121809 from Forgejo (the canonical remote), so these fixes reach it. The repo is private, so the default install needs Forgejo SSH access (a `url.insteadOf` rewrite); anonymous HTTPS is refused.
+The plugin now pins DevArch 0f87d05 (the reconciled 0.4.1 main) from the public GitHub repo, KyaniteLabs/ag4te, so these fixes reach it and anyone can install it without credentials.
