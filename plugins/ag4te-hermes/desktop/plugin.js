@@ -159,6 +159,10 @@ const CSS = `
 .ag-rng{display:block;color:var(--ui-text-secondary);font:10.5px var(--ag-mono)}
 .ag-rel{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
 .ag-rel li{display:grid;grid-template-columns:minmax(70px,auto) 84px minmax(0,1fr);gap:10px;align-items:baseline;padding:6px 0;border-top:1px solid var(--ui-stroke-tertiary);font-size:12.5px}
+.ag-story{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:2px 20px}
+.ag-story li{padding:7px 8px;border-radius:6px;font-size:12.8px;line-height:1.5}
+.ag-story li b{display:block;font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--ui-text-secondary);margin-bottom:2px}
+.ag-story li[data-era]{cursor:pointer}.ag-story li[data-era]:hover,.ag-story li[data-era]:focus-visible,.ag-story li.on{background:var(--ui-control-active-background);outline:none}
 .ag-rel li:first-child{border-top:0}.ag-rel b{font:600 12px var(--ag-mono)}.ag-rel time{font:12px var(--ag-mono);color:var(--ui-text-secondary)}
 .ag-rel .ag-muted{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ag-sdlc p.ev{display:flex;align-items:center;gap:8px;font:11.5px var(--ag-mono)}
@@ -1118,6 +1122,23 @@ function Provenance({ d, when }) {
     bits.filter(Boolean).join(' · '), isNaN(when) ? '' : ` · dug ${when.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}`)
 }
 
+// Story: the dig told in a few plain chapters (built by rules in __init__.py, no LLM).
+// A chapter tied to an era lights that stretch of the strata on hover or focus.
+function Story({ d, hl, setHl }) {
+  const rows = Array.isArray(d.story) ? d.story : []
+  if (!rows.length) return null
+  return h('section', { className: 'ag-card ag-rise', 'aria-label': 'Story' },
+    h('div', { className: 'ag-chead' }, h('div', null, h('h3', null, 'Story'),
+      h('p', { className: 'ag-sub' }, 'The history in plain words, written by rules from the numbers below. Point at a chapter to light its era.'))),
+    h('ol', { className: 'ag-story' }, rows.map(c => {
+      const tied = c.era != null && (d.clusters || [])[c.era]
+      const on = tied ? { 'data-era': c.era, tabIndex: 0, className: hl === c.era ? 'on' : undefined,
+        onPointerEnter: () => setHl(c.era), onPointerLeave: () => setHl(null),
+        onFocus: () => setHl(c.era), onBlur: () => setHl(null) } : {}
+      return h('li', { key: c.id, ...on }, h('b', null, c.title), c.text)
+    })))
+}
+
 function headline(d) {
   const t = d.kind_totals || [], tot = t.reduce((a, b) => a + b, 0) || 1
   const top = KINDS.map((k, j) => [KIND_LABEL[k].toLowerCase(), t[j] || 0]).sort((a, b) => b[1] - a[1])
@@ -1246,6 +1267,7 @@ function Page({ ctx }) {
         h('div', null, h('small', null, 'Longest quiet'), h('span', null, d.longest_gap), h('em', null, 'days')),
         h('div', { title: fmtDayY(d.busiest_day.d) }, h('small', null, 'Busiest day'), h('span', null, d.busiest_day.n), h('em', null, fmtDay(d.busiest_day.d))),
         h('div', null, h('small', null, 'Lines'), h('span', { className: 'ag-add' }, `+${short(d.insertions)}`), h('em', { className: 'ag-del' }, `−${short(d.deletions)}`), h(Spark, { d, pick: b => b.ins + b.del, label: 'Lines changed per week' }))),
+      h(Story, { key: 'story', d, hl, setHl }),
       h(Strata, { key: 'strata', d, pal, eraNo, hl, setHl, multiYear, sig, setSig }),
       h('div', { key: 'g2', className: 'ag-grid2' }, h(Rhythm, { d }), h(Churn, { d })),
       h('div', { key: 'g3', className: 'ag-grid3' }, h(Practices, { d }), h(Turning, { d, sig, setSig, multiYear }), h('div', { className: 'ag-stack' }, h(People, { d }), h(Load, { d }))),

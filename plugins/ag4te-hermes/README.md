@@ -16,7 +16,7 @@ Digs run on your machine. They read only the repository you choose, keep their r
 
 ## What you get
 
-- **Desktop:** an AG4TE page. Pick a repository under your `repo_roots`, start a dig, watch its steps, and read the stone and the strata chart (Days, Weeks or Months), eras, gaps, signals, rhythm and authors. A running dig can be stopped and resumed.
+- **Desktop:** an AG4TE page. Pick a repository under your `repo_roots`, start a dig, watch its steps, and read the stone, a short Story of the repo in plain words, and the strata chart (Days, Weeks or Months), eras, gaps, signals, rhythm and authors. A running dig can be stopped and resumed.
 - **Slash command:** `/ag4te list | show <project> | status <project> | dig <repo-path> [project] | stop <project> | resume <project>`. On Telegram, Discord and other chat platforms, `dig` and `resume` are off unless you set `allow_dig_on_gateway: true`, because they read local files.
 - **Agent tool:** `ag4te_dig` gives agents a read-only summary of a finished dig, or lists the digs.
 
@@ -49,7 +49,7 @@ Set these in Desktop (**Settings → Plugins → AG4TE**) or with `hermes config
 
 ## What the numbers mean
 
-Kinds of work come from commit messages and changed paths. They are keyword heuristics, not a reading of the code. Signals and eras are leads to investigate, not conclusions. Commit counts are not a productivity measure. See [docs/DATA-MODEL-ROAST.md](docs/DATA-MODEL-ROAST.md) for how the data model was reviewed and fixed.
+Kinds of work come from commit messages and changed paths. They are keyword heuristics, not a reading of the code. Signals and eras are leads to investigate, not conclusions. The Story card is written by fixed rules from the same numbers (origin, shape, biggest push, turning points, who built it, the work, now), so the same dig always reads the same; no model writes it. Commit counts are not a productivity measure. See [docs/DATA-MODEL-ROAST.md](docs/DATA-MODEL-ROAST.md) for how the data model was reviewed and fixed.
 
 ## License
 
