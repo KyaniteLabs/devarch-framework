@@ -1,0 +1,43 @@
+name: ag4te
+version: 0.2.0
+manifest_version: 2
+requires_hermes: ">=0.21.6"
+description: >-
+  AG4TE digs a local git repository's history with DevArch and draws its strata in
+  Hermes Desktop: commits per day by kind of work, eras, quiet gaps, signals, weekly
+  rhythm and practice health. Authors are merged across spellings and split into people, agents and bots. Digs run locally, read only the repository you choose
+  (under repo_roots), keep results in plugin-data/ag4te, and never call an LLM or the network
+  beyond fetching DevArch itself with uvx.
+provides_tools: [ag4te_dig]
+config_schema:
+  devarch_command:
+    type: string
+    description: Command that runs the DevArch CLI. Defaults to a pinned uvx install.
+  repo_roots:
+    type: string
+    default: ~/workspaces
+    description: Folders (comma separated) that repositories must sit under.
+  data_dir:
+    type: string
+    default: ""
+    description: Where digs are stored. Empty means <HERMES_HOME>/plugin-data/ag4te.
+  timeout_seconds:
+    type: integer
+    default: 600
+    description: Time limit for each DevArch step.
+  time_zone:
+    type: string
+    default: ""
+    description: IANA zone used to bucket days and hours (e.g. America/Los_Angeles). Empty uses the host zone.
+  history:
+    type: string
+    default: head
+    description: head reads the current branch history; all reads every branch and tag.
+  bots:
+    type: string
+    default: ""
+    description: Extra bot or service accounts, comma separated names or emails, * wildcards allowed.
+  allow_dig_on_gateway:
+    type: boolean
+    default: false
+    description: Allow /ag4te dig from chat platforms (off by default).
