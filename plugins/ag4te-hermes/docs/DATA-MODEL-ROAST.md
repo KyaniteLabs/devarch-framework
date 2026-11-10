@@ -31,7 +31,7 @@ Acceptance run: Epoch at a5c7eac, zone America/Los_Angeles, `bots` setting with 
 
 Wrong/Thin/Weak in the plugin: lexical sort, offset stripping, mixed-zone buckets, merge double-counting, substring practices, commit_count vs truncated list, PR numbers, reverts, co-author trailers, UI-side era minimum and alias merge: all fixed. Change size replaces "cognitive load". Eras come from the plugin's gap-based cut, with the minimum in the dig's thresholds.
 
-Framework side (`archaeology/`, branch `ag4te-plugin`, not yet committed): all fixed.
+Framework side (`archaeology/`, commit c512180 on branch `ag4te-plugin`): all fixed.
 - Git extractor records email and parents. A root commit's empty parents field is no longer stripped.
 - `_parse_date` keeps the offset and returns the UTC instant.
 - The era detector sorts commits by instant, buckets days by parsed date, and folds same-direction velocity runs within 7 days.
@@ -40,4 +40,4 @@ Framework side (`archaeology/`, branch `ag4te-plugin`, not yet committed): all f
 - Cognitive load is labelled honestly as a subject-length proxy. It excludes merges and uses the shared kind classifier.
 - Tests: 346 passed, 1 skipped. That includes 6 new data-model tests. The pipeline-contract golden test was already failing; it now passes, because its masks now cover dependency and package line numbers.
 
-The plugin pins DevArch b44430e1, so these fixes reach it only with a new pin.
+The plugin now pins DevArch c5121809 from Forgejo (the canonical remote), so these fixes reach it.
