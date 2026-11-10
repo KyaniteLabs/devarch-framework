@@ -214,7 +214,7 @@ def _build_pattern_slots(c: dict, rel: str = "") -> list[tuple[re.Pattern, calla
         # "N commits" or "N," (with comma formatting variants)
         slots.append(
             (
-                re.compile(rf"\b{stale_s.replace(',', r'[,.]?\s*')}?\s*{stale}\s+commits\b"),
+                re.compile(r"\b" + stale_s.replace(",", r"[,.]?\s*") + rf"?\s*{stale}\s+commits\b"),
                 lambda m, s=total_s: f"{s} commits",
             )
         )

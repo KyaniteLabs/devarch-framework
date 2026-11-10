@@ -161,7 +161,7 @@ def test_prepare_serve_requires_database(tmp_path, monkeypatch):
         pipeline.prepare_serve(ref, 8001, False)
     assert exc.value.kind == "no-database"
     assert str(exc.value) == (
-        "Database not found at projects/empty/data/archaeology.db. "
+        f"Database not found at {os.path.join('projects', 'empty', 'data', 'archaeology.db')}. "
         "Run 'devarch build-db empty' first."
     )
 

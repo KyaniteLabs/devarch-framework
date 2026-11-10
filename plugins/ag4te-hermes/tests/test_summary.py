@@ -216,6 +216,10 @@ def test_devarch_failure_is_optional(tmp_path):
     assert ag.load_dig("r", s)["commit_count"] == 3
 
 
+@pytest.mark.skipif(
+    sys.platform == "win32",
+    reason="plugin runs under the Hermes gateway on POSIX: shlex commands, process groups",
+)
 def test_run_devarch_scrubs_env(tmp_path, monkeypatch):
     monkeypatch.setenv("OPENAI_API_KEY", "sk-secret")
     s = {
@@ -314,6 +318,10 @@ def _wait(project, s, timeout=20):
     raise AssertionError("dig did not finish")
 
 
+@pytest.mark.skipif(
+    sys.platform == "win32",
+    reason="plugin runs under the Hermes gateway on POSIX: shlex commands, process groups",
+)
 def test_cancel_kills_running_command_then_resume_skips_done_steps(tmp_path):
     import sys
     import time as _t

@@ -4,6 +4,7 @@ import csv
 import json
 import sqlite3
 from collections import Counter
+from contextlib import closing
 from pathlib import Path
 
 from .utils import _parse_date, atomic_write
@@ -16,7 +17,7 @@ def write_metrics(project_root: Path, db_path: Path) -> dict:
     with csv_path.open(encoding="utf-8", newline="") as handle:
         rows = list(csv.DictReader(handle))
     hashes = [row["hash"] for row in rows]
-    with sqlite3.connect(db_path) as conn:
+    with closing(sqlite3.connect(db_path)) as conn:
         stored = [row[0] for row in conn.execute("SELECT hash FROM commits")]
     if len(set(hashes)) != len(hashes) or sorted(hashes) != sorted(stored):
         raise ValueError("CSV/SQLite commit identities differ or contain duplicates")

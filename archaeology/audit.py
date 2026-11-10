@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import re
 import sqlite3
+from contextlib import closing
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Iterable
@@ -545,7 +546,7 @@ def check_mined_history(project_name: str, root: Path) -> list[AuditFinding]:
         hashes = [row["hash"] for row in rows]
         if not db_path.exists():
             raise ValueError("Mined history database is missing")
-        with sqlite3.connect(db_path) as conn:
+        with closing(sqlite3.connect(db_path)) as conn:
             stored = list(conn.execute("SELECT hash,date,message,author FROM commits"))
         if (
             len(hashes) != coverage.get("commit_count")

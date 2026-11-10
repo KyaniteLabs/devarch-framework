@@ -17,9 +17,11 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 import tempfile
 from pathlib import Path
 
+import pytest
 from click.testing import CliRunner
 
 import archaeology
@@ -416,6 +418,7 @@ def _verbs(env, capfd):
 # ── Tests ─────────────────────────────────────────────────────────────────────
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="the golden pins POSIX path output")
 def test_adapter_outcomes_match_golden(tmp_path_factory, monkeypatch, capfd):
     actual = json.dumps(_run_all(tmp_path_factory, monkeypatch, capfd), indent=2) + "\n"
     if os.environ.get("UPDATE_GOLDEN"):

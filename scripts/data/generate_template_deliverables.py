@@ -14,6 +14,14 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+# Newline for f-string expressions; Python < 3.12 forbids backslashes there.
+NL = "\n"
+
+
+def _era_name(e: dict) -> str:
+    return e.get("name", f"Era {e.get('id', '?')}")
+
+
 ROOT = Path(__file__).resolve().parents[2]
 
 
@@ -153,7 +161,7 @@ Machine learning and AI pattern analysis for **{p["name"]}**.
 
 ## Pattern Distribution by Era
 
-{"".join(f"- **Era {e.get('id', '?')}** ({e.get('name', '?')}, {e.get('dates', '?')}): {e.get('commits', '?')} commits — {e.get('description', 'No description')[:100]}\n" for e in p["eras"])}
+{"".join(f"- **Era {e.get('id', '?')}** ({e.get('name', '?')}, {e.get('dates', '?')}): {e.get('commits', '?')} commits — {e.get('description', 'No description')[:100]}{NL}" for e in p["eras"])}
 
 ## Key Metrics
 
@@ -190,7 +198,7 @@ Mapping of informal development terminology to formal computer science and softw
 
 ## Era Terminology
 
-{"".join(f"### Era {e.get('id', '?')}: {e.get('name', '?')}\n{e.get('description', 'No description')}\n**Key events**: {', '.join(e.get('key_events', [])[:5])}\n\n" for e in p["eras"])}
+{"".join(f"### Era {e.get('id', '?')}: {e.get('name', '?')}{NL}{e.get('description', 'No description')}{NL}**Key events**: {', '.join(e.get('key_events', [])[:5])}{NL}{NL}" for e in p["eras"])}
 """
 
 
@@ -226,7 +234,7 @@ Deep archaeological analysis of source code evolution in **{p["name"]}**.
 
 ## Development Timeline
 
-{"".join(f"### Era {e.get('id', '?')}: {e.get('name', '?')} ({e.get('dates', '?')})\n- Commits: {e.get('commits', '?')}\n- Description: {e.get('description', 'N/A')}\n- Key events: {', '.join(str(x) for x in e.get('key_events', [])[:5])}\n\n" for e in p["eras"])}
+{"".join(f"### Era {e.get('id', '?')}: {e.get('name', '?')} ({e.get('dates', '?')}){NL}- Commits: {e.get('commits', '?')}{NL}- Description: {e.get('description', 'N/A')}{NL}- Key events: {', '.join(str(x) for x in e.get('key_events', [])[:5])}{NL}{NL}" for e in p["eras"])}
 
 ## Work Patterns
 
@@ -288,7 +296,7 @@ ANALYSIS_GENERATORS = {
 
 def report_cross_repo_narrative(p: dict) -> str:
     era_list = "".join(
-        f"### {e.get('name', f'Era {e.get("id", "?")}')} ({e.get('dates', '?')})\n{e.get('commits', '?')} commits. {e.get('description', '')}\n\n"
+        f"### {_era_name(e)} ({e.get('dates', '?')})\n{e.get('commits', '?')} commits. {e.get('description', '')}\n\n"
         for e in p["eras"]
     )
     return f"""# Cross-Repository Narrative — {p["name"]}
@@ -329,7 +337,7 @@ This project contributes to the broader KyaniteLabs ecosystem by demonstrating d
 
 def report_raw_narrative(p: dict) -> str:
     era_stories = "\n\n".join(
-        f"## {e.get('name', f'Era {e.get("id", "?")}')} ({e.get('dates', '?')})\n\n"
+        f"## {_era_name(e)} ({e.get('dates', '?')})\n\n"
         f"{e.get('commits', '?')} commits in this era.\n\n"
         f"{e.get('description', '')}\n\n"
         f"Key events:\n" + "\n".join(f"- {evt}" for evt in e.get("key_events", [])[:8])
@@ -356,7 +364,7 @@ def report_raw_narrative(p: dict) -> str:
 
 ## Contributors
 
-{"".join(f"- **{c.get('name', '?')}**: {c.get('commits', '?')} commits ({c.get('percentage', '?')}%)\n" for c in p["contributors"])}
+{"".join(f"- **{c.get('name', '?')}**: {c.get('commits', '?')} commits ({c.get('percentage', '?')}%){NL}" for c in p["contributors"])}
 
 *Generated from git archaeology on {datetime.now().strftime("%Y-%m-%d")}*
 """
@@ -419,7 +427,7 @@ Analysis of AI agent effectiveness in **{p["name"]}**'s development.
 
 | Type | Count | Percentage |
 |------|-------|-----------|
-{"".join(f"| {k} | {v} | {round(v / max(total, 1) * 100, 1)}% |\n" for k, v in sorted(agents_raw.items(), key=lambda x: -x[1]))}
+{"".join(f"| {k} | {v} | {round(v / max(total, 1) * 100, 1)}% |{NL}" for k, v in sorted(agents_raw.items(), key=lambda x: -x[1]))}
 
 ### Feature vs Fix Ratio
 
@@ -429,7 +437,7 @@ Analysis of AI agent effectiveness in **{p["name"]}**'s development.
 
 ## Era-by-Era Performance
 
-{"".join(f"### {e.get('name', f'Era {e.get("id", "?")}')}\n- Commits: {e.get('commits', '?')}\n- Period: {e.get('dates', '?')}\n- Description: {e.get('description', 'N/A')[:120]}\n\n" for e in p["eras"])}
+{"".join(f"### {_era_name(e)}{NL}- Commits: {e.get('commits', '?')}{NL}- Period: {e.get('dates', '?')}{NL}- Description: {e.get('description', 'N/A')[:120]}{NL}{NL}" for e in p["eras"])}
 
 ## Key Findings
 
@@ -471,7 +479,7 @@ def strategy_porter_value_chain(p: dict) -> str:
     margin_score = round((ops_score + service_score + marketing_score + outbound_score) / 4)
 
     era_lines = "\n".join(
-        f"  - **{e.get('name', f'Era {e.get("id", "?")}')}** ({e.get('dates', '?')}): "
+        f"  - **{_era_name(e)}** ({e.get('dates', '?')}): "
         f"{e.get('commits', '?')} commits — {e.get('description', 'N/A')[:80]}"
         for e in p["eras"]
     )
@@ -714,31 +722,31 @@ Strategic assessment of **{p["name"]}** based on archaeological analysis of {tot
 
 Internal factors that give {p["name"]} an advantage.
 
-{"".join(f"{i + 1}. {s}\n" for i, s in enumerate(strengths))}
+{"".join(f"{i + 1}. {s}{NL}" for i, s in enumerate(strengths))}
 
 ## Weaknesses
 
 Internal factors that place {p["name"]} at a disadvantage.
 
-{"".join(f"{i + 1}. {w}\n" for i, w in enumerate(weaknesses))}
+{"".join(f"{i + 1}. {w}{NL}" for i, w in enumerate(weaknesses))}
 
 ## Opportunities
 
 External factors that {p["name"]} could exploit.
 
-{"".join(f"{i + 1}. {o}\n" for i, o in enumerate(opportunities))}
+{"".join(f"{i + 1}. {o}{NL}" for i, o in enumerate(opportunities))}
 
 ## Threats
 
 External factors that could trouble {p["name"]}.
 
-{"".join(f"{i + 1}. {t}\n" for i, t in enumerate(threats))}
+{"".join(f"{i + 1}. {t}{NL}" for i, t in enumerate(threats))}
 
 ## Commit Type Distribution
 
 | Type | Count | Percentage | SWOT Signal |
 |------|-------|-----------|-------------|
-{"".join(f"| {k} | {v} | {round(v / total * 100, 1)}% | {'Strength' if v / total > 0.3 else 'Weakness' if v == 0 else 'Neutral'} |\n" for k, v in sorted(ct.items(), key=lambda x: -x[1]))}
+{"".join(f"| {k} | {v} | {round(v / total * 100, 1)}% | {'Strength' if v / total > 0.3 else 'Weakness' if v == 0 else 'Neutral'} |{NL}" for k, v in sorted(ct.items(), key=lambda x: -x[1]))}
 
 ## Strategic Priorities
 
@@ -810,7 +818,7 @@ def strategy_wardley_map(p: dict) -> str:
         else:
             phase = "Custom"
         era_evolution.append(
-            f"  - **{e.get('name', f'Era {e.get("id", "?")}')}** ({e.get('dates', '?')}): {era_commits} commits — {phase}"
+            f"  - **{_era_name(e)}** ({e.get('dates', '?')}): {era_commits} commits — {phase}"
         )
 
     maturity_scores = {"Genesis": 1, "Custom": 2, "Product": 3, "Commodity": 4}
@@ -879,7 +887,7 @@ USER NEED: {p["description"] or p["name"]}
 
 ## Era Evolution Trajectory
 
-{"".join(f"{line}\n" for line in era_evolution)}
+{"".join(f"{line}{NL}" for line in era_evolution)}
 
 ## Strategic Implications
 
@@ -1025,8 +1033,7 @@ def strategy_bcg_matrix(p: dict) -> str:
     )
 
     era_lines = "\n".join(
-        f"  - **{e.get('name', f'Era {e.get("id", "?")}')}** ({e.get('dates', '?')}): "
-        f"{e.get('commits', '?')} commits"
+        f"  - **{_era_name(e)}** ({e.get('dates', '?')}): {e.get('commits', '?')} commits"
         for e in p["eras"]
     )
 
@@ -1146,7 +1153,7 @@ def strategy_ansoff_matrix(p: dict) -> str:
         else:
             move = "Penetration"
         era_moves.append(
-            f"  - **{e.get('name', f'Era {e.get("id", "?")}')}** ({e.get('dates', '?')}): {commits} commits — {move}"
+            f"  - **{_era_name(e)}** ({e.get('dates', '?')}): {commits} commits — {move}"
         )
 
     return f"""# Ansoff Growth Matrix — {p["name"]}
@@ -1293,8 +1300,7 @@ def strategy_blue_ocean(p: dict) -> str:
     )
 
     era_lines = "\n".join(
-        f"  - **{e.get('name', f'Era {e.get("id", "?")}')}** ({e.get('dates', '?')}): "
-        f"{e.get('commits', '?')} commits"
+        f"  - **{_era_name(e)}** ({e.get('dates', '?')}): {e.get('commits', '?')} commits"
         for e in p["eras"]
     )
 
@@ -1404,7 +1410,7 @@ def planning_external_data(p: dict) -> str:
 - **detected-signals.json**: Velocity, scope, author, and gap signals
 
 ### Analysis Data
-{"".join(f"- **{stem}**: Available\n" for stem in p.get("analysis", {}))}
+{"".join(f"- **{stem}**: Available{NL}" for stem in p.get("analysis", {}))}
 
 ### Metrics
 - **canonical-metrics.json**: Core project metrics
@@ -1481,7 +1487,7 @@ Based on analysis of {p["total_commits"]} commits across {p["era_count"]} eras.
 
 ## Learning Timeline
 
-{"".join(f"### {e.get('name', f'Era {e.get("id", "?")}')} ({e.get('dates', '?')})\nFocus: {e.get('description', 'General development')[:100]}\nCommits: {e.get('commits', '?')}\n\n" for e in p["eras"])}
+{"".join(f"### {_era_name(e)} ({e.get('dates', '?')}){NL}Focus: {e.get('description', 'General development')[:100]}{NL}Commits: {e.get('commits', '?')}{NL}{NL}" for e in p["eras"])}
 
 ## Recommended Resources
 
@@ -1494,7 +1500,7 @@ Based on analysis of {p["total_commits"]} commits across {p["era_count"]} eras.
 
 def learning_story_circle(p: dict) -> str:
     era_events = "\n".join(
-        f"- **{e.get('name', f'Era {e.get("id", "?")}')}**: {e.get('description', 'Development phase')} ({e.get('commits', '?')} commits)"
+        f"- **{_era_name(e)}**: {e.get('description', 'Development phase')} ({e.get('commits', '?')} commits)"
         for e in p["eras"]
     )
     return f"""# Recursive Story Circle — {p["name"]}
@@ -1543,7 +1549,7 @@ We mined {p["name"]}'s complete git history — {p["total_commits"]} commits acr
 
 ## {p["era_count"]} Chapters, One Story
 
-{" ".join(f"We see **{e.get('name', f'Era {e.get("id", "?")}')}** ({e.get('dates', '?')}): {e.get('description', 'a distinct development phase').lower()}." for e in p["eras"])}
+{" ".join(f"We see **{_era_name(e)}** ({e.get('dates', '?')}): {e.get('description', 'a distinct development phase').lower()}." for e in p["eras"])}
 
 ## The Numbers
 
@@ -1572,7 +1578,7 @@ Archaeological mining of **{p["name"]}** reveals {p["total_commits"]} commits ac
 
 ## Findings by Era
 
-{"".join(f"### Era {e.get('id', '?')}: {e.get('name', '?')}\n- **Period**: {e.get('dates', '?')}\n- **Commits**: {e.get('commits', '?')}\n- **Summary**: {e.get('description', 'N/A')}\n- **Key events**: {', '.join(str(x) for x in e.get('key_events', [])[:5])}\n\n" for e in p["eras"])}
+{"".join(f"### Era {e.get('id', '?')}: {e.get('name', '?')}{NL}- **Period**: {e.get('dates', '?')}{NL}- **Commits**: {e.get('commits', '?')}{NL}- **Summary**: {e.get('description', 'N/A')}{NL}- **Key events**: {', '.join(str(x) for x in e.get('key_events', [])[:5])}{NL}{NL}" for e in p["eras"])}
 
 ## Statistical Summary
 
@@ -1588,7 +1594,7 @@ Archaeological mining of **{p["name"]}** reveals {p["total_commits"]} commits ac
 
 ## Artifacts Cataloged
 
-{"".join(f"- **{k}**: {v} commits ({round(v / max(p['total_commits'], 1) * 100, 1)}%)\n" for k, v in sorted(p["commit_types"].items(), key=lambda x: -x[1]))}
+{"".join(f"- **{k}**: {v} commits ({round(v / max(p['total_commits'], 1) * 100, 1)}%){NL}" for k, v in sorted(p["commit_types"].items(), key=lambda x: -x[1]))}
 """
 
 
@@ -1601,7 +1607,7 @@ That's how it started. Not with a grand plan, but with a commit message and the 
 
 ---
 
-{" ".join(f"**{e.get('name', f'Era {e.get("id", "?")}')}** — {e.get('commits', '?')} commits in {e.get('dates', '?')}. {e.get('description', 'The work continued.')}" for e in p["eras"])}
+{" ".join(f"**{_era_name(e)}** — {e.get('commits', '?')} commits in {e.get('dates', '?')}. {e.get('description', 'The work continued.')}" for e in p["eras"])}
 
 ---
 
@@ -1620,7 +1626,7 @@ def content_twitter_thread(p: dict) -> str:
 
 2/ The project went through {p["era_count"]} distinct phases. {"Here's each one:" if p["era_count"] > 1 else "Here's what happened:"}
 
-{"  3/" + chr(10).join(f"  {i + 4}/ **{e.get('name', f'Era {e.get("id", "?")}')}** ({e.get('dates', '?')}): {e.get('commits', '?')} commits. {e.get('description', '')[:80]}" for i, e in enumerate(p["eras"]))}
+{"  3/" + chr(10).join(f"  {i + 4}/ **{_era_name(e)}** ({e.get('dates', '?')}): {e.get('commits', '?')} commits. {e.get('description', '')[:80]}" for i, e in enumerate(p["eras"]))}
 
 {len(p["eras"]) + 4}/ Peak velocity: {p["peak_day_commits"]} commits on {p["peak_day"]}. That's {round(p["peak_day_commits"] / 24, 1)} commits per hour.
 
@@ -1643,7 +1649,7 @@ def content_project_narrative(p: dict) -> str:
 
 ## The Eras
 
-{"".join(f"## {e.get('name', f'Era {e.get("id", "?")}')} ({e.get('dates', '?')})\n\n{e.get('commits', '?')} commits shaped this era.\n\n{e.get('description', '')}\n\nKey milestones:\n" + "".join(f"- {evt}\n" for evt in e.get("key_events", [])[:6]) + "\n" for e in p["eras"])}
+{"".join(f"## {_era_name(e)} ({e.get('dates', '?')}){NL}{NL}{e.get('commits', '?')} commits shaped this era.{NL}{NL}{e.get('description', '')}{NL}{NL}Key milestones:{NL}" + "".join(f"- {evt}{NL}" for evt in e.get("key_events", [])[:6]) + "{NL}" for e in p["eras"])}
 
 ## The Numbers Tell the Story
 
@@ -1676,7 +1682,7 @@ All KyaniteLabs projects use AI-assisted development. Key indicators:
 
 ## Collaboration Patterns by Era
 
-{"".join(f"### {e.get('name', f'Era {e.get("id", "?")}')}\n- Commits: {e.get('commits', '?')}\n- Intensity: {'High' if e.get('commits', 0) > 30 else 'Medium' if e.get('commits', 0) > 10 else 'Low'}\n\n" for e in p["eras"])}
+{"".join(f"### {_era_name(e)}{NL}- Commits: {e.get('commits', '?')}{NL}- Intensity: {'High' if e.get('commits', 0) > 30 else 'Medium' if e.get('commits', 0) > 10 else 'Low'}{NL}{NL}" for e in p["eras"])}
 
 ## Lessons
 
@@ -1704,7 +1710,7 @@ def content_dev_rhythm(p: dict) -> str:
 
 ## Era Velocity
 
-{"".join(f"- **{e.get('name', f'Era {e.get("id", "?")}')}**: {e.get('commits', '?')} commits in {e.get('dates', '?')}\n" for e in p["eras"])}
+{"".join(f"- **{_era_name(e)}**: {e.get('commits', '?')} commits in {e.get('dates', '?')}{NL}" for e in p["eras"])}
 
 ## Pattern Analysis
 
@@ -1726,7 +1732,7 @@ Key technical decisions visible in **{p["name"]}**'s commit history.
 
 ## Era-by-Era Decisions
 
-{"".join(f"### {e.get('name', f'Era {e.get("id", "?")}')} ({e.get('dates', '?')})\n\n{e.get('description', 'Development phase.')}\n\n**Key decisions:**\n" + "".join(f"- {evt}\n" for evt in e.get("key_events", [])[:5]) + "\n" for e in p["eras"])}
+{"".join(f"### {_era_name(e)} ({e.get('dates', '?')}){NL}{NL}{e.get('description', 'Development phase.')}{NL}{NL}**Key decisions:**{NL}" + "".join(f"- {evt}{NL}" for evt in e.get("key_events", [])[:5]) + "{NL}" for e in p["eras"])}
 
 ## Architecture Evolution
 
@@ -1761,7 +1767,7 @@ Detailed analysis of each development era in **{p["name"]}**.
 **Description**: {e.get("description", "N/A")}
 
 ### Key Events
-{"".join(f"- {evt}\n" for evt in e.get("key_events", [])[:8])}
+{"".join(f"- {evt}{NL}" for evt in e.get("key_events", [])[:8])}
 
 ### Daily Commit Distribution
 {", ".join(f"{k}: {v}" for k, v in list(e.get("daily", {}).items())[:10])}
@@ -1777,7 +1783,7 @@ Detailed analysis of each development era in **{p["name"]}**.
 
 {
         "".join(
-            f"- Era {p['eras'][i].get('id', '?')} → Era {p['eras'][i + 1].get('id', '?')}: {p['eras'][i].get('name', '?')} to {p['eras'][i + 1].get('name', '?')}\n"
+            f"- Era {p['eras'][i].get('id', '?')} → Era {p['eras'][i + 1].get('id', '?')}: {p['eras'][i].get('name', '?')} to {p['eras'][i + 1].get('name', '?')}{NL}"
             for i in range(len(p["eras"]) - 1)
         )
     }
@@ -1812,7 +1818,7 @@ def video_script_outline(p: dict) -> str:
 
 ## Section 2: The Eras (90 seconds each)
 
-{"".join(f"### {e.get('name', f'Era {e.get("id", "?")}')} ({e.get('dates', '?')})\n- {e.get('commits', '?')} commits\n- {e.get('description', '')[:100]}\n- Visual: era strip with highlight\n\n" for e in p["eras"])}
+{"".join(f"### {_era_name(e)} ({e.get('dates', '?')}){NL}- {e.get('commits', '?')} commits{NL}- {e.get('description', '')[:100]}{NL}- Visual: era strip with highlight{NL}{NL}" for e in p["eras"])}
 
 ## Section 3: Key Findings (60 seconds)
 

@@ -192,6 +192,7 @@ def test_mine_validates_the_repo_before_touching_the_project(ws):
 def test_mine_expands_home_only_when_asked(ws, repo, monkeypatch):
     home = repo.parent
     monkeypatch.setenv("HOME", str(home))
+    monkeypatch.setenv("USERPROFILE", str(home))  # expanduser on Windows
     ref = ProjectRef.for_workspace("tilde")
     tilde = "~/repo"
     assert pipeline.mine(tilde, ref, expand_repo_path=True).commits == 5

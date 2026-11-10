@@ -16,6 +16,7 @@ Endpoints:
 import json
 import re
 import sqlite3
+from contextlib import closing
 from datetime import datetime
 from pathlib import Path
 from urllib.parse import urlparse
@@ -382,7 +383,7 @@ def _get_pipeline_status(project_dir):
     if not db_path.exists():
         return None
     try:
-        with sqlite3.connect(str(db_path)) as conn:
+        with closing(sqlite3.connect(str(db_path))) as conn:
             conn.row_factory = sqlite3.Row
             row = conn.execute(
                 "SELECT run_timestamp, status FROM pipeline_runs "
@@ -584,7 +585,7 @@ def handle_health_trend(handler, project_name):
     if not db_path.exists():
         return _error_response(handler, f"No database for '{project_name}'")
     try:
-        with sqlite3.connect(str(db_path)) as conn:
+        with closing(sqlite3.connect(str(db_path))) as conn:
             conn.row_factory = sqlite3.Row
             rows = conn.execute(
                 "SELECT r.run_timestamp, r.status, pr.issues_count, pr.fixes_applied "
