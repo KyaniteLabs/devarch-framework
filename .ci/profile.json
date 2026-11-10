@@ -19,7 +19,7 @@
         "-euo",
         "pipefail",
         "-c",
-        "apt-get update -qq && apt-get install -y -qq python3-venv && python3 -m venv /tmp/uv-bootstrap && /tmp/uv-bootstrap/bin/pip install --quiet uv==0.10.2 && /tmp/uv-bootstrap/bin/uv venv --python 3.12.12 .venv && /tmp/uv-bootstrap/bin/uv pip install --python .venv '.[dev]' pytest==9.1.1 ruff==0.15.21"
+        "apt-get update -qq && apt-get install -y -qq python3-venv && python3 -m venv /tmp/uv-bootstrap && /tmp/uv-bootstrap/bin/pip install --quiet uv==0.10.2 && /tmp/uv-bootstrap/bin/uv venv --python 3.12.12 .venv && /tmp/uv-bootstrap/bin/uv pip install --python .venv '.[dev]' pytest==9.1.1 ruff==0.16.10"
       ],
       "timeout_seconds": 900
     },
