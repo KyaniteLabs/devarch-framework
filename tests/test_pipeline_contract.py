@@ -138,10 +138,14 @@ class Env:
         # whose traceback text varies by interpreter and install location:
         # the venv's site-packages path, runpy's stdlib line numbers, and
         # traceback caret alignment all differ across Python versions.
-        text = re.sub(r"\S*/site-packages", "<VENV>", text)
+        # stop at quotes/backslashes so the File "..." quote survives json escaping
+        text = re.sub(r'[^\s"\\]*/site-packages', "<VENV>", text)
         text = re.sub(r'(File "<frozen runpy>", line )\d+', r"\1<N>", text)
         # dependency-internal frames (click, sqlite_utils) move on upgrades
         text = re.sub(r'(File "<VENV>[^"]+", line )\d+', r"\1<N>", text)
+        # our own frames move whenever the module is edited; the contract is
+        # the failure, not the line it happened on
+        text = re.sub(r'(File \\?"<PKG>[^"\\]+\\?", line )\d+', r"\1<N>", text)
         # caret lines differ in PRESENCE across Python versions (3.12 anchors
         # fewer frames than 3.15), so drop them rather than normalize them
         text = re.sub(r"^[ \t]*[~^]{3,}[ \t]*\n", "", text, flags=re.M)

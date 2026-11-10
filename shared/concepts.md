@@ -50,7 +50,7 @@ Configure in `project.json` under `supplementary_sources`.
 
 ## Database
 
-SQLite database with FTS5 full-text search for commit and signal inspection. Schema includes commits, signals, eras, analysis results, and supplementary data tables.
+SQLite database with FTS4 full-text search for commit and signal inspection. Schema includes commits, signals, eras, analysis results, and supplementary data tables.
 
 ## Visualization
 

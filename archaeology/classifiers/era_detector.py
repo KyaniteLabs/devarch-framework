@@ -164,6 +164,9 @@ class SignalDetector:
                 "message": str(row["message"]) if row["message"] else "",
                 "repo": (str(row["repo"]) if has_repo and row["repo"] else ""),
             })
+        # SQL sorted the date *text*; mixed UTC offsets make that disagree with
+        # real order. Re-sort by the parsed instant (stable for unparseable rows).
+        commits.sort(key=lambda c: (_parse_date(c["date"]) or datetime.min))
         return commits
 
     # ------------------------------------------------------------------
@@ -208,8 +211,11 @@ class SignalDetector:
 
         # Build day-level data
         day_counts: dict[str, int] = {}
+        day_of: list[str] = []
         for c in commits:
-            day = c["date"][:10] if len(c["date"]) >= 10 else ""
+            dt = _parse_date(c["date"])
+            day = dt.date().isoformat() if dt else (c["date"][:10] if len(c["date"]) >= 10 else "")
+            day_of.append(day)
             if day:
                 day_counts[day] = day_counts.get(day, 0) + 1
 
@@ -238,7 +244,7 @@ class SignalDetector:
                 display_ratio = max(ratio, 1.0 / ratio)
                 # Find the commit index for this day
                 idx = next(
-                    (j for j, c in enumerate(commits) if c["date"][:10] == day),
+                    (j for j, d in enumerate(day_of) if d == day),
                     0,
                 )
                 signals.append({
@@ -249,7 +255,37 @@ class SignalDetector:
                     "strength": "strong" if display_ratio >= 4.0 else "moderate",
                 })
 
-        return signals
+        return self._fold_velocity(signals)
+
+    @staticmethod
+    def _fold_velocity(signals: list[dict], within_days: int = 7) -> list[dict]:
+        """Keep one signal per run: the rolling window flags several days in a
+        row for the same shift. Same-direction flags within ``within_days`` of
+        the previous one fold into it; the stronger detail wins."""
+        def ratio(sg: dict) -> float:
+            try:
+                return float(sg["detail"].split("x", 1)[0])
+            except (ValueError, KeyError):
+                return 0.0
+
+        out: list[dict] = []
+        last_day: dict[str, datetime] = {}
+        for sg in signals:
+            direction = "up" if "upshift" in sg["detail"] else "down"
+            day = _parse_date(sg["date"])
+            prev = out[-1] if out else None
+            if (prev is not None and day is not None and direction in last_day
+                    and ("upshift" in prev["detail"]) == (direction == "up")
+                    and (day - last_day[direction]).days <= within_days):
+                if ratio(sg) > ratio(prev):
+                    prev.update(detail=sg["detail"], strength=sg["strength"])
+                prev["end"] = sg["date"]
+                last_day[direction] = day
+                continue
+            out.append(sg)
+            if day is not None:
+                last_day[direction] = day
+        return out
 
     # ------------------------------------------------------------------
     # Signal: Author change

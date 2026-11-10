@@ -271,7 +271,7 @@ Architecture decisions documented in `docs/decisions.md`.
 DevArch Framework integrates several excellent open-source libraries:
 
 - **Click** (BSD License) — Elegant CLI framework for command-line interfaces
-- **SQLite** (Public Domain) — Embedded SQL database engine with FTS5 full-text search
+- **SQLite** (Public Domain) — Embedded SQL database engine with FTS4 full-text search
 - **Chart.js** (MIT License) — Responsive JavaScript charting library
 - **D3.js** (BSD License) — Document-driven data visualization framework
 - **Google Fonts** (OFL License) — Open-source typography (Inter, JetBrains Mono)
@@ -336,7 +336,7 @@ Yes. Any local git repository with commit history works. No GitHub API key, no c
 Yes. The framework is ICM-compliant — it ships with structured context layers (`CLAUDE.md`, stage contracts, `llms.txt`) so Claude Code, Cursor, and other AI coding agents can understand and operate the pipeline without manual instruction. A bundled `skills/` folder enables one-command usage from the Claude Code CLI.
 
 **What size repositories does DevArch handle?**
-Tested on repositories from dozens to tens of thousands of commits. SQLite + FTS5 handles large git histories without any external infrastructure.
+Tested on repositories from dozens to tens of thousands of commits. SQLite + FTS4 handles large git histories without any external infrastructure.
 
 **Is my data sent anywhere?**
 No. DevArch runs entirely locally. All mining, analysis, and report generation happens on your machine. No telemetry, no cloud API calls.

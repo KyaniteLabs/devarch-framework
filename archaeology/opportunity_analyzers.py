@@ -17,7 +17,12 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 
+from .classifiers.work_kind import is_merge, kind_of
 from .utils import _load_json, _parse_date, atomic_write
+
+# Shared work kinds, spelled the way this analyzer always reported them.
+_KIND_LABEL = {"feat": "FEATURE", "fix": "FIX", "refactor": "REFACTOR", "test": "TEST",
+               "docs": "DOCS", "ops": "OPS", "other": "OTHER"}
 
 
 class OpportunityAnalyzer:
@@ -1068,10 +1073,18 @@ class OpportunityAnalyzer:
     # ── Analyzer 14: Commit Message Cognitive Load Proxy ────────────
 
     def run_commit_cognitive_load(self) -> dict:
-        """Classify work type from commit message length and content."""
+        """Message-length proxy for cognitive load, plus the shared work kind.
+
+        Honest scope: the commits table has no line counts, so "load" here is
+        the length of the commit subject, not the size of the change. Long
+        subjects correlate with explained, multi-part work; they do not measure
+        effort. Work type comes from the shared classifier
+        (classifiers/work_kind.py); merge commits are left out.
+        """
         self._log("Commit Message Cognitive Load Proxy...")
 
-        commits = self._query("SELECT hash, date, message, author FROM commits ORDER BY date")
+        commits = [c for c in self._query("SELECT hash, date, message, author FROM commits ORDER BY date")
+                   if not is_merge(str(c.get("message") or ""))]
         hourly = self._query("SELECT * FROM hourly_activity ORDER BY _key")
         eras = self._eras()
 
@@ -1104,22 +1117,8 @@ class OpportunityAnalyzer:
             date_str = str(c.get("date", ""))
             hour = int(date_str[11:13]) if len(date_str) > 12 else -1
 
-            # Work type from keywords
-            msg_lower = msg.lower()
-            if any(kw in msg_lower for kw in ["fix", "bug", "error", "broken"]):
-                work_type = "FIX"
-            elif any(kw in msg_lower for kw in ["feat", "add", "implement", "create"]):
-                work_type = "FEATURE"
-            elif any(kw in msg_lower for kw in ["refactor", "clean", "simplify", "split"]):
-                work_type = "REFACTOR"
-            elif any(kw in msg_lower for kw in ["test", "spec", "coverage"]):
-                work_type = "TEST"
-            elif any(kw in msg_lower for kw in ["doc", "readme", "comment"]):
-                work_type = "DOCS"
-            elif any(kw in msg_lower for kw in ["ci", "deploy", "pipeline", "workflow"]):
-                work_type = "CI/CD"
-            else:
-                work_type = "OTHER"
+            # Work type from the shared classifier
+            work_type = _KIND_LABEL[kind_of(msg)]
 
             classified.append({
                 "cognitive_load": load,
@@ -1156,6 +1155,7 @@ class OpportunityAnalyzer:
 
         result = {
             "analysis_type": "commit-cognitive-load",
+            "method": "subject length as a proxy; not change size. Merges left out.",
             "load_distribution": dict(load_distribution),
             "work_type_distribution": dict(type_distribution),
             "load_by_hour": hourly_load,

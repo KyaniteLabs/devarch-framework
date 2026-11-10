@@ -10,7 +10,7 @@ def extract_git_log(repo_path: str, output_path: str, verbose: bool = False) -> 
     # Use %x1f (unit separator) as delimiter — can't appear in commit subjects
     cmd = [
         "git", "-C", repo_path,
-        "log", "--format=%H%x1f%ai%x1f%s%x1f%an", "--all"
+        "log", "--format=%H%x1f%ai%x1f%s%x1f%an%x1f%ae%x1f%P", "--all"
     ]
     try:
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
@@ -22,19 +22,23 @@ def extract_git_log(repo_path: str, output_path: str, verbose: bool = False) -> 
     if result.returncode != 0:
         raise RuntimeError(f"git log failed: {result.stderr}")
 
-    lines = result.stdout.strip().split("\n")
-    if not lines or lines[0] == "":
+    # Strip newlines only: str.strip() also eats U+001F, which would drop the
+    # empty parents field of a root commit at the end of the output.
+    lines = [ln for ln in result.stdout.strip("\n").split("\n") if ln]
+    if not lines:
         return 0
 
     Path(output_path).parent.mkdir(parents=True, exist_ok=True)
     with open(output_path, "w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
-        writer.writerow(["hash", "date", "message", "author"])
+        # email and parents identify people across name spellings and mark
+        # merges (more than one parent); older readers ignore extra columns.
+        writer.writerow(["hash", "date", "message", "author", "email", "parents"])
         skipped = 0
         for line in lines:
             parts = line.split("\x1f")
             if len(parts) >= 4:
-                writer.writerow(parts[:4])
+                writer.writerow((parts + [""] * 2)[:6])
             else:
                 skipped += 1
 

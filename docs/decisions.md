@@ -12,9 +12,9 @@ Key design decisions and their rationale. Read this when onboarding or questioni
 
 ## ADR-002: SQLite as database engine
 
-**Decision:** Use SQLite with FTS5 for commit storage and querying. No external database server.
+**Decision:** Use SQLite with full-text search for commit storage and querying (implemented as FTS4 via `sqlite-utils enable-fts --fts4`; earlier text said FTS5). No external database server.
 
-**Why:** DevArch is a local-first CLI tool. Users run it on their machines against their repos. SQLite requires zero configuration, ships with Python, and handles the scale of even very large git repositories. FTS5 provides full-text search over commit messages without additional infrastructure.
+**Why:** DevArch is a local-first CLI tool. Users run it on their machines against their repos. SQLite requires zero configuration, ships with Python, and handles the scale of even very large git repositories. FTS4 provides full-text search over commit messages without additional infrastructure.
 
 **Alternatives considered:** PostgreSQL (rejected — requires server setup), DuckDB (considered for future — better analytical queries).
 

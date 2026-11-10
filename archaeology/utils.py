@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import logging
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -64,6 +64,21 @@ def _parse_date(date_str: str) -> datetime | None:
     if not date_str:
         return None
     date_str = str(date_str).strip()
+    # Keep the UTC offset when there is one: commits from different zones must
+    # sort by instant, not by local wall-clock text. Offset-aware input is
+    # returned as naive UTC so callers can keep comparing naive datetimes.
+    for fmt in ("%Y-%m-%d %H:%M:%S %z", "%Y-%m-%dT%H:%M:%S%z"):
+        try:
+            aware = datetime.strptime(date_str, fmt)
+        except ValueError:
+            continue
+        return aware.astimezone(timezone.utc).replace(tzinfo=None)
+    try:
+        aware = datetime.fromisoformat(date_str.replace("Z", "+00:00"))
+        if aware.tzinfo is not None:
+            return aware.astimezone(timezone.utc).replace(tzinfo=None)
+    except ValueError:
+        pass
     for fmt in (
         "%Y-%m-%d %H:%M:%S %z",
         "%Y-%m-%d %H:%M:%S",

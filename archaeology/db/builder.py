@@ -4,7 +4,7 @@
 Project-agnostic: point --project <name> or --project-root <path> at any project
 directory with a data/ folder and this script auto-detects CSV and JSON files,
 flattens nested structures into separate tables, creates indexes, and enables
-FTS5 for full-text search.
+FTS4 for full-text search (sqlite-utils --fts4).
 
 Table registry is loaded from:
   1. <project-root>/project.json -> "db_tables" key
@@ -189,8 +189,17 @@ def import_csv(db: Path, table: str, csv_path: Path, verbose: bool = False) -> i
         return 0
     # Count rows during initial read to avoid re-reading the file
     with open(csv_path, encoding="utf-8") as f:
-        count = sum(1 for _ in csv.reader(f)) - 1
-    run_su(["insert", str(db), table, str(csv_path), "--csv", "--alter"], verbose)
+        reader = csv.reader(f)
+        header = next(reader, [])
+        count = sum(1 for _ in reader)
+    args = ["insert", str(db), table, str(csv_path), "--csv", "--alter"]
+    if table == "commits" and "hash" in header:
+        # Key commits by (repo, hash) so a re-import or a repeated row replaces
+        # instead of duplicating; the same hash can live in two repos (forks).
+        for col in (["repo", "hash"] if "repo" in header else ["hash"]):
+            args += ["--pk", col]
+        args.append("--replace")
+    run_su(args, verbose)
     log(f"IMPORTED {csv_path.name} -> {table} ({count} rows)", verbose)
     return max(count, 0)
 

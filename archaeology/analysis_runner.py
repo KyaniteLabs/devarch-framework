@@ -15,6 +15,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Callable
 
+from .classifiers.work_kind import is_merge, word_pattern
 from .utils import _load_json, atomic_write
 
 
@@ -65,55 +66,85 @@ class AnalysisRunner:
     def _like_commits(self, keywords: list[str], limit: int = 100) -> list[dict]:
         if not keywords:
             return []
+        # LIKE narrows the scan; the word-bounded regex then drops substring
+        # hits ("ci" in "decision", "test" in "latest") and merge commits.
         clauses = " OR ".join("LOWER(message) LIKE ?" for _ in keywords)
-        params = tuple(f"%{kw.lower()}%" for kw in keywords) + (limit,)
-        return self._query_db(
-            f"SELECT hash, date, message, author FROM commits WHERE {clauses} ORDER BY date DESC LIMIT ?",
+        params = tuple(f"%{kw.lower()}%" for kw in keywords)
+        rows = self._query_db(
+            f"SELECT hash, date, message, author FROM commits WHERE {clauses} ORDER BY date DESC",
             params,
         )
+        rx = word_pattern(keywords)
+        hits = [r for r in rows if rx.search(str(r.get("message") or "")) and not is_merge(str(r.get("message") or ""))]
+        return hits[:limit]
 
     def _commit_count(self) -> int:
         rows = self._query_db("SELECT COUNT(*) as cnt FROM commits")
         return int(rows[0]["cnt"]) if rows else 0
 
-    def run_sdlc_gap_finder(self) -> dict[str, Any]:
-        """Analyze SDLC practices and gaps."""
-        self._log("Running SDLC Gap Finder...")
-        total_commits = self._commit_count()
-        ci_cd = self._like_commits(["github action", "ci", "workflow", "deploy", "pipeline"], 500)
-        tests = self._like_commits(["test", "spec", "coverage", "vitest", "pytest"], 500)
-        refactor = self._like_commits(["refactor", "clean", "simplify"], 500)
-        security = self._like_commits(["security", "cve", "xss", "injection", "secret"], 500)
-        docs = self._like_commits(["docs", "readme", "documentation"], 500)
+    def _work_commits(self) -> list[dict]:
+        """All commits except merges, newest first (merges are bookkeeping)."""
+        rows = self._query_db("SELECT hash, date, message, author, parents FROM commits ORDER BY date DESC")
+        if not rows:  # databases built before the parents column existed
+            rows = self._query_db("SELECT hash, date, message, author FROM commits ORDER BY date DESC")
 
-        def status(count: int, low: float, high: float) -> str:
-            ratio = count / total_commits if total_commits else 0
-            if ratio < low:
-                return "ABSENT"
-            if ratio < high:
-                return "EMERGING"
-            return "PRESENT"
+        def merge(r: dict) -> bool:
+            parents = r.get("parents")
+            if parents:
+                return len(str(parents).split()) > 1
+            return is_merge(str(r.get("message") or ""))
+        return [r for r in rows if not merge(r)]
+
+    def run_sdlc_gap_finder(self) -> dict[str, Any]:
+        """Analyze SDLC practices and gaps.
+
+        Practices are word-bounded keyword matches on work commits (merges
+        left out). A practice is PRESENT at its target share, EMERGING at a
+        quarter of it, ABSENT below. ROI grows with the distance from target.
+        """
+        self._log("Running SDLC Gap Finder...")
+        work = self._work_commits()
+        total_commits = len(work)
 
         practices = [
-            ("CI/CD Pipeline", ci_cd, 0.01, 0.04, "Run local/GitHub quality gates automatically"),
-            ("Test Coverage", tests, 0.05, 0.15, "Keep behavior tests above the agreed threshold"),
-            ("Refactoring Discipline", refactor, 0.02, 0.08, "Reserve explicit simplification cycles"),
-            ("Security Review", security, 0.005, 0.025, "Keep security findings tied to a verification gate"),
-            ("Documentation Hygiene", docs, 0.02, 0.08, "Synchronize public claims with canonical metrics"),
+            ("CI/CD Pipeline", ["github action", "github actions", "ci", "cd", "ci/cd", "workflow", "workflows",
+                                "deploy", "deploys", "deployed", "deployment", "pipeline", "pipelines"],
+             0.04, "Run local/GitHub quality gates automatically"),
+            ("Test Coverage", ["test", "tests", "spec", "specs", "coverage", "vitest", "pytest", "jest", "e2e"],
+             0.15, "Keep behavior tests above the agreed threshold"),
+            ("Refactoring Discipline", ["refactor", "refactors", "refactored", "cleanup", "clean up", "simplify", "simplifies"],
+             0.08, "Reserve explicit simplification cycles"),
+            ("Security Review", ["security", "cve", "xss", "csrf", "injection", "secret", "secrets", "vulnerability"],
+             0.025, "Keep security findings tied to a verification gate"),
+            ("Documentation Hygiene", ["docs", "doc", "readme", "documentation", "changelog"],
+             0.08, "Synchronize public claims with canonical metrics"),
         ]
         gaps = []
-        for practice, rows, low, high, recommendation in practices:
-            practice_status = status(len(rows), low, high)
-            severity = "HIGH" if practice_status == "ABSENT" else "MEDIUM" if practice_status == "EMERGING" else "LOW"
+        for practice, keywords, target, recommendation in practices:
+            rx = word_pattern(keywords)
+            hits = [r for r in work if rx.search(str(r.get("message") or ""))]
+            share = len(hits) / total_commits if total_commits else 0.0
+            if share >= target:
+                practice_status = "PRESENT"
+            elif share >= target / 4:
+                practice_status = "EMERGING"
+            else:
+                practice_status = "ABSENT"
+            severity = {"ABSENT": "HIGH", "EMERGING": "MEDIUM", "PRESENT": "LOW"}[practice_status]
+            need = max(0.0, target - share) / target
             gaps.append(
                 {
                     "practice": practice,
                     "status": practice_status,
-                    "evidence": [{"result_count": len(rows), "ratio": f"{(len(rows) / total_commits if total_commits else 0):.1%}"}],
+                    "evidence": [{
+                        "result_count": len(hits), "of": total_commits,
+                        "ratio": f"{share:.1%}", "target": f"{target:.1%}",
+                        "examples": [str(r.get("hash", ""))[:10] for r in hits[:3]],
+                    }],
                     "severity": severity,
                     "effort_to_implement": 3 if severity == "HIGH" else 2,
-                    "expected_impact": 5 if severity == "HIGH" else 3,
-                    "roi": round((5 if severity == "HIGH" else 3) / (3 if severity == "HIGH" else 2), 2),
+                    "expected_impact": round(5 * need, 2),
+                    "roi": round(5 * need, 2),
                     "recommendation": recommendation,
                 }
             )
@@ -124,7 +155,8 @@ class AnalysisRunner:
             "gaps": gaps,
             "summary": {
                 "total_gaps": len(gaps),
-                "critical_gaps": sum(1 for g in gaps if g["severity"] == "CRITICAL"),
+                "work_commits": total_commits,
+                "high_gaps": sum(1 for g in gaps if g["severity"] == "HIGH"),
                 "top_3_roi": [g["practice"] for g in sorted(gaps, key=lambda row: row["roi"], reverse=True)[:3]],
             },
         }
