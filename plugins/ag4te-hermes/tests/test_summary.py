@@ -358,3 +358,21 @@ def test_real_git_dig_is_deterministic_and_merges_are_not_work(tmp_path):
     assert a["manifest"]["schema_version"] == ag.SCHEMA_VERSION and a["manifest"]["config_hash"]
     days = [c["day"] for c in a["commits"]]
     assert days == sorted(days, reverse=True)                     # one clock: no inversions
+
+
+def test_api_loads_the_plugin_once(monkeypatch):
+    """Each API call must reach the same plugin module, or the running-dig registry is lost."""
+    pytest.importorskip("fastapi")
+    for name in ("ag4te", "hermes_plugins.ag4te", "plugins.ag4te", "_ag4te_private"):
+        monkeypatch.delitem(sys.modules, name, raising=False)
+    api_spec = importlib.util.spec_from_file_location("ag4te_api_under_test", PKG / "dashboard" / "plugin_api.py")
+    api = importlib.util.module_from_spec(api_spec)
+    api_spec.loader.exec_module(api)
+    first = api._plugin()
+    first._jobs["probe"] = "kept"
+    try:
+        assert api._plugin() is first
+        assert first._jobs.get("probe") == "kept"
+    finally:
+        first._jobs.pop("probe", None)
+        sys.modules.pop("_ag4te_private", None)

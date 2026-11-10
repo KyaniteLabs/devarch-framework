@@ -12,16 +12,22 @@ router = APIRouter()
 
 
 def _plugin():
-    for name in ("ag4te", "hermes_plugins.ag4te", "plugins.ag4te"):
+    # The private copy is checked too: loading it again would reset the running-dig registry,
+    # and every dig would then read as interrupted.
+    for name in ("ag4te", "hermes_plugins.ag4te", "plugins.ag4te", "_ag4te_private"):
         mod = sys.modules.get(name)
         if mod is not None and hasattr(mod, "start_dig"):
             return mod
     pkg_dir = Path(__file__).resolve().parent.parent
     spec = importlib.util.spec_from_file_location("_ag4te_private", pkg_dir / "__init__.py")
     mod = importlib.util.module_from_spec(spec)
-    sys.modules.setdefault("_ag4te_private", mod)
-    spec.loader.exec_module(sys.modules["_ag4te_private"])
-    return sys.modules["_ag4te_private"]
+    sys.modules["_ag4te_private"] = mod
+    try:
+        spec.loader.exec_module(mod)
+    except BaseException:
+        sys.modules.pop("_ag4te_private", None)
+        raise
+    return mod
 
 
 def _bad(exc: Exception, code: int = 400):
