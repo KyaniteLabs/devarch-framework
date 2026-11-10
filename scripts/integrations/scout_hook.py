@@ -23,12 +23,139 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
 import tempfile
+from enum import Enum
 from pathlib import Path
 from typing import Any
+
+# ── Run lifecycle ────────────────────────────────────────────────────────────
+#
+# The JSON this script prints has a run ``status`` and one ``status`` per step.
+# Both are named here, and every write goes through the transition functions
+# below. Legal moves of the run::
+#
+#     RUNNING --critical step failed--> FAILED
+#     RUNNING --all steps recorded----> COMPLETE
+#     (any exception / bad input) ----> ERROR   (built by ``error_result``)
+#
+# Steps are recorded once each, in STEP_ORDER, only while RUNNING. A critical
+# step (init, mine, build_db) is SUCCESS or FAILED; a soft step (signals,
+# analyze) is SUCCESS or PARTIAL and never stops the run.
+
+
+class RunStatus(str, Enum):
+    RUNNING = "running"
+    COMPLETE = "complete"
+    FAILED = "failed"
+    ERROR = "error"
+
+
+class StepStatus(str, Enum):
+    SUCCESS = "success"
+    PARTIAL = "partial"
+    FAILED = "failed"
+
+
+STEP_ORDER = ("init", "mine", "build_db", "signals", "analyze")
+CRITICAL_STEPS = frozenset({"init", "mine", "build_db"})
+
+RUN_TRANSITIONS: dict[RunStatus, frozenset[RunStatus]] = {
+    RunStatus.RUNNING: frozenset({RunStatus.FAILED, RunStatus.COMPLETE}),
+    RunStatus.COMPLETE: frozenset(),
+    RunStatus.FAILED: frozenset(),
+    RunStatus.ERROR: frozenset(),
+}
+
+# Exit code for each terminal run status (README: complete -> 0, else 1).
+EXIT_CODES: dict[RunStatus, int] = {
+    RunStatus.RUNNING: 1,
+    RunStatus.COMPLETE: 0,
+    RunStatus.FAILED: 1,
+    RunStatus.ERROR: 1,
+}
+
+
+class IllegalTransition(RuntimeError):
+    """A run or step move the lifecycle above does not allow."""
+
+
+def read_run_status(value: object) -> RunStatus | None:
+    """Read a stored run status; ``None`` for anything this script never writes."""
+    try:
+        return RunStatus(value)
+    except ValueError:
+        return None
+
+
+def _move_run(result: dict[str, Any], target: RunStatus) -> None:
+    current = RunStatus(result["status"])
+    if target not in RUN_TRANSITIONS[current]:
+        raise IllegalTransition(f"run: {current.value} -> {target.value}")
+    result["status"] = target.value
+
+
+def new_run(project_name: str, repo_path: str, repo_url: str | None) -> dict[str, Any]:
+    """A RUNNING result with no steps recorded."""
+    return {
+        "project_name": project_name,
+        "repo_path": repo_path,
+        "repo_url": repo_url or "",
+        "status": RunStatus.RUNNING.value,
+        "steps": {},
+        "metrics": {},
+        "artifacts": {},
+    }
+
+
+def record_step(result: dict[str, Any], step: str, ok: bool, message: str) -> StepStatus:
+    """Record the next step's outcome; a failed critical step fails the run.
+
+    ``ok`` is the step's own success. A soft step that did not fully succeed
+    is PARTIAL. Raises ``IllegalTransition`` for an out-of-order or repeated
+    step, or when the run is no longer RUNNING.
+    """
+    if result["status"] != RunStatus.RUNNING.value:
+        raise IllegalTransition(f"step {step}: run is {result['status']}")
+    expected = STEP_ORDER[len(result["steps"])] if len(result["steps"]) < len(STEP_ORDER) else None
+    if step != expected:
+        raise IllegalTransition(f"step {step}: expected {expected}")
+    if ok:
+        status = StepStatus.SUCCESS
+    elif step in CRITICAL_STEPS:
+        status = StepStatus.FAILED
+    else:
+        status = StepStatus.PARTIAL
+    result["steps"][step] = {"status": status.value, "message": message}
+    if status is StepStatus.FAILED:
+        _move_run(result, RunStatus.FAILED)
+        result["error"] = message
+    return status
+
+
+def finish_run(result: dict[str, Any]) -> None:
+    """RUNNING -> COMPLETE once every step is recorded."""
+    if tuple(result["steps"]) != STEP_ORDER:
+        raise IllegalTransition(f"finish: steps recorded {tuple(result['steps'])}")
+    _move_run(result, RunStatus.COMPLETE)
+
+
+def error_result(error: str, **fields: Any) -> dict[str, Any]:
+    """A result that never ran or crashed: status ERROR."""
+    return {"status": RunStatus.ERROR.value, **fields, "error": error}
+
+
+def failed_result(error: str, **fields: Any) -> dict[str, Any]:
+    """A result that failed before the pipeline started (clone, missing repo)."""
+    return {"status": RunStatus.FAILED.value, **fields, "error": error}
+
+
+def exit_code(result: dict[str, Any]) -> int:
+    status = read_run_status(result.get("status"))
+    return 0 if status is None else EXIT_CODES[status]
 
 
 def log_error(msg: str) -> None:
@@ -212,6 +339,18 @@ def detect_signals(project_name: str) -> tuple[bool, str, dict[str, Any]]:
         return False, f"signals error: {e}", {}
 
 
+_FAILED_VECTOR_LINE = re.compile(r"^\s*\[analysis\] (\S+) ERROR:", re.MULTILINE)
+
+
+def count_failed_vectors(stdout: str) -> int:
+    """Distinct vectors the runner reported as failed.
+
+    The CLI prints each failure twice (runner line and summary line), so
+    counting ``"ERROR:"`` doubled it; count runner lines by vector name.
+    """
+    return len(set(_FAILED_VECTOR_LINE.findall(stdout)))
+
+
 def run_analysis(project_name: str) -> tuple[bool, str, dict[str, Any]]:
     """Run analysis vectors.
 
@@ -229,41 +368,33 @@ def run_analysis(project_name: str) -> tuple[bool, str, dict[str, Any]]:
         ]
         result = run_command(cmd, check=False, timeout=600)
 
-        # Parse analysis outputs from files created (more reliable than parsing stdout)
-        deliverables_dir = os.path.join("projects", project_name, "deliverables")
+        # Parse analysis outputs from files created (more reliable than parsing stdout).
+        # The runner writes them to deliverables/analysis/, not deliverables/.
+        analysis_dir = os.path.join("projects", project_name, "deliverables", "analysis")
         analysis_files = []
-        if os.path.exists(deliverables_dir):
-            for f in os.listdir(deliverables_dir):
+        if os.path.exists(analysis_dir):
+            import time
+
+            for f in sorted(os.listdir(analysis_dir)):
                 if f.startswith("analysis-") and f.endswith(".json"):
-                    file_path = os.path.join(deliverables_dir, f)
-                    # Only count files created recently (within last minute)
-                    if os.path.exists(file_path):
-                        import time
+                    file_path = os.path.join(analysis_dir, f)
+                    # Only count files created recently
+                    if time.time() - os.path.getmtime(file_path) < 120:
+                        analysis_files.append(file_path)
 
-                        mtime = os.path.getmtime(file_path)
-                        if time.time() - mtime < 120:  # Created within last 2 minutes
-                            analysis_files.append(file_path)
-
-        # Determine success: at least one analysis file created = partial success
         success_count = len(analysis_files)
         if success_count == 0:
             return False, f"analyze failed: {result.stderr}", {}
 
-        # Check if any vectors failed from stdout
-        failed_count = result.stdout.count("ERROR:")
-        total_vectors = 6  # Known vector count
-        _status = "success" if failed_count == 0 else "partial"
-
-        return (
-            True,
-            result.stdout,
-            {
-                "analysis_count": success_count,
-                "analysis_files": analysis_files,
-                "failed_vectors": failed_count,
-                "total_vectors": total_vectors,
-            },
-        )
+        failed = count_failed_vectors(result.stdout)
+        data = {
+            "analysis_count": success_count,
+            "analysis_files": analysis_files,
+            "failed_vectors": failed,
+            "total_vectors": 6,  # Known vector count
+        }
+        # Some vectors failed: the step is PARTIAL, not SUCCESS.
+        return failed == 0, result.stdout, data
     except subprocess.TimeoutExpired:
         return False, "analyze timed out", {}
     except Exception as e:
@@ -287,66 +418,42 @@ def run_full_pipeline(
     Returns:
         Result dictionary with status and metrics
     """
-    result: dict[str, Any] = {
-        "project_name": project_name,
-        "repo_path": repo_path,
-        "repo_url": repo_url or "",
-        "status": "running",
-        "steps": {},
-        "metrics": {},
-        "artifacts": {},
-    }
+    result = new_run(project_name, repo_path, repo_url)
 
     # Use repo_url for init if available, otherwise use placeholder
     init_url = repo_url or "https://github.com/example/example"
 
     # Step 1: Initialize project
     success, msg, data = init_project(project_name, f"Analysis of {project_name}", init_url)
-    result["steps"]["init"] = {"status": "success" if success else "failed", "message": msg}
-    if not success:
-        result["status"] = "failed"
-        result["error"] = msg
+    if record_step(result, "init", success, msg) is StepStatus.FAILED:
         return result
     result["artifacts"]["project_dir"] = data.get("project_dir")
 
     # Step 2: Mine repository
     success, msg, data = mine_repo(repo_path, project_name)
-    result["steps"]["mine"] = {"status": "success" if success else "failed", "message": msg}
-    if not success:
-        result["status"] = "failed"
-        result["error"] = msg
+    if record_step(result, "mine", success, msg) is StepStatus.FAILED:
         return result
     result["metrics"]["commit_count"] = data.get("commit_count", 0)
 
     # Step 3: Build database
     success, msg, data = build_database(project_name)
-    result["steps"]["build_db"] = {"status": "success" if success else "failed", "message": msg}
-    if not success:
-        result["status"] = "failed"
-        result["error"] = msg
+    if record_step(result, "build_db", success, msg) is StepStatus.FAILED:
         return result
     result["artifacts"]["db_path"] = data.get("db_path")
     result["metrics"]["db_built"] = data.get("db_exists", False)
 
     # Step 4: Detect signals (non-critical)
     success, msg, data = detect_signals(project_name)
-    result["steps"]["signals"] = {"status": "success" if success else "partial", "message": msg}
+    record_step(result, "signals", success, msg)
     result["metrics"]["signal_count"] = data.get("signal_count", 0)
 
     # Step 5: Run analysis (non-critical)
     success, msg, data = run_analysis(project_name)
-    result["steps"]["analyze"] = {"status": "success" if success else "partial", "message": msg}
+    record_step(result, "analyze", success, msg)
     result["metrics"]["analysis_count"] = data.get("analysis_count", 0)
     result["artifacts"]["analysis_files"] = data.get("analysis_files", [])
 
-    # Check for critical failures
-    if result["steps"]["build_db"]["status"] == "failed":
-        result["status"] = "failed"
-    elif result["steps"]["mine"]["status"] == "failed":
-        result["status"] = "failed"
-    else:
-        result["status"] = "complete"
-
+    finish_run(result)
     return result
 
 
@@ -410,10 +517,7 @@ Examples:
             clone_dir = input_data.get("clone_dir")
         except json.JSONDecodeError as e:
             log_error(f"Invalid JSON input: {e}")
-            result = {
-                "status": "error",
-                "error": f"Invalid JSON input: {e}",
-            }
+            result = error_result(f"Invalid JSON input: {e}")
             print(json.dumps(result, indent=2))
             return 1
     else:
@@ -426,19 +530,13 @@ Examples:
     # Validate inputs
     if not project_name:
         log_error("--project-name is required")
-        result = {
-            "status": "error",
-            "error": "--project-name is required",
-        }
+        result = error_result("--project-name is required")
         print(json.dumps(result, indent=2))
         return 1
 
     if not repo_url and not repo_path:
         log_error("Either --repo-url or --repo-path must be provided")
-        result = {
-            "status": "error",
-            "error": "Either --repo-url or --repo-path must be provided",
-        }
+        result = error_result("Either --repo-url or --repo-path must be provided")
         print(json.dumps(result, indent=2))
         return 1
 
@@ -459,12 +557,7 @@ Examples:
 
             success, msg_or_path = clone_repo(repo_url, target_dir)
             if not success:
-                result = {
-                    "status": "failed",
-                    "project_name": project_name,
-                    "repo_url": repo_url,
-                    "error": msg_or_path,
-                }
+                result = failed_result(msg_or_path, project_name=project_name, repo_url=repo_url)
                 print(json.dumps(result, indent=2))
                 return 1
             repo_path = msg_or_path
@@ -473,12 +566,9 @@ Examples:
 
         # Validate repository exists
         if not os.path.isdir(repo_path):
-            result = {
-                "status": "failed",
-                "project_name": project_name,
-                "repo_path": repo_path,
-                "error": f"Repository not found: {repo_path}",
-            }
+            result = failed_result(
+                f"Repository not found: {repo_path}", project_name=project_name, repo_path=repo_path
+            )
             print(json.dumps(result, indent=2))
             return 1
 
@@ -495,11 +585,7 @@ Examples:
             result["cleanup"] = {"temp_dir": temp_clone_dir, "action": "will_delete"}
 
     except Exception as e:
-        result = {
-            "status": "error",
-            "project_name": project_name,
-            "error": f"Pipeline error: {e}",
-        }
+        result = error_result(f"Pipeline error: {e}", project_name=project_name)
 
     finally:
         # Cleanup temporary clone
@@ -512,13 +598,7 @@ Examples:
     # Output result as JSON
     print(json.dumps(result, indent=2))
 
-    # Return exit code based on status
-    if result.get("status") == "complete":
-        return 0
-    elif result.get("status") in ("failed", "error"):
-        return 1
-    else:
-        return 0
+    return exit_code(result)
 
 
 if __name__ == "__main__":

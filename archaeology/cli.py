@@ -9,7 +9,12 @@ from pathlib import Path
 
 import click
 
-from .analysis_runner import run_analysis_vectors
+from .analysis_runner import (
+    VectorOutcome,
+    classify_vector_outcome,
+    failed_vectors,
+    run_analysis_vectors,
+)
 from .classifiers.era_detector import detect_signals
 from .extractors.git import extract_git_log, extract_git_log_with_stats, repository_coverage
 
@@ -404,7 +409,7 @@ def analyze(project_name, vectors, prompts, verbose):
     click.echo(f"Running automated analysis vectors for '{project_name}'")
     click.echo(f"Vectors: {', '.join(target)}")
     results = run_analysis_vectors(project_name, verbose=verbose, vectors=target)
-    failed = {name: path for name, path in results.items() if str(path).startswith("ERROR")}
+    failed = failed_vectors(results)
     for name, path in results.items():
         click.echo(f"  {name}: {path}")
     if failed:
@@ -985,7 +990,7 @@ def sync(projects, skip_mine, skip_signals, verbose):
             try:
                 results = run_analysis_vectors(proj["name"], verbose=verbose)
                 for vector, path in results.items():
-                    if not path.startswith("ERROR"):
+                    if classify_vector_outcome(path) is VectorOutcome.WRITTEN:
                         click.echo(f"    ✓ {vector}")
                     else:
                         click.echo(f"    ✗ {vector}: {path}")

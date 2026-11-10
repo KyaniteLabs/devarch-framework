@@ -34,6 +34,7 @@ Pipeline JSON format (expected keys):
 import json
 import sqlite3
 from datetime import datetime, timezone
+from enum import Enum
 from pathlib import Path
 from typing import Optional
 
@@ -68,20 +69,41 @@ CREATE INDEX IF NOT EXISTS idx_pipeline_repo_results_run ON pipeline_repo_result
 """
 
 
-def _normalize_status(raw_status: str) -> str:
+class RunHealth(str, Enum):
+    """Legacy health values stored in ``pipeline_runs.status``.
+
+    A pipeline run JSON is ingested once and never updated, so there are no
+    transitions: ``normalize_run_status`` maps each incoming run status to the
+    value stored on disk. ``UNKNOWN`` covers a missing or non-string status.
+    Statuses outside ``RUN_STATUS_TO_HEALTH`` are stored lower-cased as-is so
+    nothing a newer pipeline writes is dropped, and so readers must tolerate
+    values outside this enum.
+    """
+
+    PASS = "pass"
+    PARTIAL = "partial"
+    FAIL = "fail"
+    UNKNOWN = "unknown"
+
+
+# Incoming (new-format) run status -> stored legacy health. The one place
+# that decides it; keys are compared upper-cased.
+RUN_STATUS_TO_HEALTH: dict[str, RunHealth] = {
+    "COMPLETE": RunHealth.PASS,
+    "SUCCESS": RunHealth.PASS,
+    "NEEDS_ATTENTION": RunHealth.PARTIAL,
+    "RUNNING": RunHealth.PARTIAL,
+    "FAILED": RunHealth.FAIL,
+    "ERROR": RunHealth.FAIL,
+}
+
+
+def normalize_run_status(raw_status: object) -> str:
     """Normalize new pipeline status values to legacy format for backward compatibility."""
     if not raw_status or not isinstance(raw_status, str):
-        return "unknown"
-
-    status_map = {
-        "COMPLETE": "pass",
-        "SUCCESS": "pass",
-        "NEEDS_ATTENTION": "partial",
-        "RUNNING": "partial",
-        "FAILED": "fail",
-        "ERROR": "fail",
-    }
-    return status_map.get(raw_status.upper(), raw_status.lower())
+        return RunHealth.UNKNOWN.value
+    health = RUN_STATUS_TO_HEALTH.get(raw_status.upper())
+    return health.value if health is not None else raw_status.lower()
 
 
 def _extract_agents(run_json: dict) -> str:
@@ -131,7 +153,7 @@ def ingest_run(db_path: Path, run_json: dict, source_file: str = "") -> int:
         )
         # Map new status values to old format for backward compatibility
         raw_status = run_json.get("status", "unknown")
-        status = _normalize_status(raw_status)
+        status = normalize_run_status(raw_status)
         duration = run_json.get("duration_seconds")
         # Extract agents from supervision.missions if available, else use agents_used
         agents = _extract_agents(run_json)

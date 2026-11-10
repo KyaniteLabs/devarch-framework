@@ -39,8 +39,11 @@ import sys
 import tempfile
 from contextlib import contextmanager
 from dataclasses import dataclass, field
+from enum import Enum
 from pathlib import Path
 from typing import Any, Callable, Iterator
+
+from .state_machine import require_transition
 
 # Moved to visualization/hydrate.py (L6 renderer move); re-exported for compat.
 from .visualization.hydrate import (  # noqa: F401
@@ -442,12 +445,11 @@ def analyze(
     project: ProjectRef, vectors: list[str] | None = None, *, verbose: bool = False
 ) -> AnalysisResult:
     """Run analysis vectors. The engine itself rejects a missing project or unknown vector."""
-    from archaeology.analysis_runner import run_analysis_vectors
+    from archaeology.analysis_runner import failed_vectors, run_analysis_vectors
 
     with in_workspace(project):
         results = run_analysis_vectors(project.name, verbose=verbose, vectors=vectors)
-    failed = {name: path for name, path in results.items() if str(path).startswith("ERROR")}
-    return AnalysisResult(results, failed)
+    return AnalysisResult(results, failed_vectors(results))
 
 
 def render_project_index(project: ProjectRef) -> Path:
@@ -529,17 +531,81 @@ def audit(project: ProjectRef, fail_on: str | None = "HIGH") -> AuditResult:
 # ── run-pipeline ──────────────────────────────────────────────────────────────
 
 
+class RunStage(str, Enum):
+    """Where a ``run_pipeline`` run is. The only legal moves::
+
+        INITIALIZED --mined--------> MINED --built--------> BUILT --finished--> COMPLETE
+             |                         |
+             +--mine_failed--> MINE_FAILED   +--build_failed--> BUILD_FAILED
+
+    ``COMPLETE``, ``MINE_FAILED`` and ``BUILD_FAILED`` are terminal.
+    """
+
+    INITIALIZED = "initialized"
+    MINED = "mined"
+    BUILT = "built"
+    COMPLETE = "complete"
+    MINE_FAILED = "mine_failed"
+    BUILD_FAILED = "build_failed"
+
+
+RUN_TRANSITIONS: dict[RunStage, frozenset[RunStage]] = {
+    RunStage.INITIALIZED: frozenset({RunStage.MINED, RunStage.MINE_FAILED}),
+    RunStage.MINED: frozenset({RunStage.BUILT, RunStage.BUILD_FAILED}),
+    RunStage.BUILT: frozenset({RunStage.COMPLETE}),
+    RunStage.COMPLETE: frozenset(),
+    RunStage.MINE_FAILED: frozenset(),
+    RunStage.BUILD_FAILED: frozenset(),
+}
+
+# The step name each failed stage reports as ``failed_at`` (MCP output values).
+FAILED_AT: dict[RunStage, str] = {
+    RunStage.MINE_FAILED: "mine",
+    RunStage.BUILD_FAILED: "build_db",
+}
+
+
 @dataclass
 class PipelineRun:
-    """Outcome of init, mine, build-db, signals, analyze run in order."""
+    """Outcome of init, mine, build-db, signals, analyze run in order.
+
+    Fields are written only by the transition methods below, which refuse any
+    move ``RUN_TRANSITIONS`` does not list.
+    """
 
     init_created: bool
+    stage: RunStage = RunStage.INITIALIZED
     mine: MineResult | None = None
     mine_error: str | None = None
     build: BuildResult | None = None
     signal_count: int = 0
     analysis: list | str = field(default_factory=list)
-    failed_at: str | None = None
+
+    @property
+    def failed_at(self) -> str | None:
+        """``"mine"`` or ``"build_db"`` for a failed run, else ``None``."""
+        return FAILED_AT.get(self.stage)
+
+    def _move(self, target: RunStage) -> None:
+        self.stage = require_transition("PipelineRun", RUN_TRANSITIONS, self.stage, target)
+
+    def mined(self, result: MineResult) -> None:
+        self._move(RunStage.MINED)
+        self.mine = result
+
+    def mine_failed(self, message: str) -> None:
+        self._move(RunStage.MINE_FAILED)
+        self.mine_error = message
+
+    def built(self, result: BuildResult) -> None:
+        """Record the build; a build carrying an error fails the run."""
+        self._move(RunStage.BUILT if result.error is None else RunStage.BUILD_FAILED)
+        self.build = result
+
+    def finished(self, signal_count: int, analysis: list | str) -> None:
+        self._move(RunStage.COMPLETE)
+        self.signal_count = signal_count
+        self.analysis = analysis
 
 
 def run_pipeline(repo_path: str, project: ProjectRef) -> PipelineRun:
@@ -551,26 +617,26 @@ def run_pipeline(repo_path: str, project: ProjectRef) -> PipelineRun:
     run = PipelineRun(init_created=init(project, "", "").created)
 
     try:
-        run.mine = mine(repo_path, project)
+        run.mined(mine(repo_path, project))
     except PipelineError as e:
-        run.mine_error = e.message
-        run.failed_at = "mine"
+        run.mine_failed(e.message)
         return run
 
-    run.build = build_db(project)
-    if run.build.error is not None:
-        run.failed_at = "build_db"
+    run.built(build_db(project))
+    if run.stage is RunStage.BUILD_FAILED:
         return run
 
     try:
-        run.signal_count = len(signals(project).signals)
+        signal_count = len(signals(project).signals)
     except PipelineError:
-        run.signal_count = 0
+        signal_count = 0
 
+    analysis: list | str
     try:
-        run.analysis = list(analyze(project).results.keys())
+        analysis = list(analyze(project).results.keys())
     except Exception as e:
-        run.analysis = f"skipped: {e}"
+        analysis = f"skipped: {e}"
+    run.finished(signal_count, analysis)
     return run
 
 
@@ -782,12 +848,9 @@ def cascade(
 
     # ── Step 7: Opportunity analyzers ──
     say("\n[7/7] Running opportunity analyzers...")
-    from .opportunity_analyzers import OpportunityAnalyzer
-
-    opp_runner = OpportunityAnalyzer(project.name, str(project_dir), verbose=False)
-    opp_results = opp_runner.run_all()
-    opp_ok = sum(1 for v in opp_results.values() if v == "OK")
-    say(f"  {opp_ok}/{len(opp_results)} opportunity analyzers OK")
+    # OpportunityAnalyzer is disabled and raises on construction; calling it
+    # here crashed every cascade before its verdict.
+    say("  SKIP: opportunity analyzers are disabled")
 
     if blocking:
         say(f"  FAIL: {len(blocking)} HIGH/CRITICAL findings")
@@ -852,7 +915,7 @@ def sync(
         if on_line:
             on_line(text, err)
 
-    from .analysis_runner import run_analysis_vectors
+    from .analysis_runner import VectorOutcome, classify_vector_outcome, run_analysis_vectors
     from .classifiers.era_detector import detect_signals
     from .extractors.git import extract_git_log, extract_git_log_with_stats
 
@@ -987,7 +1050,7 @@ def sync(
             try:
                 results = run_analysis_vectors(proj["name"], verbose=verbose)
                 for vector, path in results.items():
-                    if not path.startswith("ERROR"):
+                    if classify_vector_outcome(path) is VectorOutcome.WRITTEN:
                         say(f"    ✓ {vector}")
                     else:
                         say(f"    ✗ {vector}: {path}")
