@@ -1,6 +1,6 @@
 # AG4TE for Hermes
 
-![AG4TE](../../branding/ag4te-lockup-dark.png)
+![AG4TE](docs/banner.png)
 
 You know a repository's code, but not the story of how it got that way: when the work happened, what kind of work it was, who did it, and where it went quiet. AG4TE digs a local git repository's history with DevArch and draws that story as strata in Hermes Desktop.
 
