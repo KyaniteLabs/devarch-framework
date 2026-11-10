@@ -1,6 +1,6 @@
 """AG4TE for Hermes: dig a git repository's history and read its strata.
 
-AG4TE is the Hermes face of DevArch (devarch-framework). A *dig* reads one local repository's
+AG4TE is the Hermes face of DevArch (repo KyaniteLabs/ag4te). A *dig* reads one local repository's
 history with ``git log`` (identities, author time with its offset, merge parents,
 co-author trailers, per-file line counts, tags) and runs the DevArch pipeline (init, mine,
 build-db, signals) into a private workspace under ``<HERMES_HOME>/plugin-data/ag4te/``. It
@@ -40,7 +40,7 @@ logger = logging.getLogger(__name__)
 PLUGIN_NAME = "ag4te"
 DEVARCH_PIN = "c5121809c45dd445de44edd1f12614b27bc5b25f"
 DEFAULTS: Dict[str, Any] = {
-    "devarch_command": f"uvx --from git+https://git.kyanitelabs.tech/KyaniteLabs/devarch-framework@{DEVARCH_PIN} devarch",
+    "devarch_command": f"uvx --from git+https://git.kyanitelabs.tech/KyaniteLabs/ag4te@{DEVARCH_PIN} devarch",
     "repo_roots": "~/workspaces",
     "data_dir": "",
     "timeout_seconds": 600,
