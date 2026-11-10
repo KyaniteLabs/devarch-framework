@@ -97,6 +97,9 @@ def _git(repo: Path, *args, date="2026-01-01T12:00:00+0000"):
 def _make_repo(path: Path) -> Path:
     path.mkdir(parents=True)
     _git(path, "init", "-q", "-b", "main")
+    # no detached auto-maintenance: it writes .git/objects/maintenance.lock while copytree runs
+    _git(path, "config", "maintenance.auto", "false")
+    _git(path, "config", "gc.auto", "0")
     days = ["2026-01-01", "2026-01-02", "2026-01-03", "2026-02-20", "2026-02-21"]
     for i, day in enumerate(days):
         (path / f"f{i}.txt").write_text(f"change {i}\n")
@@ -113,7 +116,7 @@ class Env:
         self.ws = root / "ws"
         self.ws.mkdir()
         self.repo = root / "repo"
-        shutil.copytree(template_repo, self.repo)
+        shutil.copytree(template_repo, self.repo, ignore=shutil.ignore_patterns("*.lock"))
         self.not_repo = root / "plain"
         self.not_repo.mkdir()
         self.missing_repo = root / "does-not-exist"
