@@ -597,3 +597,22 @@ def test_name_particles_fold_into_one_person():
         ident[("Simon Gonzalez De Cruz", "a@x.dev")]
         == ident[("Simon Gonzalez de la Cruz", "b@y.dev")]
     )
+
+
+def test_parse_git_accepts_utc_z_suffix():
+    # git >= 2.5x prints UTC author dates as "...Z"; Python 3.10's fromisoformat rejects it
+    rec = "\x1f".join(
+        [
+            "a" * 40,
+            "",
+            "2026-05-21T10:00:00Z",
+            "2026-05-21T10:00:00Z",
+            "Lin",
+            "lin@x.io",
+            "Lin",
+            "lin@x.io",
+            "feat: b",
+            "",
+        ]
+    )
+    assert len(ag.parse_git(rec + "\n\x1e")) == 1

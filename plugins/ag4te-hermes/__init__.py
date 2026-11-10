@@ -541,6 +541,12 @@ def mine_git(
     return {"ok": True, "err": ""}
 
 
+def _iso(s: str) -> datetime:
+    """``datetime.fromisoformat`` that also takes git's ``Z`` suffix on Python < 3.11."""
+    s = s.strip()
+    return datetime.fromisoformat(s[:-1] + "+00:00" if s.endswith(("Z", "z")) else s)
+
+
 def parse_git(text: str) -> List[Dict[str, Any]]:
     """Commits from ``ag4te-git.txt``: identities, both dates, parents, co-authors, paths."""
     commits: List[Dict[str, Any]] = []
@@ -552,8 +558,8 @@ def parse_git(text: str) -> List[Dict[str, Any]]:
         if len(f) < 10:
             continue
         try:
-            adt = datetime.fromisoformat(f[2].strip())
-            cdt = datetime.fromisoformat(f[3].strip())
+            adt = _iso(f[2])
+            cdt = _iso(f[3])
         except ValueError:
             continue
         if adt.tzinfo is None or cdt.tzinfo is None:
@@ -1354,7 +1360,7 @@ def summarize(
             continue
         c = by_sha.get(str(t.get("sha") or ""))
         try:
-            when = c["local"] if c else datetime.fromisoformat(str(t.get("t"))).astimezone(zone)
+            when = c["local"] if c else _iso(str(t.get("t"))).astimezone(zone)
         except ValueError:
             continue
         releases.append(
