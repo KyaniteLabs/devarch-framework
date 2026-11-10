@@ -21,7 +21,7 @@ AG4TE turns a repo's git history into strata. The stone is the signature view: e
 - Family renders: `branding/ag4te-1024.png` (logo) and the banner stone in `plugins/ag4te-hermes/docs/banner.png` (the mockup Simon likes).
 
 ## 5. Family icon law and form
-The stone is a data view, not the icon, so it does not replace the mark. Form: an equal-width hairline band per slice of commits. Each era is split into hairlines, and the hairlines are dealt out across the era's kinds of work in proportion to their commit counts, so the colours alternate finely the way an agate's do. Area still equals share.
+The stone is a data view, not the icon, so it does not replace the mark. How to read it: the rim is the oldest work and the core the newest. Each era's thickness follows the square root of its commit count. Inside an era, commits are laid in time order, rim to core, and each kind's band thickness equals its share of the era's commits. Resolution follows pixels: one striation per commit when a commit is at least 1.5px thick, otherwise time-ordered chunks of at least 3px. White lines mark era boundaries; dark seams mark quiet gaps of 7+ days. Checked by `plugins/ag4te-hermes/tests/test_stone_layout.py`; decision trail in `.audit/ag4te-stone.tsv`.
 
 ## 6. Typography
 Unchanged. The caption uses the UI's secondary text.
