@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import importlib.util
 import sys
+import threading
 from pathlib import Path
 
 from fastapi import APIRouter, Body, HTTPException, Query
@@ -11,13 +12,24 @@ from fastapi import APIRouter, Body, HTTPException, Query
 router = APIRouter()
 
 
+_load_lock = threading.Lock()
+
+
 def _plugin():
-    # The private copy is checked too: loading it again would reset the running-dig registry,
-    # and every dig would then read as interrupted.
-    for name in ("ag4te", "hermes_plugins.ag4te", "plugins.ag4te", "_ag4te_private"):
+    # The private copy is loaded once, under a lock; the running-dig registry is process-wide
+    # (see _job_registry), so even a second copy would see the same digs.
+    for name in ("ag4te", "hermes_plugins.ag4te", "plugins.ag4te"):
         mod = sys.modules.get(name)
         if mod is not None and hasattr(mod, "start_dig"):
             return mod
+    with _load_lock:
+        mod = sys.modules.get("_ag4te_private")
+        if mod is not None and hasattr(mod, "start_dig"):
+            return mod
+        return _load_private()
+
+
+def _load_private():
     pkg_dir = Path(__file__).resolve().parent.parent
     spec = importlib.util.spec_from_file_location("_ag4te_private", pkg_dir / "__init__.py")
     mod = importlib.util.module_from_spec(spec)
@@ -80,6 +92,10 @@ def start(body: dict = Body(...)):
 def cancel(body: dict = Body(...)):
     p = _plugin()
     try:
-        return p.cancel_dig(body.get("project") or "")
+        project = p.validate_project(body.get("project") or "")
+    except p.DigError as exc:
+        _bad(exc)
+    try:
+        return p.cancel_dig(project)
     except p.DigError as exc:
         _bad(exc, 409)

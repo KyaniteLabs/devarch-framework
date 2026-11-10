@@ -141,7 +141,7 @@ const CSS = `
 .ag-scale i{width:12px;height:10px;border-radius:2px;display:inline-block}
 .ag-scale i.z{background:transparent;border:1px solid var(--ui-stroke-secondary)}
 .ag-table tbody tr:not(.grp):hover td{background:var(--ui-control-hover-background)}
-.ag-table tr.grp td{position:sticky;top:0;z-index:1;background:var(--ui-bg-card);font:600 11.5px var(--ag-mono);color:var(--ui-text-primary);padding-top:12px;border-bottom:1px solid var(--ui-stroke-secondary)}
+.ag-table tr.grp td{position:sticky;top:0;z-index:1;background:linear-gradient(var(--ui-bg-card),var(--ui-bg-card)),var(--background,var(--ui-bg-elevated,#0d1117));font:600 11.5px var(--ag-mono);color:var(--ui-text-primary);padding-top:12px;border-bottom:1px solid var(--ui-stroke-secondary)}
 .ag-table tr.grp em{font-style:normal;font-weight:400;color:var(--ui-text-secondary);margin-left:8px}
 .ag-tag{display:inline-block;font:600 10px/1.5 var(--ag-mono);font-style:normal;padding:0 5px;margin-left:6px;border-radius:4px;border:1px solid var(--ui-stroke-tertiary);color:var(--ui-text-secondary);vertical-align:1px;white-space:nowrap}
 .ag-tag.agent{color:var(--ag-seq);border-color:color-mix(in oklab,var(--ag-seq) 45%,transparent)}
@@ -428,7 +428,11 @@ function Strata({ d, pal, eraNo, hl, setHl, multiYear, sig, setSig }) {
   const box = useRef(null)
   const uid = useUid('ag-s')
   const width = useWidth(box)
-  const [bin, setBin] = useState('week')
+  // A short history reads better by day; a long one by month. Weeks for everything between.
+  const [bin, setBin] = useState(() => {
+    const span = (Date.parse(d.last) - Date.parse(d.first)) / 864e5
+    return !(span >= 0) ? 'week' : span < 35 ? 'day' : span > 730 ? 'month' : 'week'
+  })
   const [off, setOff] = useState({})
   const [tip, setTip] = useState(null)
   const [cur, setCur] = useState(null)
@@ -966,7 +970,7 @@ function Commits({ d, pal, eraNo, hl, setHl }) {
 
 // Digger: idle → (no repo: hint) | posting → started (hands off to Page) | error.
 // "posting" blocks a double click from sending a second POST.
-function Digger({ ctx, repos, onStarted, onBusyElsewhere, busy }) {
+function Digger({ ctx, repos, reposFault, onStarted, onBusyElsewhere, busy }) {
   const [repo, setRepo] = useState('')
   const [err, setErr] = useState('')
   const [posting, setPosting] = useState(false)
@@ -989,7 +993,7 @@ function Digger({ ctx, repos, onStarted, onBusyElsewhere, busy }) {
   busy = busy || posting
   return h('div', { className: 'ag-ctl' },
     h('select', { ref: sel, className: 'ag-select', value: repo, 'aria-label': 'Repository to dig', onChange: e => { setRepo(e.target.value); setErr('') }, disabled: !repos.length || busy },
-      h('option', { value: '' }, repos.length ? 'Dig a repo…' : 'No repos under your roots'),
+      h('option', { value: '' }, repos.length ? 'Dig a repo…' : reposFault ? 'Listing repos… (retrying)' : 'No repos under your roots'),
       repos.map(r => h('option', { key: r.path, value: r.path, title: r.path }, r.name))),
     h('button', { type: 'button', className: 'ag-btn pri', disabled: busy || !repos.length, onClick: go }, busy ? 'Digging…' : 'Dig'),
     err ? h('span', { className: 'ag-muted ag-err', role: 'alert' }, err) : null)
@@ -1088,9 +1092,18 @@ function Page({ ctx }) {
   const loadProjects = () => ctx.rest('/projects')
     .then(r => setProjects({ loading: false, list: Array.isArray(r && r.projects) ? r.projects : [] }))
     .catch(e => setProjects({ loading: false, list: [], fault: String((e && e.message) || e) }))
+  // The repo list can fail on first load (backend still mounting, connection settling).
+  // Retry with backoff rather than leave the picker empty until a reload.
+  const [reposFault, setReposFault] = useState(false)
+  const loadRepos = (attempt = 0) => ctx.rest('/repos')
+    .then(r => { setRepos(Array.isArray(r && r.repos) ? r.repos : []); setReposFault(false) })
+    .catch(() => {
+      setReposFault(true)
+      if (attempt < 5) setTimeout(() => loadRepos(attempt + 1), [1000, 2000, 5000, 10000, 20000][attempt])
+    })
   useEffect(() => {
     loadProjects()
-    ctx.rest('/repos').then(r => setRepos(Array.isArray(r && r.repos) ? r.repos : [])).catch(() => setRepos([]))
+    loadRepos()
   }, [])
 
   const withDig = projects.list.filter(p => p.has_dig)
@@ -1154,7 +1167,7 @@ function Page({ ctx }) {
   } else if (!current) {
     body = h(Ghost, null, h(Glyph, { size: 40 }), h('b', null, 'Nothing dug yet.'),
       h('span', null, 'Pick a repo above and press Dig. AG4TE reads its whole history and lays it down here as strata: every commit, by kind of work, era by era.'),
-      repos.length ? null : h('span', null, 'No git repos were found under your repo roots. Set ', h('code', null, 'plugins.ag4te.repo_roots'), ' in the Hermes config.'))
+      repos.length || reposFault ? null : h('span', null, 'No git repos were found under your repo roots. Set ', h('code', null, 'plugins.ag4te.repo_roots'), ' in the Hermes config.'))
   } else if (!dig || dig.loading) {
     body = h('p', { className: 'ag-muted' }, 'Reading the dig…')
   } else if (dig.fault) {
@@ -1197,7 +1210,7 @@ function Page({ ctx }) {
         h('div', { className: 'ag-brand' }, h(Glyph), h('b', null, 'AG4TE'), h('span', null, 'git archaeology')),
         withDig.length ? h('select', { className: 'ag-select', value: current ? current.project : '', 'aria-label': 'Dig to show', onChange: e => choose(e.target.value) },
           withDig.map(p => h('option', { key: p.project, value: p.project }, `${p.project} · ${num(p.commit_count)} commits`))) : null,
-        h(Digger, { ctx, repos, onStarted: started, onBusyElsewhere: () => { setRun(null); loadProjects() }, busy: !!runningProject })),
+        h(Digger, { ctx, repos, reposFault, onStarted: started, onBusyElsewhere: () => { setRun(null); loadProjects() }, busy: !!runningProject })),
       runningProject ? h(Progress, { st: run && run.project === runningProject ? run : { state: 'running', project: runningProject, label: 'Checking…' }, pal, onStop: stop }) : null,
       stalled && dismissed !== `${stalled.project}:${stalled.state}` ? h(Stalled, { st: stalled, onResume: resume, onDismiss: () => setDismissed(`${stalled.project}:${stalled.state}`) }) : null,
       run && run.state === 'done' && (run.warnings || []).length ? h('p', { className: 'ag-muted' }, `Finished with notes: ${run.warnings.join(' · ')}`) : null,

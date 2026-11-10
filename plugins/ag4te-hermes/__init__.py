@@ -83,9 +83,29 @@ _WORD_KIND = (
 )
 
 _ctx = None
-_jobs_lock = threading.Lock()
-_jobs: Dict[str, threading.Thread] = {}
-_cancels: Dict[str, threading.Event] = {}
+
+
+def _job_registry():
+    """The running-dig registry, shared by every copy of this module in the process.
+
+    Hermes re-imports the plugin on a reload, and the dashboard may load its own copy.
+    Module globals would give each copy an empty registry, so a running dig would read
+    as interrupted and could be started twice. One holder in ``sys.modules`` survives both.
+    """
+    import sys
+    import types
+    holder = sys.modules.get("_ag4te_jobs")
+    if holder is None:
+        fresh = types.ModuleType("_ag4te_jobs")
+        fresh.lock, fresh.jobs, fresh.cancels = threading.Lock(), {}, {}
+        holder = sys.modules.setdefault("_ag4te_jobs", fresh)
+    return holder
+
+
+_reg = _job_registry()
+_jobs_lock = _reg.lock
+_jobs: Dict[str, threading.Thread] = _reg.jobs
+_cancels: Dict[str, threading.Event] = _reg.cancels
 
 
 class DigError(ValueError):
@@ -441,6 +461,9 @@ def _norm_name(n: str) -> str:
     return " ".join(re.sub(r"[-_.]+", " ", (n or "").casefold()).split())
 
 
+_NAME_PARTICLES = frozenset("de la del de las los da das do dos di du le van von der den ten ter y e".split())
+
+
 def build_identities(pairs: Counter, bots: Any = "") -> Tuple[Dict[Tuple[str, str], int], List[Dict[str, Any]]]:
     """Group (name, email) pairs into people, bots and agents.
 
@@ -499,6 +522,14 @@ def build_identities(pairs: Counter, bots: Any = "") -> Tuple[Dict[Tuple[str, st
         m = _GH_NOREPLY.match(email)
         if m and _norm_name(m.group(1)) in by_name:
             union(by_name[_norm_name(m.group(1))], i)
+    by_core: Dict[str, int] = {}  # "Gonzalez De Cruz" and "Gonzalez de la Cruz" are one name
+    for n, i in by_name.items():
+        core = " ".join(w for w in n.split() if w not in _NAME_PARTICLES)
+        if " " in core:
+            if core in by_core:
+                union(by_core[core], i)
+            else:
+                by_core[core] = i
     multi = [n for n in by_name if " " in n]
     for n, i in by_name.items():  # "simon" joins the one "simon …" name
         if " " not in n:
@@ -624,8 +655,31 @@ def project_zone(settings: Optional[Dict[str, Any]] = None):
             return ZoneInfo(name), name
         except Exception:  # noqa: BLE001 - bad name: fall back to the host zone
             pass
+    host = _host_zone_name()
+    if host:
+        try:
+            from zoneinfo import ZoneInfo
+            return ZoneInfo(host), host
+        except Exception:  # noqa: BLE001
+            pass
+    # Last resort: a fixed offset. Summer and winter commits may then sit an hour off.
     tz = datetime.now().astimezone().tzinfo
     return tz, str(tz or "local")
+
+
+def _host_zone_name() -> str:
+    """The host's IANA zone name (e.g. America/Los_Angeles), from /etc/localtime or /etc/timezone."""
+    try:
+        target = os.path.realpath("/etc/localtime")
+        if "zoneinfo/" in target:
+            return target.split("zoneinfo/", 1)[1]
+    except OSError:
+        pass
+    try:
+        with open("/etc/timezone", encoding="utf-8") as fh:
+            return fh.read().strip()
+    except OSError:
+        return ""
 
 
 def _date(s: Any) -> Optional[date]:

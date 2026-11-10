@@ -376,3 +376,62 @@ def test_api_loads_the_plugin_once(monkeypatch):
     finally:
         first._jobs.pop("probe", None)
         sys.modules.pop("_ag4te_private", None)
+
+
+def test_reloaded_plugin_keeps_running_digs(tmp_path):
+    """A plugin reload (fresh import) must still see a dig the old copy started."""
+    import threading
+    fresh_spec = importlib.util.spec_from_file_location("ag4te_reloaded", PKG / "__init__.py")
+    fresh = importlib.util.module_from_spec(fresh_spec)
+    fresh_spec.loader.exec_module(fresh)
+    assert fresh._jobs is ag._jobs and fresh._jobs_lock is ag._jobs_lock
+    gate = threading.Event()
+    t = threading.Thread(target=gate.wait, name="ag4te-dig-probe", daemon=True)
+    settings = {**ag.snapshot_settings(), "data_dir": str(tmp_path), "repo_roots": str(PKG.parents[1])}
+    ag._set_status(ag.project_dir("probe", settings), fresh=True, state="running", step=1)
+    with ag._jobs_lock:
+        ag._jobs["probe"], ag._cancels["probe"] = t, threading.Event()
+    t.start()
+    try:
+        assert fresh.read_status("probe", settings)["state"] == "running"
+        with pytest.raises(fresh.DigError, match="already running"):
+            fresh.start_dig(str(PKG.parents[1]), "other", settings)
+        assert fresh.cancel_dig("probe", settings)["cancelling"] is True
+    finally:
+        gate.set(); t.join(2)
+        with ag._jobs_lock:
+            ag._jobs.pop("probe", None); ag._cancels.pop("probe", None)
+
+
+def test_host_zone_is_named_not_a_fixed_offset(monkeypatch):
+    """With no time_zone and no TZ, summer commits must use summer time."""
+    monkeypatch.delenv("TZ", raising=False)
+    monkeypatch.setattr(ag, "_host_zone_name", lambda: "America/Los_Angeles")
+    zone, name = ag.project_zone({**ag.snapshot_settings(), "time_zone": ""})
+    assert name == "America/Los_Angeles"
+    from datetime import datetime, timezone
+    summer = datetime(2026, 7, 1, 7, 30, tzinfo=timezone.utc).astimezone(zone)
+    assert (summer.day, summer.hour) == (1, 0)
+
+
+def test_cancel_with_bad_name_is_400(monkeypatch):
+    fastapi = pytest.importorskip("fastapi")
+    from fastapi.testclient import TestClient
+    api_spec = importlib.util.spec_from_file_location("ag4te_api_cancel", PKG / "dashboard" / "plugin_api.py")
+    api = importlib.util.module_from_spec(api_spec)
+    api_spec.loader.exec_module(api)
+    app = fastapi.FastAPI(); app.include_router(api.router)
+    c = TestClient(app)
+    assert c.post("/cancel", json={"project": "../etc"}).status_code == 400
+    assert c.post("/cancel", json={"project": "nothing-running"}).status_code == 409
+    sys.modules.pop("_ag4te_private", None)
+
+
+def test_name_particles_fold_into_one_person():
+    from collections import Counter
+    ident, people = ag.build_identities(Counter({
+        ("Simon Gonzalez De Cruz", "a@x.dev"): 20, ("Simon Gonzalez de la Cruz", "b@y.dev"): 21,
+        ("Ana de la Rosa", "c@z.dev"): 3}))
+    humans = [p for p in people if p.get("kind", "human") == "human"]
+    assert len(humans) == 2
+    assert ident[("Simon Gonzalez De Cruz", "a@x.dev")] == ident[("Simon Gonzalez de la Cruz", "b@y.dev")]
