@@ -490,3 +490,60 @@ def test_scout_hook_has_no_free_text_status_writes():
     source = (ROOT / "scripts" / "integrations" / "scout_hook.py").read_text(encoding="utf-8")
     for literal in ('"status": "', '"status"] = \'', '["status"] = "'):
         assert literal not in source, literal
+
+
+# ── Follow-up fixes ──────────────────────────────────────────────────────────
+
+
+def test_scout_clone_keeps_full_history(tmp_path):
+    """The hook cloned with --depth 1, and mine refuses shallow history, so
+    every --repo-url run failed at the mine step."""
+    src = tmp_path / "src"
+    src.mkdir()
+    env = {
+        **os.environ,
+        "GIT_CONFIG_GLOBAL": os.devnull,
+        "GIT_CONFIG_NOSYSTEM": "1",
+        "GIT_AUTHOR_NAME": "T",
+        "GIT_AUTHOR_EMAIL": "t@example.com",
+        "GIT_COMMITTER_NAME": "T",
+        "GIT_COMMITTER_EMAIL": "t@example.com",
+    }
+
+    def git(*args, cwd=src):
+        return subprocess.run(
+            ["git", *args], cwd=cwd, env=env, check=True, capture_output=True, text=True
+        ).stdout.strip()
+
+    git("init", "-q", "-b", "main")
+    for i in range(3):
+        (src / f"f{i}.txt").write_text(str(i), encoding="utf-8")
+        git("add", "-A")
+        git("commit", "-q", "-m", f"c{i}")
+
+    dest = tmp_path / "clone"
+    ok, path = scout.clone_repo(src.as_uri(), str(dest))
+    assert ok, path
+    assert git("rev-parse", "--is-shallow-repository", cwd=dest) == "false"
+    assert git("rev-list", "--count", "HEAD", cwd=dest) == "3"
+
+
+@pytest.mark.parametrize(
+    "results,status,failed",
+    [
+        ({"a": "out/analysis-a.json"}, "complete", None),
+        ({"a": "out/analysis-a.json", "b": "ERROR: no data"}, "partial", ["b"]),
+    ],
+)
+def test_mcp_analyze_reports_failed_vectors(monkeypatch, results, status, failed):
+    """devarch_analyze said "complete" even when vectors failed."""
+    monkeypatch.setattr(
+        pipeline,
+        "analyze",
+        lambda ref, vectors: pipeline.AnalysisResult(results, failed_vectors(results)),
+    )
+    monkeypatch.setattr(mcp_tools, "_ref", lambda name: None)
+    out = mcp_tools.devarch_analyze("p")
+    assert out["status"] == status
+    assert out.get("failed_vectors") == failed
+    assert list(out)[:4] == ["status", "project", "vectors_run", "results"]
