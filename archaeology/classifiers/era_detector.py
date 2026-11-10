@@ -23,7 +23,11 @@ DEFAULTS = {
     "min_gap_days": 3,
     "velocity_shift_factor": 2.0,
     "scope_change_keywords": [
-        "refactor", "rewrite", "restructure", "migration", "architecture",
+        "refactor",
+        "rewrite",
+        "restructure",
+        "migration",
+        "architecture",
     ],
     "cross_repo_activation_threshold": 3,
 }
@@ -87,10 +91,7 @@ class SignalDetector:
         scope_signals = self._detect_scope_changes(commits)
         repo_signals = self._detect_cross_repo(commits)
 
-        all_signals = (
-            gap_signals + velocity_signals + author_signals
-            + scope_signals + repo_signals
-        )
+        all_signals = gap_signals + velocity_signals + author_signals + scope_signals + repo_signals
         all_signals.sort(key=lambda s: (s["index"], s["type"]))
 
         clusters = self._build_clusters(commits)
@@ -101,9 +102,7 @@ class SignalDetector:
                 "first": commits[0]["date"][:10] if commits[0]["date"] else "",
                 "last": commits[-1]["date"][:10] if commits[-1]["date"] else "",
             },
-            "active_days": len({
-                c["date"][:10] for c in commits if len(c["date"]) >= 10
-            }),
+            "active_days": len({c["date"][:10] for c in commits if len(c["date"]) >= 10}),
             "signals": all_signals,
             "cluster_summary": clusters,
         }
@@ -121,6 +120,7 @@ class SignalDetector:
         if result is None:
             result = self.detect()
         from ..utils import atomic_write
+
         output_path = Path(output_path)
         atomic_write(output_path, json.dumps(result, indent=2, ensure_ascii=False))
         return output_path
@@ -143,9 +143,7 @@ class SignalDetector:
                 )
                 has_repo = True
             except sqlite3.OperationalError:
-                cursor = conn.execute(
-                    "SELECT date, author, message FROM commits ORDER BY date ASC"
-                )
+                cursor = conn.execute("SELECT date, author, message FROM commits ORDER BY date ASC")
                 has_repo = False
             rows = cursor.fetchall()
         except sqlite3.OperationalError:
@@ -158,12 +156,14 @@ class SignalDetector:
 
         commits = []
         for row in rows:
-            commits.append({
-                "date": str(row["date"]) if row["date"] else "",
-                "author": str(row["author"]) if row["author"] else "",
-                "message": str(row["message"]) if row["message"] else "",
-                "repo": (str(row["repo"]) if has_repo and row["repo"] else ""),
-            })
+            commits.append(
+                {
+                    "date": str(row["date"]) if row["date"] else "",
+                    "author": str(row["author"]) if row["author"] else "",
+                    "message": str(row["message"]) if row["message"] else "",
+                    "repo": (str(row["repo"]) if has_repo and row["repo"] else ""),
+                }
+            )
         return commits
 
     # ------------------------------------------------------------------
@@ -184,13 +184,15 @@ class SignalDetector:
                 continue
             gap = (curr_date - prev_date).days
             if gap >= self.min_gap_days:
-                signals.append({
-                    "index": i,
-                    "date": commits[i]["date"][:10] if len(commits[i]["date"]) >= 10 else "",
-                    "type": "gap",
-                    "detail": f"{gap}-day gap since previous commit",
-                    "strength": "strong" if gap >= 7 else "moderate",
-                })
+                signals.append(
+                    {
+                        "index": i,
+                        "date": commits[i]["date"][:10] if len(commits[i]["date"]) >= 10 else "",
+                        "type": "gap",
+                        "detail": f"{gap}-day gap since previous commit",
+                        "strength": "strong" if gap >= 7 else "moderate",
+                    }
+                )
         return signals
 
     # ------------------------------------------------------------------
@@ -223,8 +225,10 @@ class SignalDetector:
         flagged_days = set()
 
         for i in range(window, len(days_sorted)):
-            before_avg = sum(day_counts.get(d, 0) for d in days_sorted[i - window:i]) / window
-            after_avg = sum(day_counts.get(d, 0) for d in days_sorted[i:i + window]) / max(1, min(window, len(days_sorted) - i))
+            before_avg = sum(day_counts.get(d, 0) for d in days_sorted[i - window : i]) / window
+            after_avg = sum(day_counts.get(d, 0) for d in days_sorted[i : i + window]) / max(
+                1, min(window, len(days_sorted) - i)
+            )
 
             if before_avg == 0:
                 continue
@@ -232,7 +236,9 @@ class SignalDetector:
             ratio = after_avg / before_avg
             day = days_sorted[i]
 
-            if (ratio >= self.velocity_shift_factor or ratio <= 1.0 / self.velocity_shift_factor) and day not in flagged_days:
+            if (
+                ratio >= self.velocity_shift_factor or ratio <= 1.0 / self.velocity_shift_factor
+            ) and day not in flagged_days:
                 flagged_days.add(day)
                 direction = "up" if ratio > 1 else "down"
                 display_ratio = max(ratio, 1.0 / ratio)
@@ -241,13 +247,15 @@ class SignalDetector:
                     (j for j, c in enumerate(commits) if c["date"][:10] == day),
                     0,
                 )
-                signals.append({
-                    "index": idx,
-                    "date": day,
-                    "type": "velocity",
-                    "detail": f"{display_ratio:.1f}x {direction}shift ({before_avg:.0f}→{after_avg:.0f} commits/day avg)",
-                    "strength": "strong" if display_ratio >= 4.0 else "moderate",
-                })
+                signals.append(
+                    {
+                        "index": idx,
+                        "date": day,
+                        "type": "velocity",
+                        "detail": f"{display_ratio:.1f}x {direction}shift ({before_avg:.0f}→{after_avg:.0f} commits/day avg)",
+                        "strength": "strong" if display_ratio >= 4.0 else "moderate",
+                    }
+                )
 
         return signals
 
@@ -282,13 +290,15 @@ class SignalDetector:
 
         signals = []
         for idx, before, after in deduped:
-            signals.append({
-                "index": idx,
-                "date": commits[idx]["date"][:10] if len(commits[idx]["date"]) >= 10 else "",
-                "type": "author",
-                "detail": f"primary author shifts from {before} to {after}",
-                "strength": "strong",
-            })
+            signals.append(
+                {
+                    "index": idx,
+                    "date": commits[idx]["date"][:10] if len(commits[idx]["date"]) >= 10 else "",
+                    "type": "author",
+                    "detail": f"primary author shifts from {before} to {after}",
+                    "strength": "strong",
+                }
+            )
         return signals
 
     # ------------------------------------------------------------------
@@ -331,13 +341,15 @@ class SignalDetector:
                 day = commits[center]["date"][:10] if len(commits[center]["date"]) >= 10 else ""
                 if day not in flagged:
                     flagged.add(day)
-                    signals.append({
-                        "index": center,
-                        "date": day,
-                        "type": "scope",
-                        "detail": f"concentrated {', '.join(sorted(keywords))} burst ({count} in {window} commits)",
-                        "strength": "strong" if count >= 6 else "moderate",
-                    })
+                    signals.append(
+                        {
+                            "index": center,
+                            "date": day,
+                            "type": "scope",
+                            "detail": f"concentrated {', '.join(sorted(keywords))} burst ({count} in {window} commits)",
+                            "strength": "strong" if count >= 6 else "moderate",
+                        }
+                    )
 
         return signals
 
@@ -368,13 +380,17 @@ class SignalDetector:
                     i,
                 )
                 if first_appearance > 0:
-                    signals.append({
-                        "index": first_appearance,
-                        "date": commits[first_appearance]["date"][:10] if len(commits[first_appearance]["date"]) >= 10 else "",
-                        "type": "repo_activation",
-                        "detail": f"repo {repo} reaches {self.cross_repo_threshold} commits",
-                        "strength": "moderate",
-                    })
+                    signals.append(
+                        {
+                            "index": first_appearance,
+                            "date": commits[first_appearance]["date"][:10]
+                            if len(commits[first_appearance]["date"]) >= 10
+                            else "",
+                            "type": "repo_activation",
+                            "detail": f"repo {repo} reaches {self.cross_repo_threshold} commits",
+                            "strength": "moderate",
+                        }
+                    )
 
         return signals
 
@@ -414,23 +430,21 @@ class SignalDetector:
 
             if gap >= self.min_gap_days:
                 # Close current cluster
-                clusters.append(self._summarize_cluster(
-                    commits, cluster_days, day_commits
-                ))
+                clusters.append(self._summarize_cluster(commits, cluster_days, day_commits))
                 cluster_days = [days_sorted[i]]
             else:
                 cluster_days.append(days_sorted[i])
 
         # Close last cluster
         if cluster_days:
-            clusters.append(self._summarize_cluster(
-                commits, cluster_days, day_commits
-            ))
+            clusters.append(self._summarize_cluster(commits, cluster_days, day_commits))
 
         return clusters
 
     def _summarize_cluster(
-        self, commits: list[dict], days: list[str],
+        self,
+        commits: list[dict],
+        days: list[str],
         day_commits: dict[str, list[int]],
     ) -> dict:
         """Build a summary dict for a cluster of active days."""
@@ -450,9 +464,7 @@ class SignalDetector:
             "commit_count": len(cluster_commits),
             "primary_author": authors.most_common(1)[0][0] if authors else "",
             "dominant_repo": repos.most_common(1)[0][0] if repos else "",
-            "daily_breakdown": {
-                d: len(day_commits.get(d, [])) for d in days
-            },
+            "daily_breakdown": {d: len(day_commits.get(d, [])) for d in days},
         }
 
     # ------------------------------------------------------------------
@@ -476,6 +488,7 @@ class SignalDetector:
 # ----------------------------------------------------------------------
 # Convenience function (called by CLI)
 # ----------------------------------------------------------------------
+
 
 def detect_signals(project_name: str, config: dict | None = None) -> dict:
     """Detect signals for a project by name.
@@ -524,6 +537,7 @@ def detect_signals(project_name: str, config: dict | None = None) -> dict:
 # CLI entry point
 # ----------------------------------------------------------------------
 
+
 def main() -> None:
     """CLI entry point for standalone signal detection.
 
@@ -531,9 +545,7 @@ def main() -> None:
         python -m archaeology.classifiers.era_detector --project <name>
         python -m archaeology.classifiers.era_detector --db <path> [--output <path>]
     """
-    parser = argparse.ArgumentParser(
-        description="Detect development signals from commit history"
-    )
+    parser = argparse.ArgumentParser(description="Detect development signals from commit history")
     parser.add_argument(
         "--project",
         help="Project name (resolves to projects/<name>/data/archaeology.db)",

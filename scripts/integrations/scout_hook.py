@@ -41,7 +41,9 @@ def log_info(msg: str) -> None:
     print(f"[INFO] {msg}", file=sys.stderr)
 
 
-def run_command(cmd: list[str], check: bool = True, timeout: int = 300) -> subprocess.CompletedProcess[str]:
+def run_command(
+    cmd: list[str], check: bool = True, timeout: int = 300
+) -> subprocess.CompletedProcess[str]:
     """Run a command and return the result."""
     log_info(f"Running: {' '.join(cmd)}")
     result = subprocess.run(
@@ -78,7 +80,9 @@ def clone_repo(url: str, clone_dir: str) -> tuple[bool, str]:
         return False, f"clone error: {e}"
 
 
-def init_project(project_name: str, description: str, repo_url: str) -> tuple[bool, str, dict[str, Any]]:
+def init_project(
+    project_name: str, description: str, repo_url: str
+) -> tuple[bool, str, dict[str, Any]]:
     """Initialize a new archaeology project.
 
     Returns:
@@ -87,10 +91,15 @@ def init_project(project_name: str, description: str, repo_url: str) -> tuple[bo
     try:
         log_info(f"Initializing project '{project_name}'")
         cmd = [
-            sys.executable, "-m", "archaeology.cli",
-            "init", project_name,
-            "--description", description,
-            "--repo-url", repo_url,
+            sys.executable,
+            "-m",
+            "archaeology.cli",
+            "init",
+            project_name,
+            "--description",
+            description,
+            "--repo-url",
+            repo_url,
         ]
         result = run_command(cmd, check=False)
         if result.returncode != 0:
@@ -111,9 +120,13 @@ def mine_repo(repo_path: str, project_name: str) -> tuple[bool, str, dict[str, A
     try:
         log_info(f"Mining git data from {repo_path}")
         cmd = [
-            sys.executable, "-m", "archaeology.cli",
-            "mine", repo_path,
-            "--project", project_name,
+            sys.executable,
+            "-m",
+            "archaeology.cli",
+            "mine",
+            repo_path,
+            "--project",
+            project_name,
         ]
         result = run_command(cmd, check=False, timeout=600)
         if result.returncode != 0:
@@ -144,8 +157,11 @@ def build_database(project_name: str) -> tuple[bool, str, dict[str, Any]]:
     try:
         log_info(f"Building database for '{project_name}'")
         cmd = [
-            sys.executable, "-m", "archaeology.cli",
-            "build-db", project_name,
+            sys.executable,
+            "-m",
+            "archaeology.cli",
+            "build-db",
+            project_name,
         ]
         result = run_command(cmd, check=False, timeout=600)
         if result.returncode != 0:
@@ -169,8 +185,11 @@ def detect_signals(project_name: str) -> tuple[bool, str, dict[str, Any]]:
     try:
         log_info(f"Detecting signals for '{project_name}'")
         cmd = [
-            sys.executable, "-m", "archaeology.cli",
-            "signals", project_name,
+            sys.executable,
+            "-m",
+            "archaeology.cli",
+            "signals",
+            project_name,
         ]
         result = run_command(cmd, check=False, timeout=300)
         if result.returncode != 0:
@@ -202,8 +221,11 @@ def run_analysis(project_name: str) -> tuple[bool, str, dict[str, Any]]:
     try:
         log_info(f"Running analysis vectors for '{project_name}'")
         cmd = [
-            sys.executable, "-m", "archaeology.cli",
-            "analyze", project_name,
+            sys.executable,
+            "-m",
+            "archaeology.cli",
+            "analyze",
+            project_name,
         ]
         result = run_command(cmd, check=False, timeout=600)
 
@@ -217,6 +239,7 @@ def run_analysis(project_name: str) -> tuple[bool, str, dict[str, Any]]:
                     # Only count files created recently (within last minute)
                     if os.path.exists(file_path):
                         import time
+
                         mtime = os.path.getmtime(file_path)
                         if time.time() - mtime < 120:  # Created within last 2 minutes
                             analysis_files.append(file_path)
@@ -229,14 +252,18 @@ def run_analysis(project_name: str) -> tuple[bool, str, dict[str, Any]]:
         # Check if any vectors failed from stdout
         failed_count = result.stdout.count("ERROR:")
         total_vectors = 6  # Known vector count
-        status = "success" if failed_count == 0 else "partial"
+        _status = "success" if failed_count == 0 else "partial"
 
-        return True, result.stdout, {
-            "analysis_count": success_count,
-            "analysis_files": analysis_files,
-            "failed_vectors": failed_count,
-            "total_vectors": total_vectors,
-        }
+        return (
+            True,
+            result.stdout,
+            {
+                "analysis_count": success_count,
+                "analysis_files": analysis_files,
+                "failed_vectors": failed_count,
+                "total_vectors": total_vectors,
+            },
+        )
     except subprocess.TimeoutExpired:
         return False, "analyze timed out", {}
     except Exception as e:

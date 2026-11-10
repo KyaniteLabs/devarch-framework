@@ -187,8 +187,7 @@ def devarch_audit(project_name: str, fail_on: str = "HIGH") -> dict[str, Any]:
         "passed": passed,
         "failed": failed,
         "findings": [
-            {"check": f.code, "severity": f.severity, "message": f.message}
-            for f in findings
+            {"check": f.code, "severity": f.severity, "message": f.message} for f in findings
         ],
     }
 

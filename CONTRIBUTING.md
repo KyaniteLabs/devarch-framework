@@ -14,8 +14,8 @@ Thank you for your interest in contributing to DevArch! This document provides g
 
 ```bash
 # Clone the repository
-git clone https://github.com/KyaniteLabs/devarch-framework.git
-cd devarch-framework
+git clone https://github.com/KyaniteLabs/ag4te.git
+cd ag4te
 
 # Create a virtual environment
 python -m venv .venv

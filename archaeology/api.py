@@ -17,7 +17,6 @@ import json
 import re
 import sqlite3
 from datetime import datetime
-from http.server import BaseHTTPRequestHandler
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -28,11 +27,10 @@ PROJECTS_DIR = ROOT / "projects"
 BRIDGE_PATH = ROOT / "global" / "data" / "factory-bridge.json"
 
 
-
 def _validate_project_name(name):
     """Reject path traversal and invalid characters in project names."""
     # fullmatch, not ^...$: "$" also matches before a trailing newline.
-    if not name or not re.fullmatch(r'[a-zA-Z0-9._-]+', name):
+    if not name or not re.fullmatch(r"[a-zA-Z0-9._-]+", name):
         return False
     # Double-check no path traversal
     resolved = (PROJECTS_DIR / name).resolve()
@@ -46,7 +44,6 @@ def _validate_project_name(name):
 def _json_response(handler, data, status=200):
     handler.send_response(status)
     handler.send_header("Content-Type", "application/json")
-    handler.send_header("Access-Control-Allow-Origin", "*")
     payload = json.dumps(data, indent=2, default=str).encode()
     handler.send_header("Content-Length", str(len(payload)))
     handler.end_headers()
@@ -188,14 +185,20 @@ def _parse_wardley(project_dir):
     table_text = sections.get("Component Evolution Table", "")
     components = []
     for line in table_text.splitlines():
-        if "|" in line and not line.strip().startswith("|-") and not line.strip().startswith("| Component"):
+        if (
+            "|" in line
+            and not line.strip().startswith("|-")
+            and not line.strip().startswith("| Component")
+        ):
             cells = [c.strip() for c in line.split("|") if c.strip()]
             if len(cells) >= 3:
-                components.append({
-                    "component": cells[0],
-                    "stage": cells[1],
-                    "evidence": cells[2] if len(cells) > 2 else "",
-                })
+                components.append(
+                    {
+                        "component": cells[0],
+                        "stage": cells[1],
+                        "evidence": cells[2] if len(cells) > 2 else "",
+                    }
+                )
     result["components"] = components
 
     # Parse recommendations
@@ -276,15 +279,21 @@ def _parse_bcg(project_dir):
     components = []
     table_text = sections.get("Component Classification", "")
     for line in table_text.splitlines():
-        if "|" in line and not line.strip().startswith("|-") and not line.strip().startswith("| Component"):
+        if (
+            "|" in line
+            and not line.strip().startswith("|-")
+            and not line.strip().startswith("| Component")
+        ):
             cells = [c.strip() for c in line.split("|") if c.strip()]
             if len(cells) >= 4:
-                components.append({
-                    "component": cells[0],
-                    "commits": cells[1],
-                    "share": cells[2],
-                    "quadrant": cells[3],
-                })
+                components.append(
+                    {
+                        "component": cells[0],
+                        "commits": cells[1],
+                        "share": cells[2],
+                        "quadrant": cells[3],
+                    }
+                )
     result["components"] = components
 
     for quadrant_key in ("Stars", "Cash Cows", "Question Marks", "Dogs"):
@@ -435,12 +444,15 @@ def _compute_health_score(metrics, swot, wardley, value_chain):
 def handle_health(handler):
     """GET /api/health"""
     projects = _discover_projects()
-    _json_response(handler, {
-        "status": "ok",
-        "version": __version__,
-        "projects": len(projects),
-        "bridge_available": BRIDGE_PATH.exists(),
-    })
+    _json_response(
+        handler,
+        {
+            "status": "ok",
+            "version": __version__,
+            "projects": len(projects),
+            "bridge_available": BRIDGE_PATH.exists(),
+        },
+    )
 
 
 def handle_projects(handler):
@@ -471,18 +483,21 @@ def handle_insights(handler, project_name):
     pipeline = _get_pipeline_status(pdir)
     health = _compute_health_score(metrics, swot, wardley, value_chain)
 
-    _json_response(handler, {
-        "project": project_name,
-        "health_score": health,
-        "metrics": metrics,
-        "swot": swot,
-        "wardley": wardley,
-        "value_chain": value_chain,
-        "bcg": bcg,
-        "ansoff": ansoff,
-        "blue_ocean": blue_ocean,
-        "pipeline": pipeline,
-    })
+    _json_response(
+        handler,
+        {
+            "project": project_name,
+            "health_score": health,
+            "metrics": metrics,
+            "swot": swot,
+            "wardley": wardley,
+            "value_chain": value_chain,
+            "bcg": bcg,
+            "ansoff": ansoff,
+            "blue_ocean": blue_ocean,
+            "pipeline": pipeline,
+        },
+    )
 
 
 def handle_swot(handler, project_name):
@@ -612,7 +627,9 @@ def _generate_bridge():
                 "weaknesses": len(swot.get("weaknesses", [])) if swot else 0,
                 "opportunities": len(swot.get("opportunities", [])) if swot else 0,
                 "threats": len(swot.get("threats", [])) if swot else 0,
-            } if swot else None,
+            }
+            if swot
+            else None,
             "wardley_maturity": wardley.get("maturity") if wardley else None,
             "value_chain_margin": value_chain.get("margin_score") if value_chain else None,
             "bcg_velocity_trend": bcg.get("velocity_trend") if bcg else None,
@@ -632,13 +649,29 @@ def _generate_bridge():
         "cross_repo": {
             "total_repos": len(projects_data),
             "total_commits": sum(p["total_commits"] for p in projects_data.values()),
-            "frameworks_available": ["swot", "wardley", "value-chain", "bcg", "ansoff", "blue-ocean"],
+            "frameworks_available": [
+                "swot",
+                "wardley",
+                "value-chain",
+                "bcg",
+                "ansoff",
+                "blue-ocean",
+            ],
             "opportunity_features": [
-                "learning-velocity", "frustration-to-automation", "knowledge-gap",
-                "token-efficiency", "session-quality", "ai-agent-mastery",
-                "creative-dna", "neurodivergent-profile", "model-selection-advisor",
-                "before-after-snapshot", "cross-repo-transfer", "youtube-learning-graph",
-                "architecture-timelapse", "commit-cognitive-load",
+                "learning-velocity",
+                "frustration-to-automation",
+                "knowledge-gap",
+                "token-efficiency",
+                "session-quality",
+                "ai-agent-mastery",
+                "creative-dna",
+                "neurodivergent-profile",
+                "model-selection-advisor",
+                "before-after-snapshot",
+                "cross-repo-transfer",
+                "youtube-learning-graph",
+                "architecture-timelapse",
+                "commit-cognitive-load",
             ],
         },
     }
@@ -675,7 +708,9 @@ OPPORTUNITY_FEATURES = [
 
 def _load_opportunity(project_name, feature):
     """Load a single opportunity analysis JSON."""
-    path = PROJECTS_DIR / project_name / "deliverables" / "opportunity" / f"opportunity-{feature}.json"
+    path = (
+        PROJECTS_DIR / project_name / "deliverables" / "opportunity" / f"opportunity-{feature}.json"
+    )
     return _load_json(path)
 
 
@@ -688,7 +723,9 @@ def handle_opportunity_feature(handler, project_name, feature):
         return _error_response(handler, f"Project '{project_name}' not found")
     data = _load_opportunity(project_name, feature)
     if not data:
-        return _error_response(handler, f"Opportunity '{feature}' not generated for '{project_name}'", 404)
+        return _error_response(
+            handler, f"Opportunity '{feature}' not generated for '{project_name}'", 404
+        )
     _json_response(handler, data)
 
 
@@ -701,12 +738,15 @@ def handle_opportunity_all(handler, project_name):
     for feature in OPPORTUNITY_FEATURES:
         data = _load_opportunity(project_name, feature)
         results[feature] = data
-    _json_response(handler, {
-        "project": project_name,
-        "features": OPPORTUNITY_FEATURES,
-        "data": results,
-        "generated_at": datetime.now().isoformat(),
-    })
+    _json_response(
+        handler,
+        {
+            "project": project_name,
+            "features": OPPORTUNITY_FEATURES,
+            "data": results,
+            "generated_at": datetime.now().isoformat(),
+        },
+    )
 
 
 def handle_opportunity_index(handler, project_name):
@@ -717,17 +757,22 @@ def handle_opportunity_index(handler, project_name):
     available = []
     for feature in OPPORTUNITY_FEATURES:
         data = _load_opportunity(project_name, feature)
-        available.append({
-            "feature": feature,
-            "available": data is not None,
-            "analysis_type": data.get("analysis_type") if data else None,
-        })
-    _json_response(handler, {
-        "project": project_name,
-        "total_features": len(OPPORTUNITY_FEATURES),
-        "available_count": sum(1 for f in available if f["available"]),
-        "features": available,
-    })
+        available.append(
+            {
+                "feature": feature,
+                "available": data is not None,
+                "analysis_type": data.get("analysis_type") if data else None,
+            }
+        )
+    _json_response(
+        handler,
+        {
+            "project": project_name,
+            "total_features": len(OPPORTUNITY_FEATURES),
+            "available_count": sum(1 for f in available if f["available"]),
+            "features": available,
+        },
+    )
 
 
 # ── Router ─────────────────────────────────────────────────────
@@ -748,20 +793,76 @@ ROUTES = [
     (r"^/api/health-trend/(.+)$", handle_health_trend, True),
     # Opportunity endpoints (14 features) — specific routes FIRST, generic LAST
     (r"^/api/opportunity/all/(.+)$", lambda h, p: handle_opportunity_all(h, p), True),
-    (r"^/api/opportunity/learning-velocity/(.+)$", lambda h, p: handle_opportunity_feature(h, p, "learning-velocity"), True),
-    (r"^/api/opportunity/frustration-to-automation/(.+)$", lambda h, p: handle_opportunity_feature(h, p, "frustration-to-automation"), True),
-    (r"^/api/opportunity/knowledge-gap/(.+)$", lambda h, p: handle_opportunity_feature(h, p, "knowledge-gap"), True),
-    (r"^/api/opportunity/token-efficiency/(.+)$", lambda h, p: handle_opportunity_feature(h, p, "token-efficiency"), True),
-    (r"^/api/opportunity/session-quality/(.+)$", lambda h, p: handle_opportunity_feature(h, p, "session-quality"), True),
-    (r"^/api/opportunity/ai-agent-mastery/(.+)$", lambda h, p: handle_opportunity_feature(h, p, "ai-agent-mastery"), True),
-    (r"^/api/opportunity/creative-dna/(.+)$", lambda h, p: handle_opportunity_feature(h, p, "creative-dna"), True),
-    (r"^/api/opportunity/neurodivergent-profile/(.+)$", lambda h, p: handle_opportunity_feature(h, p, "neurodivergent-profile"), True),
-    (r"^/api/opportunity/model-selection-advisor/(.+)$", lambda h, p: handle_opportunity_feature(h, p, "model-selection-advisor"), True),
-    (r"^/api/opportunity/before-after-snapshot/(.+)$", lambda h, p: handle_opportunity_feature(h, p, "before-after-snapshot"), True),
-    (r"^/api/opportunity/cross-repo-transfer/(.+)$", lambda h, p: handle_opportunity_feature(h, p, "cross-repo-transfer"), True),
-    (r"^/api/opportunity/youtube-learning-graph/(.+)$", lambda h, p: handle_opportunity_feature(h, p, "youtube-learning-graph"), True),
-    (r"^/api/opportunity/architecture-timelapse/(.+)$", lambda h, p: handle_opportunity_feature(h, p, "architecture-timelapse"), True),
-    (r"^/api/opportunity/commit-cognitive-load/(.+)$", lambda h, p: handle_opportunity_feature(h, p, "commit-cognitive-load"), True),
+    (
+        r"^/api/opportunity/learning-velocity/(.+)$",
+        lambda h, p: handle_opportunity_feature(h, p, "learning-velocity"),
+        True,
+    ),
+    (
+        r"^/api/opportunity/frustration-to-automation/(.+)$",
+        lambda h, p: handle_opportunity_feature(h, p, "frustration-to-automation"),
+        True,
+    ),
+    (
+        r"^/api/opportunity/knowledge-gap/(.+)$",
+        lambda h, p: handle_opportunity_feature(h, p, "knowledge-gap"),
+        True,
+    ),
+    (
+        r"^/api/opportunity/token-efficiency/(.+)$",
+        lambda h, p: handle_opportunity_feature(h, p, "token-efficiency"),
+        True,
+    ),
+    (
+        r"^/api/opportunity/session-quality/(.+)$",
+        lambda h, p: handle_opportunity_feature(h, p, "session-quality"),
+        True,
+    ),
+    (
+        r"^/api/opportunity/ai-agent-mastery/(.+)$",
+        lambda h, p: handle_opportunity_feature(h, p, "ai-agent-mastery"),
+        True,
+    ),
+    (
+        r"^/api/opportunity/creative-dna/(.+)$",
+        lambda h, p: handle_opportunity_feature(h, p, "creative-dna"),
+        True,
+    ),
+    (
+        r"^/api/opportunity/neurodivergent-profile/(.+)$",
+        lambda h, p: handle_opportunity_feature(h, p, "neurodivergent-profile"),
+        True,
+    ),
+    (
+        r"^/api/opportunity/model-selection-advisor/(.+)$",
+        lambda h, p: handle_opportunity_feature(h, p, "model-selection-advisor"),
+        True,
+    ),
+    (
+        r"^/api/opportunity/before-after-snapshot/(.+)$",
+        lambda h, p: handle_opportunity_feature(h, p, "before-after-snapshot"),
+        True,
+    ),
+    (
+        r"^/api/opportunity/cross-repo-transfer/(.+)$",
+        lambda h, p: handle_opportunity_feature(h, p, "cross-repo-transfer"),
+        True,
+    ),
+    (
+        r"^/api/opportunity/youtube-learning-graph/(.+)$",
+        lambda h, p: handle_opportunity_feature(h, p, "youtube-learning-graph"),
+        True,
+    ),
+    (
+        r"^/api/opportunity/architecture-timelapse/(.+)$",
+        lambda h, p: handle_opportunity_feature(h, p, "architecture-timelapse"),
+        True,
+    ),
+    (
+        r"^/api/opportunity/commit-cognitive-load/(.+)$",
+        lambda h, p: handle_opportunity_feature(h, p, "commit-cognitive-load"),
+        True,
+    ),
     (r"^/api/opportunity/(.+)$", lambda h, p: handle_opportunity_index(h, p), True),
 ]
 

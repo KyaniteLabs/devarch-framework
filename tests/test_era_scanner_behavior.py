@@ -18,15 +18,22 @@ from pathlib import Path
 import pytest
 
 from archaeology.era_mapper import EraDef
-from archaeology.era_scanner import scan_deliverables
+from archaeology.era_scanner import _number_word, scan_deliverables
 
 ERAS = [
-    EraDef(id=1, name="Foundation", start=datetime(2026, 1, 1),
-           end=datetime(2026, 1, 10), commits=40),
-    EraDef(id=2, name="Expansion", start=datetime(2026, 1, 11),
-           end=datetime(2026, 1, 20), commits=35),
-    EraDef(id=3, name="Consolidation", start=datetime(2026, 1, 21),
-           end=datetime(2026, 1, 31), commits=27),
+    EraDef(
+        id=1, name="Foundation", start=datetime(2026, 1, 1), end=datetime(2026, 1, 10), commits=40
+    ),
+    EraDef(
+        id=2, name="Expansion", start=datetime(2026, 1, 11), end=datetime(2026, 1, 20), commits=35
+    ),
+    EraDef(
+        id=3,
+        name="Consolidation",
+        start=datetime(2026, 1, 21),
+        end=datetime(2026, 1, 31),
+        commits=27,
+    ),
 ]
 N = 3
 CURRENT = "Consolidation, Expansion, Foundation"  # ", ".join(sorted(names))
@@ -40,10 +47,16 @@ def make_project(tmp_path: Path, files: dict, span_days: int | None = 30) -> Pat
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(content)
     if span_days is not None:
-        (proj / "project.json").write_text(json.dumps({
-            "total_commits": 102, "span_days": span_days,
-            "active_days": 22, "era_count": N,
-        }))
+        (proj / "project.json").write_text(
+            json.dumps(
+                {
+                    "total_commits": 102,
+                    "span_days": span_days,
+                    "active_days": 22,
+                    "era_count": N,
+                }
+            )
+        )
     return proj
 
 
@@ -54,6 +67,7 @@ def refs(result):
 # ---------------------------------------------------------------------------
 # structural checks
 # ---------------------------------------------------------------------------
+
 
 class TestEraNumbers:
     def test_number_above_count_flags_with_remap_hint(self, tmp_path):
@@ -152,12 +166,15 @@ class TestOldEraNames:
 
 
 class TestHistoricalSkipLines:
-    @pytest.mark.parametrize("line", [
-        "Original Claim: The Crusade",
-        "originally reported Era 9",
-        "was 15 eras",
-        "Corrected To Era 2",
-    ])
+    @pytest.mark.parametrize(
+        "line",
+        [
+            "Original Claim: The Crusade",
+            "originally reported Era 9",
+            "was 15 eras",
+            "Corrected To Era 2",
+        ],
+    )
     def test_annotation_lines_are_skipped(self, tmp_path, line):
         proj = make_project(tmp_path, {"history.md": line + "\n"})
         assert scan_deliverables(proj, ERAS).refs == []
@@ -166,6 +183,7 @@ class TestHistoricalSkipLines:
 # ---------------------------------------------------------------------------
 # semantic drift checks
 # ---------------------------------------------------------------------------
+
 
 class TestSemanticDrift:
     def test_day_count_off_by_one_flags(self, tmp_path):
@@ -199,8 +217,7 @@ class TestSemanticDrift:
         proj = make_project(tmp_path, {"report.md": "about 1,050 commits total.\n"})
         r = scan_deliverables(proj, ERAS)
         assert refs(r) == [
-            ("semantic_drift", "1,050 commits",
-             "972 commits (Eras 3-7) or era-specific count", 1),
+            ("semantic_drift", "1,050 commits", "972 commits (Eras 3-7) or era-specific count", 1),
         ]
 
     def test_per_era_commit_mismatch_flags_with_canonical(self, tmp_path):
@@ -228,29 +245,23 @@ class TestSemanticDrift:
 # JS / HTML era arrays
 # ---------------------------------------------------------------------------
 
+
 class TestJsEraArrays:
     def test_oversized_number_array_flags_at_array_start(self, tmp_path):
-        js = (
-            "const modelTimeline = [\n"
-            "  {era: 1, label: 'a'},\n"
-            "  {era: 9, label: 'b'},\n"
-            "];\n"
-        )
+        js = "const modelTimeline = [\n  {era: 1, label: 'a'},\n  {era: 9, label: 'b'},\n];\n"
         proj = make_project(tmp_path, {"timeline.js": js})
         r = scan_deliverables(proj, ERAS)
         assert refs(r) == [
-            ("js_era_array",
-             "array with era entries [1, 9] (2 entries, max=9)",
-             "max 3 entries (stale: [9])", 1),
+            (
+                "js_era_array",
+                "array with era entries [1, 9] (2 entries, max=9)",
+                "max 3 entries (stale: [9])",
+                1,
+            ),
         ]
 
     def test_in_range_number_array_is_clean(self, tmp_path):
-        js = (
-            "const modelTimeline = [\n"
-            "  {era: 1},\n"
-            "  {era: 2},\n"
-            "];\n"
-        )
+        js = "const modelTimeline = [\n  {era: 1},\n  {era: 2},\n];\n"
         proj = make_project(tmp_path, {"timeline.js": js})
         assert scan_deliverables(proj, ERAS).refs == []
 
@@ -266,10 +277,13 @@ class TestJsEraArrays:
         proj = make_project(tmp_path, {"profiles.html": js})
         r = scan_deliverables(proj, ERAS)
         assert refs(r) == [
-            ("js_era_array",
-             "array with 4 era profiles (expected 3), "
-             "non-current names: ['Seed', 'Sprout', 'Bloom', 'Wither']",
-             "3 entries with names: " + CURRENT, 1),
+            (
+                "js_era_array",
+                "array with 4 era profiles (expected 3), "
+                "non-current names: ['Seed', 'Sprout', 'Bloom', 'Wither']",
+                "3 entries with names: " + CURRENT,
+                1,
+            ),
         ]
 
 
@@ -277,13 +291,17 @@ class TestJsEraArrays:
 # scan-level behaviour
 # ---------------------------------------------------------------------------
 
+
 class TestScanResult:
     def test_counts_files_and_lines(self, tmp_path):
-        proj = make_project(tmp_path, {
-            "a.md": "one\ntwo\n",
-            "b.html": "three\n",
-            "notes.txt": "ignored suffix\n",
-        })
+        proj = make_project(
+            tmp_path,
+            {
+                "a.md": "one\ntwo\n",
+                "b.html": "three\n",
+                "notes.txt": "ignored suffix\n",
+            },
+        )
         r = scan_deliverables(proj, ERAS)
         assert r.files_scanned == 2
         assert r.lines_scanned == 3
@@ -310,16 +328,26 @@ class TestScanResult:
 # round 2 — literal tables and remaining branches
 # ---------------------------------------------------------------------------
 
-from archaeology.era_scanner import _number_word
-
 
 class TestNumberWord:
     def test_every_supported_count(self):
         expected = {
-            1: "One", 2: "Two", 3: "Three", 4: "Four", 5: "Five",
-            6: "Six", 7: "Seven", 8: "Eight", 9: "Nine", 10: "Ten",
-            11: "Eleven", 12: "Twelve", 13: "Thirteen", 14: "Fourteen",
-            15: "Fifteen", 16: "Sixteen",
+            1: "One",
+            2: "Two",
+            3: "Three",
+            4: "Four",
+            5: "Five",
+            6: "Six",
+            7: "Seven",
+            8: "Eight",
+            9: "Nine",
+            10: "Ten",
+            11: "Eleven",
+            12: "Twelve",
+            13: "Thirteen",
+            14: "Fourteen",
+            15: "Fifteen",
+            16: "Sixteen",
         }
         for n, word in expected.items():
             assert _number_word(n) == word
@@ -335,9 +363,9 @@ class TestKnownStaleTotals:
             proj = make_project(tmp_path, {"r.md": f"spanned {stale} eras.\n"})
             refs(scan_deliverables(proj, ERAS))  # helper import guard
             r = scan_deliverables(proj, ERAS)
-            assert [(x.kind, x.old_value) for x in r.refs] == [
-                ("era_count", f"{stale} eras")
-            ], stale
+            assert [(x.kind, x.old_value) for x in r.refs] == [("era_count", f"{stale} eras")], (
+                stale
+            )
 
     def test_non_stale_numbers_are_clean(self, tmp_path):
         for fine in (11, 12, 13):
@@ -347,8 +375,7 @@ class TestKnownStaleTotals:
 
 class TestWordTotals:
     def test_each_word_total_disagreeing_flags(self, tmp_path):
-        for word in ("Ten", "Eleven", "Twelve", "Thirteen", "Fourteen",
-                     "Fifteen", "Sixteen"):
+        for word in ("Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen"):
             proj = make_project(tmp_path, {"r.md": f"# {word} Eras\n"})
             r = scan_deliverables(proj, ERAS)
             assert [(x.kind, x.old_value, x.expected) for x in r.refs] == [
@@ -383,9 +410,12 @@ class TestScannerEdges:
         proj = make_project(tmp_path, {"t.js": js})
         r = scan_deliverables(proj, ERAS)
         assert refs(r) == [
-            ("js_era_array",
-             "array with era entries [1, 8] (2 entries, max=8)",
-             "max 3 entries (stale: [8])", 5),
+            (
+                "js_era_array",
+                "array with era entries [1, 8] (2 entries, max=8)",
+                "max 3 entries (stale: [8])",
+                5,
+            ),
         ]
 
     def test_name_array_with_right_length_and_current_names_is_clean(self, tmp_path):

@@ -18,39 +18,66 @@ Design principles:
     - Idempotent (running twice produces same result)
 """
 
+import argparse
 import json
 import subprocess
-import argparse
 import sys
-import re
-from pathlib import Path
-from datetime import datetime
 from collections import defaultdict
+from datetime import datetime
+from pathlib import Path
 
 # ─── Configuration ──────────────────────────────────────────────────────────────
 
 DEFAULT_REPO = Path(".")  # No default - must be specified
-DEFAULT_DATA_JSON = Path(__file__).parent / "projects" / "demo-project" / "deliverables" / "data.json"
-DEFAULT_ERAS_JSON = Path(__file__).parent / "projects" / "demo-project" / "data" / "commit-eras.json"
+DEFAULT_DATA_JSON = (
+    Path(__file__).parent / "projects" / "demo-project" / "deliverables" / "data.json"
+)
+DEFAULT_ERAS_JSON = (
+    Path(__file__).parent / "projects" / "demo-project" / "data" / "commit-eras.json"
+)
 
 ALL_SECTIONS = [
-    "meta", "commits", "hourly", "types", "authors",
-    "files", "loc", "tests", "deps", "agents",
-    "eras", "treemap", "derived", "missing_keys",
-    "timeline", "cluster", "threshold", "self_run",
-    "codebase", "total_by_repo", "insights", "agent_evidence",
-    "era_overlays", "agent_details", "sessions",
-    "co_authorship", "session_depth", "sentiment",
-    "cross_repo", "quiet_period", "agent_economics",
-    "version_milestones", "pre_demo_project", "creative_dna"
+    "meta",
+    "commits",
+    "hourly",
+    "types",
+    "authors",
+    "files",
+    "loc",
+    "tests",
+    "deps",
+    "agents",
+    "eras",
+    "treemap",
+    "derived",
+    "missing_keys",
+    "timeline",
+    "cluster",
+    "threshold",
+    "self_run",
+    "codebase",
+    "total_by_repo",
+    "insights",
+    "agent_evidence",
+    "era_overlays",
+    "agent_details",
+    "sessions",
+    "co_authorship",
+    "session_depth",
+    "sentiment",
+    "cross_repo",
+    "quiet_period",
+    "agent_economics",
+    "version_milestones",
+    "pre_demo_project",
+    "creative_dna",
 ]
 
 
 def git(repo: Path, *args: str) -> str:
     """Run a git command and return stdout."""
     result = subprocess.run(
-        ["git", "-C", str(repo)] + list(args),
-        capture_output=True, text=True, timeout=120
+        ["git", "-C", str(repo)] + list(args), capture_output=True, text=True, timeout=120
     )
     if result.returncode != 0:
         print(f"  WARN: git {' '.join(args)} failed: {result.stderr.strip()}", file=sys.stderr)
@@ -61,10 +88,11 @@ def git(repo: Path, *args: str) -> str:
 def git_lines(repo: Path, *args: str) -> list[str]:
     """Run a git command and return non-empty lines."""
     out = git(repo, *args)
-    return [l for l in out.split("\n") if l.strip()]
+    return [line for line in out.split("\n") if line.strip()]
 
 
 # ─── Extractors ─────────────────────────────────────────────────────────────────
+
 
 def extract_meta(repo: Path) -> dict:
     """Extract project-level metadata."""
@@ -101,7 +129,7 @@ def extract_meta(repo: Path) -> dict:
         "avg_commits_per_active_day": round(total / active_days, 1) if active_days else 0,
         "avg_commits_per_day_full_span": round(total / span, 1) if span else 0,
         "peak_day": peak_day,
-        "peak_day_commits": peak_count
+        "peak_day_commits": peak_count,
     }
 
 
@@ -126,7 +154,7 @@ def extract_hourly(repo: Path) -> dict:
 def extract_commit_types(repo: Path) -> dict:
     """Extract conventional commit type breakdown (all branches)."""
     subjects = git_lines(repo, "log", "--all", "--format=%s")
-    total = len(subjects)
+    _total = len(subjects)
 
     counts = defaultdict(int)
     for s in subjects:
@@ -188,7 +216,9 @@ def extract_authors(repo: Path) -> dict:
         "ai_authored": ai_author_count,
         "claude_authored": claude_count,
         "ai_involved": coauth_count + ai_author_count + claude_count,
-        "ai_involved_rate": round((coauth_count + ai_author_count + claude_count) / total * 100, 1) if total else 0,
+        "ai_involved_rate": round((coauth_count + ai_author_count + claude_count) / total * 100, 1)
+        if total
+        else 0,
         "simon_identities": simon_total,
         "simon_rate": round(simon_total / total * 100, 1) if total else 0,
         "simon_ai": simon_ai,
@@ -223,11 +253,16 @@ def extract_numstat(repo: Path) -> dict:
     # Use awk for reliability on large repos — handles binary files (- entries)
     result = subprocess.run(
         ["git", "-C", str(repo), "log", "--all", "--numstat", "--format="],
-        capture_output=True, text=True, timeout=120
+        capture_output=True,
+        text=True,
+        timeout=120,
     )
     counts = subprocess.run(
-        ["awk", 'NF==3{add+=$1;del+=$2}END{print add, del, add-del}'],
-        input=result.stdout, capture_output=True, text=True, timeout=30
+        ["awk", "NF==3{add+=$1;del+=$2}END{print add, del, add-del}"],
+        input=result.stdout,
+        capture_output=True,
+        text=True,
+        timeout=30,
     )
     parts = counts.stdout.strip().split()
     if len(parts) == 3:
@@ -255,7 +290,9 @@ def extract_agent_attribution(repo: Path) -> dict:
     # Pass 1: get date, subject, author per commit
     lines = git_lines(repo, "log", "--all", "--format=%ad%x00%s%x00%aN", "--date=short")
     # Pass 2: get dates of co-authored commits
-    coauth_dates = git_lines(repo, "log", "--all", "--grep=Co-Authored-By", "-i", "--format=%ad", "--date=short")
+    coauth_dates = git_lines(
+        repo, "log", "--all", "--grep=Co-Authored-By", "-i", "--format=%ad", "--date=short"
+    )
     coauth_date_counts = defaultdict(int)
     for d in coauth_dates:
         coauth_date_counts[d] += 1
@@ -302,7 +339,11 @@ def extract_loc_at_commit(repo: Path, commit: str = "HEAD") -> int:
     for f in ts_files:
         content = git(repo, "show", f"{commit}:{f}")
         # Count non-empty lines
-        lines = [l for l in content.split("\n") if l.strip() and not l.strip().startswith("//")]
+        lines = [
+            line
+            for line in content.split("\n")
+            if line.strip() and not line.strip().startswith("//")
+        ]
         total_loc += len(lines)
 
     return total_loc
@@ -332,13 +373,21 @@ def extract_dep_count_at_commit(repo: Path, commit: str = "HEAD") -> int:
 
 def extract_commits_in_date_range(repo: Path, start_date: str, end_date: str) -> int:
     """Extract commit count in a date range."""
-    lines = git_lines(repo, "log", "--all", "--format=%H",
-                     "--after", f"{start_date}T00:00:00",
-                     "--before", f"{end_date}T23:59:59")
+    lines = git_lines(
+        repo,
+        "log",
+        "--all",
+        "--format=%H",
+        "--after",
+        f"{start_date}T00:00:00",
+        "--before",
+        f"{end_date}T23:59:59",
+    )
     return len(lines)
 
 
 # ─── Updaters ───────────────────────────────────────────────────────────────────
+
 
 def update_meta(data: dict, repo: Path, dry_run: bool) -> list[str]:
     """Update telemetry_visualizations.meta and telemetry_agents.metadata."""
@@ -361,7 +410,11 @@ def update_meta(data: dict, repo: Path, dry_run: bool) -> list[str]:
     # Update numstat in telemetry_agents.metadata
     numstat = extract_numstat(repo)
     for key in ["total_lines_added", "total_lines_removed", "net_lines"]:
-        map_key = {"total_lines_added": "insertions", "total_lines_removed": "deletions", "net_lines": "net"}
+        map_key = {
+            "total_lines_added": "insertions",
+            "total_lines_removed": "deletions",
+            "net_lines": "net",
+        }
         if key in ta_meta:
             new_val = numstat.get(map_key[key], ta_meta[key])
             if ta_meta[key] != new_val:
@@ -376,7 +429,12 @@ def update_commits(data: dict, repo: Path, dry_run: bool) -> list[str]:
     """Update daily commit timeline — append new dates, don't overwrite existing."""
     changes = []
     current = extract_daily_commits(repo)
-    timeline = data.get("telemetry_visualizations", {}).get("charts", {}).get("commit_timeline", {}).get("data", {})
+    timeline = (
+        data.get("telemetry_visualizations", {})
+        .get("charts", {})
+        .get("commit_timeline", {})
+        .get("data", {})
+    )
 
     for date, count in current.items():
         if date not in timeline:
@@ -395,7 +453,13 @@ def update_hourly(data: dict, repo: Path, dry_run: bool) -> list[str]:
     """Update hourly commit pattern."""
     changes = []
     current = extract_hourly(repo)
-    hourly = data.get("telemetry_visualizations", {}).get("charts", {}).get("commit_timeline", {}).get("hourly_pattern", {}).get("data", {})
+    hourly = (
+        data.get("telemetry_visualizations", {})
+        .get("charts", {})
+        .get("commit_timeline", {})
+        .get("hourly_pattern", {})
+        .get("data", {})
+    )
 
     for hour, count in current.items():
         if hourly.get(hour) != count:
@@ -410,7 +474,13 @@ def update_types(data: dict, repo: Path, dry_run: bool) -> list[str]:
     """Update commit type distribution."""
     changes = []
     current = extract_commit_types(repo)
-    types = data.get("telemetry_visualizations", {}).get("charts", {}).get("commit_timeline", {}).get("commit_types", {}).get("data", {})
+    types = (
+        data.get("telemetry_visualizations", {})
+        .get("charts", {})
+        .get("commit_timeline", {})
+        .get("commit_types", {})
+        .get("data", {})
+    )
 
     for t, count in current.items():
         if types.get(t) != count:
@@ -436,7 +506,9 @@ def update_authors(data: dict, repo: Path, dry_run: bool) -> list[str]:
     # Update threshold_split
     ts = data.get("threshold_split", {})
     if "co_author_rate" in ts and ts["co_author_rate"] != info["co_author_rate"]:
-        changes.append(f"  threshold_split.co_author_rate: {ts['co_author_rate']} → {info['co_author_rate']}")
+        changes.append(
+            f"  threshold_split.co_author_rate: {ts['co_author_rate']} → {info['co_author_rate']}"
+        )
         if not dry_run:
             ts["co_author_rate"] = info["co_author_rate"]
 
@@ -453,7 +525,9 @@ def update_authors(data: dict, repo: Path, dry_run: bool) -> list[str]:
     # Update co_authorship_gap_analysis
     caga = data.get("derived_patterns", {}).get("co_authorship_gap_analysis", {})
     if caga.get("total_co_authored") != info["co_authored_commits"]:
-        changes.append(f"  co_authorship total: {caga.get('total_co_authored')} → {info['co_authored_commits']}")
+        changes.append(
+            f"  co_authorship total: {caga.get('total_co_authored')} → {info['co_authored_commits']}"
+        )
         if not dry_run:
             caga["total_co_authored"] = info["co_authored_commits"]
             caga["total_non_co_authored"] = total - info["co_authored_commits"]
@@ -467,7 +541,13 @@ def update_files(data: dict, repo: Path, dry_run: bool) -> list[str]:
     """Update file-related sections."""
     changes = []
     file_counts = extract_file_counts(repo)
-    fg = data.get("telemetry_visualizations", {}).get("charts", {}).get("commit_timeline", {}).get("file_growth", {}).get("data", {})
+    fg = (
+        data.get("telemetry_visualizations", {})
+        .get("charts", {})
+        .get("commit_timeline", {})
+        .get("file_growth", {})
+        .get("data", {})
+    )
 
     for date, count in file_counts.items():
         if date not in fg or fg[date] != count:
@@ -482,7 +562,13 @@ def update_treemap(data: dict, repo: Path, dry_run: bool) -> list[str]:
     """Update source treemap."""
     changes = []
     current = extract_source_treemap(repo)
-    treemap = data.get("telemetry_visualizations", {}).get("charts", {}).get("commit_timeline", {}).get("source_treemap", {}).get("data", {})
+    treemap = (
+        data.get("telemetry_visualizations", {})
+        .get("charts", {})
+        .get("commit_timeline", {})
+        .get("source_treemap", {})
+        .get("data", {})
+    )
 
     if treemap != current:
         changes.append(f"  source_treemap updated ({len(current)} modules)")
@@ -497,7 +583,13 @@ def update_agent_attribution(data: dict, repo: Path, dry_run: bool) -> list[str]
     """Update agent attribution per day."""
     changes = []
     current = extract_agent_attribution(repo)
-    attr = data.get("telemetry_visualizations", {}).get("charts", {}).get("commit_timeline", {}).get("agent_attribution", {}).get("data", {})
+    attr = (
+        data.get("telemetry_visualizations", {})
+        .get("charts", {})
+        .get("commit_timeline", {})
+        .get("agent_attribution", {})
+        .get("data", {})
+    )
 
     for date, entry in current.items():
         if date not in attr:
@@ -518,8 +610,19 @@ def update_agent_attribution(data: dict, repo: Path, dry_run: bool) -> list[str]
 def update_loc(data: dict, repo: Path, dry_run: bool) -> list[str]:
     """Update LOC growth chart — extend through latest date."""
     changes = []
-    loc_data = data.get("telemetry_visualizations", {}).get("charts", {}).get("commit_timeline", {}).get("loc_growth", {}).get("data", {})
-    commit_data = data.get("telemetry_visualizations", {}).get("charts", {}).get("commit_timeline", {}).get("data", {})
+    loc_data = (
+        data.get("telemetry_visualizations", {})
+        .get("charts", {})
+        .get("commit_timeline", {})
+        .get("loc_growth", {})
+        .get("data", {})
+    )
+    commit_data = (
+        data.get("telemetry_visualizations", {})
+        .get("charts", {})
+        .get("commit_timeline", {})
+        .get("data", {})
+    )
 
     # Find last date in LOC data
     if not loc_data:
@@ -543,8 +646,13 @@ def update_loc(data: dict, repo: Path, dry_run: bool) -> list[str]:
             continue
         if last_loc_date and date > last_loc_date:
             # Linear interpolation from last known value to current
-            days_diff = (datetime.strptime(date, "%Y-%m-%d") - datetime.strptime(last_loc_date, "%Y-%m-%d")).days
-            total_days = (datetime.strptime(all_dates[-1], "%Y-%m-%d") - datetime.strptime(last_loc_date, "%Y-%m-%d")).days
+            days_diff = (
+                datetime.strptime(date, "%Y-%m-%d") - datetime.strptime(last_loc_date, "%Y-%m-%d")
+            ).days
+            total_days = (
+                datetime.strptime(all_dates[-1], "%Y-%m-%d")
+                - datetime.strptime(last_loc_date, "%Y-%m-%d")
+            ).days
             if total_days > 0:
                 fraction = days_diff / total_days
                 estimated_loc = int(last_loc_value + (current_loc - last_loc_value) * fraction)
@@ -559,7 +667,9 @@ def update_loc(data: dict, repo: Path, dry_run: bool) -> list[str]:
     if all_dates:
         latest_date = all_dates[-1]
         if loc_data.get(latest_date) != current_loc:
-            changes.append(f"  ~ loc_growth[{latest_date}]: {loc_data.get(latest_date, 'missing')} → {current_loc} (actual)")
+            changes.append(
+                f"  ~ loc_growth[{latest_date}]: {loc_data.get(latest_date, 'missing')} → {current_loc} (actual)"
+            )
             if not dry_run:
                 loc_data[latest_date] = current_loc
 
@@ -569,8 +679,19 @@ def update_loc(data: dict, repo: Path, dry_run: bool) -> list[str]:
 def update_tests(data: dict, repo: Path, dry_run: bool) -> list[str]:
     """Update test file count growth — extend through latest date."""
     changes = []
-    test_data = data.get("telemetry_visualizations", {}).get("charts", {}).get("commit_timeline", {}).get("test_growth", {}).get("data", {})
-    commit_data = data.get("telemetry_visualizations", {}).get("charts", {}).get("commit_timeline", {}).get("data", {})
+    test_data = (
+        data.get("telemetry_visualizations", {})
+        .get("charts", {})
+        .get("commit_timeline", {})
+        .get("test_growth", {})
+        .get("data", {})
+    )
+    commit_data = (
+        data.get("telemetry_visualizations", {})
+        .get("charts", {})
+        .get("commit_timeline", {})
+        .get("data", {})
+    )
 
     # Get current test count
     current_tests = extract_test_count_at_commit(repo, "HEAD")
@@ -578,10 +699,10 @@ def update_tests(data: dict, repo: Path, dry_run: bool) -> list[str]:
     # Find last date in test data
     if not test_data:
         last_test_date = None
-        last_test_value = 0
+        _last_test_value = 0
     else:
         last_test_date = max(test_data.keys())
-        last_test_value = test_data[last_test_date]
+        _last_test_value = test_data[last_test_date]
 
     # Get all commit dates
     all_dates = sorted(commit_data.keys())
@@ -603,8 +724,19 @@ def update_tests(data: dict, repo: Path, dry_run: bool) -> list[str]:
 def update_deps(data: dict, repo: Path, dry_run: bool) -> list[str]:
     """Update dependency count growth — extend through latest date."""
     changes = []
-    dep_data = data.get("telemetry_visualizations", {}).get("charts", {}).get("commit_timeline", {}).get("dependency_growth", {}).get("data", {})
-    commit_data = data.get("telemetry_visualizations", {}).get("charts", {}).get("commit_timeline", {}).get("data", {})
+    dep_data = (
+        data.get("telemetry_visualizations", {})
+        .get("charts", {})
+        .get("commit_timeline", {})
+        .get("dependency_growth", {})
+        .get("data", {})
+    )
+    commit_data = (
+        data.get("telemetry_visualizations", {})
+        .get("charts", {})
+        .get("commit_timeline", {})
+        .get("data", {})
+    )
 
     # Get current dependency count
     current_deps = extract_dep_count_at_commit(repo, "HEAD")
@@ -648,11 +780,11 @@ def update_eras(data: dict, repo: Path, dry_run: bool) -> list[str]:
     current_eras = data.get("telemetry_visualizations", {}).get("commit_eras", [])
 
     # Update commit counts for existing eras based on actual data
-    daily_commits = extract_daily_commits(repo)
+    _daily_commits = extract_daily_commits(repo)
 
     for era in current_eras:
         # Parse era date range
-        dates_str = era.get("dates", "")
+        _dates_str = era.get("dates", "")
         # Extract dates from format like "Feb 28 - Mar 7" or "Mar 19"
         # This is simplified — full implementation would parse properly
         era_id = era.get("id")
@@ -785,7 +917,9 @@ def update_timeline(data: dict, repo: Path, dry_run: bool) -> list[str]:
         else:
             # Existing is a dict — preserve it, just note the count difference
             if existing.get("ai_commits") != count:
-                changes.append(f"  ~ timeline[{date}].ai_commits: {existing.get('ai_commits')} → {count}")
+                changes.append(
+                    f"  ~ timeline[{date}].ai_commits: {existing.get('ai_commits')} → {count}"
+                )
                 if not dry_run:
                     existing["ai_commits"] = count
 
@@ -803,7 +937,9 @@ def update_cluster_dominance(data: dict, repo: Path, dry_run: bool) -> list[str]
         total = info["total"]
 
         if c4.get("total_commits") != total:
-            changes.append(f"  cluster_dominance.cluster_4.total_commits: {c4.get('total_commits')} → {total}")
+            changes.append(
+                f"  cluster_dominance.cluster_4.total_commits: {c4.get('total_commits')} → {total}"
+            )
             if not dry_run:
                 c4["total_commits"] = total
 
@@ -812,7 +948,9 @@ def update_cluster_dominance(data: dict, repo: Path, dry_run: bool) -> list[str]
             simon_ai = info.get("simon_ai", 0)
             pct = round(simon_ai / total * 100, 1)
             if c4.get("percentage") != pct:
-                changes.append(f"  cluster_dominance.cluster_4.percentage: {c4.get('percentage')} → {pct}%")
+                changes.append(
+                    f"  cluster_dominance.cluster_4.percentage: {c4.get('percentage')} → {pct}%"
+                )
                 if not dry_run:
                     c4["percentage"] = pct
 
@@ -827,7 +965,9 @@ def update_threshold_split(data: dict, repo: Path, dry_run: bool) -> list[str]:
 
     # Update co_author_rate
     if "co_author_rate" in ts and ts["co_author_rate"] != info["co_author_rate"]:
-        changes.append(f"  threshold_split.co_author_rate: {ts['co_author_rate']} → {info['co_author_rate']}")
+        changes.append(
+            f"  threshold_split.co_author_rate: {ts['co_author_rate']} → {info['co_author_rate']}"
+        )
         if not dry_run:
             ts["co_author_rate"] = info["co_author_rate"]
 
@@ -839,12 +979,16 @@ def update_threshold_split(data: dict, repo: Path, dry_run: bool) -> list[str]:
     post_threshold = sum(count for date, count in daily.items() if date >= threshold_date)
 
     if ts.get("pre_threshold_commits") != pre_threshold:
-        changes.append(f"  threshold_split.pre_threshold_commits: {ts.get('pre_threshold_commits')} → {pre_threshold}")
+        changes.append(
+            f"  threshold_split.pre_threshold_commits: {ts.get('pre_threshold_commits')} → {pre_threshold}"
+        )
         if not dry_run:
             ts["pre_threshold_commits"] = pre_threshold
 
     if ts.get("post_threshold_commits") != post_threshold:
-        changes.append(f"  threshold_split.post_threshold_commits: {ts.get('post_threshold_commits')} → {post_threshold}")
+        changes.append(
+            f"  threshold_split.post_threshold_commits: {ts.get('post_threshold_commits')} → {post_threshold}"
+        )
         if not dry_run:
             ts["post_threshold_commits"] = post_threshold
 
@@ -936,8 +1080,8 @@ def update_insights(data: dict, repo: Path, dry_run: bool) -> list[str]:
     changes = []
     insights = data.get("insights", [])
     meta = extract_meta(repo)
-    info = extract_authors(repo)
-    numstat = extract_numstat(repo)
+    _info = extract_authors(repo)
+    _numstat = extract_numstat(repo)
 
     if not insights:
         return changes
@@ -950,7 +1094,7 @@ def update_insights(data: dict, repo: Path, dry_run: bool) -> list[str]:
         if "Peak velocity" in insight or "peak day" in insight.lower():
             new_insight = f"Peak velocity was {meta['peak_day']} with {meta['peak_day_commits']} commits in a single day"
             if new_insight != insight:
-                changes.append(f"  insights: updated peak velocity insight")
+                changes.append("  insights: updated peak velocity insight")
             if not dry_run:
                 insight = new_insight
         new_insights.append(insight)
@@ -974,7 +1118,9 @@ def update_agent_evidence(data: dict, repo: Path, dry_run: bool) -> list[str]:
     if "kai_agent" in ae:
         kai_count = breakdown.get("Kai", 0)
         if ae["kai_agent"].get("commits") != kai_count:
-            changes.append(f"  agent_evidence.kai_agent.commits: {ae['kai_agent'].get('commits')} → {kai_count}")
+            changes.append(
+                f"  agent_evidence.kai_agent.commits: {ae['kai_agent'].get('commits')} → {kai_count}"
+            )
             if not dry_run:
                 ae["kai_agent"]["commits"] = kai_count
 
@@ -1019,7 +1165,9 @@ def update_agent_details(data: dict, repo: Path, dry_run: bool) -> list[str]:
     if "kai_bot" in ta:
         kai_count = breakdown.get("Kai", 0)
         if ta["kai_bot"].get("total_commits") != kai_count:
-            changes.append(f"  telemetry_agents.kai_bot.total_commits: {ta['kai_bot'].get('total_commits')} → {kai_count}")
+            changes.append(
+                f"  telemetry_agents.kai_bot.total_commits: {ta['kai_bot'].get('total_commits')} → {kai_count}"
+            )
             if not dry_run:
                 ta["kai_bot"]["total_commits"] = kai_count
 
@@ -1028,7 +1176,9 @@ def update_agent_details(data: dict, repo: Path, dry_run: bool) -> list[str]:
         # Cursor commits are tagged with [A]
         cursor_count = len(git_lines(repo, "log", "--all", "--grep=^\\[A\\]", "--oneline"))
         if ta["cursor_agent"].get("total_commits") != cursor_count:
-            changes.append(f"  telemetry_agents.cursor_agent.total_commits: {ta['cursor_agent'].get('total_commits')} → {cursor_count}")
+            changes.append(
+                f"  telemetry_agents.cursor_agent.total_commits: {ta['cursor_agent'].get('total_commits')} → {cursor_count}"
+            )
             if not dry_run:
                 ta["cursor_agent"]["total_commits"] = cursor_count
 
@@ -1036,7 +1186,9 @@ def update_agent_details(data: dict, repo: Path, dry_run: bool) -> list[str]:
     if "claude_code" in ta:
         ai_count = info.get("ai_authored", 0)
         if ta["claude_code"].get("total_commits") != ai_count:
-            changes.append(f"  telemetry_agents.claude_code.total_commits: {ta['claude_code'].get('total_commits')} → {ai_count}")
+            changes.append(
+                f"  telemetry_agents.claude_code.total_commits: {ta['claude_code'].get('total_commits')} → {ai_count}"
+            )
             if not dry_run:
                 ta["claude_code"]["total_commits"] = ai_count
 
@@ -1072,20 +1224,22 @@ def update_co_authorship(data: dict, repo: Path, dry_run: bool) -> list[str]:
     era_breakdown = []
     for era in eras:
         era_id = era.get("id")
-        dates_str = era.get("dates", "")
+        _dates_str = era.get("dates", "")
 
         # Parse date range (simplified)
         # Full implementation would extract dates properly
         # For now, use placeholder
-        era_breakdown.append({
-            "era": era.get("name"),
-            "era_id": era_id,
-            "co_authored": 0,  # Would calculate from git log in date range
-            "total": 0,  # Would calculate from git log in date range
-        })
+        era_breakdown.append(
+            {
+                "era": era.get("name"),
+                "era_id": era_id,
+                "co_authored": 0,  # Would calculate from git log in date range
+                "total": 0,  # Would calculate from git log in date range
+            }
+        )
 
     if "era_breakdown" in caga and caga["era_breakdown"] != era_breakdown:
-        changes.append(f"  co_authorship_gap_analysis.era_breakdown: updated")
+        changes.append("  co_authorship_gap_analysis.era_breakdown: updated")
         if not dry_run:
             caga["era_breakdown"] = era_breakdown
 
@@ -1104,14 +1258,16 @@ def update_session_depth(data: dict, repo: Path, dry_run: bool) -> list[str]:
     gradient = []
     for era in eras:
         era_id = era.get("id")
-        gradient.append({
-            "era": era.get("name"),
-            "era_id": era_id,
-            "messages_per_commit": 1.0,  # Placeholder - would calculate from session data
-        })
+        gradient.append(
+            {
+                "era": era.get("name"),
+                "era_id": era_id,
+                "messages_per_commit": 1.0,  # Placeholder - would calculate from session data
+            }
+        )
 
     if "gradient" in sdg and sdg["gradient"] != gradient:
-        changes.append(f"  session_depth_gradient.gradient: updated")
+        changes.append("  session_depth_gradient.gradient: updated")
         if not dry_run:
             sdg["gradient"] = gradient
 
@@ -1127,11 +1283,29 @@ def update_sentiment(data: dict, repo: Path, dry_run: bool) -> list[str]:
     subjects = git_lines(repo, "log", "--all", "--format=%s")
 
     # Directive verbs (imperative, commanding)
-    directive_verbs = ["add", "fix", "remove", "update", "implement", "create", "delete", "refactor", "optimize"]
+    directive_verbs = [
+        "add",
+        "fix",
+        "remove",
+        "update",
+        "implement",
+        "create",
+        "delete",
+        "refactor",
+        "optimize",
+    ]
     # Building verbs (constructive, additive)
     building_verbs = ["build", "generate", "compose", "construct", "assemble", "integrate"]
     # Exploratory verbs (experimental, investigative)
-    exploratory_verbs = ["explore", "experiment", "investigate", "probe", "test", "try", "prototype"]
+    exploratory_verbs = [
+        "explore",
+        "experiment",
+        "investigate",
+        "probe",
+        "test",
+        "try",
+        "prototype",
+    ]
 
     directive_count = 0
     building_count = 0
@@ -1159,7 +1333,7 @@ def update_sentiment(data: dict, repo: Path, dry_run: bool) -> list[str]:
     }
 
     if cms.get("directive") != directive_count:
-        changes.append(f"  commit_message_sentiment: updated")
+        changes.append("  commit_message_sentiment: updated")
         if not dry_run:
             cms.update(sentiment_data)
 
@@ -1179,14 +1353,18 @@ def update_cross_repo(data: dict, repo: Path, dry_run: bool) -> list[str]:
         daily_data = crc["daily_data"]
 
         # Build lookup of existing entries
-        existing_by_date = {entry.get("date"): entry for entry in daily_data if isinstance(entry, dict)}
+        existing_by_date = {
+            entry.get("date"): entry for entry in daily_data if isinstance(entry, dict)
+        }
 
         # Update or add entries for each date
         for date, demo_project_count in daily.items():
             if date in existing_by_date:
                 entry = existing_by_date[date]
                 if entry.get("demo-project") != demo_project_count:
-                    changes.append(f"  cross_repo_velocity_correlation.daily_data[{date}].demo-project: {entry.get('demo-project')} → {demo_project_count}")
+                    changes.append(
+                        f"  cross_repo_velocity_correlation.daily_data[{date}].demo-project: {entry.get('demo-project')} → {demo_project_count}"
+                    )
                     if not dry_run:
                         entry["demo-project"] = demo_project_count
                         # Update total
@@ -1194,8 +1372,15 @@ def update_cross_repo(data: dict, repo: Path, dry_run: bool) -> list[str]:
                         entry["total"] = demo_project_count + other
             else:
                 # Add new entry
-                new_entry = {"date": date, "demo-project": demo_project_count, "other_repos": 0, "total": demo_project_count}
-                changes.append(f"  + cross_repo_velocity_correlation.daily_data[{date}]: demo-project={demo_project_count}")
+                new_entry = {
+                    "date": date,
+                    "demo-project": demo_project_count,
+                    "other_repos": 0,
+                    "total": demo_project_count,
+                }
+                changes.append(
+                    f"  + cross_repo_velocity_correlation.daily_data[{date}]: demo-project={demo_project_count}"
+                )
                 if not dry_run:
                     daily_data.append(new_entry)
 
@@ -1219,13 +1404,17 @@ def update_quiet_period(data: dict, repo: Path, dry_run: bool) -> list[str]:
         # Generate all dates in range
         d1 = datetime.strptime(first_day, "%Y-%m-%d")
         d2 = datetime.strptime(last_day, "%Y-%m-%d")
-        all_dates = [(d1 + timedelta(days=i)).strftime("%Y-%m-%d") for i in range((d2 - d1).days + 1)]
+        all_dates = [
+            (d1 + timedelta(days=i)).strftime("%Y-%m-%d") for i in range((d2 - d1).days + 1)
+        ]
 
         quiet_days = [d for d in all_dates if d not in active_days]
         quiet_count = len(quiet_days)
 
         if qpi.get("quiet_days_count") != quiet_count:
-            changes.append(f"  quiet_period_inversion.quiet_days_count: {qpi.get('quiet_days_count')} → {quiet_count}")
+            changes.append(
+                f"  quiet_period_inversion.quiet_days_count: {qpi.get('quiet_days_count')} → {quiet_count}"
+            )
             if not dry_run:
                 qpi["quiet_days_count"] = quiet_count
                 qpi["quiet_days"] = quiet_days
@@ -1265,8 +1454,12 @@ def update_agent_economics(data: dict, repo: Path, dry_run: bool) -> list[str]:
 def update_pre_demo_project(data: dict, repo: Path, dry_run: bool) -> list[str]:
     """Update pre_demo_project_repos and pre_demo_project_activity from metrics-repo-depth.json."""
     changes = []
-    repo_depth_path = Path(__file__).parent / "projects" / "demo-project" / "data" / "metrics-repo-depth.json"
-    cross_repo_path = Path(__file__).parent / "projects" / "demo-project" / "data" / "metrics-cross-repo.json"
+    repo_depth_path = (
+        Path(__file__).parent / "projects" / "demo-project" / "data" / "metrics-repo-depth.json"
+    )
+    cross_repo_path = (
+        Path(__file__).parent / "projects" / "demo-project" / "data" / "metrics-cross-repo.json"
+    )
 
     if not repo_depth_path.exists() or not cross_repo_path.exists():
         return changes
@@ -1281,15 +1474,19 @@ def update_pre_demo_project(data: dict, repo: Path, dry_run: bool) -> list[str]:
     for repo_name, repo_data in rd.get("repos", {}).items():
         created = repo_data.get("created", "")
         if created < "2026-02-28":
-            pre_demo_project_repos.append({
-                "name": repo_name,
-                "description": repo_data.get("description", ""),
-                "language": repo_data.get("language"),
-                "created": created,
-                "last_updated": repo_data.get("last_updated", ""),
-                "domain": repo_data.get("domain", ""),
-                "relationship_to_demo_project": repo_data.get("relationship_to_demo_project", ""),
-            })
+            pre_demo_project_repos.append(
+                {
+                    "name": repo_name,
+                    "description": repo_data.get("description", ""),
+                    "language": repo_data.get("language"),
+                    "created": created,
+                    "last_updated": repo_data.get("last_updated", ""),
+                    "domain": repo_data.get("domain", ""),
+                    "relationship_to_demo_project": repo_data.get(
+                        "relationship_to_demo_project", ""
+                    ),
+                }
+            )
     pre_demo_project_repos.sort(key=lambda x: x["created"])
 
     existing = data.get("pre_demo_project_repos", {})
@@ -1297,12 +1494,16 @@ def update_pre_demo_project(data: dict, repo: Path, dry_run: bool) -> list[str]:
         "count": len(pre_demo_project_repos),
         "earliest": pre_demo_project_repos[0]["created"] if pre_demo_project_repos else None,
         "repos": pre_demo_project_repos,
-        "domains_represented": sorted(set(r["domain"] for r in pre_demo_project_repos if r["domain"])),
+        "domains_represented": sorted(
+            set(r["domain"] for r in pre_demo_project_repos if r["domain"])
+        ),
         "language_count": len(set(r["language"] for r in pre_demo_project_repos if r["language"])),
     }
 
     if existing.get("count") != new_val["count"]:
-        changes.append(f"  pre_demo_project_repos.count: {existing.get('count')} → {new_val['count']}")
+        changes.append(
+            f"  pre_demo_project_repos.count: {existing.get('count')} → {new_val['count']}"
+        )
         if not dry_run:
             data["pre_demo_project_repos"] = new_val
 
@@ -1318,16 +1519,22 @@ def update_pre_demo_project(data: dict, repo: Path, dry_run: bool) -> list[str]:
         "domain_progression": rd.get("creative_dna", {}).get("domain_progression", []),
     }
     if summary.get("repos_before_demo_project") != new_summary["repos_before_demo_project"]:
-        changes.append(f"  pre_demo_project_activity.summary: updated")
+        changes.append("  pre_demo_project_activity.summary: updated")
         if not dry_run:
             pla["summary"] = new_summary
             data["pre_demo_project_activity"] = pla
 
     # Update cross_repo total
-    total_other = sum(v for v in cr.get("total_commits_by_repo", {}).values() if isinstance(v, int) and v != cr.get("total_commits_by_repo", {}).get("demo-project", 0))
+    total_other = sum(
+        v
+        for v in cr.get("total_commits_by_repo", {}).values()
+        if isinstance(v, int) and v != cr.get("total_commits_by_repo", {}).get("demo-project", 0)
+    )
     cx = data.get("cross_repo", {})
     if cx.get("total_non_demo_project_commits") != total_other:
-        changes.append(f"  cross_repo.total_non_demo_project_commits: {cx.get('total_non_demo_project_commits')} → {total_other}")
+        changes.append(
+            f"  cross_repo.total_non_demo_project_commits: {cx.get('total_non_demo_project_commits')} → {total_other}"
+        )
         if not dry_run:
             cx["total_non_demo_project_commits"] = total_other
 
@@ -1337,8 +1544,16 @@ def update_pre_demo_project(data: dict, repo: Path, dry_run: bool) -> list[str]:
 def update_creative_dna(data: dict, repo: Path, dry_run: bool) -> list[str]:
     """Update repo_depth.creative_dna and learning sections from telemetry data."""
     changes = []
-    repo_depth_path = Path(__file__).parent / "projects" / "demo-project" / "data" / "metrics-repo-depth.json"
-    pre_history_path = Path(__file__).parent / "projects" / "demo-project" / "data" / "pre-history-creative-journey.json"
+    repo_depth_path = (
+        Path(__file__).parent / "projects" / "demo-project" / "data" / "metrics-repo-depth.json"
+    )
+    pre_history_path = (
+        Path(__file__).parent
+        / "projects"
+        / "demo-project"
+        / "data"
+        / "pre-history-creative-journey.json"
+    )
 
     if not repo_depth_path.exists():
         return changes
@@ -1352,7 +1567,9 @@ def update_creative_dna(data: dict, repo: Path, dry_run: bool) -> list[str]:
     new_dna = rd.get("creative_dna", {})
 
     if existing_dna.get("recurring_themes") != new_dna.get("recurring_themes"):
-        changes.append(f"  repo_depth.creative_dna: updated ({len(new_dna.get('recurring_themes', []))} themes)")
+        changes.append(
+            f"  repo_depth.creative_dna: updated ({len(new_dna.get('recurring_themes', []))} themes)"
+        )
         if not dry_run:
             rpd["creative_dna"] = new_dna
 
@@ -1373,7 +1590,9 @@ def update_creative_dna(data: dict, repo: Path, dry_run: bool) -> list[str]:
         }
 
         if yt.get("title") != new_yt["title"] or len(yt.get("phases", [])) != len(new_yt["phases"]):
-            changes.append(f"  learning.youtube_pre_history: updated ({len(new_yt['phases'])} phases)")
+            changes.append(
+                f"  learning.youtube_pre_history: updated ({len(new_yt['phases'])} phases)"
+            )
             if not dry_run:
                 learning["youtube_pre_history"] = new_yt
                 data["learning"] = learning
@@ -1483,6 +1702,7 @@ def main():
         except Exception as e:
             print(f"[{section}] ERROR: {e}")
             import traceback
+
             traceback.print_exc()
 
     # Write back
@@ -1492,7 +1712,9 @@ def main():
             json.dump(data, f, indent=2, ensure_ascii=False)
         print("Done.")
     elif args.dry_run:
-        print(f"\nDRY RUN — {len(all_changes)} changes would be made. Use without --dry-run to apply.")
+        print(
+            f"\nDRY RUN — {len(all_changes)} changes would be made. Use without --dry-run to apply."
+        )
     else:
         print("\nNo changes needed.")
 

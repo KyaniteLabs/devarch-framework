@@ -104,18 +104,18 @@ def validate_project_name(name: str) -> None:
 
     # Only allow alphanumeric, dot, underscore, hyphen
     # fullmatch, not ^...$: "$" also matches before a trailing newline.
-    if not re.fullmatch(r'[a-zA-Z0-9._-]+', name):
+    if not re.fullmatch(r"[a-zA-Z0-9._-]+", name):
         raise ValueError(f"Project name contains invalid characters: {name!r}")
 
     # Reject path traversal attempts
-    if '..' in name:
+    if ".." in name:
         raise ValueError(f"Project name cannot contain '..': {name!r}")
 
-    if name.startswith('/'):
+    if name.startswith("/"):
         raise ValueError(f"Project name cannot start with '/': {name!r}")
 
     # "." would resolve to projects/ itself; a leading "-" reads as a CLI flag.
-    if name.startswith(('.', '-')):
+    if name.startswith((".", "-")):
         raise ValueError(f"Project name cannot start with '.' or '-': {name!r}")
 
 
@@ -172,7 +172,9 @@ class ProjectRef:
         path = Path(os.path.join("projects", self.name))
         if self.must_exist and not os.path.isdir(path):
             raise PipelineError(
-                f"Project '{self.name}' not found", kind="project-missing", path=str(path),
+                f"Project '{self.name}' not found",
+                kind="project-missing",
+                path=str(path),
             )
         return path
 
@@ -254,7 +256,7 @@ def require_git_repo(repo_path: str) -> str:
     expanded = os.path.expanduser(repo_path)
     if not os.path.isdir(expanded):
         raise PipelineError(f"Repository not found: {repo_path}", kind="repo-missing")
-    if not os.path.isdir(os.path.join(expanded, ".git")):
+    if not os.path.exists(os.path.join(expanded, ".git")):  # a worktree has a .git file
         raise PipelineError(f"Not a git repository: {repo_path}", kind="not-git")
     return expanded
 
@@ -275,12 +277,25 @@ def mine(
     stage a failure belongs to: before ``csv-done`` it is the commit log,
     after it the stats log.
     """
-    from archaeology.extractors.git import extract_git_log, extract_git_log_with_stats
+    import hashlib
+
+    from archaeology.extractors.git import (
+        extract_git_log,
+        extract_git_log_with_stats,
+        repository_coverage,
+    )
+    from archaeology.utils import atomic_write
 
     expanded = require_git_repo(repo_path)
     project_dir = project.resolve()
     data_dir = project_dir / "data"
     source = expanded if expand_repo_path else repo_path
+    coverage = repository_coverage(source)  # git failures propagate unchanged
+    if coverage["shallow"]:
+        raise PipelineError(
+            "Shallow history: fetch complete history before mining; no fetch performed",
+            kind="shallow",
+        )
 
     def emit(event: str, detail: Any = None) -> None:
         if on_event:
@@ -294,6 +309,24 @@ def mine(
 
     stats_path = str(data_dir / "github-commits-with-stats.txt")
     extract_git_log_with_stats(source, stats_path, verbose=verbose)
+
+    # Bind the mined bytes to the refs they came from, so audit can detect
+    # later edits (0.4.1 evidence binding).
+    if repository_coverage(source) != coverage:
+        raise PipelineError(
+            "Repository refs changed during mining; retry before analysis", kind="refs-changed"
+        )
+    coverage["artifact_sha256"] = {
+        Path(path).name: hashlib.sha256(Path(path).read_bytes()).hexdigest()
+        for path in (csv_path, stats_path)
+    }
+    atomic_write(data_dir / "coverage.json", json.dumps(coverage, indent=2))
+    config_path = project_dir / "project.json"
+    if config_path.exists():
+        config = json.loads(config_path.read_text(encoding="utf-8"))
+        config["repo_path"] = str(Path(expanded).resolve())
+        config["mined_history_manifest_required"] = True
+        atomic_write(config_path, json.dumps(config, indent=2))
     return MineResult(count, csv_path, stats_path)
 
 
@@ -319,13 +352,14 @@ def build_db(project: ProjectRef, *, verbose: bool = False, isolated: bool = Fal
     db_path = project_dir / "data" / "archaeology.db"
 
     if isolated:
-        cmd = [sys.executable, "-m", "archaeology.db.builder",
-               "--project-root", str(project_dir)]
+        cmd = [sys.executable, "-m", "archaeology.db.builder", "--project-root", str(project_dir)]
         if verbose:
             cmd.append("--verbose")
         env = os.environ.copy()
         pkg_root = str(Path(__file__).parent.parent)
-        env["PYTHONPATH"] = pkg_root + ((os.pathsep + env["PYTHONPATH"]) if env.get("PYTHONPATH") else "")
+        env["PYTHONPATH"] = pkg_root + (
+            (os.pathsep + env["PYTHONPATH"]) if env.get("PYTHONPATH") else ""
+        )
         result = subprocess.run(cmd, check=True, timeout=300, env=env)
         return BuildResult(db_path, db_path.exists(), result.returncode)
 
@@ -351,7 +385,10 @@ class SignalsResult:
 
 
 def signals(
-    project: ProjectRef, *, config: dict | None = None, min_gap_days: int | None = None,
+    project: ProjectRef,
+    *,
+    config: dict | None = None,
+    min_gap_days: int | None = None,
 ) -> SignalsResult:
     """Detect development signals; the database must already exist."""
     from archaeology.classifiers.era_detector import detect_signals
@@ -401,7 +438,9 @@ def analysis_dir(project: ProjectRef) -> Path:
     return path
 
 
-def analyze(project: ProjectRef, vectors: list[str] | None = None, *, verbose: bool = False) -> AnalysisResult:
+def analyze(
+    project: ProjectRef, vectors: list[str] | None = None, *, verbose: bool = False
+) -> AnalysisResult:
     """Run analysis vectors. The engine itself rejects a missing project or unknown vector."""
     from archaeology.analysis_runner import run_analysis_vectors
 
@@ -424,7 +463,8 @@ def render_project_index(project: ProjectRef) -> Path:
     project_data = next((p for p in projects if p["name"] == project.name), None)
     if not project_data:
         raise PipelineError(
-            f"Project '{project.name}' not found in discovered projects", kind="not-discovered",
+            f"Project '{project.name}' not found in discovered projects",
+            kind="not-discovered",
         )
 
     html = generate_project_index(project_data)
@@ -454,25 +494,12 @@ def render_report(project: ProjectRef, fmt: str = "html") -> ReportResult:
     if not project_dir.exists():
         raise PipelineError(f"Project '{project.name}' not found", kind="project-missing")
 
-    from archaeology.report import _markdown_to_html, export_markdown_report
+    from archaeology.report import export_html_report, export_markdown_report
 
-    md_path = export_markdown_report(project.name, str(project_dir))
     if fmt == "markdown":
-        return ReportResult("markdown", md_path)
-
-    title = project.name
-    config_path = project_dir / "project.json"
-    if config_path.exists():
-        config = json.loads(config_path.read_text(encoding="utf-8"))
-        if config:
-            title = config.get("visualization", {}).get("title", project.name)
-
-    html_content = _markdown_to_html(md_path.read_text(encoding="utf-8"), title)
-    output_dir = project_dir / "deliverables" / "visuals"
-    output_dir.mkdir(parents=True, exist_ok=True)
-    output_path = output_dir / "report.html"
-    output_path.write_text(html_content, encoding="utf-8")
-    return ReportResult("html", output_path)
+        return ReportResult("markdown", export_markdown_report(project.name, str(project_dir)))
+    # Writes the Markdown report and report.html, each with its evidence binding.
+    return ReportResult("html", export_html_report(project.name, project_dir))
 
 
 # ── audit ─────────────────────────────────────────────────────────────────────
@@ -590,9 +617,7 @@ def prepare_serve(project: ProjectRef, port: int, unsafe_cors: bool) -> ServeLau
         except json.JSONDecodeError as e:
             raise PipelineError(f"Invalid JSON in {config_path}: {e}", kind="invalid-json")
 
-    display_name = project_config.get("visualization", {}).get(
-        "title", project.name.upper()
-    )
+    display_name = project_config.get("visualization", {}).get("title", project.name.upper())
 
     project_metadata = os.path.join(project_dir, "datasette-metadata.yaml")
     default_metadata = os.path.join("config", "datasette-metadata.yaml")
@@ -616,8 +641,7 @@ def prepare_serve(project: ProjectRef, port: int, unsafe_cors: bool) -> ServeLau
         metadata_src = tmp.name
         temp_metadata = True
 
-    cmd = ["datasette", db_path, "--port", str(port),
-           "--setting", "sql_time_limit_ms,5000"]
+    cmd = ["datasette", db_path, "--port", str(port), "--setting", "sql_time_limit_ms,5000"]
     if unsafe_cors:
         cmd.append("--cors")
     if metadata_src:
@@ -651,13 +675,14 @@ def cascade(
     value carries only the exit verdict. Failures that used to stop the run
     return early with their lines already emitted.
     """
+
     def say(text: str, err: bool = False) -> None:
         if on_line:
             on_line(text, err)
 
+    from .classifiers.era_detector import detect_signals
     from .era_cascade import cascade as run_cascade
     from .extractors.git import extract_git_log, extract_git_log_with_stats
-    from .classifiers.era_detector import detect_signals
 
     project_dir = Path(project.resolve())
     project_json_path = project_dir / "project.json"
@@ -701,11 +726,12 @@ def cascade(
     # ── Step 2: Build database ──
     say("\n[2/7] Building database...")
     db_path = data_dir / "archaeology.db"
-    cmd = [sys.executable, "-m", "archaeology.db.builder",
-           "--project-root", str(project_dir)]
+    cmd = [sys.executable, "-m", "archaeology.db.builder", "--project-root", str(project_dir)]
     _env = os.environ.copy()
     _pkg_root = str(Path(__file__).parent.parent)
-    _env["PYTHONPATH"] = _pkg_root + ((os.pathsep + _env["PYTHONPATH"]) if _env.get("PYTHONPATH") else "")
+    _env["PYTHONPATH"] = _pkg_root + (
+        (os.pathsep + _env["PYTHONPATH"]) if _env.get("PYTHONPATH") else ""
+    )
     result = subprocess.run(cmd, capture_output=True, text=True, timeout=300, env=_env)
     if result.returncode == 0:
         say(f"  Database built ({db_path})")
@@ -749,6 +775,7 @@ def cascade(
     # ── Step 6: Audit ──
     say("\n[6/7] Running audit...")
     from .audit import run_audit, summarize
+
     findings = run_audit(project.name, root=Path.cwd())
     summarize(findings)
     blocking = [f for f in findings if f.severity in ("CRITICAL", "HIGH")]
@@ -756,6 +783,7 @@ def cascade(
     # ── Step 7: Opportunity analyzers ──
     say("\n[7/7] Running opportunity analyzers...")
     from .opportunity_analyzers import OpportunityAnalyzer
+
     opp_runner = OpportunityAnalyzer(project.name, str(project_dir), verbose=False)
     opp_results = opp_runner.run_all()
     opp_ok = sum(1 for v in opp_results.values() if v == "OK")
@@ -772,10 +800,14 @@ def cascade(
     if cascade_result.stale_refs_remaining > 0:
         say(f"\n  WARNING: {cascade_result.stale_refs_remaining} stale era references remain")
         if not dry_run:
-            return CascadeOutcome(1, cascade_result.files_scanned, cascade_result.stale_refs_remaining)
+            return CascadeOutcome(
+                1, cascade_result.files_scanned, cascade_result.stale_refs_remaining
+            )
     elif blocking:
         if not dry_run:
-            return CascadeOutcome(1, cascade_result.files_scanned, cascade_result.stale_refs_remaining)
+            return CascadeOutcome(
+                1, cascade_result.files_scanned, cascade_result.stale_refs_remaining
+            )
     else:
         say(f"\n  ✓ Pipeline complete. All {cascade_result.files_scanned} deliverables consistent.")
     return CascadeOutcome(0, cascade_result.files_scanned, cascade_result.stale_refs_remaining)
@@ -815,6 +847,7 @@ def sync(
     ``config/profile.json`` first, then ``config/profile.json`` in the
     cwd), which keeps hermetic callers off the developer's real profile.
     """
+
     def say(text: str, err: bool = False) -> None:
         if on_line:
             on_line(text, err)
@@ -826,7 +859,10 @@ def sync(
     if profile_path is None:
         profile_path = _resolve_profile_path()
     if not os.path.exists(profile_path):
-        say("No profile.json found. Create one at config/profile.json with your project list.", err=True)
+        say(
+            "No profile.json found. Create one at config/profile.json with your project list.",
+            err=True,
+        )
         return SyncOutcome(1)
 
     try:
@@ -910,14 +946,21 @@ def sync(
         db_path = os.path.join("projects", proj_name, "data", "archaeology.db")
         say(f"  Building DB for {proj_name}...")
 
-        cmd = [sys.executable, "-m", "archaeology.db.builder",
-               "--project-root", os.path.join("projects", proj_name)]
+        cmd = [
+            sys.executable,
+            "-m",
+            "archaeology.db.builder",
+            "--project-root",
+            os.path.join("projects", proj_name),
+        ]
         if verbose:
             cmd.append("--verbose")
 
         _env = os.environ.copy()
         _pkg_root = str(Path(__file__).parent.parent)
-        _env["PYTHONPATH"] = _pkg_root + ((os.pathsep + _env["PYTHONPATH"]) if _env.get("PYTHONPATH") else "")
+        _env["PYTHONPATH"] = _pkg_root + (
+            (os.pathsep + _env["PYTHONPATH"]) if _env.get("PYTHONPATH") else ""
+        )
         result = subprocess.run(cmd, capture_output=not verbose, check=True, timeout=300, env=_env)
         if result.returncode == 0 and os.path.exists(db_path):
             say("    DB built")
@@ -1008,15 +1051,16 @@ def _aggregate_global(targets, profile, verbose=False, on_line=None):
             conn.row_factory = sqlite3.Row
             try:
                 row = conn.execute(
-                    "SELECT COUNT(*) as cnt, MIN(date) as first, MAX(date) as last "
-                    "FROM commits"
+                    "SELECT COUNT(*) as cnt, MIN(date) as first, MAX(date) as last FROM commits"
                 ).fetchone()
-                project_summaries.append({
-                    "name": proj_name,
-                    "total_commits": row["cnt"],
-                    "first_commit": row["first"],
-                    "last_commit": row["last"],
-                })
+                project_summaries.append(
+                    {
+                        "name": proj_name,
+                        "total_commits": row["cnt"],
+                        "first_commit": row["first"],
+                        "last_commit": row["last"],
+                    }
+                )
             except sqlite3.OperationalError:
                 project_summaries.append({"name": proj_name, "total_commits": 0})
             finally:
@@ -1041,7 +1085,9 @@ def _aggregate_global(targets, profile, verbose=False, on_line=None):
         signals_path = os.path.join(global_dir, "global-signals.json")
         with open(signals_path, "w", encoding="utf-8") as f:
             json.dump(all_eras, f, indent=2)
-        say(f"  {len(all_eras)} signal reports across {len(targets)} projects → global-signals.json")
+        say(
+            f"  {len(all_eras)} signal reports across {len(targets)} projects → global-signals.json"
+        )
 
     # Write project summaries
     summaries_path = os.path.join(global_dir, "project-summaries.json")
@@ -1059,7 +1105,9 @@ def _aggregate_global(targets, profile, verbose=False, on_line=None):
         try:
             subprocess.run(
                 ["sqlite-utils", "insert", global_db, "commits", tmp_csv, "--csv"],
-                capture_output=True, check=True, timeout=300,
+                capture_output=True,
+                check=True,
+                timeout=300,
             )
         except (FileNotFoundError, subprocess.CalledProcessError):
             conn = sqlite3.connect(global_db, timeout=30)
@@ -1067,9 +1115,7 @@ def _aggregate_global(targets, profile, verbose=False, on_line=None):
                 with open(tmp_csv, newline="", encoding="utf-8") as f:
                     reader = csv.DictReader(f)
                     cols = reader.fieldnames
-                    conn.execute(
-                        f"CREATE TABLE commits ({', '.join(c + ' TEXT' for c in cols)})"
-                    )
+                    conn.execute(f"CREATE TABLE commits ({', '.join(c + ' TEXT' for c in cols)})")
                     for row in reader:
                         placeholders = ", ".join("?" for _ in cols)
                         conn.execute(

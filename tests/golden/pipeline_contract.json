@@ -39,6 +39,7 @@
       "stdout": "",
       "stderr": "",
       "files_after": [
+        "data/coverage.json",
         "data/github-commits-with-stats.txt",
         "data/github-commits.csv",
         "project.json"
@@ -55,8 +56,11 @@
       "stderr": "",
       "files_after": [
         "data/archaeology.db",
+        "data/coverage.json",
         "data/github-commits-with-stats.txt",
         "data/github-commits.csv",
+        "deliverables/canonical-metrics.json",
+        "deliverables/data.json",
         "project.json"
       ]
     },
@@ -71,9 +75,12 @@
       "stderr": "",
       "files_after": [
         "data/archaeology.db",
+        "data/coverage.json",
         "data/detected-signals.json",
         "data/github-commits-with-stats.txt",
         "data/github-commits.csv",
+        "deliverables/canonical-metrics.json",
+        "deliverables/data.json",
         "project.json"
       ]
     },
@@ -89,9 +96,12 @@
       "stderr": "",
       "files_after": [
         "data/archaeology.db",
+        "data/coverage.json",
         "data/detected-signals.json",
         "data/github-commits-with-stats.txt",
         "data/github-commits.csv",
+        "deliverables/canonical-metrics.json",
+        "deliverables/data.json",
         "project.json"
       ]
     },
@@ -109,10 +119,14 @@
       "stderr": "",
       "files_after": [
         "data/archaeology.db",
+        "data/coverage.json",
         "data/detected-signals.json",
         "data/github-commits-with-stats.txt",
         "data/github-commits.csv",
         "deliverables/analysis/analysis-sdlc-gap-finder.json",
+        "deliverables/analysis/analysis-sdlc-gap-finder.json.provenance.json",
+        "deliverables/canonical-metrics.json",
+        "deliverables/data.json",
         "project.json"
       ]
     },
@@ -127,15 +141,24 @@
       "stderr": "",
       "files_after": [
         "data/archaeology.db",
+        "data/coverage.json",
         "data/detected-signals.json",
         "data/github-commits-with-stats.txt",
         "data/github-commits.csv",
         "deliverables/analysis/analysis-agentic-workflow.json",
+        "deliverables/analysis/analysis-agentic-workflow.json.provenance.json",
         "deliverables/analysis/analysis-formal-terms-mapper.json",
+        "deliverables/analysis/analysis-formal-terms-mapper.json.provenance.json",
         "deliverables/analysis/analysis-ml-pattern-mapper.json",
+        "deliverables/analysis/analysis-ml-pattern-mapper.json.provenance.json",
         "deliverables/analysis/analysis-sdlc-gap-finder.json",
+        "deliverables/analysis/analysis-sdlc-gap-finder.json.provenance.json",
         "deliverables/analysis/analysis-source-archaeologist.json",
+        "deliverables/analysis/analysis-source-archaeologist.json.provenance.json",
         "deliverables/analysis/analysis-youtube-correlator.json",
+        "deliverables/analysis/analysis-youtube-correlator.json.provenance.json",
+        "deliverables/canonical-metrics.json",
+        "deliverables/data.json",
         "project.json"
       ]
     },
@@ -145,21 +168,31 @@
         "project": "alpha"
       },
       "exit_code": 0,
-      "output": "Visualization generated at projects/alpha/deliverables/visuals/archaeology.html\nWarning: projects/alpha/deliverables/data.json not found. Visualization will be empty.\n",
+      "output": "Visualization generated at projects/alpha/deliverables/visuals/archaeology.html\n",
       "stdout": "",
       "stderr": "",
       "files_after": [
         "data/archaeology.db",
+        "data/coverage.json",
         "data/detected-signals.json",
         "data/github-commits-with-stats.txt",
         "data/github-commits.csv",
         "deliverables/analysis/analysis-agentic-workflow.json",
+        "deliverables/analysis/analysis-agentic-workflow.json.provenance.json",
         "deliverables/analysis/analysis-formal-terms-mapper.json",
+        "deliverables/analysis/analysis-formal-terms-mapper.json.provenance.json",
         "deliverables/analysis/analysis-ml-pattern-mapper.json",
+        "deliverables/analysis/analysis-ml-pattern-mapper.json.provenance.json",
         "deliverables/analysis/analysis-sdlc-gap-finder.json",
+        "deliverables/analysis/analysis-sdlc-gap-finder.json.provenance.json",
         "deliverables/analysis/analysis-source-archaeologist.json",
+        "deliverables/analysis/analysis-source-archaeologist.json.provenance.json",
         "deliverables/analysis/analysis-youtube-correlator.json",
+        "deliverables/analysis/analysis-youtube-correlator.json.provenance.json",
+        "deliverables/canonical-metrics.json",
+        "deliverables/data.json",
         "deliverables/visuals/archaeology.html",
+        "deliverables/visuals/archaeology.html.provenance.json",
         "project.json"
       ]
     },
@@ -175,17 +208,28 @@
       "stderr": "",
       "files_after": [
         "data/archaeology.db",
+        "data/coverage.json",
         "data/detected-signals.json",
         "data/github-commits-with-stats.txt",
         "data/github-commits.csv",
         "deliverables/analysis/analysis-agentic-workflow.json",
+        "deliverables/analysis/analysis-agentic-workflow.json.provenance.json",
         "deliverables/analysis/analysis-formal-terms-mapper.json",
+        "deliverables/analysis/analysis-formal-terms-mapper.json.provenance.json",
         "deliverables/analysis/analysis-ml-pattern-mapper.json",
+        "deliverables/analysis/analysis-ml-pattern-mapper.json.provenance.json",
         "deliverables/analysis/analysis-sdlc-gap-finder.json",
+        "deliverables/analysis/analysis-sdlc-gap-finder.json.provenance.json",
         "deliverables/analysis/analysis-source-archaeologist.json",
+        "deliverables/analysis/analysis-source-archaeologist.json.provenance.json",
         "deliverables/analysis/analysis-youtube-correlator.json",
+        "deliverables/analysis/analysis-youtube-correlator.json.provenance.json",
+        "deliverables/canonical-metrics.json",
+        "deliverables/data.json",
         "deliverables/reports/ARCHAEOLOGY-REPORT.md",
+        "deliverables/reports/ARCHAEOLOGY-REPORT.md.provenance.json",
         "deliverables/visuals/archaeology.html",
+        "deliverables/visuals/archaeology.html.provenance.json",
         "project.json"
       ]
     },
@@ -201,18 +245,30 @@
       "stderr": "",
       "files_after": [
         "data/archaeology.db",
+        "data/coverage.json",
         "data/detected-signals.json",
         "data/github-commits-with-stats.txt",
         "data/github-commits.csv",
         "deliverables/analysis/analysis-agentic-workflow.json",
+        "deliverables/analysis/analysis-agentic-workflow.json.provenance.json",
         "deliverables/analysis/analysis-formal-terms-mapper.json",
+        "deliverables/analysis/analysis-formal-terms-mapper.json.provenance.json",
         "deliverables/analysis/analysis-ml-pattern-mapper.json",
+        "deliverables/analysis/analysis-ml-pattern-mapper.json.provenance.json",
         "deliverables/analysis/analysis-sdlc-gap-finder.json",
+        "deliverables/analysis/analysis-sdlc-gap-finder.json.provenance.json",
         "deliverables/analysis/analysis-source-archaeologist.json",
+        "deliverables/analysis/analysis-source-archaeologist.json.provenance.json",
         "deliverables/analysis/analysis-youtube-correlator.json",
+        "deliverables/analysis/analysis-youtube-correlator.json.provenance.json",
+        "deliverables/canonical-metrics.json",
+        "deliverables/data.json",
         "deliverables/reports/ARCHAEOLOGY-REPORT.md",
+        "deliverables/reports/ARCHAEOLOGY-REPORT.md.provenance.json",
         "deliverables/visuals/archaeology.html",
+        "deliverables/visuals/archaeology.html.provenance.json",
         "deliverables/visuals/report.html",
+        "deliverables/visuals/report.html.provenance.json",
         "project.json"
       ]
     },
@@ -221,24 +277,36 @@
       "args": {
         "project": "alpha"
       },
-      "exit_code": 1,
-      "output": "Forensic audit for 'alpha'\nSummary: CRITICAL=1, MEDIUM=1\nCRITICAL: CANONICAL_MISSING: canonical-metrics.json is missing or invalid [projects/alpha/deliverables/canonical-metrics.json]\nMEDIUM: PROJECT_REPO_URL: repo_url should be a GitHub HTTPS URL [projects/alpha/project.json]\n",
+      "exit_code": 0,
+      "output": "Forensic audit for 'alpha'\nSummary: MEDIUM=1\nMEDIUM: PROJECT_REPO_URL: repo_url should be a GitHub HTTPS URL [projects/alpha/project.json]\n",
       "stdout": "",
       "stderr": "",
       "files_after": [
         "data/archaeology.db",
+        "data/coverage.json",
         "data/detected-signals.json",
         "data/github-commits-with-stats.txt",
         "data/github-commits.csv",
         "deliverables/analysis/analysis-agentic-workflow.json",
+        "deliverables/analysis/analysis-agentic-workflow.json.provenance.json",
         "deliverables/analysis/analysis-formal-terms-mapper.json",
+        "deliverables/analysis/analysis-formal-terms-mapper.json.provenance.json",
         "deliverables/analysis/analysis-ml-pattern-mapper.json",
+        "deliverables/analysis/analysis-ml-pattern-mapper.json.provenance.json",
         "deliverables/analysis/analysis-sdlc-gap-finder.json",
+        "deliverables/analysis/analysis-sdlc-gap-finder.json.provenance.json",
         "deliverables/analysis/analysis-source-archaeologist.json",
+        "deliverables/analysis/analysis-source-archaeologist.json.provenance.json",
         "deliverables/analysis/analysis-youtube-correlator.json",
+        "deliverables/analysis/analysis-youtube-correlator.json.provenance.json",
+        "deliverables/canonical-metrics.json",
+        "deliverables/data.json",
         "deliverables/reports/ARCHAEOLOGY-REPORT.md",
+        "deliverables/reports/ARCHAEOLOGY-REPORT.md.provenance.json",
         "deliverables/visuals/archaeology.html",
+        "deliverables/visuals/archaeology.html.provenance.json",
         "deliverables/visuals/report.html",
+        "deliverables/visuals/report.html.provenance.json",
         "project.json"
       ]
     }
@@ -293,6 +361,7 @@
       "stdout": "",
       "stderr": "",
       "files_after": [
+        "data/coverage.json",
         "data/github-commits-with-stats.txt",
         "data/github-commits.csv",
         "project.json"
@@ -312,8 +381,11 @@
       "stderr": "",
       "files_after": [
         "data/archaeology.db",
+        "data/coverage.json",
         "data/github-commits-with-stats.txt",
         "data/github-commits.csv",
+        "deliverables/canonical-metrics.json",
+        "deliverables/data.json",
         "project.json"
       ]
     },
@@ -332,9 +404,12 @@
       "stderr": "",
       "files_after": [
         "data/archaeology.db",
+        "data/coverage.json",
         "data/detected-signals.json",
         "data/github-commits-with-stats.txt",
         "data/github-commits.csv",
+        "deliverables/canonical-metrics.json",
+        "deliverables/data.json",
         "project.json"
       ]
     },
@@ -354,9 +429,12 @@
       "stderr": "",
       "files_after": [
         "data/archaeology.db",
+        "data/coverage.json",
         "data/detected-signals.json",
         "data/github-commits-with-stats.txt",
         "data/github-commits.csv",
+        "deliverables/canonical-metrics.json",
+        "deliverables/data.json",
         "project.json"
       ]
     },
@@ -382,10 +460,14 @@
       "stderr": "",
       "files_after": [
         "data/archaeology.db",
+        "data/coverage.json",
         "data/detected-signals.json",
         "data/github-commits-with-stats.txt",
         "data/github-commits.csv",
         "deliverables/analysis/analysis-sdlc-gap-finder.json",
+        "deliverables/analysis/analysis-sdlc-gap-finder.json.provenance.json",
+        "deliverables/canonical-metrics.json",
+        "deliverables/data.json",
         "project.json"
       ]
     },
@@ -418,15 +500,24 @@
       "stderr": "",
       "files_after": [
         "data/archaeology.db",
+        "data/coverage.json",
         "data/detected-signals.json",
         "data/github-commits-with-stats.txt",
         "data/github-commits.csv",
         "deliverables/analysis/analysis-agentic-workflow.json",
+        "deliverables/analysis/analysis-agentic-workflow.json.provenance.json",
         "deliverables/analysis/analysis-formal-terms-mapper.json",
+        "deliverables/analysis/analysis-formal-terms-mapper.json.provenance.json",
         "deliverables/analysis/analysis-ml-pattern-mapper.json",
+        "deliverables/analysis/analysis-ml-pattern-mapper.json.provenance.json",
         "deliverables/analysis/analysis-sdlc-gap-finder.json",
+        "deliverables/analysis/analysis-sdlc-gap-finder.json.provenance.json",
         "deliverables/analysis/analysis-source-archaeologist.json",
+        "deliverables/analysis/analysis-source-archaeologist.json.provenance.json",
         "deliverables/analysis/analysis-youtube-correlator.json",
+        "deliverables/analysis/analysis-youtube-correlator.json.provenance.json",
+        "deliverables/canonical-metrics.json",
+        "deliverables/data.json",
         "project.json"
       ]
     },
@@ -444,15 +535,24 @@
       "stderr": "",
       "files_after": [
         "data/archaeology.db",
+        "data/coverage.json",
         "data/detected-signals.json",
         "data/github-commits-with-stats.txt",
         "data/github-commits.csv",
         "deliverables/analysis/analysis-agentic-workflow.json",
+        "deliverables/analysis/analysis-agentic-workflow.json.provenance.json",
         "deliverables/analysis/analysis-formal-terms-mapper.json",
+        "deliverables/analysis/analysis-formal-terms-mapper.json.provenance.json",
         "deliverables/analysis/analysis-ml-pattern-mapper.json",
+        "deliverables/analysis/analysis-ml-pattern-mapper.json.provenance.json",
         "deliverables/analysis/analysis-sdlc-gap-finder.json",
+        "deliverables/analysis/analysis-sdlc-gap-finder.json.provenance.json",
         "deliverables/analysis/analysis-source-archaeologist.json",
+        "deliverables/analysis/analysis-source-archaeologist.json.provenance.json",
         "deliverables/analysis/analysis-youtube-correlator.json",
+        "deliverables/analysis/analysis-youtube-correlator.json.provenance.json",
+        "deliverables/canonical-metrics.json",
+        "deliverables/data.json",
         "deliverables/visuals/index.html",
         "project.json"
       ]
@@ -472,16 +572,26 @@
       "stderr": "",
       "files_after": [
         "data/archaeology.db",
+        "data/coverage.json",
         "data/detected-signals.json",
         "data/github-commits-with-stats.txt",
         "data/github-commits.csv",
         "deliverables/analysis/analysis-agentic-workflow.json",
+        "deliverables/analysis/analysis-agentic-workflow.json.provenance.json",
         "deliverables/analysis/analysis-formal-terms-mapper.json",
+        "deliverables/analysis/analysis-formal-terms-mapper.json.provenance.json",
         "deliverables/analysis/analysis-ml-pattern-mapper.json",
+        "deliverables/analysis/analysis-ml-pattern-mapper.json.provenance.json",
         "deliverables/analysis/analysis-sdlc-gap-finder.json",
+        "deliverables/analysis/analysis-sdlc-gap-finder.json.provenance.json",
         "deliverables/analysis/analysis-source-archaeologist.json",
+        "deliverables/analysis/analysis-source-archaeologist.json.provenance.json",
         "deliverables/analysis/analysis-youtube-correlator.json",
+        "deliverables/analysis/analysis-youtube-correlator.json.provenance.json",
+        "deliverables/canonical-metrics.json",
+        "deliverables/data.json",
         "deliverables/reports/ARCHAEOLOGY-REPORT.md",
+        "deliverables/reports/ARCHAEOLOGY-REPORT.md.provenance.json",
         "deliverables/visuals/index.html",
         "project.json"
       ]
@@ -501,18 +611,29 @@
       "stderr": "",
       "files_after": [
         "data/archaeology.db",
+        "data/coverage.json",
         "data/detected-signals.json",
         "data/github-commits-with-stats.txt",
         "data/github-commits.csv",
         "deliverables/analysis/analysis-agentic-workflow.json",
+        "deliverables/analysis/analysis-agentic-workflow.json.provenance.json",
         "deliverables/analysis/analysis-formal-terms-mapper.json",
+        "deliverables/analysis/analysis-formal-terms-mapper.json.provenance.json",
         "deliverables/analysis/analysis-ml-pattern-mapper.json",
+        "deliverables/analysis/analysis-ml-pattern-mapper.json.provenance.json",
         "deliverables/analysis/analysis-sdlc-gap-finder.json",
+        "deliverables/analysis/analysis-sdlc-gap-finder.json.provenance.json",
         "deliverables/analysis/analysis-source-archaeologist.json",
+        "deliverables/analysis/analysis-source-archaeologist.json.provenance.json",
         "deliverables/analysis/analysis-youtube-correlator.json",
+        "deliverables/analysis/analysis-youtube-correlator.json.provenance.json",
+        "deliverables/canonical-metrics.json",
+        "deliverables/data.json",
         "deliverables/reports/ARCHAEOLOGY-REPORT.md",
+        "deliverables/reports/ARCHAEOLOGY-REPORT.md.provenance.json",
         "deliverables/visuals/index.html",
         "deliverables/visuals/report.html",
+        "deliverables/visuals/report.html.provenance.json",
         "project.json"
       ]
     },
@@ -524,15 +645,10 @@
       "returned": {
         "status": "complete",
         "project": "alpha",
-        "total_checks": 2,
+        "total_checks": 1,
         "passed": 0,
-        "failed": 2,
+        "failed": 1,
         "findings": [
-          {
-            "check": "CANONICAL_MISSING",
-            "severity": "CRITICAL",
-            "message": "canonical-metrics.json is missing or invalid"
-          },
           {
             "check": "PROJECT_REPO_URL",
             "severity": "MEDIUM",
@@ -544,18 +660,29 @@
       "stderr": "",
       "files_after": [
         "data/archaeology.db",
+        "data/coverage.json",
         "data/detected-signals.json",
         "data/github-commits-with-stats.txt",
         "data/github-commits.csv",
         "deliverables/analysis/analysis-agentic-workflow.json",
+        "deliverables/analysis/analysis-agentic-workflow.json.provenance.json",
         "deliverables/analysis/analysis-formal-terms-mapper.json",
+        "deliverables/analysis/analysis-formal-terms-mapper.json.provenance.json",
         "deliverables/analysis/analysis-ml-pattern-mapper.json",
+        "deliverables/analysis/analysis-ml-pattern-mapper.json.provenance.json",
         "deliverables/analysis/analysis-sdlc-gap-finder.json",
+        "deliverables/analysis/analysis-sdlc-gap-finder.json.provenance.json",
         "deliverables/analysis/analysis-source-archaeologist.json",
+        "deliverables/analysis/analysis-source-archaeologist.json.provenance.json",
         "deliverables/analysis/analysis-youtube-correlator.json",
+        "deliverables/analysis/analysis-youtube-correlator.json.provenance.json",
+        "deliverables/canonical-metrics.json",
+        "deliverables/data.json",
         "deliverables/reports/ARCHAEOLOGY-REPORT.md",
+        "deliverables/reports/ARCHAEOLOGY-REPORT.md.provenance.json",
         "deliverables/visuals/index.html",
         "deliverables/visuals/report.html",
+        "deliverables/visuals/report.html.provenance.json",
         "project.json"
       ]
     },
@@ -591,15 +718,24 @@
       "stderr": "",
       "files_after": [
         "data/archaeology.db",
+        "data/coverage.json",
         "data/detected-signals.json",
         "data/github-commits-with-stats.txt",
         "data/github-commits.csv",
         "deliverables/analysis/analysis-agentic-workflow.json",
+        "deliverables/analysis/analysis-agentic-workflow.json.provenance.json",
         "deliverables/analysis/analysis-formal-terms-mapper.json",
+        "deliverables/analysis/analysis-formal-terms-mapper.json.provenance.json",
         "deliverables/analysis/analysis-ml-pattern-mapper.json",
+        "deliverables/analysis/analysis-ml-pattern-mapper.json.provenance.json",
         "deliverables/analysis/analysis-sdlc-gap-finder.json",
+        "deliverables/analysis/analysis-sdlc-gap-finder.json.provenance.json",
         "deliverables/analysis/analysis-source-archaeologist.json",
+        "deliverables/analysis/analysis-source-archaeologist.json.provenance.json",
         "deliverables/analysis/analysis-youtube-correlator.json",
+        "deliverables/analysis/analysis-youtube-correlator.json.provenance.json",
+        "deliverables/canonical-metrics.json",
+        "deliverables/data.json",
         "project.json"
       ]
     }
@@ -633,7 +769,7 @@
         "project": "bare"
       },
       "exit_code": 1,
-      "output": "Error: Not a git repository: <TMP>/plain\n",
+      "output": "Error: git rev-parse failed: fatal: not a git repository (or any of the parent directories): .git\n",
       "stdout": "",
       "stderr": ""
     },
@@ -644,7 +780,7 @@
         "project": "bare"
       },
       "exit_code": 1,
-      "output": "Extracting git log from <TMP>/fakegit...\nError: Git extraction failed: git log failed: fatal: not a git repository (or any of the parent directories): .git\n\n",
+      "output": "Error: git rev-parse failed: fatal: not a git repository (or any of the parent directories): .git\n",
       "stdout": "",
       "stderr": ""
     },
@@ -842,7 +978,7 @@
       },
       "raised": [
         "RuntimeError",
-        "git log failed: fatal: not a git repository (or any of the parent directories): .git\n"
+        "git rev-parse failed: fatal: not a git repository (or any of the parent directories): .git"
       ],
       "stdout": "",
       "stderr": ""
@@ -1057,7 +1193,7 @@
       },
       "raised": [
         "RuntimeError",
-        "git log failed: fatal: not a git repository (or any of the parent directories): .git\n"
+        "git rev-parse failed: fatal: not a git repository (or any of the parent directories): .git"
       ],
       "stdout": "",
       "stderr": ""
@@ -1112,7 +1248,8 @@
         "--port",
         "8023",
         "--setting",
-        "sql_time_limit_ms,5000",
+        "sql_time_limit_ms",
+        "5000",
         "--cors",
         "--metadata",
         "<TMPDIR>/arch-metadata-<RAND>.yaml"
@@ -1127,7 +1264,7 @@
         ]
       },
       "exit_code": 1,
-      "output": "Project 'ghost10' not found at projects/ghost10/\nRun 'devarch init ghost10' first.\n",
+      "output": "Error: cascade is disabled pending readiness hardening. Use init, mine, build-db, signals, analyze, visualize, export-report and audit.\n",
       "stdout": "",
       "stderr": ""
     },
@@ -1139,7 +1276,7 @@
         ]
       },
       "exit_code": 1,
-      "output": "  SKIP: repo_path not found (None). Use --skip-mine to skip mining.\n\n[2/7] Building database...\n  Database built (projects/alpha/data/archaeology.db)\n\n[3/7] Detecting signals...\nDetected 1 signals, 2 clusters\n  gap: 1 signals\n  Cluster: 2026-01-01 -> 2026-01-03 (3 commits, 3 days)\n  Cluster: 2026-02-20 -> 2026-02-21 (2 commits, 2 days)\nSaved to <TMP>/ws/projects/alpha/data/detected-signals.json\n  1 signals across 2 clusters\n\n[4/7] Running era cascade...\n  ERROR: No commit-eras.json found at projects/alpha/data/commit-eras.json\n",
+      "output": "Error: cascade is disabled pending readiness hardening. Use init, mine, build-db, signals, analyze, visualize, export-report and audit.\n",
       "stdout": "",
       "stderr": ""
     },
@@ -1151,7 +1288,7 @@
         ]
       },
       "exit_code": 1,
-      "output": "\n[1/7] Mining git data from <TMP>/repo...\n  Extracted 5 commits\n\n[2/7] Building database...\n  Database built (projects/alpha/data/archaeology.db)\n\n[3/7] Detecting signals...\nDetected 1 signals, 2 clusters\n  gap: 1 signals\n  Cluster: 2026-01-01 -> 2026-01-03 (3 commits, 3 days)\n  Cluster: 2026-02-20 -> 2026-02-21 (2 commits, 2 days)\nSaved to <TMP>/ws/projects/alpha/data/detected-signals.json\n  1 signals across 2 clusters\n\n[4/7] Running era cascade...\n  ERROR: No commit-eras.json found at projects/alpha/data/commit-eras.json\n",
+      "output": "Error: cascade is disabled pending readiness hardening. Use init, mine, build-db, signals, analyze, visualize, export-report and audit.\n",
       "stdout": "",
       "stderr": ""
     },
@@ -1163,29 +1300,17 @@
         ]
       },
       "exit_code": 1,
-      "output": "\n[1/7] Mining git data from <TMP>/repo...\n  Extracted 5 commits\n\n[2/7] Building database...\n  Build failed: Traceback (most recent call last):\n  File \"<frozen runpy>\", line <N>, in _run_module_as_main\n  File \"<frozen runpy>\", line <N>, in _run_code\n  File \"<PKG>/db/builder.py\", line 690, in <module>\n    main()\n  File \"<PKG>/db/builder.py\", line 686, in main\n    build_db(project_root, args.output, args.verbose)\n  File \"<PKG>/db/builder.py\", line 673, in build_db\n    print_summary(db_path, verbose)\n  File \"<PKG>/db/builder.py\", line 543, in print_summary\n    result = run_su([\"tables\", str(db), \"--counts\"], verbose)\n  File \"<PKG>/db/builder.py\", line 168, in run_su\n    raise SqliteUtilsError(f\"sqlite-utils {args[0] if args else ''} failed: {stderr}\")\nSqliteUtilsError: sqlite-utils tables failed: Traceback (most recent call last):\n  File \"<frozen runpy>\", line <N>, in _run_module_as_main\n  File \"<frozen runpy>\", line <N>, in _run_code\n  File <VENV>/sqlite_utils/__main__.py\", line 4, in <module>\n    cli()\n  File <VENV>/click/core.py\", line 1631, in __call__\n    return self.main(*args, **kwargs)\n  File <VENV>/click/core.py\", line 1552, in main\n    rv = self.invoke(ctx)\n  File <VENV>/click/core.py\", line 2032, in invoke\n    return _process_result(sub_ctx.command.invoke(sub_ctx))\n  File <VENV>/click/core.py\", line 1415, in invoke\n    return ctx.invoke(self.callback, **ctx.params)\n  File <VENV>/click/core.py\", line 910, in invoke\n    return callback(*args, **kwargs)\n  File <VENV>/sqlite_utils/cli.py\", line 286, in tables\n    for line in output_rows(_iter(), headers, nl, arrays, json_cols, ascii_):\n  File <VENV>/sqlite_utils/cli.py\", line 3694, in output_rows\n    for row, next_row in itertools.zip_longest(current_iter, next_iter):\n  File <VENV>/sqlite_utils/cli.py\", line 260, in _iter\n    row.append(method(name).count)\n  File <VENV>/sqlite_utils/db.py\", line 2341, in count\n    return self.count_where()\n  File <VENV>/sqlite_utils/db.py\", line 2124, in count_where\n    return self.db.execute(sql, where_args or []).fetchone()[0]\n  File <VENV>/sqlite_utils/db.py\", line 965, in execute\n    cursor = self.conn.execute(sql, parameters)\nsqlite3.OperationalError: SQL logic error\n\n\n[3/7] Detecting signals...\nDetected 1 signals, 2 clusters\n  gap: 1 signals\n  Cluster: 2026-01-01 -> 2026-01-03 (3 commits, 3 days)\n  Cluster: 2026-02-20 -> 2026-02-21 (2 commits, 2 days)\nSaved to <TMP>/ws/projects/alpha/data/detected-signals.json\n  1 signals across 2 clusters\n\n[4/7] Running era cascade...\n  Files scanned: 0\n  Files changed: 1\n  Era fields remapped: 0\n  Stale refs remaining: 0\n\n[5/7] Syncing derived deliverables...\n  \n\n[6/7] Running audit...\n\n[7/7] Running opportunity analyzers...\n  [opportunity] learning-velocity: OK\n  [opportunity] frustration-to-automation: OK\n  [opportunity] knowledge-gap: OK\n  [opportunity] token-efficiency: OK\n  [opportunity] session-quality: OK\n  [opportunity] ai-agent-mastery: OK\n  [opportunity] creative-dna: OK\n  [opportunity] neurodivergent-profile: OK\n  [opportunity] model-selection-advisor: OK\n  [opportunity] before-after-snapshot: OK\n  [opportunity] cross-repo-transfer: OK\n  [opportunity] youtube-learning-graph: OK\n  [opportunity] architecture-timelapse: OK\n  [opportunity] commit-cognitive-load: OK\n  14/14 opportunity analyzers OK\n  FAIL: 1 HIGH/CRITICAL findings\n    CRITICAL: CANONICAL_MISSING: canonical-metrics.json is missing or invalid [projects/alpha/deliverables/canonical-metrics.json]\n",
+      "output": "Error: cascade is disabled pending readiness hardening. Use init, mine, build-db, signals, analyze, visualize, export-report and audit.\n",
       "stdout": "",
       "stderr": "",
       "files_after": [
         "data/archaeology.db",
         "data/commit-eras.json",
-        "data/detected-signals.json",
+        "data/coverage.json",
         "data/github-commits-with-stats.txt",
         "data/github-commits.csv",
-        "deliverables/opportunity/opportunity-ai-agent-mastery.json",
-        "deliverables/opportunity/opportunity-architecture-timelapse.json",
-        "deliverables/opportunity/opportunity-before-after-snapshot.json",
-        "deliverables/opportunity/opportunity-commit-cognitive-load.json",
-        "deliverables/opportunity/opportunity-creative-dna.json",
-        "deliverables/opportunity/opportunity-cross-repo-transfer.json",
-        "deliverables/opportunity/opportunity-frustration-to-automation.json",
-        "deliverables/opportunity/opportunity-knowledge-gap.json",
-        "deliverables/opportunity/opportunity-learning-velocity.json",
-        "deliverables/opportunity/opportunity-model-selection-advisor.json",
-        "deliverables/opportunity/opportunity-neurodivergent-profile.json",
-        "deliverables/opportunity/opportunity-session-quality.json",
-        "deliverables/opportunity/opportunity-token-efficiency.json",
-        "deliverables/opportunity/opportunity-youtube-learning-graph.json",
+        "deliverables/canonical-metrics.json",
+        "deliverables/data.json",
         "project.json"
       ]
     },
@@ -1197,8 +1322,8 @@
           "--dry-run"
         ]
       },
-      "exit_code": 0,
-      "output": "\n[1/7] Mining git data from <TMP>/repo...\n  Extracted 5 commits\n\n[2/7] Building database...\n  Build failed: Traceback (most recent call last):\n  File \"<frozen runpy>\", line <N>, in _run_module_as_main\n  File \"<frozen runpy>\", line <N>, in _run_code\n  File \"<PKG>/db/builder.py\", line 690, in <module>\n    main()\n  File \"<PKG>/db/builder.py\", line 686, in main\n    build_db(project_root, args.output, args.verbose)\n  File \"<PKG>/db/builder.py\", line 673, in build_db\n    print_summary(db_path, verbose)\n  File \"<PKG>/db/builder.py\", line 543, in print_summary\n    result = run_su([\"tables\", str(db), \"--counts\"], verbose)\n  File \"<PKG>/db/builder.py\", line 168, in run_su\n    raise SqliteUtilsError(f\"sqlite-utils {args[0] if args else ''} failed: {stderr}\")\nSqliteUtilsError: sqlite-utils tables failed: Traceback (most recent call last):\n  File \"<frozen runpy>\", line <N>, in _run_module_as_main\n  File \"<frozen runpy>\", line <N>, in _run_code\n  File <VENV>/sqlite_utils/__main__.py\", line 4, in <module>\n    cli()\n  File <VENV>/click/core.py\", line 1631, in __call__\n    return self.main(*args, **kwargs)\n  File <VENV>/click/core.py\", line 1552, in main\n    rv = self.invoke(ctx)\n  File <VENV>/click/core.py\", line 2032, in invoke\n    return _process_result(sub_ctx.command.invoke(sub_ctx))\n  File <VENV>/click/core.py\", line 1415, in invoke\n    return ctx.invoke(self.callback, **ctx.params)\n  File <VENV>/click/core.py\", line 910, in invoke\n    return callback(*args, **kwargs)\n  File <VENV>/sqlite_utils/cli.py\", line 286, in tables\n    for line in output_rows(_iter(), headers, nl, arrays, json_cols, ascii_):\n  File <VENV>/sqlite_utils/cli.py\", line 3694, in output_rows\n    for row, next_row in itertools.zip_longest(current_iter, next_iter):\n  File <VENV>/sqlite_utils/cli.py\", line 260, in _iter\n    row.append(method(name).count)\n  File <VENV>/sqlite_utils/db.py\", line 2341, in count\n    return self.count_where()\n  File <VENV>/sqlite_utils/db.py\", line 2124, in count_where\n    return self.db.execute(sql, where_args or []).fetchone()[0]\n  File <VENV>/sqlite_utils/db.py\", line 965, in execute\n    cursor = self.conn.execute(sql, parameters)\nsqlite3.OperationalError: SQL logic error\n\n\n[3/7] Detecting signals...\nDetected 1 signals, 2 clusters\n  gap: 1 signals\n  Cluster: 2026-01-01 -> 2026-01-03 (3 commits, 3 days)\n  Cluster: 2026-02-20 -> 2026-02-21 (2 commits, 2 days)\nSaved to <TMP>/ws/projects/alpha/data/detected-signals.json\n  1 signals across 2 clusters\n\n[4/7] Running era cascade...\n  (dry run \u2014 no files will be written)\n  Files scanned: 14\n  Files changed: 0\n  Era fields remapped: 0\n  Stale refs remaining: 0\n\n[5/7] Syncing derived deliverables...\n  \n\n[6/7] Running audit...\n\n[7/7] Running opportunity analyzers...\n  [opportunity] learning-velocity: OK\n  [opportunity] frustration-to-automation: OK\n  [opportunity] knowledge-gap: OK\n  [opportunity] token-efficiency: OK\n  [opportunity] session-quality: OK\n  [opportunity] ai-agent-mastery: OK\n  [opportunity] creative-dna: OK\n  [opportunity] neurodivergent-profile: OK\n  [opportunity] model-selection-advisor: OK\n  [opportunity] before-after-snapshot: OK\n  [opportunity] cross-repo-transfer: OK\n  [opportunity] youtube-learning-graph: OK\n  [opportunity] architecture-timelapse: OK\n  [opportunity] commit-cognitive-load: OK\n  14/14 opportunity analyzers OK\n  FAIL: 1 HIGH/CRITICAL findings\n    CRITICAL: CANONICAL_MISSING: canonical-metrics.json is missing or invalid [projects/alpha/deliverables/canonical-metrics.json]\n",
+      "exit_code": 1,
+      "output": "Error: cascade is disabled pending readiness hardening. Use init, mine, build-db, signals, analyze, visualize, export-report and audit.\n",
       "stdout": "",
       "stderr": ""
     },
@@ -1211,8 +1336,8 @@
           "--dry-run"
         ]
       },
-      "exit_code": 0,
-      "output": "\n[1/7] Mining \u2014 SKIPPED (--skip-mine)\n\n[2/7] Building database...\n  Build failed: Traceback (most recent call last):\n  File \"<frozen runpy>\", line <N>, in _run_module_as_main\n  File \"<frozen runpy>\", line <N>, in _run_code\n  File \"<PKG>/db/builder.py\", line 690, in <module>\n    main()\n  File \"<PKG>/db/builder.py\", line 686, in main\n    build_db(project_root, args.output, args.verbose)\n  File \"<PKG>/db/builder.py\", line 673, in build_db\n    print_summary(db_path, verbose)\n  File \"<PKG>/db/builder.py\", line 543, in print_summary\n    result = run_su([\"tables\", str(db), \"--counts\"], verbose)\n  File \"<PKG>/db/builder.py\", line 168, in run_su\n    raise SqliteUtilsError(f\"sqlite-utils {args[0] if args else ''} failed: {stderr}\")\nSqliteUtilsError: sqlite-utils tables failed: Traceback (most recent call last):\n  File \"<frozen runpy>\", line <N>, in _run_module_as_main\n  File \"<frozen runpy>\", line <N>, in _run_code\n  File <VENV>/sqlite_utils/__main__.py\", line 4, in <module>\n    cli()\n  File <VENV>/click/core.py\", line 1631, in __call__\n    return self.main(*args, **kwargs)\n  File <VENV>/click/core.py\", line 1552, in main\n    rv = self.invoke(ctx)\n  File <VENV>/click/core.py\", line 2032, in invoke\n    return _process_result(sub_ctx.command.invoke(sub_ctx))\n  File <VENV>/click/core.py\", line 1415, in invoke\n    return ctx.invoke(self.callback, **ctx.params)\n  File <VENV>/click/core.py\", line 910, in invoke\n    return callback(*args, **kwargs)\n  File <VENV>/sqlite_utils/cli.py\", line 286, in tables\n    for line in output_rows(_iter(), headers, nl, arrays, json_cols, ascii_):\n  File <VENV>/sqlite_utils/cli.py\", line 3694, in output_rows\n    for row, next_row in itertools.zip_longest(current_iter, next_iter):\n  File <VENV>/sqlite_utils/cli.py\", line 260, in _iter\n    row.append(method(name).count)\n  File <VENV>/sqlite_utils/db.py\", line 2341, in count\n    return self.count_where()\n  File <VENV>/sqlite_utils/db.py\", line 2124, in count_where\n    return self.db.execute(sql, where_args or []).fetchone()[0]\n  File <VENV>/sqlite_utils/db.py\", line 965, in execute\n    cursor = self.conn.execute(sql, parameters)\nsqlite3.OperationalError: SQL logic error\n\n\n[3/7] Detecting signals...\nDetected 1 signals, 2 clusters\n  gap: 1 signals\n  Cluster: 2026-01-01 -> 2026-01-03 (3 commits, 3 days)\n  Cluster: 2026-02-20 -> 2026-02-21 (2 commits, 2 days)\nSaved to <TMP>/ws/projects/alpha/data/detected-signals.json\n  1 signals across 2 clusters\n\n[4/7] Running era cascade...\n  (dry run \u2014 no files will be written)\n  Files scanned: 14\n  Files changed: 0\n  Era fields remapped: 0\n  Stale refs remaining: 0\n\n[5/7] Syncing derived deliverables...\n  \n\n[6/7] Running audit...\n\n[7/7] Running opportunity analyzers...\n  [opportunity] learning-velocity: OK\n  [opportunity] frustration-to-automation: OK\n  [opportunity] knowledge-gap: OK\n  [opportunity] token-efficiency: OK\n  [opportunity] session-quality: OK\n  [opportunity] ai-agent-mastery: OK\n  [opportunity] creative-dna: OK\n  [opportunity] neurodivergent-profile: OK\n  [opportunity] model-selection-advisor: OK\n  [opportunity] before-after-snapshot: OK\n  [opportunity] cross-repo-transfer: OK\n  [opportunity] youtube-learning-graph: OK\n  [opportunity] architecture-timelapse: OK\n  [opportunity] commit-cognitive-load: OK\n  14/14 opportunity analyzers OK\n  FAIL: 1 HIGH/CRITICAL findings\n    CRITICAL: CANONICAL_MISSING: canonical-metrics.json is missing or invalid [projects/alpha/deliverables/canonical-metrics.json]\n",
+      "exit_code": 1,
+      "output": "Error: cascade is disabled pending readiness hardening. Use init, mine, build-db, signals, analyze, visualize, export-report and audit.\n",
       "stdout": "",
       "stderr": ""
     },

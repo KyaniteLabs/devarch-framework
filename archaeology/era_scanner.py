@@ -12,18 +12,20 @@ import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from .era_mapper import EraDef, get_current_era_names, era_count
-
+from .era_mapper import EraDef, era_count, get_current_era_names
 
 # Files that legitimately contain historical era references (mapping docs)
-HISTORICAL_FILES: frozenset[str] = frozenset({
-    "ERA_UPDATE_SUMMARY.md",
-})
+HISTORICAL_FILES: frozenset[str] = frozenset(
+    {
+        "ERA_UPDATE_SUMMARY.md",
+    }
+)
 
 
 def _load_canonical_metrics(project_dir: Path) -> dict:
     """Load canonical metrics from project.json for semantic drift detection."""
     import json
+
     pjson = project_dir / "project.json"
     if not pjson.exists():
         return {}
@@ -43,9 +45,9 @@ def _load_canonical_metrics(project_dir: Path) -> dict:
 class EraRef:
     file: Path
     line: int
-    kind: str       # "era_number" | "era_name" | "era_css_var" | "era_count" | "era_json_field"
+    kind: str  # "era_number" | "era_name" | "era_css_var" | "era_count" | "era_json_field"
     old_value: str
-    expected: str   # what it should be, or "N/A" if unmappable
+    expected: str  # what it should be, or "N/A" if unmappable
 
 
 @dataclass
@@ -59,9 +61,7 @@ class ScanResult:
         return len(self.refs) > 0
 
 
-def scan_deliverables(
-    project_dir: Path, eras: list[EraDef]
-) -> ScanResult:
+def scan_deliverables(project_dir: Path, eras: list[EraDef]) -> ScanResult:
     """Scan all deliverable files for stale era references."""
     deliverables_dir = project_dir / "deliverables"
     if not deliverables_dir.exists():
@@ -101,7 +101,7 @@ def _scan_file(
         return
 
     rel = path.relative_to(path.parents[2])  # relative to project dir
-    is_historical = any(hf in str(rel) for hf in HISTORICAL_FILES)
+    _is_historical = any(hf in str(rel) for hf in HISTORICAL_FILES)
 
     # Build per-era commit count map from canonical source
     era_commits = {e.id: e.commits for e in eras}
@@ -112,7 +112,8 @@ def _scan_file(
         # Skip historical/context lines
         if re.search(
             r"Original Claim|originally reported|was \d+ eras|Corrected To",
-            line, re.I,
+            line,
+            re.I,
         ):
             continue
 
@@ -122,21 +123,29 @@ def _scan_file(
         for m in re.finditer(r"\bEra\s+(\d+)\b", line):
             num = int(m.group(1))
             if num > n_eras:
-                result.refs.append(EraRef(
-                    file=path, line=i, kind="era_number",
-                    old_value=f"Era {num}",
-                    expected=f"Era 1-{n_eras} (remap by date)",
-                ))
+                result.refs.append(
+                    EraRef(
+                        file=path,
+                        line=i,
+                        kind="era_number",
+                        old_value=f"Era {num}",
+                        expected=f"Era 1-{n_eras} (remap by date)",
+                    )
+                )
 
         # Check "era-NN" CSS variables where NN > n_eras
         for m in re.finditer(r"era-(\d{2})", line):
             num = int(m.group(1))
             if num > n_eras:
-                result.refs.append(EraRef(
-                    file=path, line=i, kind="era_css_var",
-                    old_value=f"era-{m.group(1)}",
-                    expected=f"era-01 through era-{n_eras:02d}",
-                ))
+                result.refs.append(
+                    EraRef(
+                        file=path,
+                        line=i,
+                        kind="era_css_var",
+                        old_value=f"era-{m.group(1)}",
+                        expected=f"era-01 through era-{n_eras:02d}",
+                    )
+                )
 
         # Check "N eras" count text — only flag if clearly claiming to be the total
         # Known stale total counts from previous structures: 10, 14, 15, 16
@@ -144,52 +153,79 @@ def _scan_file(
         for m in re.finditer(r"\b(\d+)\s+eras\b", line, re.I):
             num = int(m.group(1))
             if num in known_stale_totals:
-                result.refs.append(EraRef(
-                    file=path, line=i, kind="era_count",
-                    old_value=f"{num} eras",
-                    expected=f"{n_eras} eras",
-                ))
+                result.refs.append(
+                    EraRef(
+                        file=path,
+                        line=i,
+                        kind="era_count",
+                        old_value=f"{num} eras",
+                        expected=f"{n_eras} eras",
+                    )
+                )
 
         # Check "Ten Eras" / "Fourteen Eras" style
         word_map = {
-            "Ten": 10, "Eleven": 11, "Twelve": 12, "Thirteen": 13,
-            "Fourteen": 14, "Fifteen": 15, "Sixteen": 16,
-            "Seven": 7, "Eight": 8, "Nine": 9,
+            "Ten": 10,
+            "Eleven": 11,
+            "Twelve": 12,
+            "Thirteen": 13,
+            "Fourteen": 14,
+            "Fifteen": 15,
+            "Sixteen": 16,
+            "Seven": 7,
+            "Eight": 8,
+            "Nine": 9,
         }
-        for m in re.finditer(r"\b(Ten|Eleven|Twelve|Thirteen|Fourteen|Fifteen|Sixteen)\s+Eras\b", line):
+        for m in re.finditer(
+            r"\b(Ten|Eleven|Twelve|Thirteen|Fourteen|Fifteen|Sixteen)\s+Eras\b", line
+        ):
             num = word_map.get(m.group(1), 0)
             if num != n_eras:
-                result.refs.append(EraRef(
-                    file=path, line=i, kind="era_count",
-                    old_value=f"{m.group(1)} Eras",
-                    expected=f"{_number_word(n_eras)} Eras",
-                ))
+                result.refs.append(
+                    EraRef(
+                        file=path,
+                        line=i,
+                        kind="era_count",
+                        old_value=f"{m.group(1)} Eras",
+                        expected=f"{_number_word(n_eras)} Eras",
+                    )
+                )
 
         # Check "era": N in JSON/JS where N > n_eras
         for m in re.finditer(r'"era":\s*(\d+)', line):
             num = int(m.group(1))
             if num > n_eras or num == 0:
-                result.refs.append(EraRef(
-                    file=path, line=i, kind="era_json_field",
-                    old_value=f'"era": {num}',
-                    expected=f'"era": 1-{n_eras} (remap by date)',
-                ))
+                result.refs.append(
+                    EraRef(
+                        file=path,
+                        line=i,
+                        kind="era_json_field",
+                        old_value=f'"era": {num}',
+                        expected=f'"era": 1-{n_eras} (remap by date)',
+                    )
+                )
 
         # Check old era names (skip era names inside quotes that are
         # clearly part of a mapping table, sub-phase names, or blog titles)
         known_old_names = {
-            "The Acceleration", "The Crusade", "The Hardening",
+            "The Acceleration",
+            "The Crusade",
+            "The Hardening",
             "The Return",
         }
         for old_name in known_old_names:
             if old_name in line and old_name not in current_names:
                 if "→" in line or "->" in line:
                     continue
-                result.refs.append(EraRef(
-                    file=path, line=i, kind="era_name",
-                    old_value=old_name,
-                    expected=", ".join(sorted(current_names)),
-                ))
+                result.refs.append(
+                    EraRef(
+                        file=path,
+                        line=i,
+                        kind="era_name",
+                        old_value=old_name,
+                        expected=", ".join(sorted(current_names)),
+                    )
+                )
 
         # --- Semantic drift checks (new) ---
 
@@ -204,11 +240,15 @@ def _scan_file(
         for m in re.finditer(r"\b(\d+)\s+[Cc]hapters?\b", line):
             num = int(m.group(1))
             if num != n_eras:
-                result.refs.append(EraRef(
-                    file=path, line=i, kind="era_count",
-                    old_value=f"{num} chapters",
-                    expected=f"{n_eras} (matches era count)",
-                ))
+                result.refs.append(
+                    EraRef(
+                        file=path,
+                        line=i,
+                        kind="era_count",
+                        old_value=f"{num} chapters",
+                        expected=f"{n_eras} (matches era count)",
+                    )
+                )
 
         # Check "N-day development" / "N days" against canonical span_days
         canonical_span = metrics.get("span_days")
@@ -217,19 +257,27 @@ def _scan_file(
             for m in re.finditer(r"\b(\d+)[\s-]*day", line, re.I):
                 num = int(m.group(1))
                 if num in known_stale_spans and num != canonical_span:
-                    result.refs.append(EraRef(
-                        file=path, line=i, kind="semantic_drift",
-                        old_value=f"{num} day",
-                        expected=f"{canonical_span} days (from project.json)",
-                    ))
+                    result.refs.append(
+                        EraRef(
+                            file=path,
+                            line=i,
+                            kind="semantic_drift",
+                            old_value=f"{num} day",
+                            expected=f"{canonical_span} days (from project.json)",
+                        )
+                    )
 
         # Check "1,050 commits" / "1050 commits" (old Cluster 4 count)
         for m in re.finditer(r"\b1,?050\s+commits", line):
-            result.refs.append(EraRef(
-                file=path, line=i, kind="semantic_drift",
-                old_value="1,050 commits",
-                expected="972 commits (Eras 3-7) or era-specific count",
-            ))
+            result.refs.append(
+                EraRef(
+                    file=path,
+                    line=i,
+                    kind="semantic_drift",
+                    old_value="1,050 commits",
+                    expected="972 commits (Eras 3-7) or era-specific count",
+                )
+            )
 
         # Check per-era commit count drift: only direct "Era N: X commits" patterns
         # Avoid matching combined counts like "Era 3-4: 691 commits" or sub-periods
@@ -241,21 +289,29 @@ def _scan_file(
             except ValueError:
                 continue
             if era_num in era_commits and count != era_commits[era_num]:
-                result.refs.append(EraRef(
-                    file=path, line=i, kind="semantic_drift",
-                    old_value=f"Era {era_num}: {m.group(2)} commits",
-                    expected=f"Era {era_num}: {era_commits[era_num]} commits",
-                ))
+                result.refs.append(
+                    EraRef(
+                        file=path,
+                        line=i,
+                        kind="semantic_drift",
+                        old_value=f"Era {era_num}: {m.group(2)} commits",
+                        expected=f"Era {era_num}: {era_commits[era_num]} commits",
+                    )
+                )
 
         # Check "N development eras" / "across N eras" against canonical
         for m in re.finditer(r"across\s+(\d+)\s+(?:development\s+)?eras?\b", line, re.I):
             num = int(m.group(1))
             if num != n_eras:
-                result.refs.append(EraRef(
-                    file=path, line=i, kind="era_count",
-                    old_value=f"across {num} eras",
-                    expected=f"across {n_eras} eras",
-                ))
+                result.refs.append(
+                    EraRef(
+                        file=path,
+                        line=i,
+                        kind="era_count",
+                        old_value=f"across {num} eras",
+                        expected=f"across {n_eras} eras",
+                    )
+                )
 
     # Check JS/HTML script blocks for oversized era arrays
     if path.suffix in {".html", ".js"}:
@@ -265,10 +321,22 @@ def _scan_file(
 def _number_word(n: int) -> str:
     """Convert a number to its English word form for era counts."""
     words = {
-        1: "One", 2: "Two", 3: "Three", 4: "Four", 5: "Five",
-        6: "Six", 7: "Seven", 8: "Eight", 9: "Nine", 10: "Ten",
-        11: "Eleven", 12: "Twelve", 13: "Thirteen", 14: "Fourteen",
-        15: "Fifteen", 16: "Sixteen",
+        1: "One",
+        2: "Two",
+        3: "Three",
+        4: "Four",
+        5: "Five",
+        6: "Six",
+        7: "Seven",
+        8: "Eight",
+        9: "Nine",
+        10: "Ten",
+        11: "Eleven",
+        12: "Twelve",
+        13: "Thirteen",
+        14: "Fourteen",
+        15: "Fifteen",
+        16: "Sixteen",
     }
     return words.get(n, str(n))
 
@@ -301,15 +369,13 @@ def _scan_js_era_arrays(
     _check_era_name_arrays(path, lines, current_names, n_eras, result)
 
 
-def _check_era_number_arrays(
-    path: Path, lines: list[str], n_eras: int, result: ScanResult
-) -> None:
+def _check_era_number_arrays(path: Path, lines: list[str], n_eras: int, result: ScanResult) -> None:
     """Find JS arrays containing { era: N } entries where N exceeds n_eras."""
     # Track array start lines and collect era numbers within them
     in_array = False
     array_start = 0
     era_numbers: list[int] = []
-    brace_depth = 0
+    _brace_depth = 0
 
     for i, line in enumerate(lines, start=1):
         stripped = line.strip()
@@ -317,33 +383,36 @@ def _check_era_number_arrays(
         if not in_array:
             # Detect array start that will contain era entries
             # Look for = [...] or const xyz = [
-            if re.search(r'=\s*\[', stripped) and not stripped.startswith('//'):
+            if re.search(r"=\s*\[", stripped) and not stripped.startswith("//"):
                 in_array = True
                 array_start = i
                 era_numbers = []
-                brace_depth = 0
+                _brace_depth = 0
 
         if in_array:
             # Collect era: N entries
-            for m in re.finditer(r'\bera:\s*(\d+)', line):
+            for m in re.finditer(r"\bera:\s*(\d+)", line):
                 era_numbers.append(int(m.group(1)))
 
             # Track if array closes
-            if ']' in stripped:
+            if "]" in stripped:
                 # Check if this is the closing bracket (rough heuristic)
-                open_brackets = stripped.count('[')
-                close_brackets = stripped.count(']')
+                open_brackets = stripped.count("[")
+                close_brackets = stripped.count("]")
                 if close_brackets > open_brackets:
                     in_array = False
                     # Evaluate collected era numbers
                     if era_numbers and max(era_numbers) > n_eras:
                         stale = [n for n in era_numbers if n > n_eras]
-                        result.refs.append(EraRef(
-                            file=path, line=array_start,
-                            kind="js_era_array",
-                            old_value=f"array with era entries {era_numbers} ({len(era_numbers)} entries, max={max(era_numbers)})",
-                            expected=f"max {n_eras} entries (stale: {stale})",
-                        ))
+                        result.refs.append(
+                            EraRef(
+                                file=path,
+                                line=array_start,
+                                kind="js_era_array",
+                                old_value=f"array with era entries {era_numbers} ({len(era_numbers)} entries, max={max(era_numbers)})",
+                                expected=f"max {n_eras} entries (stale: {stale})",
+                            )
+                        )
 
 
 def _check_era_name_arrays(
@@ -362,7 +431,7 @@ def _check_era_name_arrays(
         stripped = line.strip()
 
         if not in_array:
-            if re.search(r'=\s*\[', stripped) and not stripped.startswith('//'):
+            if re.search(r"=\s*\[", stripped) and not stripped.startswith("//"):
                 in_array = True
                 array_start = i
                 era_names = []
@@ -372,9 +441,9 @@ def _check_era_name_arrays(
             for m in re.finditer(r"\bera:\s*['\"]([^'\"]+)['\"]", line):
                 era_names.append(m.group(1))
 
-            if ']' in stripped:
-                open_brackets = stripped.count('[')
-                close_brackets = stripped.count(']')
+            if "]" in stripped:
+                open_brackets = stripped.count("[")
+                close_brackets = stripped.count("]")
                 if close_brackets > open_brackets:
                     in_array = False
                     if era_names and len(era_names) > n_eras:
@@ -384,9 +453,12 @@ def _check_era_name_arrays(
                             desc = f"array with {len(era_names)} era profiles (expected {n_eras})"
                             if non_current:
                                 desc += f", non-current names: {non_current}"
-                            result.refs.append(EraRef(
-                                file=path, line=array_start,
-                                kind="js_era_array",
-                                old_value=desc,
-                                expected=f"{n_eras} entries with names: {', '.join(sorted(current_names))}",
-                            ))
+                            result.refs.append(
+                                EraRef(
+                                    file=path,
+                                    line=array_start,
+                                    kind="js_era_array",
+                                    old_value=desc,
+                                    expected=f"{n_eras} entries with names: {', '.join(sorted(current_names))}",
+                                )
+                            )

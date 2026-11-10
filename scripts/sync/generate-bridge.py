@@ -17,7 +17,6 @@ sys.path.insert(0, str(ROOT))
 
 from archaeology.api import generate_bridge_file
 
-
 if __name__ == "__main__":
     count = generate_bridge_file()
     print(f"Done: {count} projects written to bridge")

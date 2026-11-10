@@ -1,3 +1,20 @@
+# 0.4.1 — Unreleased readiness candidate
+
+- Fix QA regressions from #90: `global-viz` and `multi-project-dashboard` now resolve their templates against the installed package (they failed outside the repo source root); `sync` accepts the README-documented `path` profile key as an alias for `repo_path`, validates `name` and the repository location as nonempty strings before any filesystem writes, and reports malformed project entries with actionable errors instead of `KeyError`/`TypeError` tracebacks; `serve` passes datasette's `--setting` as two arguments so the server actually starts.
+- Parse ISO-8601 and legacy Git-log commit timestamps in agent benchmarks, and report malformed dates with commit context instead of silently dropping rows.
+
+- Name the installed `devarch` binary in every CLI error/hint (was the retired `archaeology` name); replace PyPI badges and links — the package is not published — with GitHub release equivalents; point the docs page canonical at the live GitHub repo; keep the public source line GitHub-only.
+
+- Bind analysis, reports and visualizations to exact inputs; reject stale A-to-B runs.
+- Disable unsafe legacy dashboard/static publishing, cascade and opportunity profiling before side effects; remove the active Markdown viewer and wildcard API CORS.
+- Validate installed history HTML without a source-relative Node dependency.
+- Correct package/documentation metadata to Apache-2.0. Released under Apache-2.0 since 2026-06-02 (PR #54); the initial MIT grant from 2026-04-29 remains in effect for copies obtained before that date.
+- Add installed-wheel checks to native Python3.12 CI and remove suppressed CI failures.
+
+# 0.4.0 — Evidence integrity
+
+Fix full-history mining for bare repositories/worktrees, reject shallow coverage, bind extraction artifacts, reconcile CSV/SQLite metrics, and generate portable measured visualizations. Replace unsupported agent/ML/quality assertions with explicit uncertainty. See [release notes](docs/RELEASE_0.4.0.md) for output compatibility and validation.
+
 # Changelog
 
 All notable changes to DevArch Framework will be documented in this file.
@@ -108,7 +125,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Analysis vector system
 - CLI scaffolding
 
-[Unreleased]: https://github.com/KyaniteLabs/devarch-framework/compare/v0.3.0...HEAD
-[0.3.0]: https://github.com/KyaniteLabs/devarch-framework/compare/v0.2.0...v0.3.0
-[0.2.0]: https://github.com/KyaniteLabs/devarch-framework/compare/v0.1.0...v0.2.0
-[0.1.0]: https://github.com/KyaniteLabs/devarch-framework/releases/tag/v0.1.0
+[Unreleased]: https://github.com/KyaniteLabs/ag4te/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/KyaniteLabs/ag4te/compare/v0.2.0...v0.3.0
+[0.2.0]: https://github.com/KyaniteLabs/ag4te/compare/v0.1.0...v0.2.0
+[0.1.0]: https://github.com/KyaniteLabs/ag4te/releases/tag/v0.1.0

@@ -27,14 +27,20 @@ GIT_ENV = {
 
 def _make_repo(path: Path) -> Path:
     path.mkdir(parents=True)
-    env = {**os.environ, **GIT_ENV,
-           "GIT_AUTHOR_NAME": "T", "GIT_AUTHOR_EMAIL": "t@example.com",
-           "GIT_COMMITTER_NAME": "T", "GIT_COMMITTER_EMAIL": "t@example.com"}
+    env = {
+        **os.environ,
+        **GIT_ENV,
+        "GIT_AUTHOR_NAME": "T",
+        "GIT_AUTHOR_EMAIL": "t@example.com",
+        "GIT_COMMITTER_NAME": "T",
+        "GIT_COMMITTER_EMAIL": "t@example.com",
+    }
 
     def git(*args, date=None):
         full = {"GIT_AUTHOR_DATE": date, "GIT_COMMITTER_DATE": date} if date else {}
-        subprocess.run(["git", "-C", str(path), *args], check=True,
-                       env={**env, **full}, capture_output=True)
+        subprocess.run(
+            ["git", "-C", str(path), *args], check=True, env={**env, **full}, capture_output=True
+        )
 
     git("init", "-q", "-b", "main")
     for i, day in enumerate(("2026-01-01", "2026-01-02", "2026-02-20")):
@@ -62,11 +68,16 @@ class Lines:
 
 def _profile(root: Path, repo: Path) -> Path:
     profile = root / "profile.json"
-    profile.write_text(json.dumps({
-        "developer": {"name": "T"},
-        "sync": {"run_signals": True, "run_analysis": False, "default_min_gap_days": 3},
-        "projects": [{"name": "demo", "repo_path": str(repo)}],
-    }), encoding="utf-8")
+    profile.write_text(
+        json.dumps(
+            {
+                "developer": {"name": "T"},
+                "sync": {"run_signals": True, "run_analysis": False, "default_min_gap_days": 3},
+                "projects": [{"name": "demo", "repo_path": str(repo)}],
+            }
+        ),
+        encoding="utf-8",
+    )
     return profile
 
 
@@ -78,8 +89,7 @@ def test_sync_full_flow_hermetic_profile(tmp_path, monkeypatch):
     monkeypatch.delenv("DEVARCH_WORKSPACE", raising=False)
 
     lines = Lines()
-    outcome = pipeline.sync(["demo"], profile_path=str(_profile(tmp_path, repo)),
-                            on_line=lines)
+    outcome = pipeline.sync(["demo"], profile_path=str(_profile(tmp_path, repo)), on_line=lines)
     assert outcome.exit_code == 0
     text = lines.text()
     assert "Syncing 1 project(s)..." in text
@@ -110,13 +120,14 @@ def test_sync_full_flow_hermetic_profile(tmp_path, monkeypatch):
 def test_sync_missing_profile_path(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
     lines = Lines()
-    outcome = pipeline.sync(["demo"], profile_path=str(tmp_path / "nope.json"),
-                            on_line=lines)
+    outcome = pipeline.sync(["demo"], profile_path=str(tmp_path / "nope.json"), on_line=lines)
     assert outcome.exit_code == 1
-    assert lines.items == [(
-        "No profile.json found. Create one at config/profile.json with your project list.",
-        True,
-    )]
+    assert lines.items == [
+        (
+            "No profile.json found. Create one at config/profile.json with your project list.",
+            True,
+        )
+    ]
 
 
 def test_sync_skip_mine_skips_extraction_but_builds(tmp_path, monkeypatch):
@@ -129,8 +140,9 @@ def test_sync_skip_mine_skips_extraction_but_builds(tmp_path, monkeypatch):
     pipeline.mine(str(repo), ProjectRef.for_cli("demo"), expand_repo_path=False)
 
     lines = Lines()
-    outcome = pipeline.sync(["demo"], skip_mine=True,
-                            profile_path=str(_profile(tmp_path, repo)), on_line=lines)
+    outcome = pipeline.sync(
+        ["demo"], skip_mine=True, profile_path=str(_profile(tmp_path, repo)), on_line=lines
+    )
     assert outcome.exit_code == 0
     text = lines.text()
     assert "Mining demo..." not in text
@@ -149,7 +161,7 @@ def test_prepare_serve_requires_database(tmp_path, monkeypatch):
         pipeline.prepare_serve(ref, 8001, False)
     assert exc.value.kind == "no-database"
     assert str(exc.value) == (
-        f"Database not found at projects/empty/data/archaeology.db. "
+        "Database not found at projects/empty/data/archaeology.db. "
         "Run 'devarch build-db empty' first."
     )
 
@@ -166,7 +178,8 @@ def test_prepare_serve_builds_command_and_metadata(tmp_path, monkeypatch):
     pipeline.build_db(ref)
     (ws / "config").mkdir()
     (ws / "config" / "datasette-metadata.yaml").write_text(
-        'title: "Archaeology Database"\ndescription: test\n', encoding="utf-8")
+        'title: "Archaeology Database"\ndescription: test\n', encoding="utf-8"
+    )
 
     launch = pipeline.prepare_serve(ref, 8123, True)
     assert launch.cmd[0] == "datasette"

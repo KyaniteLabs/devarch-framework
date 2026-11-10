@@ -172,12 +172,16 @@ on_repo_discovered:
 import json
 import subprocess
 
+
 def analyze_repo(repo_url: str, project_name: str) -> dict:
     """Trigger archaeology analysis from research-scout."""
     cmd = [
-        "python3", "scripts/integrations/scout_hook.py",
-        "--repo-url", repo_url,
-        "--project-name", project_name,
+        "python3",
+        "scripts/integrations/scout_hook.py",
+        "--repo-url",
+        repo_url,
+        "--project-name",
+        project_name,
     ]
     result = subprocess.run(
         cmd,
@@ -187,11 +191,9 @@ def analyze_repo(repo_url: str, project_name: str) -> dict:
     )
     return json.loads(result.stdout)
 
+
 # Usage
-result = analyze_repo(
-    "https://github.com/user/repo",
-    "my-project"
-)
+result = analyze_repo("https://github.com/user/repo", "my-project")
 if result["status"] == "complete":
     print(f"Analysis complete: {result['metrics']['commit_count']} commits")
 else:
@@ -334,7 +336,15 @@ To customize the pipeline steps, edit the `run_full_pipeline()` function in `sco
 # success, msg, data = detect_signals(project_name)
 
 # Run specific analysis vectors only
-cmd = [sys.executable, "-m", "archaeology.cli", "analyze", project_name, "--vector", "sdlc-gap-finder"]
+cmd = [
+    sys.executable,
+    "-m",
+    "archaeology.cli",
+    "analyze",
+    project_name,
+    "--vector",
+    "sdlc-gap-finder",
+]
 ```
 
 ## Contributing

@@ -15,7 +15,6 @@ Example:
 
 import argparse
 import json
-import os
 import re
 import sys
 from datetime import datetime, timedelta
@@ -26,7 +25,9 @@ from typing import Any, Dict, List, Optional
 class ContentEngine:
     """Main content generation engine for excavation reports."""
 
-    def __init__(self, project_name: str, start_date: Optional[str] = None, end_date: Optional[str] = None):
+    def __init__(
+        self, project_name: str, start_date: Optional[str] = None, end_date: Optional[str] = None
+    ):
         self.project_name = project_name
         self.base_path = Path.cwd()
         self.project_path = self.base_path / "projects" / project_name
@@ -53,7 +54,7 @@ class ContentEngine:
             return None
 
         try:
-            with open(file_path, 'r') as f:
+            with open(file_path, "r") as f:
                 return json.load(f)
         except (json.JSONDecodeError, IOError) as e:
             print(f"Warning: Could not load {filename}: {e}")
@@ -66,7 +67,7 @@ class ContentEngine:
             return None
 
         try:
-            with open(file_path, 'r') as f:
+            with open(file_path, "r") as f:
                 return f.read()
         except IOError as e:
             print(f"Warning: Could not load {filename}: {e}")
@@ -109,7 +110,7 @@ class ContentEngine:
             "analysis-ml-pattern-mapper.json",
             "analysis-formal-terms-mapper.json",
             "analysis-youtube-correlator.json",
-            "analysis-agentic-workflow.json"
+            "analysis-agentic-workflow.json",
         ]
 
         available = sum(1 for f in analysis_files if (self.deliverables_path / f).exists())
@@ -122,11 +123,11 @@ class ContentEngine:
             return "UNKNOWN"
 
         # Look for rating pattern
-        rating_match = re.search(r'Overall Rating:\s*([A-Z][+-]?)', audit_content)
+        rating_match = re.search(r"Overall Rating:\s*([A-Z][+-]?)", audit_content)
         if rating_match:
             rating = rating_match.group(1)
             # Convert to PASS/FAIL based on grade
-            if rating in ['A+', 'A', 'A-', 'B+', 'B']:
+            if rating in ["A+", "A", "A-", "B+", "B"]:
                 return f"PASS ({rating})"
             else:
                 return f"FAIL ({rating})"
@@ -176,9 +177,11 @@ class ContentEngine:
             return {}
 
         activity = {
-            "total_sessions": agent_data.get("session_depth_distribution", {}).get("sessions_total", 0),
+            "total_sessions": agent_data.get("session_depth_distribution", {}).get(
+                "sessions_total", 0
+            ),
             "dominant_type": agent_data.get("summary", {}).get("dominant_session_type", "Unknown"),
-            "agent_attribution": agent_data.get("agent_attribution", [])
+            "agent_attribution": agent_data.get("agent_attribution", []),
         }
 
         return activity
@@ -210,7 +213,7 @@ class ContentEngine:
         opportunities = []
 
         # Get insights for context
-        insights = self.extract_key_insights()
+        _insights = self.extract_key_insights()
         source_data = self.load_json_file("analysis-source-archaeologist.json")
         ml_data = self.load_json_file("analysis-ml-pattern-mapper.json")
 
@@ -220,22 +223,30 @@ class ContentEngine:
         if source_data:
             quality = source_data.get("quality_trajectory", {})
             if quality.get("assessment") == "IMPROVING":
-                opportunities.append("- **The Quality Trajectory**: How code quality evolved over {0} commits".format(
-                    self.extract_commit_count()
-                ))
+                opportunities.append(
+                    "- **The Quality Trajectory**: How code quality evolved over {0} commits".format(
+                        self.extract_commit_count()
+                    )
+                )
 
         if ml_data:
             mappings = ml_data.get("mappings", [])
             reinventions = [m for m in mappings if m.get("is_reinvention")]
             if reinventions:
-                opportunities.append("- **Reinventing the Wheel**: Analysis of {0} patterns that could have used libraries".format(
-                    len(reinventions)
-                ))
+                opportunities.append(
+                    "- **Reinventing the Wheel**: Analysis of {0} patterns that could have used libraries".format(
+                        len(reinventions)
+                    )
+                )
 
         # Video ideas
         opportunities.append("\n### Video Ideas")
-        opportunities.append("- **Archaeology Deep Dive**: Live walkthrough of the most interesting commits")
-        opportunities.append("- **Pattern Recognition Tutorial**: Exploring the formal terms behind intuitive naming")
+        opportunities.append(
+            "- **Archaeology Deep Dive**: Live walkthrough of the most interesting commits"
+        )
+        opportunities.append(
+            "- **Pattern Recognition Tutorial**: Exploring the formal terms behind intuitive naming"
+        )
 
         # Social post ideas
         opportunities.append("\n### Social Media Thread Ideas")
@@ -247,7 +258,7 @@ class ContentEngine:
 
     def generate_excavation_report(self) -> str:
         """Generate the main excavation report in Markdown format."""
-        report_date = self.end_date.strftime("%Y-%m-%d")
+        _report_date = self.end_date.strftime("%Y-%m-%d")
         week_start = self.start_date.strftime("%Y-%m-%d")
         week_end = self.end_date.strftime("%Y-%m-%d")
 
@@ -281,85 +292,99 @@ class ContentEngine:
         ]
 
         # By the Numbers section
-        report_lines.extend([
-            "## By the Numbers",
-            "",
-            f"- **Total commits analyzed:** {commit_count:,}",
-            f"- **New signals detected:** {signals_detected:,}",
-            f"- **Analysis vectors run:** {vectors_available}/{vectors_total}",
-            f"- **Audit status:** {audit_status}",
-            "",
-        ])
+        report_lines.extend(
+            [
+                "## By the Numbers",
+                "",
+                f"- **Total commits analyzed:** {commit_count:,}",
+                f"- **New signals detected:** {signals_detected:,}",
+                f"- **Analysis vectors run:** {vectors_available}/{vectors_total}",
+                f"- **Audit status:** {audit_status}",
+                "",
+            ]
+        )
 
         # Key Insights section
         if key_insights:
-            report_lines.extend([
-                "## Key Insights",
-                "",
-            ])
+            report_lines.extend(
+                [
+                    "## Key Insights",
+                    "",
+                ]
+            )
             for insight in key_insights:
                 report_lines.append(f"- {insight}")
             report_lines.append("")
 
         # Agent Activity section
         if agent_activity:
-            report_lines.extend([
-                "## Agent Activity",
-                "",
-                f"- **Total sessions analyzed:** {agent_activity.get('total_sessions', 0)}",
-                f"- **Dominant session type:** {agent_activity.get('dominant_type', 'Unknown')}",
-                "",
-            ])
-
-            attributions = agent_activity.get('agent_attribution', [])
-            if attributions:
-                report_lines.extend([
-                    "**Top Contributors:**",
+            report_lines.extend(
+                [
+                    "## Agent Activity",
                     "",
-                ])
+                    f"- **Total sessions analyzed:** {agent_activity.get('total_sessions', 0)}",
+                    f"- **Dominant session type:** {agent_activity.get('dominant_type', 'Unknown')}",
+                    "",
+                ]
+            )
+
+            attributions = agent_activity.get("agent_attribution", [])
+            if attributions:
+                report_lines.extend(
+                    [
+                        "**Top Contributors:**",
+                        "",
+                    ]
+                )
                 for attr in attributions[:5]:
-                    author = attr.get('author', 'Unknown')
-                    count = attr.get('cnt', 0)
+                    author = attr.get("author", "Unknown")
+                    count = attr.get("cnt", 0)
                     report_lines.append(f"- {author}: {count} commits")
                 report_lines.append("")
 
         # Recommended Actions section
         if recommended_actions:
-            report_lines.extend([
-                "## Recommended Actions",
-                "",
-            ])
+            report_lines.extend(
+                [
+                    "## Recommended Actions",
+                    "",
+                ]
+            )
             for action in recommended_actions:
                 report_lines.append(f"- {action}")
             report_lines.append("")
 
         # Content Opportunities section
         if content_opportunities:
-            report_lines.extend([
-                "## Content Opportunities",
-                "",
-            ])
+            report_lines.extend(
+                [
+                    "## Content Opportunities",
+                    "",
+                ]
+            )
             report_lines.extend(content_opportunities)
             report_lines.append("")
 
         # Metadata section
-        report_lines.extend([
-            "---",
-            "",
-            "## Report Metadata",
-            "",
-            f"- **Project:** {self.project_name}",
-            f"- **Date range:** {week_start} to {week_end}",
-            f"- **Generated by:** Dev-Archaeology Content Engine",
-            f"- **Source files:**",
-            f"  - canonical-metrics.json",
-            f"  - analysis-source-archaeologist.json",
-            f"  - analysis-sdlc-gap-finder.json",
-            f"  - analysis-ml-pattern-mapper.json",
-            f"  - analysis-agentic-workflow.json",
-            f"  - AUDIT-REPORT.md",
-            "",
-        ])
+        report_lines.extend(
+            [
+                "---",
+                "",
+                "## Report Metadata",
+                "",
+                f"- **Project:** {self.project_name}",
+                f"- **Date range:** {week_start} to {week_end}",
+                "- **Generated by:** Dev-Archaeology Content Engine",
+                "- **Source files:**",
+                "  - canonical-metrics.json",
+                "  - analysis-source-archaeologist.json",
+                "  - analysis-sdlc-gap-finder.json",
+                "  - analysis-ml-pattern-mapper.json",
+                "  - analysis-agentic-workflow.json",
+                "  - AUDIT-REPORT.md",
+                "",
+            ]
+        )
 
         return "\n".join(report_lines)
 
@@ -384,30 +409,34 @@ class ContentEngine:
             f"Found {signals_detected} signals, ran {self.count_analysis_vectors()[0]} analysis vectors, ",
             f"and the audit status is {audit_status}.",
             "",
-            f"Here's what the code archaeology uncovered 🧵👇",
+            "Here's what the code archaeology uncovered 🧵👇",
             "",
         ]
 
         # Add insight tweets
         for i, insight in enumerate(insights[:5], 2):
-            thread_lines.extend([
-                f"**Tweet {i}:**",
-                "",
-                insight[:280] if len(insight) < 280 else insight[:277] + "...",
-                "",
-            ])
+            thread_lines.extend(
+                [
+                    f"**Tweet {i}:**",
+                    "",
+                    insight[:280] if len(insight) < 280 else insight[:277] + "...",
+                    "",
+                ]
+            )
 
         # Call to action tweet
-        thread_lines.extend([
-            "**Tweet 7 (CTA):**",
-            "",
-            f"Want to see the full excavation report?",
-            "",
-            f"Check out the detailed analysis at: [LINK TO REPORT]",
-            "",
-            f"#DevArchaeology #CodeAnalysis #{self.project_name.title()}",
-            "",
-        ])
+        thread_lines.extend(
+            [
+                "**Tweet 7 (CTA):**",
+                "",
+                "Want to see the full excavation report?",
+                "",
+                "Check out the detailed analysis at: [LINK TO REPORT]",
+                "",
+                f"#DevArchaeology #CodeAnalysis #{self.project_name.title()}",
+                "",
+            ]
+        )
 
         return "\n".join(thread_lines)
 
@@ -415,8 +444,8 @@ class ContentEngine:
         """Generate a blog post draft from the most interesting finding."""
         commit_count = self.extract_commit_count()
         insights = self.extract_key_insights()
-        source_data = self.load_json_file("analysis-source-archaeologist.json")
-        ml_data = self.load_json_file("analysis-ml-pattern-mapper.json")
+        _source_data = self.load_json_file("analysis-source-archaeologist.json")
+        _ml_data = self.load_json_file("analysis-ml-pattern-mapper.json")
 
         # Find the most interesting insight
         top_insight = insights[0] if insights else "Significant architectural evolution detected"
@@ -433,7 +462,7 @@ class ContentEngine:
             "",
             f"This week, we dug into the {self.project_name.title()} codebase, analyzing {commit_count:,} commits ",
             f"spanning from {self.start_date.strftime('%B %d')} to {self.end_date.strftime('%B %d, %Y')}. ",
-            f"What we found provides a fascinating glimpse into modern software development practices.",
+            "What we found provides a fascinating glimpse into modern software development practices.",
             "",
             "## The Most Interesting Finding",
             "",
@@ -468,23 +497,23 @@ class ContentEngine:
 
         # Save excavation report
         excavation_path = self.content_output_path / f"excavation-report-{report_date}.md"
-        with open(excavation_path, 'w') as f:
+        with open(excavation_path, "w") as f:
             f.write(excavation_report)
 
         # Save Twitter thread
         twitter_path = self.content_output_path / f"twitter-thread-{report_date}.md"
-        with open(twitter_path, 'w') as f:
+        with open(twitter_path, "w") as f:
             f.write(twitter_thread)
 
         # Save blog draft
         blog_path = self.content_output_path / f"blog-draft-{report_date}.md"
-        with open(blog_path, 'w') as f:
+        with open(blog_path, "w") as f:
             f.write(blog_draft)
 
         return {
             "excavation_report": str(excavation_path),
             "twitter_thread": str(twitter_path),
-            "blog_draft": str(blog_path)
+            "blog_draft": str(blog_path),
         }
 
 
@@ -495,17 +524,13 @@ def main():
     )
     parser.add_argument(
         "project_name",
-        help="Name of the project to analyze (e.g., 'demo-project', 'demo-archaeology')"
+        help="Name of the project to analyze (e.g., 'demo-project', 'demo-archaeology')",
     )
     parser.add_argument(
-        "start_date",
-        nargs="?",
-        help="Start date for the report period (YYYY-MM-DD format)"
+        "start_date", nargs="?", help="Start date for the report period (YYYY-MM-DD format)"
     )
     parser.add_argument(
-        "end_date",
-        nargs="?",
-        help="End date for the report period (YYYY-MM-DD format)"
+        "end_date", nargs="?", help="End date for the report period (YYYY-MM-DD format)"
     )
 
     args = parser.parse_args()
@@ -521,7 +546,9 @@ def main():
 
     # Generate reports
     print(f"Generating excavation report for {args.project_name}...")
-    print(f"Period: {engine.start_date.strftime('%Y-%m-%d')} to {engine.end_date.strftime('%Y-%m-%d')}")
+    print(
+        f"Period: {engine.start_date.strftime('%Y-%m-%d')} to {engine.end_date.strftime('%Y-%m-%d')}"
+    )
 
     saved_reports = engine.save_reports()
 

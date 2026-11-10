@@ -20,7 +20,6 @@ import subprocess
 import tempfile
 from pathlib import Path
 
-import pytest
 from click.testing import CliRunner
 
 import archaeology
@@ -50,7 +49,7 @@ def _import_mcp_tools():
             return lambda fn: fn
 
         def __getattr__(self, name):
-            return lambda *a, **k: (lambda fn: fn)
+            return lambda *a, **k: lambda fn: fn
 
     names = ("mcp", "mcp.server", "mcp.server.fastmcp")
     stubs = {n: types.ModuleType(n) for n in names}
@@ -78,15 +77,19 @@ GIT_ENV = {
 
 # ── Fixtures and helpers ──────────────────────────────────────────────────────
 
+
 def _git(repo: Path, *args, date="2026-01-01T12:00:00+0000"):
     env = {
-        **os.environ, **GIT_ENV,
-        "GIT_AUTHOR_NAME": "Tester", "GIT_AUTHOR_EMAIL": "t@example.com",
-        "GIT_COMMITTER_NAME": "Tester", "GIT_COMMITTER_EMAIL": "t@example.com",
-        "GIT_AUTHOR_DATE": date, "GIT_COMMITTER_DATE": date,
+        **os.environ,
+        **GIT_ENV,
+        "GIT_AUTHOR_NAME": "Tester",
+        "GIT_AUTHOR_EMAIL": "t@example.com",
+        "GIT_COMMITTER_NAME": "Tester",
+        "GIT_COMMITTER_EMAIL": "t@example.com",
+        "GIT_AUTHOR_DATE": date,
+        "GIT_COMMITTER_DATE": date,
     }
-    subprocess.run(["git", "-C", str(repo), *args], check=True, env=env,
-                   capture_output=True)
+    subprocess.run(["git", "-C", str(repo), *args], check=True, env=env, capture_output=True)
 
 
 def _make_repo(path: Path) -> Path:
@@ -127,7 +130,8 @@ class Env:
     def mask(self, text):
         text = str(text)
         for needle, tag in (
-            (str(self.root.resolve()), "<TMP>"), (str(self.root), "<TMP>"),
+            (str(self.root.resolve()), "<TMP>"),
+            (str(self.root), "<TMP>"),
             (str(PKG_ROOT), "<PKG>"),
             (str(tempfile.gettempdir()), "<TMPDIR>"),
         ):
@@ -155,19 +159,32 @@ class Env:
         if not base.exists():
             return None
         return sorted(
-            str(p.relative_to(base)) for p in base.rglob("*")
+            str(p.relative_to(base))
+            for p in base.rglob("*")
             if p.is_file() and not p.name.endswith("-journal")
         )
 
 
 def _cli_args(op, a):
     return {
-        "init": lambda: ["init", a["project"], *_opt("--description", a.get("description")),
-                         *_opt("--repo-url", a.get("repo_url"))],
+        "init": lambda: [
+            "init",
+            a["project"],
+            *_opt("--description", a.get("description")),
+            *_opt("--repo-url", a.get("repo_url")),
+        ],
         "mine": lambda: ["mine", a["repo"], "--project", a["project"]],
         "build_db": lambda: ["build-db", a["project"]],
-        "signals": lambda: ["signals", a["project"], *_opt("--min-gap-days", a.get("min_gap_days"))],
-        "analyze": lambda: ["analyze", a["project"], *sum((["--vector", v] for v in a.get("vectors", [])), [])],
+        "signals": lambda: [
+            "signals",
+            a["project"],
+            *_opt("--min-gap-days", a.get("min_gap_days")),
+        ],
+        "analyze": lambda: [
+            "analyze",
+            a["project"],
+            *sum((["--vector", v] for v in a.get("vectors", [])), []),
+        ],
         "visualize": lambda: ["visualize", a["project"]],
         "report": lambda: ["export-report", a["project"], "--format", a["fmt"]],
         "audit": lambda: ["audit", a["project"]],
@@ -180,7 +197,9 @@ def _opt(flag, value):
 
 def _mcp_call(op, a):
     return {
-        "init": lambda: mcp.devarch_init(a["project"], a.get("description", ""), a.get("repo_url", "")),
+        "init": lambda: mcp.devarch_init(
+            a["project"], a.get("description", ""), a.get("repo_url", "")
+        ),
         "mine": lambda: mcp.devarch_mine(a["repo"], a["project"]),
         "build_db": lambda: mcp.devarch_build_db(a["project"]),
         "signals": lambda: mcp.devarch_signals(a["project"], a.get("min_gap_days")),
@@ -362,7 +381,8 @@ def _verbs(env, capfd):
     run("serve", ["bare", "--port", "8022"])
     env.ws.joinpath("config").mkdir(exist_ok=True)
     env.ws.joinpath("config", "datasette-metadata.yaml").write_text(
-        'title: "Archaeology Database"\ndescription: test\n', encoding="utf-8")
+        'title: "Archaeology Database"\ndescription: test\n', encoding="utf-8"
+    )
     with env.monkeypatch.context() as mp:
         cap = _capture_serve(mp)
         rec = run("serve", ["alpha", "--port", "8023", "--unsafe-cors"])
@@ -378,8 +398,7 @@ def _verbs(env, capfd):
     pj["repo_path"] = str(env.repo)
     pj_path.write_text(json.dumps(pj, indent=2))
     run("cascade", ["alpha"])
-    (env.ws / "projects" / "alpha" / "data" / "commit-eras.json").write_text(
-        json.dumps(ERAS_JSON))
+    (env.ws / "projects" / "alpha" / "data" / "commit-eras.json").write_text(json.dumps(ERAS_JSON))
     rec = run("cascade", ["alpha"])
     rec["files_after"] = env.files("alpha")
     run("cascade", ["alpha", "--dry-run"])
@@ -391,6 +410,7 @@ def _verbs(env, capfd):
 
 
 # ── Tests ─────────────────────────────────────────────────────────────────────
+
 
 def test_adapter_outcomes_match_golden(tmp_path_factory, monkeypatch, capfd):
     actual = json.dumps(_run_all(tmp_path_factory, monkeypatch, capfd), indent=2) + "\n"

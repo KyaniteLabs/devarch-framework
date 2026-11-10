@@ -4,6 +4,7 @@ Moved from archaeology/pipeline.py (L6: the hydrator is a renderer and
 belongs beside the templates it fills; pipeline.py keeps the service
 surface, this module owns the HTML mechanics). Behavior unchanged —
 pinned byte-for-byte by tests/test_pipeline.py's visualization tests."""
+
 from __future__ import annotations
 
 import json
@@ -33,7 +34,9 @@ def _load_json(path: str) -> Any:
         raise PipelineError(f"Invalid JSON in {path}: {e}", kind="invalid-json")
 
 
-def render_visualization(project: ProjectRef, template: str = DEFAULT_TEMPLATE) -> VisualizationResult:
+def render_visualization(
+    project: ProjectRef, template: str = DEFAULT_TEMPLATE
+) -> VisualizationResult:
     """Hydrate the HTML template from project config and data (the CLI renderer)."""
     from ..pipeline import PipelineError  # local: see module header
 
@@ -106,10 +109,7 @@ def render_visualization(project: ProjectRef, template: str = DEFAULT_TEMPLATE) 
     # Generate era color CSS variables from config
     era_colors = vis.get("era_colors", {})
     if era_colors:
-        era_css = "\n".join(
-            f"  --{era_key}: {color};"
-            for era_key, color in era_colors.items()
-        )
+        era_css = "\n".join(f"  --{era_key}: {color};" for era_key, color in era_colors.items())
         # Insert era colors after :root block opens
         html = html.replace(
             "/* ERA COLORS */",
@@ -120,8 +120,7 @@ def render_visualization(project: ProjectRef, template: str = DEFAULT_TEMPLATE) 
     agent_colors = vis.get("agent_colors", {})
     if agent_colors:
         agent_css = "\n".join(
-            f"  --{name.lower()}: {color};"
-            for name, color in agent_colors.items()
+            f"  --{name.lower()}: {color};" for name, color in agent_colors.items()
         )
         html = html.replace(
             "/* AGENT COLORS */",
@@ -142,7 +141,9 @@ def render_visualization(project: ProjectRef, template: str = DEFAULT_TEMPLATE) 
             data_payload.setdefault("last_commit_date", eras_data.get("last_commit_date", ""))
 
         data_content = json.dumps(data_payload)
-        safe_data_content = data_content.replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026")
+        safe_data_content = (
+            data_content.replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026")
+        )
         inline_script = f'<script>window.PROJECT_DATA = {safe_data_content}; window.dispatchEvent(new Event("data-loaded"));</script>'
         html = html.replace(
             '<script>\n  // Load project data from external JSON file\n  // The data.json file contains all visualization data (telemetry, sessions, eras, etc.)\n  // Original inline data was ~6870 lines (272KB)\n  fetch("data.json")\n    .then(function(r) { return r.json(); })\n    .then(function(d) {\n      window.PROJECT_DATA = d;\n      window.dispatchEvent(new Event("data-loaded"));\n    })\n    .catch(function(e) { console.error("Failed to load data.json:", e); });\n</script>',
@@ -158,5 +159,3 @@ def render_visualization(project: ProjectRef, template: str = DEFAULT_TEMPLATE) 
     if not os.path.exists(data_json):
         warning = f"Warning: {data_json} not found. Visualization will be empty."
     return VisualizationResult(output_html, warning)
-
-

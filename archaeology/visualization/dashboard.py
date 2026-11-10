@@ -13,7 +13,9 @@ from pathlib import Path
 from typing import Any
 
 from archaeology.visualization.design_system import (
-    head_bundle, body_end_bundle, THEME_SWITCHER_HTML, THEME_SWITCHER_CSS
+    THEME_SWITCHER_HTML,
+    body_end_bundle,
+    head_bundle,
 )
 
 # Deliverable categories with display metadata and colors
@@ -31,7 +33,9 @@ CATEGORIES: dict[str, dict[str, str]] = {
 }
 
 
-def _discover_all_deliverables(deliverables_dir: Path, project_name: str) -> dict[str, list[dict[str, str]]]:
+def _discover_all_deliverables(
+    deliverables_dir: Path, project_name: str
+) -> dict[str, list[dict[str, str]]]:
     """Scan all deliverable subdirectories and categorize files."""
     result: dict[str, list[dict[str, str]]] = {}
     for cat_name in CATEGORIES:
@@ -80,15 +84,17 @@ def discover_projects(projects_dir: Path) -> list[dict[str, Any]]:
         deliverables = _discover_all_deliverables(deliverables_dir, project_dir.name)
         total_deliverables = sum(len(v) for v in deliverables.values())
 
-        projects.append({
-            "name": project_dir.name,
-            "slug": project_dir.name,
-            "meta": meta,
-            "visuals": visuals,
-            "deliverables": deliverables,
-            "total_deliverables": total_deliverables,
-            "has_data": (deliverables_dir / "data.json").exists() or (data_dir).exists(),
-        })
+        projects.append(
+            {
+                "name": project_dir.name,
+                "slug": project_dir.name,
+                "meta": meta,
+                "visuals": visuals,
+                "deliverables": deliverables,
+                "total_deliverables": total_deliverables,
+                "has_data": (deliverables_dir / "data.json").exists() or (data_dir).exists(),
+            }
+        )
 
     return projects
 
@@ -107,7 +113,11 @@ def _load_project_meta(deliverables_dir: Path, data_dir: Path) -> dict[str, Any]
             meta["active_days"] = summary.get("active_days", 0)
             meta["span_days"] = summary.get("span_days", 0)
             meta["era_count"] = len(data.get("eras", []))
-            meta["authors"] = list(data.get("authors", {}).keys()) if isinstance(data.get("authors"), dict) else []
+            meta["authors"] = (
+                list(data.get("authors", {}).keys())
+                if isinstance(data.get("authors"), dict)
+                else []
+            )
         except (json.JSONDecodeError, OSError):
             pass
 
@@ -155,6 +165,7 @@ def _load_git_metrics(data_dir: Path) -> dict[str, Any]:
     span = 0
     if len(sorted_dates) >= 2:
         from datetime import date as _date
+
         try:
             d0 = _date.fromisoformat(sorted_dates[0])
             d1 = _date.fromisoformat(sorted_dates[-1])
@@ -246,7 +257,11 @@ def _project_description(name: str, meta: dict) -> str:
     return f"{commits:,} commits of development history"
 
 
-def generate_master_dashboard(projects: list[dict[str, Any]], api_section_html: str = "", api_repos: list[dict[str, Any]] | None = None) -> str:
+def generate_master_dashboard(
+    projects: list[dict[str, Any]],
+    api_section_html: str = "",
+    api_repos: list[dict[str, Any]] | None = None,
+) -> str:
     """Generate the master dashboard HTML."""
     now = datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC")
     api_repos = api_repos or []
@@ -255,12 +270,13 @@ def generate_master_dashboard(projects: list[dict[str, Any]], api_section_html: 
     if api_repos:
         print(f"  API repos: {len(api_repos)} repos, {api_commits:,} commits")
     else:
-        print(f"  WARNING: No API repos loaded")
+        print("  WARNING: No API repos loaded")
 
     # Sort projects by commit count (descending) — richest first
     def _proj_commits(p: dict) -> int:
         c = p["meta"].get("commits", 0)
         return c if isinstance(c, int) else 0
+
     projects_sorted = sorted(projects, key=_proj_commits, reverse=True)
 
     # Separate featured (top project) from the rest
@@ -290,16 +306,16 @@ def generate_master_dashboard(projects: list[dict[str, Any]], api_section_html: 
 
         featured_html = f"""
 <div class="section-wrap">
-  <a href="{featured['name']}/" class="featured-card">
+  <a href="{featured["name"]}/" class="featured-card">
     <div class="featured-main">
       <span class="featured-badge">Featured Project</span>
-      <h2 class="featured-title">{featured['name'].upper()}</h2>
-      <p class="featured-desc">{_project_description(featured['name'], fm)}</p>
+      <h2 class="featured-title">{featured["name"].upper()}</h2>
+      <p class="featured-desc">{_project_description(featured["name"], fm)}</p>
       <div class="featured-stats">
-        <div class="fstat"><span class="fstat-val">{fc_fmt}</span><span class="fstat-lbl">{_pluralize(fc if isinstance(fc, int) else 0, 'commit')}</span></div>
-        <div class="fstat"><span class="fstat-val">{fe if fe else '—'}</span><span class="fstat-lbl">{_pluralize(fe, 'era')}</span></div>
-        <div class="fstat"><span class="fstat-val">{fad}</span><span class="fstat-lbl">{_pluralize(fad if isinstance(fad, int) else 0, 'active day')}</span></div>
-        <div class="fstat"><span class="fstat-val">{fd}</span><span class="fstat-lbl">{_pluralize(fd, 'deliverable')}</span></div>
+        <div class="fstat"><span class="fstat-val">{fc_fmt}</span><span class="fstat-lbl">{_pluralize(fc if isinstance(fc, int) else 0, "commit")}</span></div>
+        <div class="fstat"><span class="fstat-val">{fe if fe else "—"}</span><span class="fstat-lbl">{_pluralize(fe, "era")}</span></div>
+        <div class="fstat"><span class="fstat-val">{fad}</span><span class="fstat-lbl">{_pluralize(fad if isinstance(fad, int) else 0, "active day")}</span></div>
+        <div class="fstat"><span class="fstat-val">{fd}</span><span class="fstat-lbl">{_pluralize(fd, "deliverable")}</span></div>
       </div>
       <div class="cat-pills">{cat_pills}</div>
     </div>
@@ -320,7 +336,9 @@ def generate_master_dashboard(projects: list[dict[str, Any]], api_section_html: 
         commits_fmt = f"{commits:,}" if isinstance(commits, int) else str(commits)
         viz_links = ""
         for viz in proj["visuals"]:
-            viz_links += f'<a href="{viz["href"]}" class="viz-link">{viz["name"]}</a>\n              '
+            viz_links += (
+                f'<a href="{viz["href"]}" class="viz-link">{viz["name"]}</a>\n              '
+            )
 
         # Category pills
         cat_pills = ""
@@ -331,15 +349,15 @@ def generate_master_dashboard(projects: list[dict[str, Any]], api_section_html: 
                 cat_pills += f'<span class="cat-pill" style="background:{color}22;color:{color};border:1px solid {color}44">{cat_meta["label"]} {count}</span>\n'
 
         project_cards += f"""
-        <a href="{proj['name']}/" class="project-card">
+        <a href="{proj["name"]}/" class="project-card">
           <div class="card-header">
-            <h2 class="card-title">{proj['name'].upper()}</h2>
-            <span class="card-badge">{total_deliverables} {_pluralize(total_deliverables, 'deliverable')}</span>
+            <h2 class="card-title">{proj["name"].upper()}</h2>
+            <span class="card-badge">{total_deliverables} {_pluralize(total_deliverables, "deliverable")}</span>
           </div>
           <div class="card-stats">
-            <div class="stat"><span class="stat-value">{commits_fmt}</span><span class="stat-label">{_pluralize(commits if isinstance(commits, int) else 0, 'commit')}</span></div>
-            <div class="stat"><span class="stat-value">{eras if eras else '—'}</span><span class="stat-label">{_pluralize(eras, 'era')}</span></div>
-            <div class="stat"><span class="stat-value">{active_days}</span><span class="stat-label">{_pluralize(active_days if isinstance(active_days, int) else 0, 'active day')}</span></div>
+            <div class="stat"><span class="stat-value">{commits_fmt}</span><span class="stat-label">{_pluralize(commits if isinstance(commits, int) else 0, "commit")}</span></div>
+            <div class="stat"><span class="stat-value">{eras if eras else "—"}</span><span class="stat-label">{_pluralize(eras, "era")}</span></div>
+            <div class="stat"><span class="stat-value">{active_days}</span><span class="stat-label">{_pluralize(active_days if isinstance(active_days, int) else 0, "active day")}</span></div>
           </div>
           <div class="cat-pills">{cat_pills}</div>
           <div class="card-links" onclick="event.stopPropagation()">
@@ -348,7 +366,9 @@ def generate_master_dashboard(projects: list[dict[str, Any]], api_section_html: 
         </a>"""
 
     # ── Aggregate stats ──
-    mined_commits = sum(p["meta"].get("commits", 0) for p in projects if isinstance(p["meta"].get("commits"), int))
+    mined_commits = sum(
+        p["meta"].get("commits", 0) for p in projects if isinstance(p["meta"].get("commits"), int)
+    )
     total_repos = len(projects) + len(api_repos)
     total_commits = mined_commits + api_commits
     total_commits_fmt = f"{total_commits:,}"
@@ -386,10 +406,15 @@ def generate_master_dashboard(projects: list[dict[str, Any]], api_section_html: 
     cat_display = [CATEGORIES.get(k, {}).get("label", k.title()) for k in cat_totals]
     chart_cat_labels = json.dumps(cat_display)
     chart_cat_counts = json.dumps(list(cat_totals.values()))
-    chart_cat_colors = json.dumps([CATEGORIES.get(k, {}).get("color", "#6a7888") for k in cat_totals])
+    chart_cat_colors = json.dumps(
+        [CATEGORIES.get(k, {}).get("color", "#6a7888") for k in cat_totals]
+    )
 
     chart_proj_names = json.dumps([p["name"].upper() for p in projects_sorted])
-    chart_proj_days = [p["meta"].get("active_days", 0) if isinstance(p["meta"].get("active_days"), int) else 0 for p in projects_sorted]
+    chart_proj_days = [
+        p["meta"].get("active_days", 0) if isinstance(p["meta"].get("active_days"), int) else 0
+        for p in projects_sorted
+    ]
     chart_proj_eras = [p["meta"].get("era_count", 0) or 0 for p in projects_sorted]
     chart_proj_days_json = json.dumps(chart_proj_days)
     chart_proj_eras_json = json.dumps(chart_proj_eras)
@@ -401,7 +426,9 @@ def generate_master_dashboard(projects: list[dict[str, Any]], api_section_html: 
         owner_filters = ""
         for owner in sorted(set(r["owner"] for r in api_repos)):
             label = "KyaniteLabs" if "kyanite" in owner.lower() else "Personal"
-            owner_filters += f'<button class="filter-btn" data-filter="{owner}">{label}</button>\n          '
+            owner_filters += (
+                f'<button class="filter-btn" data-filter="{owner}">{label}</button>\n          '
+            )
         api_section = f"""
 <div class="section-wrap">
   <h2 class="collapsible-header collapsed" id="api-toggle">
@@ -455,11 +482,13 @@ def generate_master_dashboard(projects: list[dict[str, Any]], api_section_html: 
     html = f"""<!DOCTYPE html>
 <html lang="en" data-theme="editorial">
 <head>
-{head_bundle(
-    title="Dev-Archaeology",
-    description=f"Forensic analysis of development history across {total_repos} repositories",
-    include_charts=True
-)}
+{
+        head_bundle(
+            title="Dev-Archaeology",
+            description=f"Forensic analysis of development history across {total_repos} repositories",
+            include_charts=True,
+        )
+    }
 <style>
 *,*::before,*::after{{box-sizing:border-box;margin:0;padding:0}}
 html{{scroll-behavior:smooth;-webkit-font-smoothing:antialiased}}
@@ -681,12 +710,22 @@ body{{background:var(--bg);color:var(--text);font-family:var(--font-body);line-h
 <main id="root">
 <div class="hero">
   <h1>Development Fossil Record</h1>
-  <p>Forensic archaeology of {total_repos} repositories — {total_commits_fmt} commits mined, analyzed, and visualized</p>
+  <p>Forensic archaeology of {total_repos} repositories — {
+        total_commits_fmt
+    } commits mined, analyzed, and visualized</p>
   <div class="hero-stats">
-    <div class="hero-stat"><span class="value">{total_repos_fmt}</span><span class="label">{_pluralize(total_repos, 'Repository', 'Repositories')}</span></div>
-    <div class="hero-stat"><span class="value">{total_commits_fmt}</span><span class="label">{_pluralize(total_commits, 'Commit')}</span></div>
-    <div class="hero-stat"><span class="value">{total_deliverables}</span><span class="label">{_pluralize(total_deliverables, 'Deliverable')}</span></div>
-    <div class="hero-stat"><span class="value">{n_networks}</span><span class="label">{_pluralize(n_networks, 'Network')}</span></div>
+    <div class="hero-stat"><span class="value">{total_repos_fmt}</span><span class="label">{
+        _pluralize(total_repos, "Repository", "Repositories")
+    }</span></div>
+    <div class="hero-stat"><span class="value">{total_commits_fmt}</span><span class="label">{
+        _pluralize(total_commits, "Commit")
+    }</span></div>
+    <div class="hero-stat"><span class="value">{total_deliverables}</span><span class="label">{
+        _pluralize(total_deliverables, "Deliverable")
+    }</span></div>
+    <div class="hero-stat"><span class="value">{n_networks}</span><span class="label">{
+        _pluralize(n_networks, "Network")
+    }</span></div>
   </div>
 </div>
 
@@ -714,12 +753,16 @@ body{{background:var(--bg);color:var(--text);font-family:var(--font-body);line-h
 
 {featured_html}
 
-{f'''<div class="section-wrap">
+{
+        f'''<div class="section-wrap">
   <h3 class="section-heading">Analyzed Projects ({len(rest_projects)})</h3>
   <div class="grid">
   {project_cards}
   </div>
-</div>''' if rest_projects else ""}
+</div>'''
+        if rest_projects
+        else ""
+    }
 
 {cross_repo_section}
 
@@ -780,7 +823,9 @@ document.addEventListener('DOMContentLoaded', function() {{
   if (ctx1) new Chart(ctx1, {{ type:'bar', data: {{
     labels: {chart_repo_labels},
     datasets:[{{ label:'Commits', data:{chart_repo_commits},
-      backgroundColor:function(ctx){{ var i=ctx.dataIndex; var v=ctx.raw; var max={chart_repo_commits}[0]||1;
+      backgroundColor:function(ctx){{ var i=ctx.dataIndex; var v=ctx.raw; var max={
+        chart_repo_commits
+    }[0]||1;
         var pct=v/max; return pct>0.6?colors.accent:pct>0.3?colors.secondary:colors.muted; }},
       borderRadius:4, barPercentage:0.7 }}]
   }}, options:{{ indexAxis:'y', scales:{{ x:{{beginAtZero:true,grid:{{color:colors.border}}}}, y:{{grid:{{display:false}}}} }},
@@ -790,7 +835,9 @@ document.addEventListener('DOMContentLoaded', function() {{
   var ctx2 = document.getElementById('chart-languages');
   if (ctx2) new Chart(ctx2, {{ type:'doughnut', data: {{
     labels:{chart_lang_labels}, datasets:[{{ data:{chart_lang_counts},
-      backgroundColor:{chart_lang_labels}.map(function(_,i){{return PALETTE[i%PALETTE.length];}}), borderWidth:0 }}]
+      backgroundColor:{
+        chart_lang_labels
+    }.map(function(_,i){{return PALETTE[i%PALETTE.length];}}), borderWidth:0 }}]
   }}, options:{{ cutout:'55%', plugins:{{ legend:{{display:true,position:'right',labels:{{boxWidth:10,padding:8,font:{{size:10}}}}}} }} }} }});
 
   // Chart 3: Deliverable Types
@@ -805,8 +852,12 @@ document.addEventListener('DOMContentLoaded', function() {{
   if (ctx4) new Chart(ctx4, {{ type:'bar', data: {{
     labels:{chart_proj_names},
     datasets:[
-      {{ label:'Active Days', data:{chart_proj_days_json}, backgroundColor:colors.success, borderRadius:4, barPercentage:0.4 }},
-      {{ label:'Eras', data:{chart_proj_eras_json}, backgroundColor:colors.warning, borderRadius:4, barPercentage:0.4 }}
+      {{ label:'Active Days', data:{
+        chart_proj_days_json
+    }, backgroundColor:colors.success, borderRadius:4, barPercentage:0.4 }},
+      {{ label:'Eras', data:{
+        chart_proj_eras_json
+    }, backgroundColor:colors.warning, borderRadius:4, barPercentage:0.4 }}
     ]
   }}, options:{{ scales:{{ y:{{beginAtZero:true,grid:{{color:colors.border}}}}, x:{{grid:{{display:false}}}} }},
     plugins:{{ legend:{{display:true, labels:{{boxWidth:10,padding:8}}}} }} }} }});
@@ -821,7 +872,11 @@ document.addEventListener('DOMContentLoaded', function() {{
 
 _OPP_FEATURES: list[dict[str, str]] = [
     {"slug": "learning-velocity", "title": "Learning Velocity", "icon": "&#128200;"},
-    {"slug": "frustration-to-automation", "title": "Frustration &#8594; Automation", "icon": "&#9889;"},
+    {
+        "slug": "frustration-to-automation",
+        "title": "Frustration &#8594; Automation",
+        "icon": "&#9889;",
+    },
     {"slug": "knowledge-gap", "title": "Knowledge Gap Detector", "icon": "&#128270;"},
     {"slug": "token-efficiency", "title": "Token Efficiency Coach", "icon": "&#127919;"},
     {"slug": "session-quality", "title": "Session Quality Scorer", "icon": "&#11088;"},
@@ -1179,7 +1234,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
 def generate_project_index(project: dict[str, Any]) -> str:
     """Generate per-project dashboard with data visualizations front and center."""
-    now = datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC")
+    _now = datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC")
     meta = project["meta"]
     proj_name = project["name"].upper()
     commits = meta.get("commits", "?")
@@ -1207,7 +1262,9 @@ def generate_project_index(project: dict[str, Any]) -> str:
                 link = f"../md-viewer.html?file={project['name']}/{href}"
             else:
                 link = href
-            ext_color = {"html": "#14b8a6", "md": "#8b5cf6", "json": "#f59e0b"}.get(f["ext"].lstrip("."), "#6a7888")
+            ext_color = {"html": "#14b8a6", "md": "#8b5cf6", "json": "#f59e0b"}.get(
+                f["ext"].lstrip("."), "#6a7888"
+            )
             file_cards += f'<a href="{link}" class="deliv-file"><span class="deliv-icon">{cat_meta["icon"]}</span><span class="deliv-name">{f["name"]}</span><span class="deliv-ext" style="color:{ext_color}">{f["ext"].lstrip(".").upper()}</span></a>\n'
         cat_sections += f'<div class="cat-section"><h3 class="cat-heading" style="border-left:3px solid {cat_meta["color"]};padding-left:10px"><span class="cat-icon">{cat_meta["icon"]}</span>{cat_meta["label"]}<span class="cat-count">{len(files)}</span></h3><div class="deliv-grid">{file_cards}</div></div>\n'
 
@@ -1269,11 +1326,13 @@ def generate_project_index(project: dict[str, Any]) -> str:
     html = f"""<!DOCTYPE html>
 <html lang="en" data-theme="editorial">
 <head>
-{head_bundle(
-    title=f"{proj_name} — Project Dashboard",
-    description=f"Archaeological analysis of {proj_name} — {commits_fmt} commits across {eras} eras",
-    include_charts=True
-)}
+{
+        head_bundle(
+            title=f"{proj_name} — Project Dashboard",
+            description=f"Archaeological analysis of {proj_name} — {commits_fmt} commits across {eras} eras",
+            include_charts=True,
+        )
+    }
 <style>
 *,*::before,*::after{{box-sizing:border-box;margin:0;padding:0}}
 html{{scroll-behavior:smooth;-webkit-font-smoothing:antialiased}}
@@ -1346,13 +1405,21 @@ body{{background:var(--bg);color:var(--text);font-family:var(--font-body);line-h
 <div class="container">
   <div class="project-header">
     <h1>{proj_name}</h1>
-    <p>{_project_description(project['name'], meta)}</p>
+    <p>{_project_description(project["name"], meta)}</p>
     <div class="project-stats">
-      <div class="pstat"><span class="val">{commits_fmt}</span><span class="lbl">Commits</span></div>
-      <div class="pstat"><span class="val">{eras if eras else '&mdash;'}</span><span class="lbl">Eras</span></div>
-      <div class="pstat"><span class="val">{active_days}</span><span class="lbl">Active Days</span></div>
+      <div class="pstat"><span class="val">{
+        commits_fmt
+    }</span><span class="lbl">Commits</span></div>
+      <div class="pstat"><span class="val">{
+        eras if eras else "&mdash;"
+    }</span><span class="lbl">Eras</span></div>
+      <div class="pstat"><span class="val">{
+        active_days
+    }</span><span class="lbl">Active Days</span></div>
       <div class="pstat"><span class="val">{span_days}</span><span class="lbl">Day Span</span></div>
-      <div class="pstat"><span class="val">{total_deliv if total_deliv else '&mdash;'}</span><span class="lbl">Deliverables</span></div>
+      <div class="pstat"><span class="val">{
+        total_deliv if total_deliv else "&mdash;"
+    }</span><span class="lbl">Deliverables</span></div>
     </div>
   </div>
   {opp_html}
@@ -1416,21 +1483,28 @@ def load_api_repos(global_data_dir: Path) -> list[dict[str, Any]]:
             if repo.get("is_fork"):
                 continue
             commits = repo.get("total_commits") or repo.get("commit_count", 0)
-            repos.append({
-                "name": repo.get("name", "?"),
-                "commits": commits,
-                "language": repo.get("language", ""),
-                "description": repo.get("description", ""),
-                "updated": (repo.get("updated_at") or repo.get("updated", ""))[:10],
-                "owner": data.get("owner", ""),
-                "html_url": repo.get("html_url", f"https://github.com/{data.get('owner', '')}/{repo.get('name', '')}"),
-                "is_fork": repo.get("is_fork", False),
-            })
+            repos.append(
+                {
+                    "name": repo.get("name", "?"),
+                    "commits": commits,
+                    "language": repo.get("language", ""),
+                    "description": repo.get("description", ""),
+                    "updated": (repo.get("updated_at") or repo.get("updated", ""))[:10],
+                    "owner": data.get("owner", ""),
+                    "html_url": repo.get(
+                        "html_url",
+                        f"https://github.com/{data.get('owner', '')}/{repo.get('name', '')}",
+                    ),
+                    "is_fork": repo.get("is_fork", False),
+                }
+            )
     repos.sort(key=lambda r: r["commits"], reverse=True)
     return repos
 
 
-def generate_global_section(api_repos: list[dict[str, Any]], owner_labels: dict[str, str] | None = None) -> str:
+def generate_global_section(
+    api_repos: list[dict[str, Any]], owner_labels: dict[str, str] | None = None
+) -> str:
     """Generate an HTML section showing API-only repos (lightweight cards)."""
     if not api_repos:
         return ""
@@ -1456,11 +1530,11 @@ def generate_global_section(api_repos: list[dict[str, Any]], owner_labels: dict[
             cards += f"""
             <div class="api-card" data-owner="{owner}">
               <div class="api-header">
-                <a href="{repo['html_url']}" class="api-name" target="_blank">{repo['name']}</a>
+                <a href="{repo["html_url"]}" class="api-name" target="_blank">{repo["name"]}</a>
                 <span class="api-badge">{commits_fmt} commits</span>
               </div>
-              <div class="api-meta">{lang} &middot; updated {repo['updated']}"</div>
-              {f'<div class="api-desc">{desc}</div>' if desc else ''}
+              <div class="api-meta">{lang} &middot; updated {repo["updated"]}"</div>
+              {f'<div class="api-desc">{desc}</div>' if desc else ""}
             </div>"""
 
         sections += f"""

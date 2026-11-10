@@ -12,9 +12,18 @@ from scripts.data.generate_template_deliverables import strategy_swot_analysis
 
 def _project():
     return {
-        "name": "demo", "description": "", "lifespan": "1y", "total_commits": 200,
-        "active_days": 20, "span_days": 365, "era_count": 4, "peak_day_commits": 30,
-        "peak_day": "2026-01-01", "contributors": ["a"], "gaps": [], "analysis": {},
+        "name": "demo",
+        "description": "",
+        "lifespan": "1y",
+        "total_commits": 200,
+        "active_days": 20,
+        "span_days": 365,
+        "era_count": 4,
+        "peak_day_commits": 30,
+        "peak_day": "2026-01-01",
+        "contributors": ["a"],
+        "gaps": [],
+        "analysis": {},
         "commit_types": {"feat": 60, "fix": 30, "docs": 0, "test": 10, "ci": 0, "refactor": 5},
     }
 

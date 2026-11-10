@@ -16,10 +16,7 @@ def _get_dir(env_var: str, label: str) -> Path:
     env_val = os.environ.get(env_var, "")
     if env_val:
         return Path(env_val)
-    raise OSError(
-        f"{env_var} environment variable not set. "
-        f"Please set it to {label}."
-    )
+    raise OSError(f"{env_var} environment variable not set. Please set it to {label}.")
 
 
 DEFAULT_PIPELINE_DIR: Path | None = None
@@ -94,16 +91,22 @@ def read_local_pipeline_status(pipeline_dir: str | Path, repo_name: str) -> Loca
                 if isinstance(mission, dict):
                     mission_repo = mission.get("repo", "")
                     # Match against owner/repo or just repo name
-                    if (mission_repo == repo_name or
-                        mission_repo.endswith("/" + repo_name) or
-                        repo_name.endswith("/" + mission_repo.split("/")[-1])):
+                    if (
+                        mission_repo == repo_name
+                        or mission_repo.endswith("/" + repo_name)
+                        or repo_name.endswith("/" + mission_repo.split("/")[-1])
+                    ):
                         target = mission
                         break
 
     # Fall back to repos array (old format)
     if target is None:
         for repo in payload.get("repos", []):
-            names = {str(repo.get("name", "")), str(repo.get("full_name", "")), str(repo.get("path", ""))}
+            names = {
+                str(repo.get("name", "")),
+                str(repo.get("full_name", "")),
+                str(repo.get("path", "")),
+            }
             if repo_name in names or repo_name.endswith("/" + str(repo.get("name", ""))):
                 target = repo
                 break
@@ -119,7 +122,9 @@ def read_local_pipeline_status(pipeline_dir: str | Path, repo_name: str) -> Loca
         if not reviewed_repos:
             reviewed_repos = [repo.get("name", "") for repo in payload.get("repos", [])]
         reviewed = ", ".join(str(r) for r in reviewed_repos)
-        raise ValueError(f"Repo '{repo_name}' not found in latest local pipeline reviewed repos. Reviewed: {reviewed}")
+        raise ValueError(
+            f"Repo '{repo_name}' not found in latest local pipeline reviewed repos. Reviewed: {reviewed}"
+        )
 
     summary = payload.get("summary", {})
     # Normalize issues to dict - pipeline may return list or dict
@@ -131,10 +136,10 @@ def read_local_pipeline_status(pipeline_dir: str | Path, repo_name: str) -> Loca
 
     # Extract repo name from multiple possible fields
     repo_full_name = (
-        target.get("repo") or  # new format
-        target.get("full_name") or  # old format
-        target.get("path") or
-        target.get("name", "")
+        target.get("repo")  # new format
+        or target.get("full_name")  # old format
+        or target.get("path")
+        or target.get("name", "")
     )
 
     # Extract health/verdict from mission or repo data

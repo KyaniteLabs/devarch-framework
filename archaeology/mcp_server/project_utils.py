@@ -36,15 +36,17 @@ def list_projects() -> list[dict[str, Any]]:
         if not project_dir.is_dir() or project_dir.name.startswith((".", "_")):
             continue
         config = get_project_config(project_dir.name)
-        projects.append({
-            "name": project_dir.name,
-            "path": str(project_dir),
-            "has_data": (project_dir / "data").exists(),
-            "has_deliverables": (project_dir / "deliverables").exists(),
-            "has_database": (project_dir / "data" / "archaeology.db").exists(),
-            "description": config.get("description", "") if config else "",
-            "repo_url": config.get("repo_url", "") if config else "",
-        })
+        projects.append(
+            {
+                "name": project_dir.name,
+                "path": str(project_dir),
+                "has_data": (project_dir / "data").exists(),
+                "has_deliverables": (project_dir / "deliverables").exists(),
+                "has_database": (project_dir / "data" / "archaeology.db").exists(),
+                "description": config.get("description", "") if config else "",
+                "repo_url": config.get("repo_url", "") if config else "",
+            }
+        )
     return projects
 
 

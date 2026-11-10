@@ -19,7 +19,6 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import re
 import subprocess
 import sys
 from collections import Counter
@@ -29,6 +28,7 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[2]  # scripts/data/ → scripts/ → project root
 
+
 def _get_source_repo() -> Path:
     if env_val := os.environ.get("ARCHAEOLOGY_SOURCE_REPO", ""):
         return Path(env_val)
@@ -36,6 +36,7 @@ def _get_source_repo() -> Path:
         "ARCHAEOLOGY_SOURCE_REPO environment variable not set. "
         "Please set it to your Liminal source repository path."
     )
+
 
 DEFAULT_SOURCE_REPO = _get_source_repo()
 DATA_JSON = ROOT / "projects/demo-project/deliverables/data.json"
@@ -45,7 +46,9 @@ PROJECT_JSON = ROOT / "projects/demo-project/project.json"
 
 
 def run(cmd: list[str], *, cwd: Path = ROOT, capture: bool = False) -> str:
-    result = subprocess.run(cmd, cwd=cwd, text=True, capture_output=capture, check=True, timeout=300)
+    result = subprocess.run(
+        cmd, cwd=cwd, text=True, capture_output=capture, check=True, timeout=300
+    )
     return result.stdout if capture else ""
 
 
@@ -79,7 +82,9 @@ def ts_loc(repo: Path, ref: str = "origin/main") -> int:
             content = git(repo, "show", f"{ref}:{file}")
         except subprocess.CalledProcessError:
             continue
-        total += sum(1 for line in content.splitlines() if line.strip() and not line.strip().startswith("//"))
+        total += sum(
+            1 for line in content.splitlines() if line.strip() and not line.strip().startswith("//")
+        )
     return total
 
 
@@ -126,7 +131,20 @@ def commit_types(subjects: list[str]) -> dict[str, int]:
             counts["merge"] += 1
         else:
             counts["other"] += 1
-    for key in ["other", "feat", "fix", "docs", "test", "chore", "refactor", "merge", "security", "ci", "style", "perf"]:
+    for key in [
+        "other",
+        "feat",
+        "fix",
+        "docs",
+        "test",
+        "chore",
+        "refactor",
+        "merge",
+        "security",
+        "ci",
+        "style",
+        "perf",
+    ]:
         counts.setdefault(key, 0)
     return dict(counts)
 
@@ -139,6 +157,7 @@ def compute(repo: Path, *, fetch: bool) -> dict[str, Any]:
     archive_path = ROOT / "projects/demo-project/data/github-commits.csv"
     if archive_path.exists():
         import csv
+
         with archive_path.open(newline="", encoding="utf-8") as f:
             for row in csv.DictReader(f):
                 if row.get("hash"):
@@ -148,12 +167,18 @@ def compute(repo: Path, *, fetch: bool) -> dict[str, Any]:
                         "author": row.get("author", ""),
                     }
 
-    current_lines = git_lines(repo, "log", "--all", "--format=%H%x00%ad%x00%s%x00%aN", "--date=iso-strict")
+    current_lines = git_lines(
+        repo, "log", "--all", "--format=%H%x00%ad%x00%s%x00%aN", "--date=iso-strict"
+    )
     for line in current_lines:
         parts = line.split("\x00", 3)
         if len(parts) == 4:
             commit_hash, commit_date, subject, author = parts
-            known_commits[commit_hash] = {"date": commit_date[:10], "subject": subject, "author": author}
+            known_commits[commit_hash] = {
+                "date": commit_date[:10],
+                "subject": subject,
+                "author": author,
+            }
 
     daily = Counter(c["date"] for c in known_commits.values() if c.get("date"))
     # Hour-level data is only available from currently reachable git refs; keep it advisory.
@@ -208,7 +233,9 @@ def compute(repo: Path, *, fetch: bool) -> dict[str, Any]:
         "peak_day": peak_day,
         "peak_day_commits": peak_commits,
         "daily_commits": dict(sorted(daily.items())),
-        "hourly_commits": {str(hour).zfill(2): hours.get(str(hour).zfill(2), 0) for hour in range(24)},
+        "hourly_commits": {
+            str(hour).zfill(2): hours.get(str(hour).zfill(2), 0) for hour in range(24)
+        },
         "insertions": add,
         "deletions": delete,
         "net_lines": net,
@@ -228,7 +255,9 @@ def compute(repo: Path, *, fetch: bool) -> dict[str, Any]:
         "simon_all": simon + sgdc + pastor,
         "simon_all_pct": round((simon + sgdc + pastor) / total * 100, 1) if total > 0 else 0,
         "simon_demo": simon + sgdc + pastor + demo_project,
-        "simon_demo_pct": round((simon + sgdc + pastor + demo_project) / total * 100, 1) if total > 0 else 0,
+        "simon_demo_pct": round((simon + sgdc + pastor + demo_project) / total * 100, 1)
+        if total > 0
+        else 0,
         "coauth_commits": coauth,
         "coauth_pct": round(coauth / total * 100, 1) if total > 0 else 0,
         "ai_involved_commits": ai_involved,
@@ -242,17 +271,31 @@ def compute(repo: Path, *, fetch: bool) -> dict[str, Any]:
         "threshold_pre": sum(count for day, count in daily.items() if day < "2026-04-11"),
         "threshold_post": sum(count for day, count in daily.items() if day >= "2026-04-11"),
         "nocturnal_pct": round(
-            sum(count for hour, count in hours.items() if int(hour) >= 21 or int(hour) <= 5) / total * 100,
+            sum(count for hour, count in hours.items() if int(hour) >= 21 or int(hour) <= 5)
+            / total
+            * 100,
             1,
-        ) if total > 0 else 0,
+        )
+        if total > 0
+        else 0,
         "after_midnight_pct": round(
             sum(count for hour, count in hours.items() if 0 <= int(hour) <= 5) / total * 100,
             1,
-        ) if total > 0 else 0,
+        )
+        if total > 0
+        else 0,
         "weekend_pct": round(
-            sum(count for day, count in daily.items() if datetime.strptime(day, "%Y-%m-%d").weekday() >= 5) / total * 100,
+            sum(
+                count
+                for day, count in daily.items()
+                if datetime.strptime(day, "%Y-%m-%d").weekday() >= 5
+            )
+            / total
+            * 100,
             1,
-        ) if total > 0 else 0,
+        )
+        if total > 0
+        else 0,
     }
 
 
@@ -264,49 +307,62 @@ def update_verified_stats(stats: dict[str, Any]) -> None:
     rows = "\n".join(f"| {day} | {count} |" for day, count in stats["daily_commits"].items())
     type_rows = "\n".join(
         f"| {kind} | {stats['commit_types'][kind]} | {round(stats['commit_types'][kind] / stats['total_commits'] * 100, 1)}% |"
-        for kind in ["other", "feat", "fix", "docs", "test", "chore", "refactor", "merge", "security", "ci", "style", "perf"]
+        for kind in [
+            "other",
+            "feat",
+            "fix",
+            "docs",
+            "test",
+            "chore",
+            "refactor",
+            "merge",
+            "security",
+            "ci",
+            "style",
+            "perf",
+        ]
     )
     content = f"""# Verified Statistics — LIMINAL Project
-Computed from git source on {stats['generated']}
+Computed from git source on {stats["generated"]}
 
 ## Source
 - Repo: {DEFAULT_SOURCE_REPO}
-- Git scope: `{stats['scope']}`
+- Git scope: `{stats["scope"]}`
 - Method: author-date for daily counts (`git log --all --format=\"%ad\" --date=short`)
 - Tree metrics: `origin/main` after fetch/prune
 
 ## Core Numbers
 | Metric | Value | Source |
 |--------|-------|--------|
-| Total commits (fetch-pruned all refs) | {stats['total_commits']:,} | git log --all --oneline |
-| Total commits (origin/main) | {stats['origin_main_commits']:,} | git log origin/main --oneline |
-| Non-main unique commits | {stats['non_main_commits']:,} | git log --all --not origin/main --oneline |
-| Calendar span | {stats['span_days']} days ({stats['first_date']} – {stats['last_date']}) | git log --all --format=%ai |
-| Active days | {stats['active_days']} | unique author-dates in git log |
-| Active rate | {stats['active_rate_pct']}% | active/span |
-| Commits per active day | {stats['commits_per_active_day']} | total/active |
-| Commits per day (full span) | {stats['commits_per_day_span']} | total/span |
-| Files tracked | {stats['files_tracked']:,} | git ls-tree -r --name-only origin/main |
-| Tracked TS LOC | {stats['tracked_ts_loc']:,} | non-empty non-comment .ts/.tsx lines at origin/main |
-| Total insertions | {stats['insertions']:,} | git numstat |
-| Total deletions | {stats['deletions']:,} | git numstat |
-| Net lines | {stats['net_lines']:,} | insertions - deletions |
+| Total commits (fetch-pruned all refs) | {stats["total_commits"]:,} | git log --all --oneline |
+| Total commits (origin/main) | {stats["origin_main_commits"]:,} | git log origin/main --oneline |
+| Non-main unique commits | {stats["non_main_commits"]:,} | git log --all --not origin/main --oneline |
+| Calendar span | {stats["span_days"]} days ({stats["first_date"]} – {stats["last_date"]}) | git log --all --format=%ai |
+| Active days | {stats["active_days"]} | unique author-dates in git log |
+| Active rate | {stats["active_rate_pct"]}% | active/span |
+| Commits per active day | {stats["commits_per_active_day"]} | total/active |
+| Commits per day (full span) | {stats["commits_per_day_span"]} | total/span |
+| Files tracked | {stats["files_tracked"]:,} | git ls-tree -r --name-only origin/main |
+| Tracked TS LOC | {stats["tracked_ts_loc"]:,} | non-empty non-comment .ts/.tsx lines at origin/main |
+| Total insertions | {stats["insertions"]:,} | git numstat |
+| Total deletions | {stats["deletions"]:,} | git numstat |
+| Net lines | {stats["net_lines"]:,} | insertions - deletions |
 
 ## Author Breakdown (git --all)
 | Author | Commits |
 |--------|---------|
-| Simon | {stats['simon_commits']:,} |
-| Simon Gonzalez De Cruz | {stats['sgdc_commits']:,} |
-| Pastorsimon1798 | {stats['pastorsimon1798_commits']:,} |
-| demo-project | {stats['demo_project_commits']:,} |
-| Claude | {stats['claude_commits']:,} |
-| dependabot[bot] | {stats['dependabot_commits']:,} |
+| Simon | {stats["simon_commits"]:,} |
+| Simon Gonzalez De Cruz | {stats["sgdc_commits"]:,} |
+| Pastorsimon1798 | {stats["pastorsimon1798_commits"]:,} |
+| demo-project | {stats["demo_project_commits"]:,} |
+| Claude | {stats["claude_commits"]:,} |
+| dependabot[bot] | {stats["dependabot_commits"]:,} |
 
 ### Aggregated Identities
 | Category | Commits | Percentage |
 |----------|---------|-----------|
-| Simon (all identities) | {stats['simon_all']:,} | {stats['simon_all_pct']}% |
-| Simon + demo-project | {stats['simon_demo']:,} | {stats['simon_demo_pct']}% |
+| Simon (all identities) | {stats["simon_all"]:,} | {stats["simon_all_pct"]}% |
+| Simon + demo-project | {stats["simon_demo"]:,} | {stats["simon_demo_pct"]}% |
 
 ## Commit Type Distribution
 | Type | Count | Percentage |
@@ -316,13 +372,13 @@ Computed from git source on {stats['generated']}
 ## Co-Authorship
 | Metric | Value |
 |--------|-------|
-| Co-Authored-By commits | {stats['coauth_commits']:,} ({stats['coauth_pct']}%) |
-| AI-involved commits (co-authored + Liminal-authored + Claude-authored) | {stats['ai_involved_commits']:,} ({stats['ai_involved_pct']}%) |
+| Co-Authored-By commits | {stats["coauth_commits"]:,} ({stats["coauth_pct"]}%) |
+| AI-involved commits (co-authored + Liminal-authored + Claude-authored) | {stats["ai_involved_commits"]:,} ({stats["ai_involved_pct"]}%) |
 
 ## Peak Day
 | Date | Commits |
 |------|---------|
-| {stats['peak_day']} | {stats['peak_day_commits']} |
+| {stats["peak_day"]} | {stats["peak_day_commits"]} |
 
 ## Daily Commits
 | Date | Commits |
@@ -332,19 +388,19 @@ Computed from git source on {stats['generated']}
 ## Key Ratios
 | Ratio | Value |
 |-------|-------|
-| Fix commit ratio | {stats['fix_ratio_pct']}% ({stats['commit_types']['fix']}/{stats['total_commits']}) |
-| feat:fix ratio | {stats['feat_fix_ratio']} ({stats['commit_types']['feat']}/{stats['commit_types']['fix']}) |
-| Co-author rate | {stats['coauth_pct']}% |
-| AI-involved rate | {stats['ai_involved_pct']}% |
-| Evening/night commits (21:00-05:59) | {stats['nocturnal_pct']}% |
-| After midnight (00:00-05:59) | {stats['after_midnight_pct']}% |
-| Weekend commits (Sat+Sun) | {stats['weekend_pct']}% |
+| Fix commit ratio | {stats["fix_ratio_pct"]}% ({stats["commit_types"]["fix"]}/{stats["total_commits"]}) |
+| feat:fix ratio | {stats["feat_fix_ratio"]} ({stats["commit_types"]["feat"]}/{stats["commit_types"]["fix"]}) |
+| Co-author rate | {stats["coauth_pct"]}% |
+| AI-involved rate | {stats["ai_involved_pct"]}% |
+| Evening/night commits (21:00-05:59) | {stats["nocturnal_pct"]}% |
+| After midnight (00:00-05:59) | {stats["after_midnight_pct"]}% |
+| Weekend commits (Sat+Sun) | {stats["weekend_pct"]}% |
 
 ## Branch Landscape
 | Category | Count |
 |----------|-------|
-| Remote PR branches (origin/pr/*) | {stats['remote_pr_branches']} |
-| Local session branches (demo-project/sess-*) | {stats['local_session_branches']} |
+| Remote PR branches (origin/pr/*) | {stats["remote_pr_branches"]} |
+| Local session branches (demo-project/sess-*) | {stats["local_session_branches"]} |
 """
     VERIFIED_STATS.write_text(content)
 
@@ -401,7 +457,25 @@ def update_structured_files(stats: dict[str, Any]) -> None:
         "daily_commits": stats["daily_commits"],
     }
     for name, value in {**stats["commit_types"], **values}.items():
-        metric_name = f"{name}_commits" if name in {"feat", "fix", "docs", "test", "chore", "refactor", "security", "ci", "style", "perf", "merge", "other"} else name
+        metric_name = (
+            f"{name}_commits"
+            if name
+            in {
+                "feat",
+                "fix",
+                "docs",
+                "test",
+                "chore",
+                "refactor",
+                "security",
+                "ci",
+                "style",
+                "perf",
+                "merge",
+                "other",
+            }
+            else name
+        )
         if metric_name in metrics:
             metrics[metric_name]["value"] = value
     write_json(ROOT / "pipeline/config/metrics.json", metrics)
@@ -433,7 +507,9 @@ def update_structured_files(stats: dict[str, Any]) -> None:
     ct["dependency_growth"]["data"][stats["last_date"]] = stats["dependencies"]
     data["total_commits_by_repo"]["demo-project"] = stats["total_commits"]
     data.setdefault("codebase", {})["total_commits"] = stats["total_commits"]
-    data.setdefault("codebase", {})["lifespan"] = f"{stats['span_days']} days ({stats['first_date']} - {stats['last_date']})"
+    data.setdefault("codebase", {})["lifespan"] = (
+        f"{stats['span_days']} days ({stats['first_date']} - {stats['last_date']})"
+    )
     data["cluster_dominance"] = {
         "cluster_4_pct": stats["cluster4_pct"],
         "cluster_4_commits": stats["cluster4_commits"],
@@ -444,7 +520,11 @@ def update_structured_files(stats: dict[str, Any]) -> None:
     data.setdefault("threshold_split", {})["post_threshold_commits"] = stats["threshold_post"]
 
     write_json(DATA_JSON, data)
-    DATA_JS.write_text("window.__EMBEDDED_DATA = " + json.dumps(data, separators=(",", ":"), ensure_ascii=False) + ";")
+    DATA_JS.write_text(
+        "window.__EMBEDDED_DATA = "
+        + json.dumps(data, separators=(",", ":"), ensure_ascii=False)
+        + ";"
+    )
     write_canonical_metrics(stats)
 
 
@@ -507,7 +587,11 @@ def write_canonical_metrics(stats: dict[str, Any]) -> None:
     metrics_json = ROOT / "projects/demo-project/deliverables/canonical-metrics.json"
     metrics_js = ROOT / "projects/demo-project/deliverables/canonical-metrics.js"
     write_json(metrics_json, canonical)
-    metrics_js.write_text("window.CANONICAL_METRICS = " + json.dumps(canonical, separators=(",", ":"), ensure_ascii=False) + ";")
+    metrics_js.write_text(
+        "window.CANONICAL_METRICS = "
+        + json.dumps(canonical, separators=(",", ":"), ensure_ascii=False)
+        + ";"
+    )
 
 
 def update_text_surface(stats: dict[str, Any]) -> None:
@@ -518,9 +602,31 @@ def validate(skip_screenshots: bool) -> None:
     run([sys.executable, "pipeline/core/validate.py", "--strict"])
     run([sys.executable, "pipeline/core/run.py", "--validate"])
     run([sys.executable, "scripts/sync/audit_claims.py"])
-    run(["node", "archaeology/validators/validate_html.cjs", "projects/demo-project/deliverables/playbook.html", "--project-dir", "projects/demo-project"])
+    run(
+        [
+            "node",
+            "archaeology/validators/validate_html.cjs",
+            "projects/demo-project/deliverables/playbook.html",
+            "--project-dir",
+            "projects/demo-project",
+        ]
+    )
     run([sys.executable, "-m", "archaeology.cli", "validate", "demo-project"])
-    run([sys.executable, "-m", "py_compile", "pipeline/core/validate.py", "pipeline/core/run.py", "scripts/sync/audit_claims.py", "scripts/data/regenerate_all.py", "scripts/data/capture_playbook.py", "scripts/sync/sync_derived_deliverables.py", "scripts/data/refresh_data.py", "archaeology/cli.py"])
+    run(
+        [
+            sys.executable,
+            "-m",
+            "py_compile",
+            "pipeline/core/validate.py",
+            "pipeline/core/run.py",
+            "scripts/sync/audit_claims.py",
+            "scripts/data/regenerate_all.py",
+            "scripts/data/capture_playbook.py",
+            "scripts/sync/sync_derived_deliverables.py",
+            "scripts/data/refresh_data.py",
+            "archaeology/cli.py",
+        ]
+    )
     if not skip_screenshots:
         run([sys.executable, "scripts/data/capture_playbook.py"])
 
@@ -562,12 +668,18 @@ def mine_private_sessions(source_repo: Path) -> None:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Fetch, recompute, refresh, validate, and recapture Liminal archaeology outputs.")
+    parser = argparse.ArgumentParser(
+        description="Fetch, recompute, refresh, validate, and recapture Liminal archaeology outputs."
+    )
     parser.add_argument("--source-repo", type=Path, default=DEFAULT_SOURCE_REPO)
     parser.add_argument("--no-fetch", action="store_true", help="Skip git fetch --all --tags")
     parser.add_argument("--skip-screenshots", action="store_true")
     parser.add_argument("--skip-validate", action="store_true")
-    parser.add_argument("--mine-private-sessions", action="store_true", help="Refresh private Claude/ChatGPT-derived data before recomputing reports")
+    parser.add_argument(
+        "--mine-private-sessions",
+        action="store_true",
+        help="Refresh private Claude/ChatGPT-derived data before recomputing reports",
+    )
     parser.add_argument(
         "--legacy-refresh-first",
         action="store_true",
@@ -580,11 +692,22 @@ def main() -> int:
 
     stats = compute(args.source_repo, fetch=not args.no_fetch)
     print(f"Canonical scope: {stats['scope']}")
-    print(f"Latest source: {stats['total_commits']:,} commits through {stats['last_date']} ({stats['span_days']} days)")
+    print(
+        f"Latest source: {stats['total_commits']:,} commits through {stats['last_date']} ({stats['span_days']} days)"
+    )
 
     if args.legacy_refresh_first:
         refresh_sections = "meta,commits,hourly,types,authors,files,loc,tests,deps,agents,derived,timeline,threshold,self_run,codebase,total_by_repo,agent_economics"
-        run([sys.executable, "scripts/data/refresh_data.py", "--repo", str(args.source_repo), "--sections", refresh_sections])
+        run(
+            [
+                sys.executable,
+                "scripts/data/refresh_data.py",
+                "--repo",
+                str(args.source_repo),
+                "--sections",
+                refresh_sections,
+            ]
+        )
     write_verified_stats(stats)
     update_structured_files(stats)
     update_text_surface(stats)

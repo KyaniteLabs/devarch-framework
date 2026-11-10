@@ -20,19 +20,44 @@ def _safe_parse_date(s, fmt="%Y-%m-%d"):
     except (ValueError, TypeError):
         return None
 
+
 LANG_MAP = {
-    ".py": "Python", ".js": "JavaScript", ".ts": "TypeScript", ".tsx": "TypeScript",
-    ".jsx": "JavaScript", ".html": "HTML", ".css": "CSS", ".scss": "CSS",
-    ".json": "JSON", ".md": "Markdown", ".yaml": "YAML", ".yml": "YAML",
-    ".sh": "Shell", ".bash": "Shell", ".zsh": "Shell",
-    ".rs": "Rust", ".go": "Go", ".rb": "Ruby", ".java": "Java",
-    ".c": "C", ".cpp": "C++", ".h": "C/C++ Header",
-    ".sql": "SQL", ".graphql": "GraphQL",
-    ".vue": "Vue", ".svelte": "Svelte",
-    ".toml": "TOML", ".ini": "INI", ".cfg": "Config",
-    ".txt": "Text", ".rst": "reStructuredText",
-    ".svg": "SVG", ".png": "Image", ".jpg": "Image",
+    ".py": "Python",
+    ".js": "JavaScript",
+    ".ts": "TypeScript",
+    ".tsx": "TypeScript",
+    ".jsx": "JavaScript",
+    ".html": "HTML",
+    ".css": "CSS",
+    ".scss": "CSS",
+    ".json": "JSON",
+    ".md": "Markdown",
+    ".yaml": "YAML",
+    ".yml": "YAML",
+    ".sh": "Shell",
+    ".bash": "Shell",
+    ".zsh": "Shell",
+    ".rs": "Rust",
+    ".go": "Go",
+    ".rb": "Ruby",
+    ".java": "Java",
+    ".c": "C",
+    ".cpp": "C++",
+    ".h": "C/C++ Header",
+    ".sql": "SQL",
+    ".graphql": "GraphQL",
+    ".vue": "Vue",
+    ".svelte": "Svelte",
+    ".toml": "TOML",
+    ".ini": "INI",
+    ".cfg": "Config",
+    ".txt": "Text",
+    ".rst": "reStructuredText",
+    ".svg": "SVG",
+    ".png": "Image",
+    ".jpg": "Image",
 }
+
 
 def _repo_color(name, index=0):
     """Generate a consistent color for a repository name."""
@@ -46,7 +71,16 @@ def _repo_color(name, index=0):
     if name in _KNOWN:
         return _KNOWN[name]
     # Generate from hash for unknown repos
-    palette = ["#51cf66", "#74c0fc", "#ffa94d", "#cc5de8", "#ff6b6b", "#ffd43b", "#20c997", "#845ef7"]
+    palette = [
+        "#51cf66",
+        "#74c0fc",
+        "#ffa94d",
+        "#cc5de8",
+        "#ff6b6b",
+        "#ffd43b",
+        "#20c997",
+        "#845ef7",
+    ]
     return palette[hash(name) % len(palette)]
 
 
@@ -77,7 +111,7 @@ def prepare_global_visualization_data(global_dir, top_n=None, year=None):
     # Load raw data
     commits = _load_commits(commits_csv)
     summaries = _load_json(summaries_json) if summaries_json.exists() else []
-    signals = _load_json(signals_json) if signals_json.exists() else []
+    _signals = _load_json(signals_json) if signals_json.exists() else []
 
     # Assign colors
     repo_names = sorted({c["_project"] for c in commits})
@@ -169,20 +203,22 @@ def prepare_from_github(github_json_path, top_n=None, year=None):
         dc, du = _safe_parse_date(created), _safe_parse_date(updated)
         repo_calendar_days = (du - dc).days + 1 if dc and du else 0
 
-        repo_cards.append({
-            "name": name,
-            "color": colors.get(name, "#888"),
-            "total_commits": r["total_commits"],
-            "active_days": None,
-            "calendar_days": repo_calendar_days,
-            "first_date": r.get("created", "")[:10],
-            "last_date": r.get("updated", "")[:10],
-            "authors": len(r.get("authors", {})),
-            "top_author": top_author_name,
-            "top_language": top_language,
-            "description": r.get("description", ""),
-            "size_kb": r.get("size_kb", 0),
-        })
+        repo_cards.append(
+            {
+                "name": name,
+                "color": colors.get(name, "#888"),
+                "total_commits": r["total_commits"],
+                "active_days": None,
+                "calendar_days": repo_calendar_days,
+                "first_date": r.get("created", "")[:10],
+                "last_date": r.get("updated", "")[:10],
+                "authors": len(r.get("authors", {})),
+                "top_author": top_author_name,
+                "top_language": top_language,
+                "description": r.get("description", ""),
+                "size_kb": r.get("size_kb", 0),
+            }
+        )
 
     # Language breakdown (aggregate bytes across all repos)
     lang_by_repo = []
@@ -194,17 +230,21 @@ def prepare_from_github(github_json_path, top_n=None, year=None):
             continue
         lang_list = []
         for lang, bytes_count in sorted(langs.items(), key=lambda x: x[1], reverse=True)[:8]:
-            lang_list.append({
-                "language": lang,
-                "count": bytes_count,
-                "pct": round(bytes_count / total_bytes * 100, 1) if total_bytes else 0,
-            })
-        lang_by_repo.append({
-            "repo": name,
-            "color": colors.get(name, "#888"),
-            "languages": lang_list,
-            "total_files": total_bytes,
-        })
+            lang_list.append(
+                {
+                    "language": lang,
+                    "count": bytes_count,
+                    "pct": round(bytes_count / total_bytes * 100, 1) if total_bytes else 0,
+                }
+            )
+        lang_by_repo.append(
+            {
+                "repo": name,
+                "color": colors.get(name, "#888"),
+                "languages": lang_list,
+                "total_files": total_bytes,
+            }
+        )
 
     # Velocity comparison
     velocity = []
@@ -212,16 +252,18 @@ def prepare_from_github(github_json_path, top_n=None, year=None):
         name = r["name"]
         dc, du = _safe_parse_date(r.get("created", "")), _safe_parse_date(r.get("updated", ""))
         span_days = (du - dc).days + 1 if dc and du else 1
-        velocity.append({
-            "repo": name,
-            "color": colors.get(name, "#888"),
-            "total_commits": r["total_commits"],
-            "active_days": None,
-            "commits_per_day": round(r["total_commits"] / max(span_days, 1), 2),
-            "peak_day": "",
-            "peak_count": 0,
-            "span_days": span_days,
-        })
+        velocity.append(
+            {
+                "repo": name,
+                "color": colors.get(name, "#888"),
+                "total_commits": r["total_commits"],
+                "active_days": None,
+                "commits_per_day": round(r["total_commits"] / max(span_days, 1), 2),
+                "peak_day": "",
+                "peak_count": 0,
+                "span_days": span_days,
+            }
+        )
     velocity.sort(key=lambda x: x["total_commits"], reverse=True)
 
     # Author universe (graph)
@@ -229,11 +271,13 @@ def prepare_from_github(github_json_path, top_n=None, year=None):
     repo_nodes = []
     links = []
     for r in repos:
-        repo_nodes.append({
-            "id": r["name"],
-            "type": "repo",
-            "color": colors.get(r["name"], "#888"),
-        })
+        repo_nodes.append(
+            {
+                "id": r["name"],
+                "type": "repo",
+                "color": colors.get(r["name"], "#888"),
+            }
+        )
         for author, count in r.get("authors", {}).items():
             # O(1) dict lookup instead of O(n) list scan
             if author not in author_nodes_dict:
@@ -247,11 +291,13 @@ def prepare_from_github(github_json_path, top_n=None, year=None):
                 node = author_nodes_dict[author]
                 node["commits"] += count
                 node["repos"].append(r["name"])
-            links.append({
-                "source": author,
-                "target": r["name"],
-                "value": count,
-            })
+            links.append(
+                {
+                    "source": author,
+                    "target": r["name"],
+                    "value": count,
+                }
+            )
 
     # Convert dict back to list for JSON serialization
     author_nodes = list(author_nodes_dict.values())
@@ -296,14 +342,31 @@ def _classify_commit(message):
         return "other"
     msg = message.lower().strip()
     prefixes = {
-        "feat": "feature", "add": "feature", "implement": "feature", "new": "feature",
-        "fix": "fix", "bug": "fix", "patch": "fix", "hotfix": "fix",
-        "test": "test", "spec": "test",
-        "doc": "docs", "readme": "docs",
-        "refactor": "refactor", "clean": "refactor", "remove": "refactor", "simplify": "refactor",
-        "chore": "chore", "build": "chore", "ci": "chore", "deps": "chore",
-        "perf": "perf", "optim": "perf",
-        "style": "style", "format": "style", "lint": "style",
+        "feat": "feature",
+        "add": "feature",
+        "implement": "feature",
+        "new": "feature",
+        "fix": "fix",
+        "bug": "fix",
+        "patch": "fix",
+        "hotfix": "fix",
+        "test": "test",
+        "spec": "test",
+        "doc": "docs",
+        "readme": "docs",
+        "refactor": "refactor",
+        "clean": "refactor",
+        "remove": "refactor",
+        "simplify": "refactor",
+        "chore": "chore",
+        "build": "chore",
+        "ci": "chore",
+        "deps": "chore",
+        "perf": "perf",
+        "optim": "perf",
+        "style": "style",
+        "format": "style",
+        "lint": "style",
     }
     for prefix, category in prefixes.items():
         if msg.startswith(prefix) or msg.startswith(f"[{prefix}]"):
@@ -387,24 +450,26 @@ def _build_repo_cards(commits, summaries, colors, projects_dir):
         top_lang = _get_top_language(projects_dir, name)
 
         # Summary lookup
-        summary = {}
+        _summary = {}
         for s in summaries:
             if s["name"] == name:
-                summary = s
+                _summary = s
                 break
 
-        cards.append({
-            "name": name,
-            "color": colors.get(name, "#888"),
-            "total_commits": len(repo_commits),
-            "active_days": len(dates),
-            "calendar_days": span,
-            "first_date": first,
-            "last_date": last,
-            "authors": len(authors),
-            "top_author": authors.most_common(1)[0][0] if authors else "",
-            "top_language": top_lang,
-        })
+        cards.append(
+            {
+                "name": name,
+                "color": colors.get(name, "#888"),
+                "total_commits": len(repo_commits),
+                "active_days": len(dates),
+                "calendar_days": span,
+                "first_date": first,
+                "last_date": last,
+                "authors": len(authors),
+                "top_author": authors.most_common(1)[0][0] if authors else "",
+                "top_language": top_lang,
+            }
+        )
 
     return cards
 
@@ -426,8 +491,9 @@ def _get_top_language(projects_dir, repo_name):
             continue
         if any(p.startswith(".") for p in rel_path.parts):
             continue
-        if any(p in ("node_modules", "__pycache__", ".venv", "dist", "build")
-               for p in rel_path.parts):
+        if any(
+            p in ("node_modules", "__pycache__", ".venv", "dist", "build") for p in rel_path.parts
+        ):
             continue
         for f in files:
             ext = Path(f).suffix.lower()
@@ -479,29 +545,36 @@ def _build_author_universe(commits, colors):
     nodes = []
     links = []
     for author, repos in sorted(author_repos.items()):
-        nodes.append({
-            "id": author,
-            "type": "author",
-            "commits": author_commits[author],
-            "repos": list(repos),
-        })
+        nodes.append(
+            {
+                "id": author,
+                "type": "author",
+                "commits": author_commits[author],
+                "repos": list(repos),
+            }
+        )
         for repo in repos:
-            links.append({
-                "source": author,
-                "target": repo,
-                "value": sum(
-                    1 for c in commits
-                    if c.get("author") == author and c.get("_project") == repo
-                ),
-            })
+            links.append(
+                {
+                    "source": author,
+                    "target": repo,
+                    "value": sum(
+                        1
+                        for c in commits
+                        if c.get("author") == author and c.get("_project") == repo
+                    ),
+                }
+            )
 
     # Add repo nodes
     for repo_name in sorted({c.get("_project", "") for c in commits}):
-        nodes.append({
-            "id": repo_name,
-            "type": "repo",
-            "color": colors.get(repo_name, "#888"),
-        })
+        nodes.append(
+            {
+                "id": repo_name,
+                "type": "repo",
+                "color": colors.get(repo_name, "#888"),
+            }
+        )
 
     return {"nodes": nodes, "links": links}
 
@@ -523,8 +596,10 @@ def _build_language_breakdown(projects_dir, repo_names, colors):
                 continue
             if any(p.startswith(".") for p in rel_path.parts):
                 continue
-            if any(p in ("node_modules", "__pycache__", ".venv", "dist", "build")
-                   for p in rel_path.parts):
+            if any(
+                p in ("node_modules", "__pycache__", ".venv", "dist", "build")
+                for p in rel_path.parts
+            ):
                 continue
             for f in files:
                 ext = Path(f).suffix.lower()
@@ -534,19 +609,23 @@ def _build_language_breakdown(projects_dir, repo_names, colors):
         total = sum(ext_counter.values())
         languages = []
         for lang, count in ext_counter.most_common(10):
-            languages.append({
-                "language": lang,
-                "count": count,
-                "pct": round(count / total * 100, 1) if total else 0,
-            })
+            languages.append(
+                {
+                    "language": lang,
+                    "count": count,
+                    "pct": round(count / total * 100, 1) if total else 0,
+                }
+            )
 
         if languages:
-            result.append({
-                "repo": name,
-                "color": colors.get(name, "#888"),
-                "languages": languages,
-                "total_files": total,
-            })
+            result.append(
+                {
+                    "repo": name,
+                    "color": colors.get(name, "#888"),
+                    "languages": languages,
+                    "total_files": total,
+                }
+            )
 
     return result
 
@@ -572,15 +651,17 @@ def _build_velocity_comparison(commits, summaries, colors):
         peak = daily.most_common(1)
         peak_day = peak[0] if peak else ("", 0)
 
-        result.append({
-            "repo": name,
-            "color": colors.get(name, "#888"),
-            "total_commits": len(repo_commits),
-            "active_days": active_days,
-            "commits_per_day": round(len(repo_commits) / active_days, 1) if active_days else 0,
-            "peak_day": peak_day[0],
-            "peak_count": peak_day[1],
-        })
+        result.append(
+            {
+                "repo": name,
+                "color": colors.get(name, "#888"),
+                "total_commits": len(repo_commits),
+                "active_days": active_days,
+                "commits_per_day": round(len(repo_commits) / active_days, 1) if active_days else 0,
+                "peak_day": peak_day[0],
+                "peak_count": peak_day[1],
+            }
+        )
 
     # Sort by commits descending
     result.sort(key=lambda x: x["total_commits"], reverse=True)
@@ -628,11 +709,13 @@ def _build_commit_types(commits, colors):
     result = []
     for repo in sorted(by_repo.keys()):
         breakdown = {t: by_repo[repo].get(t, 0) for t in all_types}
-        result.append({
-            "repo": repo,
-            "color": colors.get(repo, "#888"),
-            "breakdown": breakdown,
-        })
+        result.append(
+            {
+                "repo": repo,
+                "color": colors.get(repo, "#888"),
+                "breakdown": breakdown,
+            }
+        )
 
     return {"types": all_types, "repos": result}
 
@@ -724,19 +807,21 @@ def prepare_dashboard_data(global_dir, top_n=None, year=None):
         dc, du = _safe_parse_date(created), _safe_parse_date(updated)
         repo_calendar_days = (du - dc).days + 1 if dc and du else 0
 
-        repo_cards.append({
-            "name": name,
-            "total_commits": r["total_commits"],
-            "calendar_days": repo_calendar_days,
-            "first_date": created,
-            "last_date": updated,
-            "authors": len(r.get("authors", {})),
-            "top_author": top_author_name,
-            "top_language": top_language,
-            "description": r.get("description", ""),
-            "size_kb": r.get("size_kb", 0),
-            "language": r.get("language", top_language),
-        })
+        repo_cards.append(
+            {
+                "name": name,
+                "total_commits": r["total_commits"],
+                "calendar_days": repo_calendar_days,
+                "first_date": created,
+                "last_date": updated,
+                "authors": len(r.get("authors", {})),
+                "top_author": top_author_name,
+                "top_language": top_language,
+                "description": r.get("description", ""),
+                "size_kb": r.get("size_kb", 0),
+                "language": r.get("language", top_language),
+            }
+        )
 
     # Build metadata
     meta = {

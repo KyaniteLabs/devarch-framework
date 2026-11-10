@@ -18,11 +18,15 @@ Expectations derived by hand for a two-era canonical structure
 """
 
 import json
-from datetime import datetime
 from pathlib import Path
 
-from archaeology.era_cascade import cascade
-from archaeology.era_mapper import EraDef
+from archaeology.era_cascade import (
+    CascadeResult,
+    _default_color,
+    _fix_era_count_text,
+    _fix_era_range,
+    cascade,
+)
 
 ERAS_JSON = {
     "first_commit_date": "2026-01-01",
@@ -51,15 +55,26 @@ def build_project(tmp_path: Path, with_project_json: bool = True) -> Path:
     (proj / "deliverables").mkdir(parents=True)
     (proj / "commit-eras.json").write_text(json.dumps(ERAS_JSON))
     if with_project_json:
-        (proj / "project.json").write_text(json.dumps({
-            "overrides": {"era_count": 99},
-            "visualization": {"era_colors": {
-                "era-01": "#111111", "era-99": "#222222",
-            }},
-        }))
-    (proj / "deliverables" / "data.json").write_text(json.dumps({
-        "events": [{"era": 9, "date": "2026-01-05", "label": "first"}],
-    }))
+        (proj / "project.json").write_text(
+            json.dumps(
+                {
+                    "overrides": {"era_count": 99},
+                    "visualization": {
+                        "era_colors": {
+                            "era-01": "#111111",
+                            "era-99": "#222222",
+                        }
+                    },
+                }
+            )
+        )
+    (proj / "deliverables" / "data.json").write_text(
+        json.dumps(
+            {
+                "events": [{"era": 9, "date": "2026-01-05", "label": "first"}],
+            }
+        )
+    )
     (proj / "deliverables" / "data.js").write_text("const DATA = {};\n")
     (proj / "deliverables" / "report.html").write_text(REPORT_HTML)
     (proj / "deliverables" / "notes.md").write_text(NOTES_MD)
@@ -72,13 +87,13 @@ class TestCascadeFullRun:
         result = cascade(proj, proj / "commit-eras.json")
 
         assert result.project_json_synced is True
-        assert result.files_changed == 3          # project.json, report.html, notes.md
-        assert result.era_fields_remapped == 2    # data.json + embedded html field
-        assert result.css_vars_fixed == 1         # --era-07
-        assert result.ranges_capped == 1          # 1-9 -> 1-2
-        assert result.counts_fixed == 2           # Fourteen->Two (html), Sixteen->Two (md)
-        assert result.stale_refs_remaining == 2   # removal comment + "The Crusade"
-        assert result.files_scanned == 4          # data.json, data.js, report.html, notes.md
+        assert result.files_changed == 3  # project.json, report.html, notes.md
+        assert result.era_fields_remapped == 2  # data.json + embedded html field
+        assert result.css_vars_fixed == 1  # --era-07
+        assert result.ranges_capped == 1  # 1-9 -> 1-2
+        assert result.counts_fixed == 2  # Fourteen->Two (html), Sixteen->Two (md)
+        assert result.stale_refs_remaining == 2  # removal comment + "The Crusade"
+        assert result.files_scanned == 4  # data.json, data.js, report.html, notes.md
 
     def test_project_json_sync(self, tmp_path):
         proj = build_project(tmp_path)
@@ -88,7 +103,8 @@ class TestCascadeFullRun:
         # Trimmed to the era count; the missing second slot is filled from the
         # default palette (index 1), the stale era-99 dropped.
         assert pj["visualization"]["era_colors"] == {
-            "era-01": "#111111", "era-02": "#f87171",
+            "era-01": "#111111",
+            "era-02": "#f87171",
         }
 
     def test_data_json_remapped_and_data_js_mirrored(self, tmp_path):
@@ -97,9 +113,7 @@ class TestCascadeFullRun:
         data = json.loads((proj / "deliverables" / "data.json").read_text())
         # 2026-01-05 falls in era 1 (Dawn).
         assert data["events"][0]["era"] == 1
-        expected_js = (
-            "const DATA = " + json.dumps(data, indent=2) + ";\n"
-        )
+        expected_js = "const DATA = " + json.dumps(data, indent=2) + ";\n"
         assert (proj / "deliverables" / "data.js").read_text() == expected_js
 
     def test_html_fixes(self, tmp_path):
@@ -107,7 +121,7 @@ class TestCascadeFullRun:
         cascade(proj, proj / "commit-eras.json")
         html = (proj / "deliverables" / "report.html").read_text()
         assert "/* removed: era-07 */" in html
-        assert '--era-07' not in html
+        assert "--era-07" not in html
         assert 'data-era-range="1-2"' in html
         assert "Two Eras" in html
         assert '"era": 1' in html
@@ -167,9 +181,12 @@ class TestCascadeEdges:
         eras = {
             "first_commit_date": "2026-01-01",
             "eras": [
-                {"id": i + 1, "name": f"E{i}",
-                 "dates": f"2026-{(i // 20) + 1:02d}-{(i % 20) + 1:02d}",
-                 "commits": 1}
+                {
+                    "id": i + 1,
+                    "name": f"E{i}",
+                    "dates": f"2026-{(i // 20) + 1:02d}-{(i % 20) + 1:02d}",
+                    "commits": 1,
+                }
                 for i in range(12)
             ],
         }
@@ -189,18 +206,19 @@ class TestCascadeEdges:
 # round 2 — literal tables and remaining fixer branches
 # ---------------------------------------------------------------------------
 
-from archaeology.era_cascade import (
-    CascadeResult,
-    _default_color,
-    _fix_era_count_text,
-    _fix_era_range,
-)
-
 
 class TestDefaultColorPalette:
     PALETTE = [
-        "#4ade80", "#f87171", "#fb923c", "#60a5fa", "#a78bfa",
-        "#34d399", "#fbbf24", "#f472b6", "#c084fc", "#9ca3af",
+        "#4ade80",
+        "#f87171",
+        "#fb923c",
+        "#60a5fa",
+        "#a78bfa",
+        "#34d399",
+        "#fbbf24",
+        "#f472b6",
+        "#c084fc",
+        "#9ca3af",
     ]
 
     def test_every_slot(self):
@@ -215,10 +233,22 @@ class TestDefaultColorPalette:
 class TestFixEraCountTextTable:
     def test_every_word_count_rewrites_to_target(self):
         words = {
-            "One": 1, "Two": 2, "Three": 3, "Four": 4, "Five": 5,
-            "Six": 6, "Seven": 7, "Eight": 8, "Nine": 9, "Ten": 10,
-            "Eleven": 11, "Twelve": 12, "Thirteen": 13, "Fourteen": 14,
-            "Fifteen": 15, "Sixteen": 16,
+            "One": 1,
+            "Two": 2,
+            "Three": 3,
+            "Four": 4,
+            "Five": 5,
+            "Six": 6,
+            "Seven": 7,
+            "Eight": 8,
+            "Nine": 9,
+            "Ten": 10,
+            "Eleven": 11,
+            "Twelve": 12,
+            "Thirteen": 13,
+            "Fourteen": 14,
+            "Fifteen": 15,
+            "Sixteen": 16,
         }
         for word, num in words.items():
             if num == 2:
@@ -274,7 +304,8 @@ class TestMarkdownSkipLines:
     def test_arrow_lines_are_not_rewritten(self, tmp_path):
         proj = build_project(tmp_path)
         (proj / "deliverables" / "skip.md").write_text(
-            "Sixteen Eras -> Two Eras\nOriginal Claim: Sixteen Eras\n")
+            "Sixteen Eras -> Two Eras\nOriginal Claim: Sixteen Eras\n"
+        )
         cascade(proj, proj / "commit-eras.json")
         content = (proj / "deliverables" / "skip.md").read_text()
         assert content == "Sixteen Eras -> Two Eras\nOriginal Claim: Sixteen Eras\n"
@@ -283,13 +314,7 @@ class TestMarkdownSkipLines:
 class TestEmbeddedJsonWindow:
     def test_era_above_count_without_nearby_date_is_left(self, tmp_path):
         proj = build_project(tmp_path)
-        html = (
-            "<html><script>\n"
-            "const rows = [\n"
-            '  { "era": 7 }\n'
-            "];\n"
-            "</script></html>\n"
-        )
+        html = '<html><script>\nconst rows = [\n  { "era": 7 }\n];\n</script></html>\n'
         (proj / "deliverables" / "nodate.html").write_text(html)
         cascade(proj, proj / "commit-eras.json")
         out = (proj / "deliverables" / "nodate.html").read_text()

@@ -23,9 +23,14 @@ GIT_ENV = {
 
 def _make_repo(path: Path) -> Path:
     path.mkdir(parents=True)
-    env = {**os.environ, **GIT_ENV,
-           "GIT_AUTHOR_NAME": "T", "GIT_AUTHOR_EMAIL": "t@example.com",
-           "GIT_COMMITTER_NAME": "T", "GIT_COMMITTER_EMAIL": "t@example.com"}
+    env = {
+        **os.environ,
+        **GIT_ENV,
+        "GIT_AUTHOR_NAME": "T",
+        "GIT_AUTHOR_EMAIL": "t@example.com",
+        "GIT_COMMITTER_NAME": "T",
+        "GIT_COMMITTER_EMAIL": "t@example.com",
+    }
 
     def git(*args, date=None):
         e = dict(env)
@@ -76,6 +81,7 @@ def built(tmp_path_factory, repo):
 
 
 # ── Project resolution ────────────────────────────────────────────────────────
+
 
 def test_cli_ref_is_cwd_relative_and_requires_the_project(ws):
     with pytest.raises(PipelineError) as err:
@@ -131,6 +137,7 @@ def test_in_workspace_changes_directory_and_restores_it(ws, tmp_path_factory, mo
 
 # ── init ──────────────────────────────────────────────────────────────────────
 
+
 def test_init_creates_layout_and_config_once(ws):
     ref = ProjectRef.for_workspace("proj")
     first = pipeline.init(ref, "My description", "https://example.com/r")
@@ -143,10 +150,14 @@ def test_init_creates_layout_and_config_once(ws):
 
     second = pipeline.init(ref, "ignored", "ignored")
     assert not second.created
-    assert json.loads(second.config_path.read_text(encoding="utf-8"))["description"] == "My description"
+    assert (
+        json.loads(second.config_path.read_text(encoding="utf-8"))["description"]
+        == "My description"
+    )
 
 
 # ── mine ──────────────────────────────────────────────────────────────────────
+
 
 def test_require_git_repo_classifies_failures(ws):
     with pytest.raises(PipelineError) as missing:
@@ -191,11 +202,12 @@ def test_mine_expands_home_only_when_asked(ws, repo, monkeypatch):
 def test_mine_lets_extraction_errors_propagate(ws):
     broken = ws / "broken"
     (broken / ".git").mkdir(parents=True)
-    with pytest.raises(RuntimeError, match="git log failed"):
+    with pytest.raises(RuntimeError, match=r"git [a-z-]+ failed"):
         pipeline.mine(str(broken), ProjectRef.for_workspace("b"))
 
 
 # ── build-db, signals, analyze, audit, reports ────────────────────────────────
+
 
 def test_build_db_in_process_reports_the_database(built):
     root, ref = built
@@ -251,9 +263,25 @@ def test_analyze_leaves_unknown_project_to_the_engine(ws):
 def test_audit_reports_findings_and_blocking(built):
     _, ref = built
     result = pipeline.audit(ref, "HIGH")
-    assert result.findings and result.blocking
-    assert result.summary["CRITICAL"] >= 1
-    assert pipeline.audit(ref, "CRITICAL").blocking == (result.summary["CRITICAL"] > 0)
+    # A fresh, untampered dig carries a bound mining manifest and passes HIGH.
+    assert [f.code for f in result.findings] == ["PROJECT_REPO_URL"]
+    assert result.blocking is False
+    assert pipeline.audit(ref, "MEDIUM").blocking is True
+
+
+def test_audit_blocks_when_mined_bytes_change(built, tmp_path, monkeypatch):
+    import shutil
+
+    root, _ = built
+    copy = tmp_path / "copy"
+    shutil.copytree(root, copy)
+    monkeypatch.chdir(copy)
+    monkeypatch.delenv("DEVARCH_WORKSPACE", raising=False)
+    csv = copy / "projects" / "alpha" / "data" / "github-commits.csv"
+    csv.write_text(csv.read_text(encoding="utf-8") + "\n", encoding="utf-8")
+    result = pipeline.audit(ProjectRef.for_workspace("alpha"), "HIGH")
+    assert "MINING_ARTIFACT_DRIFT" in [f.code for f in result.findings]
+    assert result.blocking is True
 
 
 def test_audit_without_fail_on_skips_the_verdict(built):
@@ -299,6 +327,7 @@ def test_render_project_index_needs_the_project(ws):
 
 # ── visualize (template renderer) ─────────────────────────────────────────────
 
+
 def test_render_visualization_needs_the_template(ws):
     pipeline.init(ProjectRef.for_cli("v", must_exist=False), "", "")
     with pytest.raises(PipelineError) as err:
@@ -310,12 +339,16 @@ def test_render_visualization_needs_the_template(ws):
 def test_render_visualization_hydrates_template_and_warns_without_data(ws):
     pipeline.init(ProjectRef.for_cli("v", must_exist=False), "", "")
     template = ws / "t.html"
-    template.write_text("<title>DevArch Framework</title><h1>{{PROJECT_NAME}}</h1>{{TOTAL_COMMITS}}",
-                        encoding="utf-8")
+    template.write_text(
+        "<title>DevArch Framework</title><h1>{{PROJECT_NAME}}</h1>{{TOTAL_COMMITS}}",
+        encoding="utf-8",
+    )
     result = pipeline.render_visualization(ProjectRef.for_cli("v"), template=str(template))
     html = Path(result.output_path).read_text(encoding="utf-8")
     assert "<title>V — DevArch Framework</title>" in html and "<h1>V</h1>803" in html
-    assert result.warning and result.warning.startswith("Warning:") and "data.json" in result.warning
+    assert (
+        result.warning and result.warning.startswith("Warning:") and "data.json" in result.warning
+    )
 
 
 def test_render_visualization_rejects_broken_project_json(ws):
@@ -341,6 +374,7 @@ def test_load_config_file(ws):
 
 
 # ── run-pipeline ──────────────────────────────────────────────────────────────
+
 
 def test_run_pipeline_runs_every_step(ws, repo):
     run = pipeline.run_pipeline(str(repo), ProjectRef.for_workspace("full"))

@@ -39,6 +39,16 @@ jobs:
       run: |
         devarch demo --force --build-db
 
+    - name: Install and verify built wheel outside checkout
+      if: matrix.python-version == '3.12'
+      run: |
+        python -m pip install build twine
+        python -m build
+        python -m twine check dist/*
+        python -m pip uninstall -y devarch-framework
+        python -m pip install --no-deps --force-reinstall dist/devarch_framework-0.4.1-py3-none-any.whl
+        python scripts/check_installed_wheel.py
+
   lint:
     runs-on: ubuntu-latest
     steps:
@@ -57,8 +67,12 @@ jobs:
         python -m pip install --upgrade pip
         pip install -e ".[dev]"
 
+    - name: Lint and format
+      run: |
+        ruff check .
+        ruff format --check .
+
     - name: Check Python syntax
       run: |
         python -m py_compile archaeology/*.py
         python -m py_compile archaeology/**/*.py
-      continue-on-error: true

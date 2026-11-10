@@ -11,7 +11,6 @@ from __future__ import annotations
 
 from typing import Any
 
-
 # ── Google Fonts (all themes share this bundle) ─────────────────────────
 
 GOOGLE_FONTS_LINK = """\
@@ -330,6 +329,7 @@ ACCESSIBILITY_CSS = """\
 
 # ── SEO Meta Tags ────────────────────────────────────────────────────────
 
+
 def seo_meta(
     title: str,
     description: str,
@@ -371,7 +371,9 @@ def seo_meta(
     return tags
 
 
-def seo_software_application(name: str, description: str, version: str = "", url: str = "", image: str = "") -> str:
+def seo_software_application(
+    name: str, description: str, version: str = "", url: str = "", image: str = ""
+) -> str:
     """Shorthand for SoftwareApplication JSON-LD (common in DevArch outputs)."""
     return seo_meta(
         title=f"{name} — DevArch Analysis",
@@ -397,6 +399,7 @@ FAVICON = """\
 
 
 # ── Convenience: full head bundle ────────────────────────────────────────
+
 
 def head_bundle(
     title: str,
@@ -433,12 +436,15 @@ def head_bundle(
     if include_d3:
         parts.append('<script src="https://d3js.org/d3.v7.min.js"></script>')
     if include_charts:
-        parts.append('<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>')
+        parts.append(
+            '<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>'
+        )
         parts.append(CHART_THEME_JS)
     return "\n".join(parts)
 
 
 # ── Convenience: body-end bundle ─────────────────────────────────────────
+
 
 def body_end_bundle() -> str:
     """Generate the theme switcher JS that goes at the end of <body>."""

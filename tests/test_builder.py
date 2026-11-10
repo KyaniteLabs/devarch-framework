@@ -90,6 +90,7 @@ def test_validate_table_name_rejects_starting_with_number():
 # --- Fail-loud build guarantees (regression: silent sqlite-utils failure
 # produced an empty DB and a confidently-wrong all-zero report) ---
 
+
 def test_run_su_raises_on_failure():
     """run_su must raise, not warn-and-continue, when sqlite-utils fails."""
     with pytest.raises(SqliteUtilsError):

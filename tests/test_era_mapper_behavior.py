@@ -12,10 +12,9 @@ import json
 from datetime import datetime
 from pathlib import Path
 
-import pytest
-
 from archaeology.era_mapper import (
     EraDef,
+    _infer_year,
     era_count,
     era_from_date,
     get_current_era_names,
@@ -34,27 +33,35 @@ def write_eras(tmp_path: Path, payload: dict) -> Path:
 # load_eras — parsing rules
 # ---------------------------------------------------------------------------
 
+
 class TestLoadEras:
     def test_iso_to_range(self, tmp_path):
-        p = write_eras(tmp_path, {
-            "first_commit_date": "2026-01-01",
-            "eras": [
-                {"id": 1, "name": "Dawn", "dates": "2026-01-01 to 2026-01-10", "commits": 40},
-            ],
-        })
+        p = write_eras(
+            tmp_path,
+            {
+                "first_commit_date": "2026-01-01",
+                "eras": [
+                    {"id": 1, "name": "Dawn", "dates": "2026-01-01 to 2026-01-10", "commits": 40},
+                ],
+            },
+        )
         eras = load_eras(p)
         assert eras == [
-            EraDef(id=1, name="Dawn", start=datetime(2026, 1, 1),
-                   end=datetime(2026, 1, 10), commits=40)
+            EraDef(
+                id=1, name="Dawn", start=datetime(2026, 1, 1), end=datetime(2026, 1, 10), commits=40
+            )
         ]
 
     def test_single_date_spans_one_day(self, tmp_path):
-        p = write_eras(tmp_path, {
-            "first_commit_date": "2026-02-01",
-            "eras": [
-                {"id": 2, "name": "Solo", "dates": "2026-02-05", "commits": 1},
-            ],
-        })
+        p = write_eras(
+            tmp_path,
+            {
+                "first_commit_date": "2026-02-01",
+                "eras": [
+                    {"id": 2, "name": "Solo", "dates": "2026-02-05", "commits": 1},
+                ],
+            },
+        )
         eras = load_eras(p)
         assert eras[0].start == datetime(2026, 2, 5)
         assert eras[0].end == datetime(2026, 2, 5)
@@ -64,74 +71,106 @@ class TestLoadEras:
             ("2026-03-01 - 2026-03-08", datetime(2026, 3, 8)),
             ("2026-03-01 – 2026-03-08", datetime(2026, 3, 8)),
         ):
-            p = write_eras(tmp_path, {
-                "first_commit_date": "2026-03-01",
-                "eras": [{"id": 1, "name": "X", "dates": dates, "commits": 3}],
-            })
+            p = write_eras(
+                tmp_path,
+                {
+                    "first_commit_date": "2026-03-01",
+                    "eras": [{"id": 1, "name": "X", "dates": dates, "commits": 3}],
+                },
+            )
             assert load_eras(p)[0].end == expected_end
 
     def test_month_day_format_uses_inferred_year(self, tmp_path):
-        p = write_eras(tmp_path, {
-            "first_commit_date": "2026-06-01",
-            "eras": [
-                {"id": 1, "name": "M", "dates": "Jun 1 - Jun 9", "commits": 7},
-            ],
-        })
+        p = write_eras(
+            tmp_path,
+            {
+                "first_commit_date": "2026-06-01",
+                "eras": [
+                    {"id": 1, "name": "M", "dates": "Jun 1 - Jun 9", "commits": 7},
+                ],
+            },
+        )
         eras = load_eras(p)
         assert eras[0].start == datetime(2026, 6, 1)
         assert eras[0].end == datetime(2026, 6, 9)
 
     def test_year_falls_back_to_earliest_daily_key(self, tmp_path):
-        p = write_eras(tmp_path, {
-            "eras": [
-                {
-                    "id": 1, "name": "D", "dates": "Mar 4 - Mar 9", "commits": 2,
-                    "daily": {"2026-03-04": 1, "2026-03-05": 1},
-                },
-            ],
-        })
+        p = write_eras(
+            tmp_path,
+            {
+                "eras": [
+                    {
+                        "id": 1,
+                        "name": "D",
+                        "dates": "Mar 4 - Mar 9",
+                        "commits": 2,
+                        "daily": {"2026-03-04": 1, "2026-03-05": 1},
+                    },
+                ],
+            },
+        )
         eras = load_eras(p)
         assert eras[0].start == datetime(2026, 3, 4)
 
     def test_end_before_start_wraps_to_next_year(self, tmp_path):
-        p = write_eras(tmp_path, {
-            "first_commit_date": "2026-05-01",
-            "eras": [
-                {"id": 1, "name": "W", "dates": "Dec 28 - Jan 3", "commits": 5},
-            ],
-        })
+        p = write_eras(
+            tmp_path,
+            {
+                "first_commit_date": "2026-05-01",
+                "eras": [
+                    {"id": 1, "name": "W", "dates": "Dec 28 - Jan 3", "commits": 5},
+                ],
+            },
+        )
         eras = load_eras(p)
         assert eras[0].start == datetime(2026, 12, 28)
         assert eras[0].end == datetime(2027, 1, 3)
 
     def test_commits_string_yields_first_integer(self, tmp_path):
-        p = write_eras(tmp_path, {
-            "first_commit_date": "2026-01-01",
-            "eras": [
-                {"id": 1, "name": "C", "dates": "2026-01-01 to 2026-01-02",
-                 "commits": "12 commits"},
-            ],
-        })
+        p = write_eras(
+            tmp_path,
+            {
+                "first_commit_date": "2026-01-01",
+                "eras": [
+                    {
+                        "id": 1,
+                        "name": "C",
+                        "dates": "2026-01-01 to 2026-01-02",
+                        "commits": "12 commits",
+                    },
+                ],
+            },
+        )
         assert load_eras(p)[0].commits == 12
 
     def test_commits_string_without_digits_is_zero(self, tmp_path):
-        p = write_eras(tmp_path, {
-            "first_commit_date": "2026-01-01",
-            "eras": [
-                {"id": 1, "name": "C", "dates": "2026-01-01 to 2026-01-02",
-                 "commits": "unknown"},
-            ],
-        })
+        p = write_eras(
+            tmp_path,
+            {
+                "first_commit_date": "2026-01-01",
+                "eras": [
+                    {
+                        "id": 1,
+                        "name": "C",
+                        "dates": "2026-01-01 to 2026-01-02",
+                        "commits": "unknown",
+                    },
+                ],
+            },
+        )
         assert load_eras(p)[0].commits == 0
 
     def test_unparseable_dates_skip_the_era(self, tmp_path):
-        p = write_eras(tmp_path, {
-            "first_commit_date": "2026-01-01",
-            "eras": [
-                {"id": 1, "name": "Bad", "dates": "not a date at all", "commits": 1},
-                {"id": 2, "name": "Good", "dates": "2026-01-01", "commits": 2},
-            ],
-        })
+        p = write_eras(
+            tmp_path,
+            {
+                "first_commit_date": "2026-01-01",
+                "eras": [
+                    {"id": 1, "name": "Bad", "dates": "not a date at all", "commits": 1},
+                    {"id": 2, "name": "Good", "dates": "2026-01-01", "commits": 2},
+                ],
+            },
+        )
         eras = load_eras(p)
         assert [e.id for e in eras] == [2]
 
@@ -144,12 +183,19 @@ class TestLoadEras:
 # ---------------------------------------------------------------------------
 
 THREE_ERAS = [
-    EraDef(id=1, name="Foundation", start=datetime(2026, 1, 1),
-           end=datetime(2026, 1, 10), commits=40),
-    EraDef(id=2, name="Expansion", start=datetime(2026, 1, 11),
-           end=datetime(2026, 1, 20), commits=35),
-    EraDef(id=3, name="Consolidation", start=datetime(2026, 1, 21),
-           end=datetime(2026, 1, 31), commits=27),
+    EraDef(
+        id=1, name="Foundation", start=datetime(2026, 1, 1), end=datetime(2026, 1, 10), commits=40
+    ),
+    EraDef(
+        id=2, name="Expansion", start=datetime(2026, 1, 11), end=datetime(2026, 1, 20), commits=35
+    ),
+    EraDef(
+        id=3,
+        name="Consolidation",
+        start=datetime(2026, 1, 21),
+        end=datetime(2026, 1, 31),
+        commits=27,
+    ),
 ]
 
 
@@ -183,6 +229,7 @@ class TestEraFromDate:
 # counts and names
 # ---------------------------------------------------------------------------
 
+
 class TestCountsAndNames:
     def test_era_count_is_len(self):
         assert era_count(THREE_ERAS) == 3
@@ -190,13 +237,16 @@ class TestCountsAndNames:
 
     def test_current_era_names_is_the_name_set(self):
         assert get_current_era_names(THREE_ERAS) == {
-            "Foundation", "Expansion", "Consolidation",
+            "Foundation",
+            "Expansion",
+            "Consolidation",
         }
 
 
 # ---------------------------------------------------------------------------
 # remap_json_era_fields — date is the only remap source
 # ---------------------------------------------------------------------------
+
 
 class TestRemapJsonEraFields:
     def test_wrong_era_is_remapped_from_its_date(self):
@@ -253,8 +303,6 @@ class TestRemapJsonEraFields:
 # round 2 — year inference and month-only dates
 # ---------------------------------------------------------------------------
 
-from archaeology.era_mapper import _infer_year
-
 
 class TestInferYear:
     def test_first_commit_date_prefix_wins(self):
@@ -277,17 +325,21 @@ class TestInferYear:
 
     def test_unparseable_everything_falls_back_to_current_year(self):
         from datetime import datetime
+
         assert _infer_year({}) == datetime.now().year
 
 
 class TestMonthOnlyDates:
     def test_month_only_range(self, tmp_path):
-        p = write_eras(tmp_path, {
-            "first_commit_date": "2026-01-01",
-            "eras": [
-                {"id": 1, "name": "MO", "dates": "2026-03 to 2026-04", "commits": 4},
-            ],
-        })
+        p = write_eras(
+            tmp_path,
+            {
+                "first_commit_date": "2026-01-01",
+                "eras": [
+                    {"id": 1, "name": "MO", "dates": "2026-03 to 2026-04", "commits": 4},
+                ],
+            },
+        )
         eras = load_eras(p)
         assert eras[0].start == datetime(2026, 3, 1)
         assert eras[0].end == datetime(2026, 4, 1)

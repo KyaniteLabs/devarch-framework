@@ -14,7 +14,6 @@ import re
 import sys
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[2]  # scripts/sync/ → scripts/ → project root
 
 CURRENT_SURFACE = [
@@ -42,7 +41,10 @@ STALE_PATTERNS = [
     (re.compile(r"\b1,?778\b"), "stale total commit count; canonical is 1,213"),
     (re.compile(r"\b64\.5%\b"), "stale dogfood success rate; canonical is 68.5%"),
     (re.compile(r"\b104K\b"), "ambiguous old LOC shorthand; use a defined LOC metric"),
-    (re.compile(r"\b1615/1818\b|\b1,615 of 1,818\b|\b1,615 commits\b|\b1,655 commits\b"), "stale Cluster 4 numerator; canonical is 1,050/1,213"),
+    (
+        re.compile(r"\b1615/1818\b|\b1,615 of 1,818\b|\b1,615 commits\b|\b1,655 commits\b"),
+        "stale Cluster 4 numerator; canonical is 1,050/1,213",
+    ),
     (re.compile(r"\b4,762 tracked files\b"), "stale tracked file count"),
 ]
 
@@ -93,7 +95,7 @@ def iter_files(paths: list[Path]) -> list[Path]:
             out.extend(
                 p
                 for p in path.rglob("*")
-            if p.is_file() and p.suffix.lower() in {".md", ".html", ".json", ".js", ".j2"}
+                if p.is_file() and p.suffix.lower() in {".md", ".html", ".json", ".js", ".j2"}
             )
         elif path.exists():
             out.append(path)
@@ -120,11 +122,15 @@ def audit_file(path: Path) -> list[str]:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Audit current deliverable claims for stale canonical metrics.")
+    parser = argparse.ArgumentParser(
+        description="Audit current deliverable claims for stale canonical metrics."
+    )
     parser.add_argument("paths", nargs="*", type=Path, help="Optional files/directories to audit")
     args = parser.parse_args()
 
-    targets = iter_files([p if p.is_absolute() else ROOT / p for p in args.paths] if args.paths else CURRENT_SURFACE)
+    targets = iter_files(
+        [p if p.is_absolute() else ROOT / p for p in args.paths] if args.paths else CURRENT_SURFACE
+    )
     issues: list[str] = []
     for path in targets:
         issues.extend(audit_file(path))

@@ -23,7 +23,6 @@ import re
 import sys
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[2]  # scripts/sync/ → scripts/ → project root
 DEFAULT_MANIFEST = ROOT / "pipeline/config/derived-deliverables.json"
 DEFAULT_CANONICAL = ROOT / "projects/demo-project/deliverables/canonical-metrics.json"
@@ -35,6 +34,7 @@ _ROOT_RESOLVED = ROOT.resolve()
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _safe_path(rel: str | Path) -> Path:
     resolved = (ROOT / rel).resolve()
@@ -57,6 +57,7 @@ def load_json(path: Path) -> dict:
 # ---------------------------------------------------------------------------
 # Canonical data loading
 # ---------------------------------------------------------------------------
+
 
 def load_canonical(metrics_path: Path, eras_path: Path) -> dict:
     """Build the canonical data registry from source files."""
@@ -146,6 +147,7 @@ def load_canonical(metrics_path: Path, eras_path: Path) -> dict:
 # The regex matches the TEXT SHAPE where a canonical value appears.
 # The replacement function receives the match and the canonical dict.
 
+
 def _build_pattern_slots(c: dict, rel: str = "") -> list[tuple[re.Pattern, callable]]:
     """Build regex patterns that match text shapes and fix wrong values."""
     total_s = fmt_int(c["total_commits"])
@@ -165,73 +167,93 @@ def _build_pattern_slots(c: dict, rel: str = "") -> list[tuple[re.Pattern, calla
     # --- Project span: only in clearly scoped contexts ---
     # "Built in N days", "N days (Feb 28", "over N days", "N-day"
     for stale_days in [49, 47, 44]:
-        slots.append((
-            re.compile(rf"\b{stale_days}\s+days\s*\(Feb", re.I),
-            lambda m, s=span: f"{s} days (Feb",
-        ))
-        slots.append((
-            re.compile(rf"\bBuilt in {stale_days}\s+days\b"),
-            lambda m, s=span: f"Built in {s} days",
-        ))
-        slots.append((
-            re.compile(rf"\bover {stale_days}\s+days\b"),
-            lambda m, s=span: f"over {s} days",
-        ))
-        slots.append((
-            re.compile(rf"\bin {stale_days}\s+days\b", re.I),
-            lambda m, s=span: f"in {s} days",
-        ))
+        slots.append(
+            (
+                re.compile(rf"\b{stale_days}\s+days\s*\(Feb", re.I),
+                lambda m, s=span: f"{s} days (Feb",
+            )
+        )
+        slots.append(
+            (
+                re.compile(rf"\bBuilt in {stale_days}\s+days\b"),
+                lambda m, s=span: f"Built in {s} days",
+            )
+        )
+        slots.append(
+            (
+                re.compile(rf"\bover {stale_days}\s+days\b"),
+                lambda m, s=span: f"over {s} days",
+            )
+        )
+        slots.append(
+            (
+                re.compile(rf"\bin {stale_days}\s+days\b", re.I),
+                lambda m, s=span: f"in {s} days",
+            )
+        )
 
     # --- Active days: "N active days" ---
-    slots.append((
-        re.compile(r"\b(?:28|26|24|21)\s+active\s+days?\b"),
-        lambda m: m.group(0).replace(
-            re.match(r"\d+", m.group(0)).group(0), str(active)
-        ),
-    ))
+    slots.append(
+        (
+            re.compile(r"\b(?:28|26|24|21)\s+active\s+days?\b"),
+            lambda m: m.group(0).replace(re.match(r"\d+", m.group(0)).group(0), str(active)),
+        )
+    )
 
     # --- Active days in tables: "| N" preceded by "Active development days" ---
-    slots.append((
-        re.compile(r"(?<=Active development days \| )\d+"),
-        lambda m: str(active),
-    ))
+    slots.append(
+        (
+            re.compile(r"(?<=Active development days \| )\d+"),
+            lambda m: str(active),
+        )
+    )
 
     # --- Total commits: bare number in commit-count context ---
     for stale in [1002, 1778, 1818, 1924, 2008]:
         stale_s = fmt_int(stale)
         # "N commits" or "N," (with comma formatting variants)
-        slots.append((
-            re.compile(rf"\b{stale_s.replace(',', r'[,.]?\s*')}?\s*{stale}\s+commits\b"),
-            lambda m, s=total_s: f"{s} commits",
-        ))
+        slots.append(
+            (
+                re.compile(rf"\b{stale_s.replace(',', r'[,.]?\s*')}?\s*{stale}\s+commits\b"),
+                lambda m, s=total_s: f"{s} commits",
+            )
+        )
 
     # --- Cluster 4: "N/M commits" ratio ---
     for stale_num in [839, 1655, 1761]:
         stale_n = fmt_int(stale_num)
         for stale_denom in [1002, 1818, 1924]:
             stale_d = fmt_int(stale_denom)
-            slots.append((
-                re.compile(rf"\b{stale_n}\s*/\s*{stale_d}\b"),
-                lambda m, n=cluster_s, d=total_s: f"{n}/{d}",
-            ))
+            slots.append(
+                (
+                    re.compile(rf"\b{stale_n}\s*/\s*{stale_d}\b"),
+                    lambda m, n=cluster_s, d=total_s: f"{n}/{d}",
+                )
+            )
 
     # --- Cluster 4 percentage: standalone "XX.X%" in cluster context ---
     for stale_pct in [83.7, 91.0, 91.5]:
-        slots.append((
-            re.compile(rf"\b{stale_pct}%\b"),
-            lambda m, p=c4p: f"{p}%",
-        ))
+        slots.append(
+            (
+                re.compile(rf"\b{stale_pct}%\b"),
+                lambda m, p=c4p: f"{p}%",
+            )
+        )
 
     # --- Era count: "N eras" ---
     for stale_eras in [9, 15]:
-        slots.append((
-            re.compile(rf"\b{stale_eras}\s+eras\b"),
-            lambda m, e=era_count: f"{e} eras",
-        ))
-        slots.append((
-            re.compile(rf"\b{stale_eras}\s+development\s+eras\b"),
-            lambda m, e=era_count: f"{e} development eras",
-        ))
+        slots.append(
+            (
+                re.compile(rf"\b{stale_eras}\s+eras\b"),
+                lambda m, e=era_count: f"{e} eras",
+            )
+        )
+        slots.append(
+            (
+                re.compile(rf"\b{stale_eras}\s+development\s+eras\b"),
+                lambda m, e=era_count: f"{e} development eras",
+            )
+        )
 
     # --- Era-specific commit counts: "Era N ... X commits" ---
     for eid, era in c["eras"].items():
@@ -246,63 +268,91 @@ def _build_pattern_slots(c: dict, rel: str = "") -> list[tuple[re.Pattern, calla
         }
         for stale_count in stale_counts.get(eid, []):
             # "X commits" near the era name or date context
-            slots.append((
-                re.compile(rf"\b{stale_count}\s+commits\b(?=.*(?:Era\s+{eid}|{re.escape(name)}|{re.escape(era['dates'])}))"),
-                lambda m, cnt=count: f"~{cnt} commits",
-            ))
+            slots.append(
+                (
+                    re.compile(
+                        rf"\b{stale_count}\s+commits\b(?=.*(?:Era\s+{eid}|{re.escape(name)}|{re.escape(era['dates'])}))"
+                    ),
+                    lambda m, cnt=count: f"~{cnt} commits",
+                )
+            )
             # Reverse: era context first, then count
-            slots.append((
-                re.compile(rf"(?:Era\s+{eid}|{re.escape(name)}|{re.escape(era['dates'])}).*?\b{stale_count}\s+commits\b"),
-                lambda m, cnt=count, sc=str(stale_count): m.group(0).replace(
-                    f"{sc} commits", f"~{cnt} commits"
-                ),
-            ))
+            slots.append(
+                (
+                    re.compile(
+                        rf"(?:Era\s+{eid}|{re.escape(name)}|{re.escape(era['dates'])}).*?\b{stale_count}\s+commits\b"
+                    ),
+                    lambda m, cnt=count, sc=str(stale_count): m.group(0).replace(
+                        f"{sc} commits", f"~{cnt} commits"
+                    ),
+                )
+            )
 
     # --- Peak day: stale "Apr 9" or "207 commits" peak references ---
-    slots.append((
-        re.compile(r"PEAK\s+DAY.*?Apr\s+9.*?207\s+commits", re.I),
-        lambda m, ps=span: m.group(0)
-            .replace("Apr 9", f"Apr {c['peak_day_short']}")
-            .replace("207 commits", f"{c['peak_day_commits']} commits"),
-    ))
-    slots.append((
-        re.compile(r"\b207\s+commits\b"),
-        lambda m, pc=c["peak_day_commits"]: f"{pc} commits",
-    ))
+    slots.append(
+        (
+            re.compile(r"PEAK\s+DAY.*?Apr\s+9.*?207\s+commits", re.I),
+            lambda m, ps=span: (
+                m.group(0)
+                .replace("Apr 9", f"Apr {c['peak_day_short']}")
+                .replace("207 commits", f"{c['peak_day_commits']} commits")
+            ),
+        )
+    )
+    slots.append(
+        (
+            re.compile(r"\b207\s+commits\b"),
+            lambda m, pc=c["peak_day_commits"]: f"{pc} commits",
+        )
+    )
 
     # --- Cross-repo count ---
-    slots.append((
-        re.compile(r"\b4[,]?160\b"),
-        lambda m, cs=cross_s: cs,
-    ))
+    slots.append(
+        (
+            re.compile(r"\b4[,]?160\b"),
+            lambda m, cs=cross_s: cs,
+        )
+    )
 
     # --- Authorship percentage ---
-    slots.append((
-        re.compile(r"\b92\.4%\b"),
-        lambda m: "99.6%",
-    ))
+    slots.append(
+        (
+            re.compile(r"\b92\.4%\b"),
+            lambda m: "99.6%",
+        )
+    )
 
     # --- Velocity rates (broad regex: any number in these rate shapes) ---
-    slots.append((
-        re.compile(r"\b\d+\.?\d*\s+commits\s*/\s*active\s+day\b"),
-        lambda m, v=cpa: f"{v} commits/active day",
-    ))
-    slots.append((
-        re.compile(r"\b\d+\.?\d*\s+commits\s+per\s+active\s+day\b"),
-        lambda m, v=cpa: f"{v} commits per active day",
-    ))
-    slots.append((
-        re.compile(r"\b\d+\.?\d*\s+commits\s*/\s*day\s+span\b"),
-        lambda m, v=cps: f"{v} commits/day span",
-    ))
-    slots.append((
-        re.compile(r"\b\d+\.?\d*/day\s+over\s+(?:full\s+)?span\b"),
-        lambda m, v=cps: f"{v}/day over full span",
-    ))
-    slots.append((
-        re.compile(r"\b\d+\.?\d*%\s+active\s+rate\b"),
-        lambda m, v=ar: f"{v}% active rate",
-    ))
+    slots.append(
+        (
+            re.compile(r"\b\d+\.?\d*\s+commits\s*/\s*active\s+day\b"),
+            lambda m, v=cpa: f"{v} commits/active day",
+        )
+    )
+    slots.append(
+        (
+            re.compile(r"\b\d+\.?\d*\s+commits\s+per\s+active\s+day\b"),
+            lambda m, v=cpa: f"{v} commits per active day",
+        )
+    )
+    slots.append(
+        (
+            re.compile(r"\b\d+\.?\d*\s+commits\s*/\s*day\s+span\b"),
+            lambda m, v=cps: f"{v} commits/day span",
+        )
+    )
+    slots.append(
+        (
+            re.compile(r"\b\d+\.?\d*/day\s+over\s+(?:full\s+)?span\b"),
+            lambda m, v=cps: f"{v}/day over full span",
+        )
+    )
+    slots.append(
+        (
+            re.compile(r"\b\d+\.?\d*%\s+active\s+rate\b"),
+            lambda m, v=ar: f"{v}% active rate",
+        )
+    )
 
     return slots
 
@@ -310,6 +360,7 @@ def _build_pattern_slots(c: dict, rel: str = "") -> list[tuple[re.Pattern, calla
 # ---------------------------------------------------------------------------
 # Pass 2: Literal fallback — specific old→new for shapes regex can't express
 # ---------------------------------------------------------------------------
+
 
 def _build_literal_replacements(c: dict) -> list[tuple[str, str]]:
     """Literal string replacements for shapes too complex for regex."""
@@ -334,17 +385,26 @@ def _build_literal_replacements(c: dict) -> list[tuple[str, str]]:
         ("649K net line delta", net_label),
         ("575K net line delta", net_label),
         # File counts
-        (f"4,762 tracked files", f"{fmt_int(files)} tracked files" if files else "N/A tracked files"),
-        (f"4,762 files", f"{fmt_int(files)} files" if files else "N/A files"),
-        (f"4,949 tracked files", f"{fmt_int(files)} tracked files" if files else "N/A tracked files"),
-        (f"4,949 files", f"{fmt_int(files)} files" if files else "N/A files"),
+        (
+            "4,762 tracked files",
+            f"{fmt_int(files)} tracked files" if files else "N/A tracked files",
+        ),
+        ("4,762 files", f"{fmt_int(files)} files" if files else "N/A files"),
+        (
+            "4,949 tracked files",
+            f"{fmt_int(files)} tracked files" if files else "N/A tracked files",
+        ),
+        ("4,949 files", f"{fmt_int(files)} files" if files else "N/A files"),
         # Messages/sessions
         ("1,148+ human messages", f"{hm or 'N/A'} unique human messages"),
         ("1,148 human messages", f"{hm or 'N/A'} unique human messages"),
         ("1,148+ messages", f"{hm or 'N/A'} unique messages"),
         ("1,148 messages", f"{hm or 'N/A'} unique messages"),
         ("60 sessions", f"{sc or 'N/A'} analyzed sessions"),
-        ("60 Claude sessions", f"{sc or 'N/A'} analyzed Claude sessions (plus 60+ raw session files)"),
+        (
+            "60 Claude sessions",
+            f"{sc or 'N/A'} analyzed Claude sessions (plus 60+ raw session files)",
+        ),
         # Hooks
         ("27 hooks", "26 hooks"),
         ("27 Hooks", "26 Hooks"),
@@ -363,6 +423,7 @@ def _build_literal_replacements(c: dict) -> list[tuple[str, str]]:
 # ---------------------------------------------------------------------------
 # Pass 3: Derived recalculation
 # ---------------------------------------------------------------------------
+
 
 def recalculate_derived(line: str, c: dict) -> str:
     """Recalculate rates and percentages from canonical values."""
@@ -394,14 +455,18 @@ def recalculate_derived(line: str, c: dict) -> str:
 # Context preservation
 # ---------------------------------------------------------------------------
 
+
 def should_preserve_line(line: str) -> bool:
     """Skip lines that are historical records, not current claims."""
-    return bool(re.search(
-        r"Original Claim|originally reported|conflated|vs 920"
-        r"|Lehman & Stanley|Previous \(|was \d+ days|was \d+ eras"
-        r"|Corrected To \d+",
-        line, re.I,
-    ))
+    return bool(
+        re.search(
+            r"Original Claim|originally reported|conflated|vs 920"
+            r"|Lehman & Stanley|Previous \(|was \d+ days|was \d+ eras"
+            r"|Corrected To \d+",
+            line,
+            re.I,
+        )
+    )
 
 
 def _is_comparison_row(line: str) -> bool:
@@ -442,6 +507,7 @@ def _is_daily_commit_file(rel: str) -> bool:
 # Main sync logic
 # ---------------------------------------------------------------------------
 
+
 def sync_text(text: str, canonical: dict, rel: str = "") -> str:
     pattern_slots = _build_pattern_slots(canonical, rel)
     literals = _build_literal_replacements(canonical)
@@ -471,6 +537,7 @@ def sync_text(text: str, canonical: dict, rel: str = "") -> str:
 # ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
+
 
 def main() -> int:
     parser = argparse.ArgumentParser(
@@ -506,6 +573,7 @@ def main() -> int:
                 path.write_text(new)
             if args.verbose:
                 import difflib
+
                 diff = difflib.unified_diff(
                     old.splitlines(keepends=True),
                     new.splitlines(keepends=True),
@@ -523,11 +591,15 @@ def main() -> int:
         return 1
 
     action = "checked" if args.check else "synced"
-    print(f"Derived deliverables {action}: {len(manifest.get('paths', []))} paths, {len(changed)} changed")
+    print(
+        f"Derived deliverables {action}: {len(manifest.get('paths', []))} paths, {len(changed)} changed"
+    )
     if canonical:
-        print(f"  Canonical: {fmt_int(canonical['total_commits'])} commits, {canonical['span_days']} days, "
-              f"{canonical['active_days']} active, {canonical['era_count']} eras, "
-              f"peak {canonical['peak_day_short']} ({canonical['peak_day_commits']})")
+        print(
+            f"  Canonical: {fmt_int(canonical['total_commits'])} commits, {canonical['span_days']} days, "
+            f"{canonical['active_days']} active, {canonical['era_count']} eras, "
+            f"peak {canonical['peak_day_short']} ({canonical['peak_day_commits']})"
+        )
     return 0
 
 
