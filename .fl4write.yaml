@@ -1,4 +1,4 @@
-repo: KyaniteLabs/devarch-framework
+repo: KyaniteLabs/ag4te
 forges:
   forgejo:
     role: primary

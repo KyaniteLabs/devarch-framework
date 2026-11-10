@@ -107,7 +107,7 @@ def test_empty_history_replaces_stale_csv(tmp_path):
     out = tmp_path / "out.csv"
     out.write_text("stale")
     assert extract_git_log(str(tmp_path), str(out)) == 0
-    assert out.read_text().strip() == "hash,date,message,author"
+    assert out.read_text().strip() == "hash,date,message,author,email,parents"
 
 
 def test_audit_detects_modified_mining_input(repo, tmp_path, monkeypatch):
@@ -134,7 +134,11 @@ def test_git_z_timestamp_is_portable(tmp_path, monkeypatch):
     import archaeology.extractors.git as extractor
 
     def read_git(repo_path, *args):
-        return "a\x002026-01-02T07:30:00Z\x00subject\x00author\x00" if args[0] == "log" else "1\n"
+        return (
+            "a\x002026-01-02T07:30:00Z\x00subject\x00author\x00a@x.io\x00\x00"
+            if args[0] == "log"
+            else "1\n"
+        )
 
     monkeypatch.setattr(extractor, "_git", read_git)
     out = tmp_path / "utc.csv"
@@ -155,7 +159,7 @@ def test_csv_export_under_windows_newline_translation(repo, tmp_path, monkeypatc
     assert extract_git_log(str(repo), str(out)) == 2
     with out.open(newline="", encoding="utf-8") as handle:
         rows = list(csv.reader(handle))
-    assert len(rows) == 3 and all(len(row) == 4 for row in rows)
+    assert len(rows) == 3 and all(len(row) == 6 for row in rows)
 
 
 @pytest.mark.parametrize("corruption", ["manifest", "database", "metrics", "visual"])

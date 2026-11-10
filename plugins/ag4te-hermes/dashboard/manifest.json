@@ -1,0 +1,1 @@
+{"name": "ag4te", "label": "AG4TE", "description": "Dig a repository's history and read its strata.", "icon": "git-commit", "api": "plugin_api.py"}

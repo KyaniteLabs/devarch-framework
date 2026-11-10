@@ -56,22 +56,24 @@ def extract_git_log(repo_path: str, output_path: str, verbose: bool = False) -> 
 
     from ..utils import atomic_write
 
-    raw = _git(repo_path, "log", "-z", "--all", "--format=%H%x00%aI%x00%s%x00%an")
+    raw = _git(repo_path, "log", "-z", "--all", "--format=%H%x00%aI%x00%s%x00%an%x00%ae%x00%P")
     fields = raw.split("\0")
     if fields[-1] == "":
         fields.pop()
-    if len(fields) % 4:
+    if len(fields) % 6:
         raise RuntimeError("Malformed Git extraction; refusing partial history")
     stream = io.StringIO(newline="")
     writer = csv.writer(stream, lineterminator="\n")
-    writer.writerow(["hash", "date", "message", "author"])
-    for i in range(0, len(fields), 4):
-        sha, date, subject, author = fields[i : i + 4]
+    # email and parents identify people across name spellings and mark
+    # merges (more than one parent); older readers ignore extra columns.
+    writer.writerow(["hash", "date", "message", "author", "email", "parents"])
+    for i in range(0, len(fields), 6):
+        sha, date, subject, author, email, parents = fields[i : i + 6]
         normalized = (
             datetime.fromisoformat(date.replace("Z", "+00:00")).astimezone(timezone.utc).isoformat()
         )
-        writer.writerow([sha, normalized, subject, author])
-    count = len(fields) // 4
+        writer.writerow([sha, normalized, subject, author, email, parents])
+    count = len(fields) // 6
     expected = int(_git(repo_path, "rev-list", "--all", "--count").strip())
     if count != expected:
         raise RuntimeError("Repository changed during extraction; retry against frozen refs")
