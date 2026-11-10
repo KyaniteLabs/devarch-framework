@@ -10,7 +10,7 @@ from __future__ import annotations
 from typing import Any
 
 from archaeology import pipeline
-from archaeology.pipeline import PipelineError, ProjectRef
+from archaeology.pipeline import PipelineError, ProjectRef, RunStage
 
 from .project_utils import (
     get_project_config,
@@ -127,19 +127,20 @@ def devarch_run_pipeline(repo_path: str, project_name: str) -> dict[str, Any]:
     run = pipeline.run_pipeline(repo_path, _ref(project_name))
     results: dict[str, Any] = {"init": "created" if run.init_created else "exists"}
 
-    if run.failed_at == "mine":
+    if run.stage is RunStage.MINE_FAILED:
         results["mine"] = {"error": run.mine_error}
         results["status"] = "failed"
-        results["failed_at"] = "mine"
+        results["failed_at"] = run.failed_at
         return results
     results["mine"] = _mine_dict(project_name, run.mine)
     results["commits_extracted"] = run.mine.commits
 
-    results["build_db"] = "failed" if run.build.error is not None else "complete"
-    if run.failed_at == "build_db":
+    if run.stage is RunStage.BUILD_FAILED:
+        results["build_db"] = "failed"
         results["status"] = "failed"
-        results["failed_at"] = "build_db"
+        results["failed_at"] = run.failed_at
         return results
+    results["build_db"] = "complete"
 
     results["signals"] = run.signal_count
     results["analysis"] = run.analysis

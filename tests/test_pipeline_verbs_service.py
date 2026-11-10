@@ -223,3 +223,25 @@ def test_cascade_returns_exit_verdict_without_raising(tmp_path, monkeypatch):
     outcome = pipeline.cascade(ref, on_line=lines)
     assert outcome.exit_code == 1
     assert "ERROR: No commit-eras.json found at" in lines.text()
+
+
+def test_cascade_reaches_its_verdict_with_opportunity_disabled(tmp_path, monkeypatch):
+    """Step 7 used to construct the disabled OpportunityAnalyzer, which always
+    raises, so cascade crashed before printing a verdict whenever eras existed."""
+    repo = _make_repo(tmp_path / "repo")
+    ws = tmp_path / "ws"
+    ws.mkdir()
+    monkeypatch.chdir(ws)
+    monkeypatch.delenv("DEVARCH_WORKSPACE", raising=False)
+    ref = ProjectRef.for_cli("alpha", must_exist=False)
+    pipeline.init(ref, "Alpha", "")
+    pipeline.mine(str(repo), ref, expand_repo_path=False)
+    eras = ws / "projects" / "alpha" / "data" / "commit-eras.json"
+    eras.write_text(json.dumps({"eras": []}), encoding="utf-8")
+
+    lines = Lines()
+    outcome = pipeline.cascade(ref, dry_run=True, skip_mine=True, on_line=lines)
+    text = lines.text()
+    assert "[7/7] Running opportunity analyzers..." in text
+    assert "SKIP: opportunity analyzers are disabled" in text
+    assert outcome.exit_code in (0, 1)

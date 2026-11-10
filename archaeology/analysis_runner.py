@@ -12,6 +12,7 @@ import os
 import sqlite3
 from collections import Counter
 from datetime import datetime
+from enum import Enum
 from pathlib import Path
 from typing import Any, Callable
 
@@ -618,9 +619,48 @@ class AnalysisRunner:
                 results[vector_name] = str(output_path)
                 print(f"  [analysis] {vector_name}: {output_path}")
             except (OSError, ValueError, KeyError, sqlite3.OperationalError) as exc:
-                print(f"  [analysis] {vector_name} ERROR: {exc}")
-                results[vector_name] = f"ERROR: {exc}"
+                results[vector_name] = vector_error(exc)
+                print(f"  [analysis] {vector_name} {results[vector_name]}")
         return results
+
+
+class VectorOutcome(str, Enum):
+    """How one analysis vector ended, as stored in ``run_all``'s result dict.
+
+    The dict value is the outcome: a written vector maps to its output path, a
+    failed one to ``"ERROR: <reason>"``. There are no other states and no
+    transitions; ``classify_vector_outcome`` is the only reader::
+
+        (run vector) --wrote json--> WRITTEN   (value: output path)
+                     +--raised-----> FAILED    (value: "ERROR: <reason>")
+    """
+
+    WRITTEN = "written"
+    FAILED = "failed"
+
+
+VECTOR_ERROR_PREFIX = "ERROR"
+
+
+def vector_error(exc: object) -> str:
+    """The stored value for a vector that failed with ``exc``."""
+    return f"{VECTOR_ERROR_PREFIX}: {exc}"
+
+
+def classify_vector_outcome(value: object) -> VectorOutcome:
+    """Read one ``run_all`` value back as its outcome."""
+    if str(value).startswith(VECTOR_ERROR_PREFIX):
+        return VectorOutcome.FAILED
+    return VectorOutcome.WRITTEN
+
+
+def failed_vectors(results: dict[str, str]) -> dict[str, str]:
+    """The subset of ``run_all`` results whose vector failed."""
+    return {
+        name: value
+        for name, value in results.items()
+        if classify_vector_outcome(value) is VectorOutcome.FAILED
+    }
 
 
 def run_analysis_vectors(
