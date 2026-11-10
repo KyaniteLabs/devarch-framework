@@ -3,7 +3,7 @@
 Exposes DevArch pipeline commands as MCP tools that Claude Code, Cursor,
 and other AI assistants can call directly.
 
-Run with: devarch-mcp (after pip install devarch-framework[mcp])
+Run with: devarch-mcp (after pip install -e ".[mcp]" from a clone; not on PyPI)
 
 Configure in .mcp.json:
 {

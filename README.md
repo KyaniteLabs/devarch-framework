@@ -17,6 +17,10 @@ DevArch treats your git history as structured data. It extracts commits into a q
 
 > **Just want a quick learning diagnostic?** [Dev Learning Archaeologist](https://github.com/simongonzalezdc/dev-learning-archaeologist) is a zero-setup ICM folder — drop it in any project, run through Claude Code, no install required.
 
+## Hermes Desktop plugin
+
+AG4TE also ships as a [Hermes](https://github.com/NousResearch/hermes-agent) plugin. It runs a dig from Hermes Desktop and draws the result as strata: the repo as a cut agate, commits per day by kind of work, eras, quiet gaps, signals, weekly rhythm, practice health, and authors split into people, agents and bots. It also adds `/ag4te` and a read-only `ag4te_dig` tool for agents. Install and settings: [plugins/ag4te-hermes](plugins/ag4te-hermes/README.md).
+
 ## Evidence integrity (0.4.0)
 
 Mining covers all **locally available refs**, records coverage and rejects shallow history. Fetch the authorized branches/tags/PR refs before mining when remote completeness matters. Automated vectors are keyword-based investigation leads, not verified source conclusions, productivity measurements or causal explanations. The default visualization contains measured daily activity only. See [0.4.0 release notes](docs/RELEASE_0.4.0.md).
@@ -142,6 +146,7 @@ devarch audit my-project --fail-on MEDIUM
 
 ### Analysis
 - `devarch analyze <project> [--vector] [--prompts]` -- Run analysis vectors
+- `devarch benchmark <project>` -- Generate an agent performance benchmark visualization
 - Legacy `cascade`, `opportunity`, `dashboard` and `publish-static` commands are disabled pending safety/evidence redesign.
 
 ### Visualization & Reporting
@@ -158,7 +163,8 @@ devarch audit my-project --fail-on MEDIUM
 
 ### Multi-Project Operations
 - `devarch sync [--project] [--skip-mine] [--skip-signals]` -- Sync multiple projects
-- `devarch global-viz [--output] [--top-n] [--year]` -- Generate global visualization
+- `devarch global-viz [--output] [--top] [--year]` -- Generate global visualization
+- `devarch multi-project-dashboard [--output] [--top] [--year]` -- Generate a multi-project dashboard
 - `devarch fetch-github <owner> [--output]` -- Fetch repository metadata from GitHub
 
 ### Local Pipeline

@@ -1,12 +1,12 @@
-# devarch-framework
+# AG4TE (formerly DevArch Framework; package devarch-framework, command devarch)
 
 > Git repository archaeology framework — mine commit history into evidence-backed engineering reports.
 
 ## What it is
-A Python framework + CLI that mines a repo's git history, runs 6 analysis vectors, detects signals, and generates engineering/learning reports. ICM-aligned.
+A Python framework + CLI that mines a repo's git history, runs 6 analysis vectors, detects signals, and generates engineering/learning reports. ICM-aligned. Also ships as a Hermes Desktop plugin (plugins/ag4te-hermes) that draws a repo's history as strata.
 
 ## Install / use
 git clone the repo, then `pip install -e .` (not yet on PyPI).
 
 ## Links
-- Repository: https://github.com/KyaniteLabs/devarch-framework
+- Repository: https://github.com/KyaniteLabs/ag4te

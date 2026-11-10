@@ -7,15 +7,16 @@ You know a repository's code, but not the story of how it got that way: when the
 A dig gives you:
 
 - commits per day, split by kind of work (features, fixes, docs, tests, chores and the rest)
+- the repo drawn as a cut agate: one band per era, oldest at the rim and newest at the core, band thickness following √commits, and each band split by kind of work in time order, every kind at its exact share of that era's commits
 - eras, quiet gaps and notable signals
 - weekly rhythm and practice health
 - authors merged across name spellings and split into people, agents and bots
 
-Digs run on your machine. They read only the repository you choose, keep their results under `plugin-data/ag4te`, and never call an LLM. The only network access is `uvx` fetching the pinned DevArch release from GitHub the first time.
+Digs run on your machine. They read only the repository you choose, keep their results under `plugin-data/ag4te`, and never call an LLM. The only network access is `uvx` fetching the pinned DevArch commit and its Python dependencies the first time.
 
 ## What you get
 
-- **Desktop:** an AG4TE page. Pick a repository under your `repo_roots`, start a dig, watch its steps, and read the strata chart (Days or Weeks), eras, gaps, signals, rhythm and authors. A running dig can be stopped and resumed.
+- **Desktop:** an AG4TE page. Pick a repository under your `repo_roots`, start a dig, watch its steps, and read the stone and the strata chart (Days, Weeks or Months), eras, gaps, signals, rhythm and authors. A running dig can be stopped and resumed.
 - **Slash command:** `/ag4te list | show <project> | status <project> | dig <repo-path> [project] | stop <project> | resume <project>`. On Telegram, Discord and other chat platforms, `dig` and `resume` are off unless you set `allow_dig_on_gateway: true`, because they read local files.
 - **Agent tool:** `ag4te_dig` gives agents a read-only summary of a finished dig, or lists the digs.
 

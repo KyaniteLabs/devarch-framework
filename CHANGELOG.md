@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.4.1] - Unreleased readiness candidate
 
 - Rename the repository to AG4TE (`KyaniteLabs/ag4te`). The `devarch` command and the `devarch-framework` package keep their names.
+- Draw the AG4TE plugin's stone as an iris agate: one band per era, oldest at the rim, laid out in time order with each kind of work sized by its share of the era's commits. Classify plain imperative commit subjects ("Add…", "Fix…") as kinds of work, and pin the plugin to that DevArch commit (`6dd2299`).
 - Add the AG4TE Hermes plugin (`plugins/ag4te-hermes`) and fix the commit data model: the Git extractor records email and parents, dates keep their UTC offset, era signals sort by instant, and SDLC practices are word-bounded with merges left out.
 
 - Fix QA regressions from #90: `global-viz` and `multi-project-dashboard` now resolve their templates against the installed package (they failed outside the repo source root); `sync` accepts the README-documented `path` profile key as an alias for `repo_path`, validates `name` and the repository location as nonempty strings before any filesystem writes, and reports malformed project entries with actionable errors instead of `KeyError`/`TypeError` tracebacks; `serve` passes datasette's `--setting` as two arguments so the server actually starts.
