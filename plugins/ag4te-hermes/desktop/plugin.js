@@ -20,6 +20,8 @@ const LOAD_LABEL = { TRIVIAL: 'Tiny', ROUTINE: 'Small', MODERATE: 'Medium', HIGH
 const LOAD_RANGE = { TRIVIAL: '≤10 lines', ROUTINE: '≤50', MODERATE: '≤200', HIGH: '≤800', INTENSE: '800+' }
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 const PAGE = 60
+// The stone renders 'other' as milky chalcedony, the translucent layer between an agate's colours.
+const CHALCEDONY = '#c4b5f0'
 
 function h(type, props, ...children) {
   const { key, ...rest } = props || {}
@@ -379,27 +381,54 @@ function Agate({ d, pal, eraNo, hl, setHl, multiYear }) {
 
   const weights = eras.map(c => Math.sqrt(Math.max(1, c.commits)))
   const wsum = weights.reduce((a, b) => a + b, 0) || 1
+  // ~48 lines across the whole stone, at least 5 per era: fine enough to read as iris agate,
+  // coarse enough not to moire at 232px.
+  const lineCount = weights.map(w => Math.max(5, Math.round((w / wsum) * 48)))
   let f = 1
   const bands = [], seams = []
   eras.forEach((c, i) => {
     const f0 = f, f1 = f - (weights[i] / wsum) * (1 - CORE)
     f = f1
     const pale = !eraNo[i]
-    const k = !pale && c.k && c.k.some(Boolean) ? c.k : KINDS.map((_, j) => (j === KINDS.length - 1 ? 1 : 0))
-    const tot = k.reduce((a, b) => a + b, 0)
-    // Each era band is sliced radially into its kinds of work, biggest share outermost:
-    // fine concentric lines, the way an agate's colours layer inside one deposit.
     const on = hl === i
     const tip = e => { setHl(i); const bb = box.current.getBoundingClientRect(); setTip({ x: e.clientX - bb.left, y: e.clientY - bb.top, flip: true, body: eraBody(c, eraNo[i], pal, multiYear) }) }
-    let fa = f0
-    k.map((n, j) => [n, j]).filter(([n]) => n).sort((x, y) => y[0] - x[0]).forEach(([n, j], si) => {
-      const fb = fa - ((f0 - f1) * n) / tot
-      const col = pale ? '#c9d2e3' : pal[KINDS[j]]
-      bands.push(h('path', { key: `b${i}-${j}`, d: ring(fa, fb, 0, Math.PI * 2), fill: col, fillOpacity: pale ? 0.42 : si ? 0.86 : 0.97, className: `band${on ? ' on' : ''}`,
-        stroke: col, strokeWidth: 0.3, strokeOpacity: pale ? 0.42 : 1, onPointerMove: tip,
-        onPointerLeave: () => { setHl(null); setTip(null) }, onClick: () => setHl(i) }))
-      fa = fb
+    // Lines are dealt to kinds by largest remainder (area still equals share), then laid in
+    // a few repeating runs so each colour forms coherent bands, like the logo's fortification.
+    const lines = lineCount[i]
+    const kc = KINDS.map((_, j) => (c.k && c.k.some(Boolean) ? c.k[j] || 0 : j === KINDS.length - 1 ? 1 : 0))
+    const kt = kc.reduce((a, b) => a + b, 0) || 1
+    const raw = kc.map(n => (n / kt) * lines), alloc = raw.map(Math.floor)
+    raw.map((v, j) => [v - alloc[j], j]).sort((x, y) => y[0] - x[0]).slice(0, lines - alloc.reduce((a, b) => a + b, 0)).forEach(([, j]) => alloc[j]++)
+    const order = alloc.map((n, j) => [n, j]).filter(([n]) => n).sort((x, y) => y[0] - x[0]).map(([, j]) => j)
+    const reps = Math.max(1, Math.min(6, Math.floor(lines / 6)))
+    const seq = []
+    for (let rp = 0; rp < reps; rp++) {
+      const ord = order.slice(rp % order.length).concat(order.slice(0, rp % order.length))
+      ord.forEach(j => { const n = Math.floor(alloc[j] / reps) + (rp < alloc[j] % reps ? 1 : 0); for (let q = 0; q < n; q++) seq.push(j) })
+    }
+    const r = rng(hashStr(`${d.project}#${i}`))
+    const wid = seq.map(() => 0.5 + r())
+    const wt = wid.reduce((a, b) => a + b, 0)
+    let g = f0
+    seq.forEach((j, s0) => {
+      const kind = KINDS[j], milky = kind === 'other'
+      const g1 = g - (wid[s0] / wt) * (f0 - f1)
+      const runEdge = s0 > 0 && seq[s0 - 1] !== j
+      const op = (milky ? 0.6 : 1) * (pale ? 0.82 : 1) * (0.85 + 0.15 * r())
+      // Each line carries three same-hue striations of uneven weight: the fine iridescent
+      // texture of the logo without mixing hues closely enough to moire.
+      const sw = [0.5 + r(), 0.3 + r() * 0.5, 0.5 + r()], st = sw[0] + sw[1] + sw[2]
+      let gg = g
+      sw.forEach((w, q) => {
+        const g2 = gg - (w / st) * (g - g1)
+        bands.push(h('path', { key: `b${i}-${s0}-${q}`, d: ring(gg, g2, 0, Math.PI * 2), fill: milky ? CHALCEDONY : pal[kind], fillOpacity: op * [1, 0.62, 0.9][q], className: `band${on ? ' on' : ''}`,
+          onPointerMove: tip, onPointerLeave: () => { setHl(null); setTip(null) }, onClick: () => setHl(i) }))
+        gg = g2
+      })
+      if (runEdge) seams.push(h('path', { key: `r${i}-${s0}`, d: loop(g), fill: 'none', stroke: '#f4f0ff', strokeOpacity: 0.22, strokeWidth: 0.45, pointerEvents: 'none' }))
+      g = g1
     })
+    if (i > 0) seams.push(h('path', { key: `e${i}`, d: loop(f0), fill: 'none', stroke: '#fff', strokeOpacity: 0.6, strokeWidth: 0.7, pointerEvents: 'none' }))
     const next = eras[i + 1]
     if (next && dayIndex(c.end, next.start) - 1 >= 7) seams.push(h('path', { key: `s${i}`, d: loop(f1), fill: 'none', stroke: '#0b0f16', strokeOpacity: 0.7, strokeWidth: 1.1, pointerEvents: 'none' }))
   })
@@ -413,9 +442,11 @@ function Agate({ d, pal, eraNo, hl, setHl, multiYear }) {
           h('feTurbulence', { type: 'fractalNoise', baseFrequency: 0.85, numOctaves: 2, seed: hashStr(d.project) % 97, stitchTiles: 'stitch' }),
           h('feColorMatrix', { type: 'saturate', values: 0 }), h('feComposite', { operator: 'in', in2: 'SourceGraphic' }))),
       h('path', { d: loop(1.035), fill: '#0b0f16', opacity: 0.9 }),
+      h('path', { d: loop(1), fill: CHALCEDONY }),
       h('g', null, bands),
       h('path', { d: loop(CORE), fill: `url(#${gid}-core)` }),
       h('g', null, seams),
+      h('path', { d: loop(1.012), fill: 'none', stroke: '#7fd6f0', strokeOpacity: 0.55, strokeWidth: 1.4, pointerEvents: 'none' }),
       h('path', { d: loop(1), fill: `url(#${gid}-sheen)`, pointerEvents: 'none' }),
       h('path', { d: loop(1), fill: '#fff', filter: `url(#${gid}-grain)`, opacity: 0.07, pointerEvents: 'none', style: { mixBlendMode: 'overlay' } })),
     h('figcaption', null, `Eras as bands, oldest at the rim`),
