@@ -20,6 +20,8 @@ const LOAD_LABEL = { TRIVIAL: 'Tiny', ROUTINE: 'Small', MODERATE: 'Medium', HIGH
 const LOAD_RANGE = { TRIVIAL: '≤10 lines', ROUTINE: '≤50', MODERATE: '≤200', HIGH: '≤800', INTENSE: '800+' }
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 const PAGE = 60
+// The stone renders 'other' as milky chalcedony, the translucent layer between an agate's colours.
+const CHALCEDONY = '#c4b5f0'
 
 function h(type, props, ...children) {
   const { key, ...rest } = props || {}
@@ -356,6 +358,60 @@ function eraBody(c, no, pal, multiYear) {
 function hashStr(s) { let x = 2166136261; for (const ch of String(s)) { x ^= ch.charCodeAt(0); x = Math.imul(x, 16777619) } return x >>> 0 }
 function rng(seed) { let a = seed || 1; return () => { a = (a + 0x6d2b79f5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296 } }
 
+// stone-layout:start (pure; tests/test_stone_layout.py evaluates this block in node)
+// Lays each era's commits out as bands, rim (f=1) to core (f=core), oldest first.
+// - Era thickness: sqrt(commits) share of the stone, so small eras stay visible.
+// - Inside an era every commit gets an equal slice of thickness, so each kind's band
+//   thickness is its exact share of the era's commits.
+// - Resolution follows pixels: one time-ordered chunk per ~3px of era thickness, never
+//   finer than one commit. Inside a chunk the kind that continues from the previous chunk
+//   goes first, then larger kinds, so runs merge into broad bands.
+// - per: one striation per commit when a commit is >= 1.5px thick, else one solid band.
+function stoneLayout(d, rad, core) {
+  const eras = d.clusters || []
+  const other = KINDS.length - 1
+  const kindIdx = k => { const j = KINDS.indexOf(k); return j < 0 ? other : j }
+  const expand = counts => { const seq = []; counts.map((n, j) => [n || 0, j]).filter(([n]) => n > 0).sort((x, y) => y[0] - x[0]).forEach(([n, j]) => { for (let q = 0; q < n; q++) seq.push(j) }); return seq }
+  const byDay = {}
+  ;[...(d.commits || [])].filter(x => x.kind !== 'merge').sort((x, y) => Date.parse(x.t) - Date.parse(y.t))
+    .forEach(x => { (byDay[x.day] = byDay[x.day] || []).push(kindIdx(x.kind)) })
+  const dayOrder = {}
+  ;(d.days || []).forEach(day => {
+    const tot = (day.k || []).reduce((a, b) => a + (b || 0), 0)
+    dayOrder[day.d] = byDay[day.d] && byDay[day.d].length === tot ? byDay[day.d] : expand(day.k || [])
+  })
+  const weights = eras.map(c => Math.sqrt(Math.max(1, c.commits || 0)))
+  const wsum = weights.reduce((a, b) => a + b, 0) || 1
+  let f = 1
+  return eras.map((c, i) => {
+    const f0 = f, f1 = f - (weights[i] / wsum) * (1 - core)
+    f = f1
+    const kc = KINDS.map((_, j) => (c.k && c.k.some(Boolean) ? c.k[j] || 0 : j === other ? 1 : 0))
+    let seq = []
+    ;(d.days || []).filter(day => day.d >= c.start && day.d <= c.end).forEach(day => { seq = seq.concat(dayOrder[day.d] || []) })
+    const sc = KINDS.map(() => 0)
+    seq.forEach(j => { sc[j]++ })
+    if (sc.some((v, j) => v !== kc[j])) seq = expand(kc) // day series disagrees with the era: trust the era's counts
+    const n = seq.length || 1, span = f0 - f1
+    const chunks = Math.max(1, Math.min(n, Math.floor((span * rad) / 3)))
+    const ordered = []
+    for (let q = 0; q < chunks; q++) {
+      const part = seq.slice(Math.round((q * n) / chunks), Math.round(((q + 1) * n) / chunks))
+      const cnt = {}
+      part.forEach(j => { cnt[j] = (cnt[j] || 0) + 1 })
+      const prev = ordered[ordered.length - 1]
+      Object.keys(cnt).map(Number).sort((x, y) => (x === prev ? -1 : y === prev ? 1 : cnt[y] - cnt[x] || x - y)).forEach(j => { for (let r = 0; r < cnt[j]; r++) ordered.push(j) })
+    }
+    const runs = []
+    ordered.forEach(j => { const last = runs[runs.length - 1]; if (last && last.j === j) last.n++; else runs.push({ j, n: 1 }) })
+    const striate = (span / n) * rad >= 1.5
+    let g = f0
+    runs.forEach(run => { run.g0 = g; run.g1 = g - (run.n / n) * span; run.per = run.n > 1 && striate ? run.n : 1; g = run.g1 })
+    return { f0, f1, chunks, n: seq.length, runs }
+  })
+}
+// stone-layout:end
+
 function Agate({ d, pal, eraNo, hl, setHl, multiYear }) {
   const [tip, setTip] = useState(null)
   const box = useRef(null)
@@ -377,29 +433,23 @@ function Agate({ d, pal, eraNo, hl, setHl, multiYear }) {
   }
   const loop = f => { const p = []; for (let s = 0; s < N; s++) p.push(pt((s / N) * Math.PI * 2, f)); return `M${p.map(q => q.map(v => v.toFixed(1)).join(',')).join('L')}Z` }
 
-  const weights = eras.map(c => Math.sqrt(Math.max(1, c.commits)))
-  const wsum = weights.reduce((a, b) => a + b, 0) || 1
-  let f = 1
+  const layout = useMemo(() => stoneLayout(d, RAD, CORE), [d])
   const bands = [], seams = []
-  eras.forEach((c, i) => {
-    const f0 = f, f1 = f - (weights[i] / wsum) * (1 - CORE)
-    f = f1
+  layout.forEach(({ f0, f1, runs }, i) => {
+    const c = eras[i]
     const pale = !eraNo[i]
-    const k = !pale && c.k && c.k.some(Boolean) ? c.k : KINDS.map((_, j) => (j === KINDS.length - 1 ? 1 : 0))
-    const tot = k.reduce((a, b) => a + b, 0)
-    // Each era band is sliced radially into its kinds of work, biggest share outermost:
-    // fine concentric lines, the way an agate's colours layer inside one deposit.
     const on = hl === i
     const tip = e => { setHl(i); const bb = box.current.getBoundingClientRect(); setTip({ x: e.clientX - bb.left, y: e.clientY - bb.top, flip: true, body: eraBody(c, eraNo[i], pal, multiYear) }) }
-    let fa = f0
-    k.map((n, j) => [n, j]).filter(([n]) => n).sort((x, y) => y[0] - x[0]).forEach(([n, j], si) => {
-      const fb = fa - ((f0 - f1) * n) / tot
-      const col = pale ? '#c9d2e3' : pal[KINDS[j]]
-      bands.push(h('path', { key: `b${i}-${j}`, d: ring(fa, fb, 0, Math.PI * 2), fill: col, fillOpacity: pale ? 0.42 : si ? 0.86 : 0.97, className: `band${on ? ' on' : ''}`,
-        stroke: col, strokeWidth: 0.3, strokeOpacity: pale ? 0.42 : 1, onPointerMove: tip,
-        onPointerLeave: () => { setHl(null); setTip(null) }, onClick: () => setHl(i) }))
-      fa = fb
+    runs.forEach((run, s0) => {
+      const kind = KINDS[run.j], milky = kind === 'other'
+      const op = (milky ? 0.6 : 1) * (pale ? 0.72 : 1)
+      for (let q = 0; q < run.per; q++) {
+        const a0 = run.g0 - ((run.g0 - run.g1) * q) / run.per, a1 = run.g0 - ((run.g0 - run.g1) * (q + 1)) / run.per
+        bands.push(h('path', { key: `b${i}-${s0}-${q}`, d: ring(a0, a1, 0, Math.PI * 2), fill: milky ? CHALCEDONY : pal[kind], fillOpacity: op * (q % 2 ? 0.8 : 1), className: `band${on ? ' on' : ''}`,
+          onPointerMove: tip, onPointerLeave: () => { setHl(null); setTip(null) }, onClick: () => setHl(i) }))
+      }
     })
+    if (i > 0) seams.push(h('path', { key: `e${i}`, d: loop(f0), fill: 'none', stroke: '#fff', strokeOpacity: 0.6, strokeWidth: 0.7, pointerEvents: 'none' }))
     const next = eras[i + 1]
     if (next && dayIndex(c.end, next.start) - 1 >= 7) seams.push(h('path', { key: `s${i}`, d: loop(f1), fill: 'none', stroke: '#0b0f16', strokeOpacity: 0.7, strokeWidth: 1.1, pointerEvents: 'none' }))
   })
@@ -413,9 +463,11 @@ function Agate({ d, pal, eraNo, hl, setHl, multiYear }) {
           h('feTurbulence', { type: 'fractalNoise', baseFrequency: 0.85, numOctaves: 2, seed: hashStr(d.project) % 97, stitchTiles: 'stitch' }),
           h('feColorMatrix', { type: 'saturate', values: 0 }), h('feComposite', { operator: 'in', in2: 'SourceGraphic' }))),
       h('path', { d: loop(1.035), fill: '#0b0f16', opacity: 0.9 }),
+      h('path', { d: loop(1), fill: CHALCEDONY }),
       h('g', null, bands),
       h('path', { d: loop(CORE), fill: `url(#${gid}-core)` }),
       h('g', null, seams),
+      h('path', { d: loop(1.012), fill: 'none', stroke: '#7fd6f0', strokeOpacity: 0.55, strokeWidth: 1.4, pointerEvents: 'none' }),
       h('path', { d: loop(1), fill: `url(#${gid}-sheen)`, pointerEvents: 'none' }),
       h('path', { d: loop(1), fill: '#fff', filter: `url(#${gid}-grain)`, opacity: 0.07, pointerEvents: 'none', style: { mixBlendMode: 'overlay' } })),
     h('figcaption', null, `Eras as bands, oldest at the rim`),

@@ -1,0 +1,10 @@
+ts	phase	decision	why	evidence	result
+2026-11-10T20:34:47Z	frame	Done = on the real NucBox unbl0ck dig the stone stops reading grey, and the layout keeps share/time/legibility rules	Simon: real data looks like a weird grey donut; mockup looks right	dig: 41 commits, 1 era, 63% other (k=[2,1,2,5,2,3,26])	predicate: grey_frac(new) clearly < grey_frac(old) on that dig; P1/P2/P3 pass
+2026-11-10T20:34:47Z	frame	Rigor medium	reversible UI change, no data or auth surface	plugin.js only + test	gates: unit harness + mutations + rendered before/after
+2026-11-10T20:34:47Z	design	Pull band layout into pure stoneLayout() and test it in node	colour semantics must be checkable without a browser	tests/test_stone_layout.py	P1 share within 1%, tiling, P2 order, P3 chunk >=3px
+2026-11-10T20:34:47Z	design	Era counts win when per-day kinds disagree	dig era k and day k can drift; stone must match the era totals shown elsewhere	skew case 168/168 vs days 200/136	pass
+2026-11-10T20:34:47Z	loop	Mutation testing on the layout	prove the tests can fail	reversed order, equal widths, 1px chunks	all 3 killed; 4th (drop days) not applied - untested
+2026-11-10T20:34:47Z	loop	Rig baseline on bundled digs	need old-vs-new numbers	rig unbl0ck 22 commits low other	INCONCLUSIVE: old code not grey there; rig data unrepresentative
+2026-11-10T20:34:47Z	loop	Swap the real NucBox dig into the rig	reproduce Simon's grey donut	first pass byte-identical old/new	observation bug: rig loads ~/.hermes/desktop-plugins, not ~/.hermes/plugins; fixed
+2026-11-10T20:34:47Z	verify	Real dig old vs new	the predicate	grey_frac 0.138 -> 0.009; mean_sat 0.301 -> 0.423; Epoch grey 0.037 -> 0.017	VERIFIED
+2026-11-10T20:34:47Z	open	63% other still dominates unbl0ck as a lavender chalcedony field	honest: the dig classifier predates 6dd2299 (reads plain imperative subjects)	re-dig not yet run	open
