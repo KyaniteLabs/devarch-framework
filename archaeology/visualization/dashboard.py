@@ -8,7 +8,7 @@ or deployed as a static site.
 from __future__ import annotations
 
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -263,7 +263,7 @@ def generate_master_dashboard(
     api_repos: list[dict[str, Any]] | None = None,
 ) -> str:
     """Generate the master dashboard HTML."""
-    now = datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC")
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     api_repos = api_repos or []
 
     api_commits = sum(r["commits"] for r in api_repos if isinstance(r["commits"], int))
@@ -1234,7 +1234,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
 def generate_project_index(project: dict[str, Any]) -> str:
     """Generate per-project dashboard with data visualizations front and center."""
-    _now = datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC")
+    _now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     meta = project["meta"]
     proj_name = project["name"].upper()
     commits = meta.get("commits", "?")

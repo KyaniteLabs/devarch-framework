@@ -33,7 +33,7 @@ Pipeline JSON format (expected keys):
 
 import json
 import sqlite3
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
@@ -127,7 +127,7 @@ def ingest_run(db_path: Path, run_json: dict, source_file: str = "") -> int:
     try:
         # Support both old (timestamp) and new (run_timestamp) field names
         ts = run_json.get("run_timestamp") or run_json.get(
-            "timestamp", datetime.utcnow().isoformat()
+            "timestamp", datetime.now(timezone.utc).replace(tzinfo=None).isoformat()
         )
         # Map new status values to old format for backward compatibility
         raw_status = run_json.get("status", "unknown")
