@@ -358,6 +358,60 @@ function eraBody(c, no, pal, multiYear) {
 function hashStr(s) { let x = 2166136261; for (const ch of String(s)) { x ^= ch.charCodeAt(0); x = Math.imul(x, 16777619) } return x >>> 0 }
 function rng(seed) { let a = seed || 1; return () => { a = (a + 0x6d2b79f5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296 } }
 
+// stone-layout:start (pure; tests/test_stone_layout.py evaluates this block in node)
+// Lays each era's commits out as bands, rim (f=1) to core (f=core), oldest first.
+// - Era thickness: sqrt(commits) share of the stone, so small eras stay visible.
+// - Inside an era every commit gets an equal slice of thickness, so each kind's band
+//   thickness is its exact share of the era's commits.
+// - Resolution follows pixels: one time-ordered chunk per ~3px of era thickness, never
+//   finer than one commit. Inside a chunk the kind that continues from the previous chunk
+//   goes first, then larger kinds, so runs merge into broad bands.
+// - per: one striation per commit when a commit is >= 1.5px thick, else one solid band.
+function stoneLayout(d, rad, core) {
+  const eras = d.clusters || []
+  const other = KINDS.length - 1
+  const kindIdx = k => { const j = KINDS.indexOf(k); return j < 0 ? other : j }
+  const expand = counts => { const seq = []; counts.map((n, j) => [n || 0, j]).filter(([n]) => n > 0).sort((x, y) => y[0] - x[0]).forEach(([n, j]) => { for (let q = 0; q < n; q++) seq.push(j) }); return seq }
+  const byDay = {}
+  ;[...(d.commits || [])].filter(x => x.kind !== 'merge').sort((x, y) => Date.parse(x.t) - Date.parse(y.t))
+    .forEach(x => { (byDay[x.day] = byDay[x.day] || []).push(kindIdx(x.kind)) })
+  const dayOrder = {}
+  ;(d.days || []).forEach(day => {
+    const tot = (day.k || []).reduce((a, b) => a + (b || 0), 0)
+    dayOrder[day.d] = byDay[day.d] && byDay[day.d].length === tot ? byDay[day.d] : expand(day.k || [])
+  })
+  const weights = eras.map(c => Math.sqrt(Math.max(1, c.commits || 0)))
+  const wsum = weights.reduce((a, b) => a + b, 0) || 1
+  let f = 1
+  return eras.map((c, i) => {
+    const f0 = f, f1 = f - (weights[i] / wsum) * (1 - core)
+    f = f1
+    const kc = KINDS.map((_, j) => (c.k && c.k.some(Boolean) ? c.k[j] || 0 : j === other ? 1 : 0))
+    let seq = []
+    ;(d.days || []).filter(day => day.d >= c.start && day.d <= c.end).forEach(day => { seq = seq.concat(dayOrder[day.d] || []) })
+    const sc = KINDS.map(() => 0)
+    seq.forEach(j => { sc[j]++ })
+    if (sc.some((v, j) => v !== kc[j])) seq = expand(kc) // day series disagrees with the era: trust the era's counts
+    const n = seq.length || 1, span = f0 - f1
+    const chunks = Math.max(1, Math.min(n, Math.floor((span * rad) / 3)))
+    const ordered = []
+    for (let q = 0; q < chunks; q++) {
+      const part = seq.slice(Math.round((q * n) / chunks), Math.round(((q + 1) * n) / chunks))
+      const cnt = {}
+      part.forEach(j => { cnt[j] = (cnt[j] || 0) + 1 })
+      const prev = ordered[ordered.length - 1]
+      Object.keys(cnt).map(Number).sort((x, y) => (x === prev ? -1 : y === prev ? 1 : cnt[y] - cnt[x] || x - y)).forEach(j => { for (let r = 0; r < cnt[j]; r++) ordered.push(j) })
+    }
+    const runs = []
+    ordered.forEach(j => { const last = runs[runs.length - 1]; if (last && last.j === j) last.n++; else runs.push({ j, n: 1 }) })
+    const striate = (span / n) * rad >= 1.5
+    let g = f0
+    runs.forEach(run => { run.g0 = g; run.g1 = g - (run.n / n) * span; run.per = run.n > 1 && striate ? run.n : 1; g = run.g1 })
+    return { f0, f1, chunks, n: seq.length, runs }
+  })
+}
+// stone-layout:end
+
 function Agate({ d, pal, eraNo, hl, setHl, multiYear }) {
   const [tip, setTip] = useState(null)
   const box = useRef(null)
@@ -379,54 +433,21 @@ function Agate({ d, pal, eraNo, hl, setHl, multiYear }) {
   }
   const loop = f => { const p = []; for (let s = 0; s < N; s++) p.push(pt((s / N) * Math.PI * 2, f)); return `M${p.map(q => q.map(v => v.toFixed(1)).join(',')).join('L')}Z` }
 
-  const weights = eras.map(c => Math.sqrt(Math.max(1, c.commits)))
-  const wsum = weights.reduce((a, b) => a + b, 0) || 1
-  // ~48 lines across the whole stone, at least 5 per era: fine enough to read as iris agate,
-  // coarse enough not to moire at 232px.
-  const lineCount = weights.map(w => Math.max(5, Math.round((w / wsum) * 48)))
-  let f = 1
+  const layout = useMemo(() => stoneLayout(d, RAD, CORE), [d])
   const bands = [], seams = []
-  eras.forEach((c, i) => {
-    const f0 = f, f1 = f - (weights[i] / wsum) * (1 - CORE)
-    f = f1
+  layout.forEach(({ f0, f1, runs }, i) => {
+    const c = eras[i]
     const pale = !eraNo[i]
     const on = hl === i
     const tip = e => { setHl(i); const bb = box.current.getBoundingClientRect(); setTip({ x: e.clientX - bb.left, y: e.clientY - bb.top, flip: true, body: eraBody(c, eraNo[i], pal, multiYear) }) }
-    // Lines are dealt to kinds by largest remainder (area still equals share), then laid in
-    // a few repeating runs so each colour forms coherent bands, like the logo's fortification.
-    const lines = lineCount[i]
-    const kc = KINDS.map((_, j) => (c.k && c.k.some(Boolean) ? c.k[j] || 0 : j === KINDS.length - 1 ? 1 : 0))
-    const kt = kc.reduce((a, b) => a + b, 0) || 1
-    const raw = kc.map(n => (n / kt) * lines), alloc = raw.map(Math.floor)
-    raw.map((v, j) => [v - alloc[j], j]).sort((x, y) => y[0] - x[0]).slice(0, lines - alloc.reduce((a, b) => a + b, 0)).forEach(([, j]) => alloc[j]++)
-    const order = alloc.map((n, j) => [n, j]).filter(([n]) => n).sort((x, y) => y[0] - x[0]).map(([, j]) => j)
-    const reps = Math.max(1, Math.min(6, Math.floor(lines / 6)))
-    const seq = []
-    for (let rp = 0; rp < reps; rp++) {
-      const ord = order.slice(rp % order.length).concat(order.slice(0, rp % order.length))
-      ord.forEach(j => { const n = Math.floor(alloc[j] / reps) + (rp < alloc[j] % reps ? 1 : 0); for (let q = 0; q < n; q++) seq.push(j) })
-    }
-    const r = rng(hashStr(`${d.project}#${i}`))
-    const wid = seq.map(() => 0.5 + r())
-    const wt = wid.reduce((a, b) => a + b, 0)
-    let g = f0
-    seq.forEach((j, s0) => {
-      const kind = KINDS[j], milky = kind === 'other'
-      const g1 = g - (wid[s0] / wt) * (f0 - f1)
-      const runEdge = s0 > 0 && seq[s0 - 1] !== j
-      const op = (milky ? 0.6 : 1) * (pale ? 0.82 : 1) * (0.85 + 0.15 * r())
-      // Each line carries three same-hue striations of uneven weight: the fine iridescent
-      // texture of the logo without mixing hues closely enough to moire.
-      const sw = [0.5 + r(), 0.3 + r() * 0.5, 0.5 + r()], st = sw[0] + sw[1] + sw[2]
-      let gg = g
-      sw.forEach((w, q) => {
-        const g2 = gg - (w / st) * (g - g1)
-        bands.push(h('path', { key: `b${i}-${s0}-${q}`, d: ring(gg, g2, 0, Math.PI * 2), fill: milky ? CHALCEDONY : pal[kind], fillOpacity: op * [1, 0.62, 0.9][q], className: `band${on ? ' on' : ''}`,
+    runs.forEach((run, s0) => {
+      const kind = KINDS[run.j], milky = kind === 'other'
+      const op = (milky ? 0.6 : 1) * (pale ? 0.72 : 1)
+      for (let q = 0; q < run.per; q++) {
+        const a0 = run.g0 - ((run.g0 - run.g1) * q) / run.per, a1 = run.g0 - ((run.g0 - run.g1) * (q + 1)) / run.per
+        bands.push(h('path', { key: `b${i}-${s0}-${q}`, d: ring(a0, a1, 0, Math.PI * 2), fill: milky ? CHALCEDONY : pal[kind], fillOpacity: op * (q % 2 ? 0.8 : 1), className: `band${on ? ' on' : ''}`,
           onPointerMove: tip, onPointerLeave: () => { setHl(null); setTip(null) }, onClick: () => setHl(i) }))
-        gg = g2
-      })
-      if (runEdge) seams.push(h('path', { key: `r${i}-${s0}`, d: loop(g), fill: 'none', stroke: '#f4f0ff', strokeOpacity: 0.22, strokeWidth: 0.45, pointerEvents: 'none' }))
-      g = g1
+      }
     })
     if (i > 0) seams.push(h('path', { key: `e${i}`, d: loop(f0), fill: 'none', stroke: '#fff', strokeOpacity: 0.6, strokeWidth: 0.7, pointerEvents: 'none' }))
     const next = eras[i + 1]
