@@ -616,3 +616,44 @@ def test_parse_git_accepts_utc_z_suffix():
         ]
     )
     assert len(ag.parse_git(rec + "\n\x1e")) == 1
+
+
+def test_story_tells_the_dig_in_order_and_links_eras(tmp_path):
+    repo = git_repo(tmp_path / "r")
+    s = {"history": "head", "time_zone": "UTC"}
+    pdir = tmp_path / "p"
+    (pdir / "data").mkdir(parents=True)
+    ag.mine_git(repo, pdir, s, None)
+    d = ag.summarize(pdir, project="r", settings=s)
+    ids = [c["id"] for c in d["story"]]
+    assert ids[0] == "origin" and ids[-1] == "now"
+    assert "shape" in ids and "people" in ids and "work" in ids
+    assert "feat(ui): add strata ribbon" in d["story"][0]["text"]  # the real first commit
+    for c in d["story"]:
+        assert c["title"] and c["text"]
+        assert c["era"] is None or 0 <= c["era"] < len(d["clusters"])
+    assert ag.story(d) == d["story"]  # pure: same dig, same words
+
+
+def test_story_empty_truncated_and_backfilled(tmp_path, monkeypatch):
+    assert ag.story({}) == [] and ag.story({"empty": True}) == []
+    d = {
+        "commit_count": 3,
+        "first": "2026-05-01",
+        "last": "2026-05-20",
+        "span_days": 20,
+        "active_days": 3,
+        "kinds": list(ag.KINDS),
+        "kind_totals": [1, 1, 0, 1, 0, 0, 0],
+        "commits_truncated": True,
+        "commits": [{"kind": "docs", "msg": "late", "author": "Lin"}],
+        "clusters": [],
+        "generated_at": "not a date",
+    }
+    origin = ag.story(d)[0]
+    assert origin["text"] == "The history read here starts on 2026-05-01."  # no false first commit
+    assert not any(c["id"] == "now" for c in ag.story(d))  # no eras, no "now" chapter
+    # a dig saved before the lens gets its story on load
+    monkeypatch.setattr(ag, "project_dir", lambda project, settings=None: tmp_path)
+    (tmp_path / ag.DIG_FILE).write_text(json.dumps(d), encoding="utf-8")
+    assert ag.load_dig("demo")["story"] == ag.story(d)

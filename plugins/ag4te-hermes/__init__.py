@@ -1466,6 +1466,179 @@ def summarize(
             ],
         }
     )
+    out["story"] = story(out)
+    return out
+
+
+# --------------------------------------------------------------------------- story
+
+_KIND_WORDS = {
+    "feat": "new features",
+    "fix": "fixes",
+    "refactor": "refactoring",
+    "docs": "documentation",
+    "ops": "build and ops work",
+    "test": "tests",
+    "other": "unlabelled changes",
+}
+
+
+def _pct(a: int, b: int) -> int:
+    return round(100 * a / b) if b else 0
+
+
+def _plural(n: int, word: str) -> str:
+    return f"{n:,} {word}{'' if n == 1 else 's'}"
+
+
+def _mix(k: List[int], kinds: List[str]) -> str:
+    """'mostly new features (61%)' or 'fixes (40%) and refactoring (30%)'."""
+    tot = sum(k)
+    ranked = sorted(((n, kinds[i]) for i, n in enumerate(k) if n), key=lambda x: (-x[0], x[1]))
+    if not ranked:
+        return ""
+    n0, k0 = ranked[0]
+    if _pct(n0, tot) >= 50 or len(ranked) == 1:
+        return f"mostly {_KIND_WORDS.get(k0, k0)} ({_pct(n0, tot)}%)"
+    n1, k1 = ranked[1]
+    return (
+        f"{_KIND_WORDS.get(k0, k0)} ({_pct(n0, tot)}%) and "
+        f"{_KIND_WORDS.get(k1, k1)} ({_pct(n1, tot)}%)"
+    )
+
+
+def story(d: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """The dig told as a few short chapters, in order. Rule-based: same dig, same words.
+
+    Each chapter is ``{"id", "title", "text", "era"}``; ``era`` is an index into
+    ``clusters`` (or None) so the page can light that stretch of the strata.
+    """
+    if not d or d.get("empty") or not d.get("commit_count"):
+        return []
+    kinds = list(d.get("kinds") or KINDS)
+    eras = list(d.get("clusters") or [])
+    era_min = int((d.get("thresholds") or {}).get("era_min_commits") or ERA_MIN_COMMITS)
+    big = sum(1 for c in eras if c.get("commits", 0) >= era_min)
+    out: List[Dict[str, Any]] = []
+
+    def add(cid: str, title: str, text: str, era: Optional[int] = None) -> None:
+        out.append({"id": cid, "title": title, "text": text, "era": era})
+
+    # Origin: the oldest listed commit, only when the list reaches back to the start.
+    commits = d.get("commits") or []
+    work = [c for c in commits if c.get("kind") != "merge"]
+    if work and not d.get("commits_truncated"):
+        c0 = work[-1]
+        add(
+            "origin",
+            "Origin",
+            f"It began on {d['first']} when {c0.get('author') or 'someone'} committed "
+            f"\u201c{str(c0.get('msg') or '').strip()[:90]}\u201d.",
+            0 if eras else None,
+        )
+    else:
+        add(
+            "origin",
+            "Origin",
+            f"The history read here starts on {d['first']}.",
+            0 if eras else None,
+        )
+
+    # Shape: how long, how steady, how many eras.
+    span, active = d.get("span_days", 0), d.get("active_days", 0)
+    shape = (
+        f"{_plural(d['commit_count'], 'commit')} over {_plural(span, 'day')}; "
+        f"work happened on {active:,} of them ({_pct(active, span)}%)."
+    )
+    if len(eras) > 1:
+        shape += (
+            f" Quiet gaps split it into {len(eras)} eras ({big} with {era_min}+ commits); "
+            f"the longest pause lasted "
+            f"{_plural(d.get('longest_gap', 0), 'day')}."
+        )
+    elif d.get("longest_streak"):
+        shape += f" No long pauses: the longest run of back-to-back days was {d['longest_streak']}."
+    add("shape", "Shape", shape)
+
+    # The biggest push: the era with the most commits.
+    if eras:
+        i = max(range(len(eras)), key=lambda j: (eras[j].get("commits", 0), -j))
+        e = eras[i]
+        if len(eras) > 1 and e.get("commits", 0) >= era_min:
+            led = f", led by {e['author']}" if e.get("author") else ""
+            scope = f" around {e['scope']}" if e.get("scope") else ""
+            add(
+                "push",
+                "Biggest push",
+                f"From {e['start']} to {e['end']}: {_plural(e['commits'], 'commit')} on "
+                f"{_plural(e.get('active_days', 0), 'day')}, {_mix(e.get('k') or [], kinds)}"
+                f"{scope}{led}.",
+                i,
+            )
+
+    # Turning points: the strongest detected changes, oldest first.
+    sigs = [s for s in d.get("signals") or [] if s.get("detail")]
+    strong = [s for s in sigs if s.get("strength") == "strong"] or sigs
+    if strong:
+        picks = sorted(strong[:3], key=lambda s: s.get("d") or "")
+        add(
+            "turns",
+            "Turning points",
+            " ".join(f"{s.get('d')}: {str(s['detail']).rstrip('.')}." for s in picks)
+            + (f" ({len(sigs) - len(picks)} more below.)" if len(sigs) > len(picks) else ""),
+        )
+
+    # Who built it.
+    authors = [a for a in d.get("authors") or [] if a.get("kind") != "bot"]
+    ppl = d.get("people") or {}
+    if authors:
+        human_n = d["commit_count"] - d.get("bot_commits", 0)
+        top = authors[0]
+        who = f"{top['name']} wrote {_pct(top.get('n', 0), human_n)}% of the non-bot commits"
+        if ppl.get("human", 0) > 1:
+            who += f", one of {ppl['human']} people"
+        who += "."
+        if d.get("agent_assisted"):
+            who += (
+                f" {_pct(d['agent_assisted'], human_n)}% had an AI agent as author or co-author"
+                + (f" ({_plural(ppl['agent'], 'agent')} in all)." if ppl.get("agent") else ".")
+            )
+        if d.get("bot_commits"):
+            who += f" Bots added {_plural(d['bot_commits'], 'more commit')}."
+        add("people", "Who built it", who)
+
+    # What the work was.
+    kt = d.get("kind_totals") or []
+    if sum(kt):
+        what = f"The work was {_mix(kt, kinds)}."
+        fixes = kt[kinds.index("fix")] if "fix" in kinds and len(kt) > kinds.index("fix") else 0
+        feats = kt[kinds.index("feat")] if "feat" in kinds and len(kt) > kinds.index("feat") else 0
+        if feats and fixes:
+            what += f" About {fixes / feats:.1f} fixes for every new feature."
+        if d.get("releases"):
+            r = d["releases"]
+            what += (
+                f" {_plural(len(r), 'release')} tagged, the latest {r[-1]['name']} on {r[-1]['d']}."
+            )
+        add("work", "The work", what)
+
+    # Now: the latest era and how recent the last commit is.
+    if eras:
+        j = len(eras) - 1
+        e = eras[j]
+        now = f"The latest era began {e['start']} and holds {_plural(e['commits'], 'commit')}"
+        now += f", {_mix(e.get('k') or [], kinds)}." if sum(e.get("k") or []) else "."
+        try:
+            gen = datetime.fromisoformat(str(d.get("generated_at"))).date()
+            since = (gen - _date(d["last"])).days
+            now += (
+                " The last commit landed the day of this dig."
+                if since <= 0
+                else f" The last commit was {_plural(since, 'day')} before this dig."
+            )
+        except (TypeError, ValueError):
+            pass
+        add("now", "Now", now, j)
     return out
 
 
@@ -1773,7 +1946,11 @@ def list_projects(settings: Optional[Dict[str, Any]] = None) -> List[Dict[str, A
 
 def load_dig(project: str, settings: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
     d = _read_json(project_dir(project, settings) / DIG_FILE)
-    return d if isinstance(d, dict) else None
+    if not isinstance(d, dict):
+        return None
+    if "story" not in d:  # digs saved before the story lens: tell it from what is there
+        d["story"] = story(d)
+    return d
 
 
 # --------------------------------------------------------------------------- text summary

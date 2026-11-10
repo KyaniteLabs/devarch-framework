@@ -19,7 +19,7 @@ DevArch treats your git history as structured data. It extracts commits into a q
 
 ## Hermes Desktop plugin
 
-AG4TE also ships as a [Hermes](https://github.com/NousResearch/hermes-agent) plugin. It runs a dig from Hermes Desktop and draws the result as strata: the repo as a cut agate, commits per day by kind of work, eras, quiet gaps, signals, weekly rhythm, practice health, and authors split into people, agents and bots. It also adds `/ag4te` and a read-only `ag4te_dig` tool for agents. Install and settings: [plugins/ag4te-hermes](plugins/ag4te-hermes/README.md).
+AG4TE also ships as a [Hermes](https://github.com/NousResearch/hermes-agent) plugin. It runs a dig from Hermes Desktop and draws the result as strata: the repo as a cut agate, a plain-words story of its history, commits per day by kind of work, eras, quiet gaps, signals, weekly rhythm, practice health, and authors split into people, agents and bots. It also adds `/ag4te` and a read-only `ag4te_dig` tool for agents. Install and settings: [plugins/ag4te-hermes](plugins/ag4te-hermes/README.md).
 
 ## Evidence integrity (0.4.0)
 
