@@ -52,6 +52,10 @@ Set these in Desktop (**Settings → Plugins → AG4TE**) or with `hermes config
 
 Kinds of work come from commit messages and changed paths. They are keyword heuristics, not a reading of the code. Signals and eras are leads to investigate, not conclusions. The Story card is written by fixed rules from the same numbers (origin, shape, biggest push, turning points, who built it, the work, now), so the same dig always reads the same; no model writes it. Commit counts are not a productivity measure. See [docs/DATA-MODEL-ROAST.md](docs/DATA-MODEL-ROAST.md) for how the data model was reviewed and fixed.
 
+## Privacy
+
+A dig records the commit author names and emails of the repository you choose, stores them under `plugin-data/ag4te` on the gateway host, and shows author names on the Desktop page. The dig itself sends nothing anywhere. When an agent calls `ag4te_dig`, the summary it gets back, including the authors, becomes part of that conversation and goes to the model provider Hermes is configured to use. Dig only repositories whose contributor details you are fine handling that way. Delete a dig's folder under `plugin-data/ag4te` to remove it.
+
 ## License
 
-Apache-2.0. See [LICENSE](LICENSE).
+Apache-2.0. See [LICENSE](LICENSE). AG4TE is an independent project by KyaniteLabs and is not endorsed by Nous Research.
