@@ -63,4 +63,10 @@ A dig records the commit author names and emails of the repository you choose, s
 
 ## License
 
-Apache-2.0. See [LICENSE](LICENSE). AG4TE is an independent project by KyaniteLabs and is not endorsed by Nous Research.
+Apache-2.0 for the plugin code. See [LICENSE](LICENSE).
+
+The Desktop page embeds two WOFF2 subsets of the Chakra Petch typeface
+(SIL Open Font License 1.1), (c) 2018 The Chakra Petch Project Authors.
+The font is not Apache-2.0. See [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
+
+AG4TE is an independent project by KyaniteLabs and is not endorsed by Nous Research.
