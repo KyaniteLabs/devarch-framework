@@ -17,7 +17,8 @@ Digs run on your machine. They read only the repository you choose, keep their r
 ## What you get
 
 - **Desktop:** an AG4TE page. Pick a repository under your `repo_roots`, start a dig, watch its steps, and read the stone, a short Story of the repo in plain words, and the strata chart (Days, Weeks or Months), eras, gaps, signals, rhythm and authors. A running dig can be stopped and resumed.
-- **Slash command:** `/ag4te list | show <project> | status <project> | dig <repo-path> [project] | stop <project> | resume <project>`. On Telegram, Discord and other chat platforms, `dig` and `resume` are off unless you set `allow_dig_on_gateway: true`, because they read local files.
+- **Slash command:** `/ag4te list | show <project> | status <project> | dig <repo-path> [project] | stop <project> | resume <project>`. On Telegram, Discord and any platform AG4TE doesn't know as local, `dig`, `resume` and `stop` are off unless you set `allow_dig_on_gateway: true`, because they act on local files. There, `list`, `status` and the `ag4te_dig` tool return summaries only, without project paths, error text or author names.
+- **One dig at a time:** a lease file in the workspace holds the rule across Hermes processes that share it. Two repositories with the same folder name get separate projects; the second one's name ends in a short path hash.
 - **Agent tool:** `ag4te_dig` gives agents a read-only summary of a finished dig, or lists the digs.
 
 ## Install
@@ -45,7 +46,7 @@ Set these in Desktop (**Settings → Plugins → AG4TE**) or with `hermes config
 | `timeout_seconds` | `600` | Time limit for each DevArch step. |
 | `data_dir` | `<HERMES_HOME>/plugin-data/ag4te` | Where digs are stored. |
 | `devarch_command` | pinned `uvx` install | Override how DevArch is run, for example a local checkout. |
-| `allow_dig_on_gateway` | `false` | Allow `/ag4te dig` and `resume` from chat platforms. |
+| `allow_dig_on_gateway` | `false` | Allow `/ag4te dig`, `resume` and `stop` from chat platforms. |
 
 ## What the numbers mean
 

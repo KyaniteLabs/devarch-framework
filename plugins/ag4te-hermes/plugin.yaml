@@ -40,4 +40,4 @@ config_schema:
   allow_dig_on_gateway:
     type: boolean
     default: false
-    description: Allow /ag4te dig and resume from chat platforms (off by default).
+    description: Allow /ag4te dig, resume and stop from chat platforms (off by default).

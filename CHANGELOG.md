@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.4.1] - Unreleased readiness candidate
 
+- Harden the AG4TE Hermes plugin after review: chat platforms (and any platform not known as local) can no longer stop a dig, and get summaries without paths, error text or author names; one dig at a time now holds across Hermes processes through a workspace lease; two repositories with the same folder name no longer share a project; a small era beside a large one keeps a 3px band in the stone; the layout regression runs on a sanitized fixture instead of host data; tests no longer name real people; the plugin pins DevArch to the catalog-reviewed commit (`d884f9a`).
 - Rename the repository to AG4TE (`KyaniteLabs/ag4te`). The `devarch` command and the `devarch-framework` package keep their names.
 - Draw the AG4TE plugin's stone as an iris agate: one band per era, oldest at the rim, laid out in time order with each kind of work sized by its share of the era's commits. Classify plain imperative commit subjects ("Add…", "Fix…") as kinds of work, and pin the plugin to that DevArch commit (`6dd2299`).
 - Add the AG4TE Hermes plugin (`plugins/ag4te-hermes`) and fix the commit data model: the Git extractor records email and parents, dates keep their UTC offset, era signals sort by instant, and SDLC practices are word-bounded with merges left out.

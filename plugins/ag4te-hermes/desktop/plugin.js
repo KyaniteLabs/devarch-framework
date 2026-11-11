@@ -364,7 +364,7 @@ function rng(seed) { let a = seed || 1; return () => { a = (a + 0x6d2b79f5) | 0;
 
 // stone-layout:start (pure; tests/test_stone_layout.py evaluates this block in node)
 // Lays each era's commits out as bands, rim (f=1) to core (f=core), oldest first.
-// - Era thickness: sqrt(commits) share of the stone, so small eras stay visible.
+// - Era thickness: a 3px floor, then a sqrt(commits) share of the rest, so small eras stay visible.
 // - Inside an era every commit gets an equal slice of thickness, so each kind's band
 //   thickness is its exact share of the era's commits.
 // - Resolution follows pixels: one time-ordered chunk per ~3px of era thickness, never
@@ -386,9 +386,15 @@ function stoneLayout(d, rad, core) {
   })
   const weights = eras.map(c => Math.sqrt(Math.max(1, c.commits || 0)))
   const wsum = weights.reduce((a, b) => a + b, 0) || 1
+  // Thin-era floor: every era starts with 3px (or an equal share when the stone cannot
+  // fit 3px per era), then the rest is split by sqrt(commits). A 2-commit era beside a
+  // 4,000-commit one stays a readable band instead of a sub-pixel line.
+  const total = 1 - core
+  const floor = eras.length ? Math.min(3 / rad, total / eras.length) : 0
+  const spare = total - floor * eras.length
   let f = 1
   return eras.map((c, i) => {
-    const f0 = f, f1 = f - (weights[i] / wsum) * (1 - core)
+    const f0 = f, f1 = f - floor - (weights[i] / wsum) * spare
     f = f1
     const kc = KINDS.map((_, j) => (c.k && c.k.some(Boolean) ? c.k[j] || 0 : j === other ? 1 : 0))
     let seq = []
