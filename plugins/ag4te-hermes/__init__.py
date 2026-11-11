@@ -1838,14 +1838,43 @@ def run_dig(
 def _pid_alive(pid: Any) -> bool:
     try:
         pid = int(pid)
-        if pid <= 0:
-            return False
+    except (ValueError, TypeError, OverflowError):
+        return False
+    if pid <= 0:
+        return False
+    if os.name == "nt":
+        # On Windows os.kill(pid, 0) is not a probe: 0 is CTRL_C_EVENT, sent to the whole
+        # console group, so it would interrupt Hermes itself.
+        return _win_pid_alive(pid)
+    try:
         os.kill(pid, 0)
     except PermissionError:
         return True  # alive, owned by someone else
-    except (OSError, ValueError, TypeError, OverflowError):
+    except (OSError, OverflowError):
         return False
     return True
+
+
+def _win_pid_alive(pid: int) -> bool:
+    import ctypes
+    from ctypes import wintypes
+
+    k32 = ctypes.WinDLL("kernel32", use_last_error=True)  # type: ignore[attr-defined]
+    k32.OpenProcess.argtypes = (wintypes.DWORD, wintypes.BOOL, wintypes.DWORD)
+    k32.OpenProcess.restype = wintypes.HANDLE
+    k32.GetExitCodeProcess.argtypes = (wintypes.HANDLE, ctypes.POINTER(wintypes.DWORD))
+    k32.GetExitCodeProcess.restype = wintypes.BOOL
+    k32.CloseHandle.argtypes = (wintypes.HANDLE,)
+    handle = k32.OpenProcess(0x1000, False, pid)  # PROCESS_QUERY_LIMITED_INFORMATION
+    if not handle:
+        return ctypes.get_last_error() == 5  # ERROR_ACCESS_DENIED: alive, someone else's
+    try:
+        code = wintypes.DWORD()
+        if not k32.GetExitCodeProcess(handle, ctypes.byref(code)):
+            return True  # cannot tell: keep the lease rather than steal it
+        return code.value == 259  # STILL_ACTIVE
+    finally:
+        k32.CloseHandle(handle)
 
 
 def _host() -> str:

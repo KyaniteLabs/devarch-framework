@@ -746,3 +746,26 @@ def test_lease_blocks_a_dig_from_another_process(tmp_path):
     ag._jobs[r["project"]].join(10)
     assert not ag._lease_path(s).exists()
     assert ag.read_status("elsewhere", s)["interrupted"] is True
+
+
+def test_pid_probe_never_signals_on_windows(monkeypatch):
+    """os.kill(pid, 0) sends CTRL_C_EVENT to the console group on Windows."""
+
+    def boom(*a):
+        raise AssertionError("os.kill must not be called on Windows")
+
+    monkeypatch.setattr(ag.os, "name", "nt")
+    monkeypatch.setattr(ag.os, "kill", boom)
+    monkeypatch.setattr(ag, "_win_pid_alive", lambda pid: pid == 4242)
+    assert ag._pid_alive(4242) is True
+    assert ag._pid_alive("4243") is False
+    assert ag._pid_alive(None) is False and ag._pid_alive(0) is False
+
+
+def test_pid_probe_on_posix():
+    if os.name == "nt":
+        pytest.skip("posix branch")
+    assert ag._pid_alive(os.getpid()) is True
+    done = subprocess.Popen([sys.executable, "-c", "pass"])
+    done.wait()
+    assert ag._pid_alive(done.pid) is False
