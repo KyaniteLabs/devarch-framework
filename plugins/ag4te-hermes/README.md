@@ -18,7 +18,7 @@ Digs run on your machine. They read only the repository you choose, keep their r
 
 - **Desktop:** an AG4TE page. Pick a repository under your `repo_roots`, start a dig, watch its steps, and read the stone, a short Story of the repo in plain words, and the strata chart (Days, Weeks or Months), eras, gaps, signals, rhythm and authors. A running dig can be stopped and resumed.
 - **Slash command:** `/ag4te list | show <project> | status <project> | dig <repo-path> [project] | stop <project> | resume <project>`. On Telegram, Discord and any platform AG4TE doesn't know as local, `dig`, `resume` and `stop` are off unless you set `allow_dig_on_gateway: true`, because they act on local files. There, `list`, `status` and the `ag4te_dig` tool return summaries only, without project paths, error text or author names.
-- **One dig at a time:** a lease file in the workspace holds the rule across Hermes processes that share it. Two repositories with the same folder name get separate projects; the second one's name ends in a short path hash.
+- **One dig at a time:** `dig.lease` in the workspace holds the rule across Hermes processes that share it. A lease on this host is checked against its process; a lease from another host expires after 24 hours. Two repositories with the same folder name get separate projects; the second one's name ends in a short path hash.
 - **Agent tool:** `ag4te_dig` gives agents a read-only summary of a finished dig, or lists the digs.
 
 ## Install
