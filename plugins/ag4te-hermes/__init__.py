@@ -12,6 +12,7 @@ people (humans, coding agents, bots), the most-changed files and practice health
 Surfaces:
 * ``/ag4te list | show <project> | status <project> | dig <repo> [project]``
 * ``ag4te_dig`` tool: read-only summary of a finished dig (or the list of digs).
+* ``ag4te_show`` tool: point the open Desktop page at a section or item.
 * Desktop page (``desktop/plugin.js``) backed by ``dashboard/plugin_api.py``.
 
 Safety: repositories must sit under ``repo_roots``; project names are validated; DevArch runs
@@ -24,10 +25,12 @@ from __future__ import annotations
 import errno
 import json
 import logging
+import math
 import os
 import re
 import shlex
 import subprocess
+import sys
 import tempfile
 import threading
 import time
@@ -64,6 +67,25 @@ GAP_MIN_DAYS = 3  # idle days that make a quiet gap; gaps also cut eras
 SIGNAL_MERGE_DAYS = 7  # same-kind signals closer than this fold into one
 ERA_MIN_COMMITS = 10  # eras this big get a number and a colour
 _PROJECT_RE = re.compile(r"^[a-z0-9][a-z0-9_-]{0,62}$")
+PANE_VIEWS = (
+    "overview",
+    "story",
+    "strata",
+    "rhythm",
+    "churn",
+    "practices",
+    "turning-points",
+    "people",
+    "change-size",
+    "files",
+    "releases",
+    "commits",
+)
+_ITEM_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}")
+PANE_GUIDANCE = (
+    "Check that AG4TE is on in Desktop Capabilities -> Plugins; enabling it there is the "
+    "one step a person does, then open the AG4TE page."
+)
 
 # Kinds of work, in the fixed order the chart stacks and colours them.
 KINDS = ("feat", "fix", "refactor", "docs", "ops", "test", "other")
@@ -155,6 +177,43 @@ _cancels: Dict[str, threading.Event] = _reg.cancels
 
 class DigError(ValueError):
     """A dig request that cannot run (bad project name, repo outside the roots, …)."""
+
+
+def _pane_event(event: str, payload: Dict[str, Any]) -> None:
+    valid = False
+    if event == "view.set":
+        valid = (
+            set(payload) in ({"view"}, {"view", "item_id"})
+            and isinstance(payload.get("view"), str)
+            and payload["view"] in PANE_VIEWS
+            and (
+                "item_id" not in payload
+                or (isinstance(payload["item_id"], str) and _ITEM_RE.fullmatch(payload["item_id"]))
+            )
+        )
+    elif event == "projects.updated":
+        valid = (
+            set(payload) == {"count"}
+            and type(payload["count"]) is int
+            and 0 <= payload["count"] <= 1_000_000
+        )
+    elif event in ("dig.selected", "dig.updated"):
+        keys = {"project"} if event == "dig.selected" else {"project", "state"}
+        valid = (
+            set(payload) == keys
+            and isinstance(payload.get("project"), str)
+            and _PROJECT_RE.fullmatch(payload["project"])
+            and (event == "dig.selected" or payload.get("state") in DIG_STATES)
+        )
+    if not valid:
+        raise DigError("invalid Desktop event or payload")
+    if "tui_gateway.server" not in sys.modules:
+        return  # CLI, worker, and validation processes have no Desktop clients.
+    try:
+        from hermes_cli.plugin_events import broadcast_plugin_event
+    except ImportError:
+        return  # Older Hermes and standalone tests have no Desktop bridge.
+    broadcast_plugin_event(PLUGIN_NAME, event, payload)
 
 
 # --------------------------------------------------------------------------- settings
@@ -1697,6 +1756,10 @@ def _set_status(pdir: Path, *, fresh: bool = False, **fields: Any) -> Dict[str, 
             raise DigError(f"dig state cannot go from {was} to {to}")
     cur.update(fields, updated_at=time.time())
     _write_json(pdir / STATUS_FILE, cur)
+    try:
+        _pane_event("dig.updated", {"project": pdir.name, "state": cur.get("state", "none")})
+    except Exception:
+        logger.debug("AG4TE Desktop event was not delivered", exc_info=True)
     return cur
 
 
@@ -1886,6 +1949,24 @@ def _host() -> str:
     return socket.gethostname()
 
 
+def _boot_id() -> Optional[str]:
+    """Linux boot identity, when the host exposes one."""
+    try:
+        value = Path("/proc/sys/kernel/random/boot_id").read_text(encoding="ascii").strip()
+    except OSError:
+        return None
+    return value or None
+
+
+def _proc_start(pid: Any) -> Optional[str]:
+    """When a process started (clock ticks since boot), on hosts that expose /proc."""
+    try:
+        stat = Path(f"/proc/{int(pid)}/stat").read_text(encoding="ascii")
+        return stat.rsplit(")", 1)[1].split()[19]
+    except (OSError, ValueError, IndexError, TypeError):
+        return None
+
+
 def _lease_path(settings: Optional[Dict[str, Any]] = None) -> Path:
     return workspace(settings) / LEASE_FILE
 
@@ -1928,31 +2009,40 @@ def read_lease(
 ) -> Optional[Dict[str, Any]]:
     """The dig lease when a live process holds it, else None.
 
-    A lease whose owner died on this host is stale and does not count. A lease from
-    another host counts as held until its maximum age: its owner cannot be checked
-    from here.
+    A same-host lease is checked against its owner: the boot and the process start time
+    must match, so a PID reused after a crash or reboot does not keep it alive. A live
+    same-host process remains protected on hosts without process start-time data.
     """
     data = _read_json(_lease_path(settings))
     if not isinstance(data, dict):
         return None
-    if data.get("host") == _host():
-        if not _pid_alive(data.get("pid")):
-            return None
-        if data.get("pid") == os.getpid():
-            # our own process: only a live dig thread keeps it
-            if _locked:
+    try:
+        since = float(data["since"])
+    except (KeyError, TypeError, ValueError):
+        return None
+    now = time.time()
+    expired = not math.isfinite(since) or since > now or now - since > MAX_LEASE_AGE_SECONDS
+    if data.get("host") != _host():
+        return None if expired else data
+    recorded_boot = data.get("boot_id")
+    current_boot = _boot_id()
+    if recorded_boot and current_boot and recorded_boot != current_boot:
+        return None
+    if not _pid_alive(data.get("pid")):
+        return None
+    recorded_start = data.get("pid_start")
+    current_start = _proc_start(data.get("pid")) if recorded_start else None
+    if recorded_start and current_start:
+        if recorded_start != current_start:
+            return None  # the PID now belongs to a different process
+    if data.get("pid") == os.getpid():
+        # our own process: only a live dig thread keeps it
+        if _locked:
+            t = _jobs.get(str(data.get("project")))
+        else:
+            with _jobs_lock:
                 t = _jobs.get(str(data.get("project")))
-            else:
-                with _jobs_lock:
-                    t = _jobs.get(str(data.get("project")))
-            if not (t and t.is_alive()):
-                return None
-    else:
-        try:
-            since = float(data["since"])
-        except (KeyError, TypeError, ValueError):
-            return None
-        if time.time() - since > MAX_LEASE_AGE_SECONDS:
+        if not (t and t.is_alive()):
             return None
     return data
 
@@ -1964,7 +2054,14 @@ def _take_lease(project: str, settings: Optional[Dict[str, Any]] = None) -> None
     path.parent.mkdir(parents=True, exist_ok=True)
     with _lease_guard(path):
         body = json.dumps(
-            {"project": project, "pid": os.getpid(), "host": _host(), "since": time.time()}
+            {
+                "project": project,
+                "pid": os.getpid(),
+                "host": _host(),
+                "boot_id": _boot_id(),
+                "pid_start": _proc_start(os.getpid()),
+                "since": time.time(),
+            }
         )
         for _ in range(3):
             fd, tmp = tempfile.mkstemp(dir=str(path.parent), prefix=".lease-")
@@ -1990,6 +2087,24 @@ def _take_lease(project: str, settings: Optional[Dict[str, Any]] = None) -> None
                 except OSError:
                     pass
     raise DigError("could not claim the dig lease; try again")
+
+
+def unlock_lease(settings: Optional[Dict[str, Any]] = None) -> bool:
+    """Remove an expired lease without disturbing an active dig."""
+    path = _lease_path(settings)
+    if not path.exists():
+        return False
+    with _jobs_lock:
+        with _lease_guard(path):
+            if not path.exists():
+                return False
+            if read_lease(settings, _locked=True):
+                raise DigError("a dig is still running; its lease cannot be unlocked")
+            try:
+                path.unlink()
+            except FileNotFoundError:
+                return False
+    return True
 
 
 def _drop_lease(project: str, settings: Optional[Dict[str, Any]] = None) -> None:
@@ -2251,8 +2366,9 @@ def _on_gateway() -> bool:
 
 
 USAGE = (
-    "Usage: /ag4te list | show <project> | status <project> | dig <repo-path> [project] | stop <project> | resume <project>\n"
-    "A dig mines a local repo's history; open AG4TE in Hermes Desktop to see its strata."
+    "Usage: /ag4te list | show <project> | status <project> | dig <repo-path> [project] | stop <project> | resume <project> | unlock\n"
+    "A dig mines a local repo's history; open AG4TE in Hermes Desktop to see its strata.\n"
+    + PANE_GUIDANCE
 )
 
 
@@ -2266,6 +2382,10 @@ def _slash(raw_args: str) -> str:
     cmd, rest = args[0], args[1:]
     chat = _on_gateway()
     try:
+        if cmd == "unlock" and not rest:
+            if chat:
+                return "/ag4te unlock is available only on the local Hermes host."
+            return "Removed the stale dig lease." if unlock_lease() else "No stale dig lease."
         if cmd == "list":
             rows = list_projects()
             if not rows:
@@ -2286,9 +2406,13 @@ def _slash(raw_args: str) -> str:
                 fields = ("state", "step", "steps", "interrupted", "cancelling")
                 if not chat:  # error text and warnings can carry host paths
                     fields += ("label", "error", "warnings")
-                return json.dumps({k: st.get(k) for k in fields})
+                return json.dumps({**{k: st.get(k) for k in fields}, "desktop": PANE_GUIDANCE})
             d = load_dig(validate_project(rest[0]))
-            return brief(d) if d else f"No finished dig named {rest[0]}."
+            if d:
+                _pane_event("dig.selected", {"project": rest[0]})
+            if not d:
+                return "No finished dig available." if chat else f"No finished dig named {rest[0]}."
+            return brief({**d, "project": "This project"}) if chat else brief(d)
         if cmd == "stop" and len(rest) == 1:
             if chat and not _cfg("allow_dig_on_gateway"):
                 return "/ag4te stop is off on chat platforms; stop the dig from the Hermes CLI or Desktop."
@@ -2327,16 +2451,22 @@ def _tool(args: Dict[str, Any], **_: Any) -> str:
     try:
         if not project:
             rows = list_projects()
-            if _on_gateway():  # repo paths and error text stay on the host
-                rows = [{k: v for k, v in r.items() if k not in ("repo", "error")} for r in rows]
+            _pane_event("projects.updated", {"count": len(rows)})
+            if _on_gateway():  # only aggregate counts and states cross remote surfaces
+                states = Counter(str(r.get("state")) for r in rows)
+                return json.dumps({"count": len(rows), "states": dict(sorted(states.items()))})
             return json.dumps({"digs": rows})
         d = load_dig(validate_project(project))
     except DigError as exc:
         return json.dumps({"error": str(exc)})
     if not d:
-        return json.dumps({"error": f"no finished dig named {project}"})
+        message = (
+            "no finished dig available" if _on_gateway() else f"no finished dig named {project}"
+        )
+        return json.dumps({"error": message})
+    _pane_event("dig.selected", {"project": project})
     if _on_gateway():  # chat platforms: the summary, without names or paths
-        return json.dumps({"summary": brief(d)})
+        return json.dumps({"summary": brief({**d, "project": "This project"})})
     keep = (
         "project",
         "commit_count",
@@ -2374,6 +2504,41 @@ def _tool(args: Dict[str, Any], **_: Any) -> str:
     )
 
 
+SHOW_SCHEMA = {
+    "name": "ag4te_show",
+    "description": "Point the open, enabled AG4TE Desktop page at a section and optional item id.",
+    "parameters": {
+        "type": "object",
+        "required": ["view"],
+        "additionalProperties": False,
+        "properties": {
+            "view": {"type": "string", "enum": list(PANE_VIEWS)},
+            "item_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": _ITEM_RE.pattern,
+            },
+        },
+    },
+}
+
+
+def _show_tool(args: Dict[str, Any], **_: Any) -> str:
+    try:
+        if not isinstance(args, dict):
+            raise DigError("expected view and optional item_id")
+        _pane_event("view.set", args)
+    except DigError:
+        return (
+            "Error: view must be one of "
+            + ", ".join(PANE_VIEWS)
+            + "; item_id must be 1-128 letters, digits, or _.:-."
+        )
+    item = f" (item {args['item_id']})" if "item_id" in args else ""
+    return f"Asked AG4TE to show {args['view']}{item}; the page must be open and enabled."
+
+
 def register(ctx) -> None:
     global _ctx
     _ctx = ctx
@@ -2391,3 +2556,17 @@ def register(ctx) -> None:
         description=TOOL_SCHEMA["description"],
         emoji="🪨",
     )
+    ctx.register_tool(
+        name="ag4te_show",
+        toolset="ag4te",
+        schema=SHOW_SCHEMA,
+        handler=_show_tool,
+        description=SHOW_SCHEMA["description"],
+        emoji="🪨",
+    )
+    if callable(getattr(ctx, "register_skill", None)):
+        ctx.register_skill(
+            "ag4te",
+            Path(__file__).parent / "skills/ag4te/SKILL.md",
+            description="Read repository history and guide the AG4TE Desktop page.",
+        )

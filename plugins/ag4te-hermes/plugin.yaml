@@ -1,5 +1,5 @@
 name: ag4te
-version: 0.2.0
+version: 0.3.0
 manifest_version: 2
 requires_hermes: ">=0.21.6"
 description: >-
@@ -8,7 +8,7 @@ description: >-
   rhythm and practice health. Authors are merged across spellings and split into people, agents and bots. Digs run locally, read only the repository you choose
   (under repo_roots), keep results in plugin-data/ag4te, and never call an LLM or the network
   beyond fetching DevArch itself with uvx.
-provides_tools: [ag4te_dig]
+provides_tools: [ag4te_dig, ag4te_show]
 config_schema:
   devarch_command:
     type: string

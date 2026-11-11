@@ -244,10 +244,12 @@ def test_slash_refuses_dig_on_gateway(monkeypatch):
     assert "names are" in ag._slash("show ../etc")
 
 
-SAMPLE = os.environ.get("AG4TE_SAMPLE")
+# A real DevArch project; defaults to the demo shipped in the repo so CI always runs it.
+SAMPLE = os.environ.get("AG4TE_SAMPLE") or str(
+    Path(__file__).resolve().parents[3] / "projects" / "demo-archaeology"
+)
 
 
-@pytest.mark.skipif(not SAMPLE, reason="set AG4TE_SAMPLE to a real DevArch project dir")
 def test_real_sample():
     d = ag.summarize(Path(SAMPLE))
     assert d["commit_count"] > 0 and len(d["days"]) == d["span_days"]
@@ -731,7 +733,15 @@ def test_lease_blocks_a_dig_from_another_process(tmp_path):
         lease = ag._lease_path(s)
         lease.parent.mkdir(parents=True, exist_ok=True)
         lease.write_text(
-            json.dumps({"project": "elsewhere", "pid": other.pid, "host": ag._host(), "since": 0})
+            json.dumps(
+                {
+                    "project": "elsewhere",
+                    "pid": other.pid,
+                    "host": ag._host(),
+                    "boot_id": ag._boot_id(),
+                    "since": time.time(),
+                }
+            )
         )
         ag._set_status(ag.project_dir("elsewhere", s), fresh=True, state="running")
         with pytest.raises(ag.DigError, match="another Hermes process"):

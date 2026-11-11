@@ -23,6 +23,30 @@ const PAGE = 60
 // The stone renders 'other' as milky chalcedony, the translucent layer between an agate's colours.
 const CHALCEDONY = '#c4b5f0'
 
+const PANE_VIEWS = ['overview', 'story', 'strata', 'rhythm', 'churn', 'practices', 'turning-points', 'people', 'change-size', 'files', 'releases', 'commits']
+const validProject = s => typeof s === 'string' && /^[a-z0-9][a-z0-9_-]{0,62}$/.test(s) && s.trim() === s
+const validItem = s => typeof s === 'string' && s.length <= 128 && /^[A-Za-z0-9][A-Za-z0-9_.:-]*$/.test(s) && s.trim() === s
+function validPaneEvent(name, p) {
+  if (!p || typeof p !== 'object' || Array.isArray(p)) return false
+  const keys = Object.keys(p).sort().join(',')
+  if (name === 'view.set') return (keys === 'view' || keys === 'item_id,view') && PANE_VIEWS.includes(p.view) && (!('item_id' in p) || validItem(p.item_id))
+  if (name === 'projects.updated') return keys === 'count' && Number.isInteger(p.count) && p.count >= 0 && p.count <= 1000000
+  return validProject(p.project) && (name === 'dig.selected' ? keys === 'project'
+    : name === 'dig.updated' && keys === 'project,state' && ['none', 'running', 'done', 'failed', 'cancelled'].includes(p.state))
+}
+
+function focusPane(root, target) {
+  const section = root.dataset && root.dataset.agView === target.view ? root : root.querySelector(`[data-ag-view="${target.view}"]`)
+  if (!section) return
+  const items = target.item_id ? [...section.querySelectorAll('[data-ag-item]')] : []
+  const item = items.find(el => el.dataset.agItem === target.item_id)
+  const el = item || section
+  if (el.tabIndex == null || el.tabIndex < 0) el.setAttribute('tabindex', '-1')
+  el.focus({ preventScroll: true })
+  el.scrollIntoView({ block: 'center' })
+  return !target.item_id || !!item
+}
+
 function h(type, props, ...children) {
   const { key, ...rest } = props || {}
   const kids = children.flat().filter(c => c !== null && c !== undefined && c !== false)
@@ -576,7 +600,7 @@ function Strata({ d, pal, eraNo, hl, setHl, multiYear, sig, setSig }) {
   const eras = (d.clusters || []).map((c, i) => {
     const a = xDay(dayIndex(first, c.start)), b = xDay(dayIndex(first, c.end)), w = Math.max(3, b - a)
     const no = eraNo[i], k = KINDS[argmax(c.k || [0])], isOn = hl === i
-    const handlers = { className: 'hit', ...tipOn(e => { setHl(i); show(e, eraBody(c, no, pal, multiYear)) }, () => { setHl(null); setTip(null) }) }
+    const handlers = { className: 'hit', 'data-ag-item': String(i), tabIndex: 0, onFocus: () => setHl(i), ...tipOn(e => { setHl(i); show(e, eraBody(c, no, pal, multiYear)) }, () => { setHl(null); setTip(null) }) }
     // 24px-tall invisible target so thin ticks and short eras are easy to hit.
     const target = h('rect', { x: a - Math.max(0, (12 - w) / 2), y: eraY - 6, width: Math.max(12, w), height: 24, fill: 'transparent' })
     if (!no) return h('g', { key: 'era' + i, ...handlers }, target,
@@ -671,7 +695,7 @@ function Strata({ d, pal, eraNo, hl, setHl, multiYear, sig, setSig }) {
   }
 
   const totals = d.kind_totals || [], tsum = totals.reduce((a, b) => a + b, 0)
-  return h('section', { className: 'ag-card ag-rise' },
+  return h('section', { 'data-ag-view': 'strata', className: 'ag-card ag-rise' },
     h('div', { className: 'ag-chead' },
       h('div', null, h('h3', null, 'The strata'), h('p', { className: 'ag-sub' }, 'Every commit, stacked by the kind of work it was. Hatched stretches went quiet.')),
       h('div', { className: 'ag-tabs', role: 'group', 'aria-label': 'Bin size' },
@@ -750,7 +774,7 @@ function Rhythm({ d }) {
     h('text', { key: 'tw', x: W - MR + 6, y: gy + 13, style: { fontSize: '9px' } }, 'per day'),
     h('text', { key: 'th', x: L - 6, y: gy + MB - 3, textAnchor: 'end', style: { fontSize: '9px' } }, 'hour')
   ]
-  return h('section', { className: 'ag-card ag-rise' },
+  return h('section', { 'data-ag-view': 'rhythm', className: 'ag-card ag-rise' },
     h('div', { className: 'ag-chead' }, h('div', null, h('h3', null, 'When the work happens'),
       h('p', { className: 'ag-sub' }, peak[0] ? `Busiest slot: ${DAYS[peak[1]]} around ${String(peak[2]).padStart(2, '0')}:00 (outlined), commit-local time. Bars show totals per weekday and per hour.` : 'No commits yet.'))),
     h('div', { className: 'ag-chart', ref: box },
@@ -768,7 +792,7 @@ function Churn({ d }) {
   const width = useWidth(box)
   const [tip, setTip] = useState(null)
   const bins = useMemo(() => binDays(d.days || [], 'week'), [d])
-  if (!d.has_line_stats) return h('section', { className: 'ag-card ag-rise' }, h('h3', null, 'Lines added and removed'),
+  if (!d.has_line_stats) return h('section', { 'data-ag-view': 'churn', className: 'ag-card ag-rise' }, h('h3', null, 'Lines added and removed'),
     h('p', { className: 'ag-muted', style: { marginTop: 8 } }, 'This dig has no line counts. Re-dig with DevArch stats to see churn.'))
   const W = Math.max(300, width || 560), L = 40, R = 8, T = 8, B = 28, ih = 196, H = T + ih + B, mid = T + ih / 2
   const max = Math.max(1, ...bins.map(b => Math.max(b.ins, b.del)))
@@ -777,7 +801,7 @@ function Churn({ d }) {
   const x = i => L + (i * (W - L - R)) / Math.max(1, bins.length)
   const biggest = bins.reduce((a, b) => (b.ins + b.del > a.ins + a.del ? b : a), bins[0] || { ins: 0, del: 0 })
   const ticks = [max, Math.round(max / 4)].filter((v, i, a) => v > 0 && a.indexOf(v) === i)
-  return h('section', { className: 'ag-card ag-rise' },
+  return h('section', { 'data-ag-view': 'churn', className: 'ag-card ag-rise' },
     h('div', { className: 'ag-chead' }, h('div', null, h('h3', null, 'Lines added and removed'),
       h('p', { className: 'ag-sub' }, `Per week, square-root scale. Biggest week: ${biggest.from ? fmtDay(biggest.from) : '—'}, `, h('span', { className: 'ag-add' }, `+${short(biggest.ins)}`), ' ', h('span', { className: 'ag-del' }, `−${short(biggest.del)}`), '.'))),
     h('div', { className: 'ag-chart', ref: box },
@@ -804,12 +828,12 @@ function Churn({ d }) {
 
 function Load({ d }) {
   const rows = d.load || []
-  if (!rows.length) return h('section', { className: 'ag-card ag-rise' }, h('h3', null, 'Change size'),
+  if (!rows.length) return h('section', { 'data-ag-view': 'change-size', className: 'ag-card ag-rise' }, h('h3', null, 'Change size'),
     h('p', { className: 'ag-muted', style: { marginTop: 8 } }, 'Dig again to measure lines per commit.'))
   const max = Math.max(1, ...rows.map(r => r.n)), total = rows.reduce((a, r) => a + r.n, 0) || 1
-  return h('section', { className: 'ag-card ag-rise' },
+  return h('section', { 'data-ag-view': 'change-size', className: 'ag-card ag-rise' },
     h('div', { className: 'ag-chead' }, h('div', null, h('h3', null, 'Change size'), h('p', { className: 'ag-sub' }, 'Lines touched per commit, lockfiles and build output left out.'))),
-    h('ul', { className: 'ag-bars' }, rows.map((r, i) => h('li', { key: r.level, title: `${r.n} commits, ${LOAD_RANGE[r.level] || ''}` },
+    h('ul', { className: 'ag-bars' }, rows.map((r, i) => h('li', { key: r.level, 'data-ag-item': r.level, title: `${r.n} commits, ${LOAD_RANGE[r.level] || ''}` },
       h('span', null, LOAD_LABEL[r.level] || r.level, h('small', { className: 'ag-rng' }, LOAD_RANGE[r.level] || '')),
       h('span', { className: 't' }, h('i', { style: { width: `${(r.n / max) * 100}%`, background: `color-mix(in oklab, var(--ag-seq) ${30 + i * 17}%, var(--ui-bg-card))` } })),
       h('b', null, pctf(r.n, total))))))
@@ -823,9 +847,9 @@ function People({ d }) {
   const sub = d.people
     ? `${num(pp.human)} ${pp.human === 1 ? 'person' : 'people'}, ${num(pp.agent)} agent${pp.agent === 1 ? '' : 's'}, ${num(pp.bot)} bot${pp.bot === 1 ? '' : 's'}. ${pctf(d.agent_assisted || 0, Math.max(1, d.commit_count - (d.bot_commits || 0)))} of non-bot commits had an agent co-author.`
     : `${d.author_count} author name${d.author_count === 1 ? '' : 's'} in the history.`
-  return h('section', { className: 'ag-card ag-rise' },
+  return h('section', { 'data-ag-view': 'people', className: 'ag-card ag-rise' },
     h('div', { className: 'ag-chead' }, h('div', null, h('h3', null, 'Who dug'), h('p', { className: 'ag-sub' }, sub))),
-    h('ul', { className: 'ag-bars ag-who' }, a.map(x => h('li', { key: x.name, title: `${x.name}: ${num(x.n)} commits${x.co ? `, co-author on ${num(x.co)}` : ''}${x.spellings > 1 ? `; ${x.spellings} spellings merged` : ''}` },
+    h('ul', { className: 'ag-bars ag-who' }, a.map((x, i) => h('li', { key: x.name, 'data-ag-item': String(i), title: `${x.name}: ${num(x.n)} commits${x.co ? `, co-author on ${num(x.co)}` : ''}${x.spellings > 1 ? `; ${x.spellings} spellings merged` : ''}` },
       h('span', null, x.name, x.kind && x.kind !== 'human' ? h('em', { className: `ag-tag ${x.kind}` }, WHO_KIND[x.kind]) : null),
       h('span', { className: 't' },
         h('i', { style: { width: `${((x.n || 0) / max) * 100}%`, background: 'var(--ag-seq)', display: 'inline-block' } }),
@@ -839,31 +863,35 @@ function Files({ d }) {
   const rows = d.paths || []
   if (!rows.length) return null
   const max = Math.max(1, ...rows.map(r => r.commits || 0))
-  return h('section', { className: 'ag-card ag-rise' },
+  return h('section', { 'data-ag-view': 'files', className: 'ag-card ag-rise' },
     h('div', { className: 'ag-chead' }, h('div', null, h('h3', null, 'Hotspots'), h('p', { className: 'ag-sub' }, 'Files changed in the most commits. Lockfiles and build output left out.'))),
-    h('ul', { className: 'ag-bars ag-files' }, rows.slice(0, 10).map(r => {
+    h('ul', { className: 'ag-bars ag-files' }, rows.slice(0, 10).map((r, i) => {
       const parts = r.path.split('/'), base = parts.pop()
-      return h('li', { key: r.path, title: `${r.path}: ${num(r.commits)} commits, +${num(r.ins)} −${num(r.del)}` },
+      return h('li', { key: r.path, 'data-ag-item': String(i), title: `${r.path}: ${num(r.commits)} commits, +${num(r.ins)} −${num(r.del)}` },
         h('span', null, parts.length ? h('small', null, parts.join('/') + '/') : null, base),
         h('span', { className: 't' }, h('i', { style: { width: `${(r.commits / max) * 100}%`, background: 'var(--ag-seq)' } })),
         h('b', null, num(r.commits)))
     })))
 }
 
-function Releases({ d, multiYear }) {
+function Releases({ d, multiYear, target }) {
   const rows = (d.releases || []).slice().reverse()
   if (!rows.length) return null
+  const shown = rows.slice(0, 10)
+  const targetRelease = target && rows.find(r => r.sha === target.item_id)
+  if (targetRelease && !shown.includes(targetRelease)) shown.push(targetRelease)
   const ds = (d.commits || []).map(c => c.day)
-  return h('section', { className: 'ag-card ag-rise' },
+  return h('section', { 'data-ag-view': 'releases', className: 'ag-card ag-rise' },
     h('div', { className: 'ag-chead' }, h('div', null, h('h3', null, 'Releases'), h('p', { className: 'ag-sub' }, `${rows.length} tag${rows.length === 1 ? '' : 's'}, newest first. Ticks under the strata mark each one.`))),
-    h('ol', { className: 'ag-rel' }, rows.slice(0, 10).map((r, i) => {
+    h('ol', { className: 'ag-rel' }, shown.map(r => {
+      const i = rows.indexOf(r)
       const prev = rows[i + 1]
       const n = prev ? ds.filter(x => x > prev.d && x <= r.d).length : null
-      return h('li', { key: r.name + r.sha },
+      return h('li', { key: r.name + r.sha, 'data-ag-item': r.sha },
         h('b', null, r.name), h('time', null, multiYear ? fmtDayY(r.d) : fmtDay(r.d)),
         h('span', { className: 'ag-muted' }, !r.on_history ? 'on another branch' : n == null ? 'first tag' : `${num(n)} commit${n === 1 ? '' : 's'} since ${prev.name}`))
     })),
-    rows.length > 10 ? h('p', { className: 'ag-muted' }, `and ${rows.length - 10} older`) : null)
+    rows.length > shown.length ? h('p', { className: 'ag-muted' }, `and ${rows.length - shown.length} older`) : null)
 }
 
 const STATUS = {
@@ -879,7 +907,7 @@ function Practices({ d }) {
   const open = rows.filter(r => r.status !== 'PRESENT'), fine = rows.filter(r => r.status === 'PRESENT')
   const badge = st => h('span', { className: 'ag-st', style: { '--tone': st.tone } },
     h('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 3, strokeLinecap: 'round', 'aria-hidden': true }, h('path', { d: st.icon })), st.label)
-  return h('section', { className: 'ag-card ag-rise' },
+  return h('section', { 'data-ag-view': 'practices', className: 'ag-card ag-rise' },
     h('div', { className: 'ag-chead' }, h('div', null, h('h3', null, 'Practice health'), h('p', { className: 'ag-sub' }, rows.length ? `${open.length} to work on, most severe first. Measured on commits by people and agents (bots left out), from subjects and file paths.` : 'Measured from commit subjects and file paths.'))),
     rows.length ? h('ul', { className: 'ag-sdlc' },
       open.map(r => {
@@ -897,9 +925,9 @@ function Practices({ d }) {
 
 function Turning({ d, sig, setSig, multiYear }) {
   const list = topSignals(d)
-  return h('section', { className: 'ag-card ag-rise' },
+  return h('section', { 'data-ag-view': 'turning-points', className: 'ag-card ag-rise' },
     h('div', { className: 'ag-chead' }, h('div', null, h('h3', null, 'Turning points'), h('p', { className: 'ag-sub' }, 'Strongest recent signals, newest first. Runs within a week fold into one. Numbers match the strata rail.'))),
-    list.length ? h('ol', { className: 'ag-sig' }, list.map(s => h('li', { key: s.idx, className: sig === s.idx ? 'on' : undefined, tabIndex: 0,
+    list.length ? h('ol', { className: 'ag-sig' }, list.map(s => h('li', { key: s.idx, 'data-ag-item': String(s.idx), className: sig === s.idx ? 'on' : undefined, tabIndex: 0,
       onPointerEnter: () => setSig(s.idx), onPointerLeave: () => setSig(null), onFocus: () => setSig(s.idx), onBlur: () => setSig(null) },
       h('b', { className: 'no' }, s.no), h('time', null, multiYear ? fmtDayY(s.d) : fmtDay(s.d)), h('span', null, h('small', null, SIGNAL_LABEL[s.type] || s.type), s.detail, s.end && s.end !== s.d ? h('em', { className: 'ag-span' }, ` through ${multiYear ? fmtDayY(s.end) : fmtDay(s.end)}`) : null))))
       : h('p', { className: 'ag-muted' }, 'No turning points found.'))
@@ -956,7 +984,9 @@ function Core({ d, pal, eraNo, era, setEra, hl, setHl }) {
 const CONV_RE = /^([a-z]+)(?:\(([^)]{1,40})\))?!?:\s+/i
 const WEEKDAY = s => DAYS[(parseDay(s).getUTCDay() + 6) % 7]
 
-function Commits({ d, pal, eraNo, hl, setHl }) {
+function Commits({ d, pal, eraNo, hl, setHl, target }) {
+  const root = useRef(null)
+  const focused = useRef(null)
   const [q, setQ] = useState('')
   const [kind, setKind] = useState('all')
   const [n, setN] = useState(PAGE)
@@ -968,6 +998,15 @@ function Commits({ d, pal, eraNo, hl, setHl }) {
     const ms = Date.parse(c.t)
     return { ...c, ms: isNaN(ms) ? 0 : ms, day: c.day || String(c.t).slice(0, 10), hm: String(c.t).slice(11, 16) }
   }).sort((x, y) => y.ms - x.ms), [d.commits])
+  useLayoutEffect(() => {
+    if (target && target.view === 'commits' && target.item_id) {
+      const i = all.findIndex(c => c.sha === target.item_id)
+      if (i >= 0) { setQ(''); setKind('all'); setEraRaw(null); setN(Math.max(PAGE, i + 1)) }
+    }
+  }, [target, d])
+  useLayoutEffect(() => {
+    if (target && target !== focused.current && target.view === 'commits' && root.current && focusPane(root.current, target)) focused.current = target
+  }, [target, d, n])
   const ql = q.trim().toLowerCase()
   const ec = era != null ? (d.clusters || [])[era] : null
   const rows = all.filter(c => (kind === 'all' || c.kind === kind) && (!ql || `${c.msg} ${c.author} ${(c.co || []).join(' ')} ${c.sha} ${c.pr ? '#' + c.pr : ''}`.toLowerCase().includes(ql))
@@ -988,7 +1027,7 @@ function Commits({ d, pal, eraNo, hl, setHl }) {
     const m = c.msg.match(CONV_RE)
     const scope = m && m[2], msg = m ? c.msg.slice(m[0].length) : c.msg
     const merge = c.kind === 'merge'
-    body.push(h('tr', { key: c.sha + c.t, className: merge ? 'mg' : undefined },
+    body.push(h('tr', { key: c.sha + c.t, 'data-ag-item': c.sha, className: merge ? 'mg' : undefined },
       h('td', { className: 'm', title: `${c.t}${c.tz ? ` (committed at ${c.tz})` : ''}` }, c.hm),
       h('td', { className: 'm opt', title: c.sha }, c.sha.slice(0, 7)),
       h('td', null, h('span', { className: 'ag-kind' }, h('i', { className: merge ? 'mg' : undefined, style: merge ? undefined : { background: pal[c.kind] || pal.other } }), KIND_LABEL[c.kind] || c.kind)),
@@ -1005,7 +1044,7 @@ function Commits({ d, pal, eraNo, hl, setHl }) {
           h('line', { x1: 23, x2: 23, y1: 0, y2: 10 })),
         h('span', { key: 'a', className: 'ag-add' }, `+${short(c.ins)}`), ' ', h('span', { key: 'd', className: 'ag-del' }, `−${short(c.del)}`)] : h('span', { className: 'ag-muted' }, '—'))))
   })
-  return h('section', { className: 'ag-card ag-rise' },
+  return h('section', { ref: root, 'data-ag-view': 'commits', className: 'ag-card ag-rise' },
     h('div', { className: 'ag-chead' },
       h('div', null, h('h3', null, 'Commits'), h('p', { className: 'ag-sub' },
         `Showing ${num(shown.length)} of ${num(rows.length)}${rows.length !== all.length ? ` matching (${num(all.length)} total)` : ''}${d.commits_truncated ? `, latest ${num(all.length)} kept` : ''}. Times in ${(d.manifest && d.manifest.time_zone) || 'the project zone'}${d.merge_count ? `; ${num(d.merge_count)} merges are grey and left out of the counts` : ''}.`)),
@@ -1133,7 +1172,7 @@ function Provenance({ d, when }) {
 function Story({ d, hl, setHl }) {
   const rows = Array.isArray(d.story) ? d.story : []
   if (!rows.length) return null
-  return h('section', { className: 'ag-card ag-rise', 'aria-label': 'Story' },
+  return h('section', { 'data-ag-view': 'story', className: 'ag-card ag-rise', 'aria-label': 'Story' },
     h('div', { className: 'ag-chead' }, h('div', null, h('h3', null, 'Story'),
       h('p', { className: 'ag-sub' }, 'The history in plain words, written by rules from the numbers below. Point at a chapter to light its era.'))),
     h('ol', { className: 'ag-story' }, rows.map(c => {
@@ -1141,7 +1180,7 @@ function Story({ d, hl, setHl }) {
       const on = tied ? { 'data-era': c.era, tabIndex: 0, className: hl === c.era ? 'on' : undefined,
         onPointerEnter: () => setHl(c.era), onPointerLeave: () => setHl(null),
         onFocus: () => setHl(c.era), onBlur: () => setHl(null) } : {}
-      return h('li', { key: c.id, ...on }, h('b', null, c.title), c.text)
+      return h('li', { key: c.id, 'data-ag-item': c.id, ...on }, h('b', null, c.title), c.text)
     })))
 }
 
@@ -1166,11 +1205,36 @@ function Page({ ctx }) {
   const [sig, setSig] = useState(null)
   const [dismissed, setDismissed] = useState('')
   const [reloadKey, setReloadKey] = useState(0)
+  const [target, setTarget] = useState(null)
   const seq = useRef(0)
+  const projectSeq = useRef(0)
+  const live = useRef(0)
+  const focused = useRef(null)
 
-  const loadProjects = () => ctx.rest('/projects')
-    .then(r => setProjects({ loading: false, list: Array.isArray(r && r.projects) ? r.projects : [] }))
-    .catch(e => setProjects({ loading: false, list: [], fault: String((e && e.message) || e) }))
+  const loadProjects = () => {
+    const n = ++projectSeq.current
+    return ctx.rest('/projects')
+      .then(r => { if (n === projectSeq.current) setProjects({ loading: false, list: Array.isArray(r && r.projects) ? r.projects : [] }) })
+      .catch(e => { if (n === projectSeq.current) setProjects({ loading: false, list: [], fault: String((e && e.message) || e) }) })
+  }
+  useEffect(() => {
+    if (!sdk.host || typeof sdk.host.onEvent !== 'function') return undefined
+    const off = ['dig.selected', 'dig.updated', 'projects.updated', 'view.set'].map(name =>
+      sdk.host.onEvent(`plugin.ag4te.${name}`, ({ payload } = {}) => {
+        if (!validPaneEvent(name, payload)) return
+        // Invalidate pending dig/status reads synchronously, before React runs effects.
+        live.current++; seq.current++
+        if (name === 'view.set') setTarget({ ...payload, revision: live.current })
+        if (name === 'dig.selected') { choose(payload.project); setTarget(null) }
+        if (name === 'dig.updated') {
+          setRun({ project: payload.project, state: payload.state })
+          if (payload.state === 'done') choose(payload.project)
+        }
+        loadProjects()
+        setReloadKey(k => k + 1)
+      }))
+    return () => { off.forEach(f => { if (typeof f === 'function') f() }); seq.current++; projectSeq.current++; live.current++ }
+  }, [ctx])
   // The repo list can fail on first load (backend still mounting, connection settling).
   // Retry with backoff rather than leave the picker empty until a reload.
   const [reposFault, setReposFault] = useState(false)
@@ -1194,6 +1258,7 @@ function Page({ ctx }) {
   // stale "running" row cannot restart polling.
   const runningProject = run && run.state === 'running' ? run.project
     : (projects.list.find(p => p.state === 'running' && !(run && p.project === run.project)) || {}).project
+  const statusProject = runningProject || (run && run.project)
 
   useEffect(() => {
     if (!current) { setDig(null); return }
@@ -1204,27 +1269,36 @@ function Page({ ctx }) {
     ctx.rest(`/dig?project=${encodeURIComponent(current.project)}`)
       .then(r => { if (n === seq.current) setDig(r) })
       .catch(e => { if (n === seq.current) setDig({ fault: String((e && e.message) || e) }) })
+    return () => { seq.current++ }
   }, [current && current.project, current && current.last, current && current.commit_count, reloadKey])
 
-  // Poll a running dig every 2s; when it finishes, reload projects and the dig, and open it.
+  useLayoutEffect(() => {
+    if (target && target !== focused.current && root.current && dig && !dig.loading && current && dig.project === current.project && focusPane(root.current, target)) focused.current = target
+  }, [target, dig])
+
+  // Read terminal details once; poll a running dig every 2s until it finishes.
   useEffect(() => {
-    if (!runningProject) return undefined
+    if (!statusProject) return undefined
     let alive = true, misses = 0
-    const tick = () => ctx.rest(`/status?project=${encodeURIComponent(runningProject)}`)
+    const tick = () => {
+      const revision = live.current
+      return ctx.rest(`/status?project=${encodeURIComponent(statusProject)}`)
       .then(st => {
-        if (!alive) return
+        if (!alive || revision !== live.current) return
         misses = 0
-        setRun({ ...st, project: runningProject })
-        if (st && st.state !== 'running') { choose(runningProject); loadProjects(); setReloadKey(k => k + 1) }
+        setRun({ ...st, project: statusProject })
+        if (runningProject && st && st.state !== 'running') { choose(statusProject); loadProjects(); setReloadKey(k => k + 1) }
       })
       .catch(() => {
         // Backend restarting: keep polling, and say so after ~10s of silence.
-        if (alive && ++misses >= 5) setRun(r => (r && r.state === 'running' && r.project === runningProject ? { ...r, lost: true } : { state: 'running', project: runningProject, label: 'Waiting for Hermes', lost: true }))
+        if (alive && runningProject && revision === live.current && ++misses >= 5) setRun(r => (r && r.state === 'running' && r.project === statusProject ? { ...r, lost: true } : { state: 'running', project: statusProject, label: 'Waiting for Hermes', lost: true }))
       })
+    }
     tick()
+    if (!runningProject) return () => { alive = false }
     const id = setInterval(() => { if (!document.hidden) tick() }, 2000)
     return () => { alive = false; clearInterval(id) }
-  }, [runningProject])
+  }, [statusProject, runningProject, reloadKey])
 
   const choose = v => { setSel(v); try { ctx.storage.set('project', v) } catch { /* storage unavailable */ } }
   const started = (p, resumed) => { if (p) { setDismissed(''); setRun({ state: 'running', project: p, step: 0, label: resumed ? 'Resuming' : 'Starting', resumed }) } }
@@ -1261,7 +1335,7 @@ function Page({ ctx }) {
     const eraNo = (d.clusters || []).map(c => (c.commits >= eraMin(d) ? ++k : 0))
     const when = new Date(d.generated_at)
     body = [
-      h('div', { key: 'lead', className: 'ag-lead ag-rise' },
+      h('div', { key: 'lead', 'data-ag-view': 'overview', className: 'ag-lead ag-rise' },
         h('div', null,
           h('h2', null, headline(d)),
           h('p', { className: 'meta' }, `${d.project}${d.repo ? ` · ${d.repo}` : ''} · ${fmtDayY(d.first)} to ${fmtDayY(d.last)} · dug ${isNaN(when) ? 'recently' : when.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}`)),
@@ -1277,8 +1351,8 @@ function Page({ ctx }) {
       h(Strata, { key: 'strata', d, pal, eraNo, hl, setHl, multiYear, sig, setSig }),
       h('div', { key: 'g2', className: 'ag-grid2' }, h(Rhythm, { d }), h(Churn, { d })),
       h('div', { key: 'g3', className: 'ag-grid3' }, h(Practices, { d }), h(Turning, { d, sig, setSig, multiYear }), h('div', { className: 'ag-stack' }, h(People, { d }), h(Load, { d }))),
-      (d.paths || []).length || (d.releases || []).length ? h('div', { key: 'g4', className: 'ag-grid2' }, h(Files, { d }), h(Releases, { d, multiYear })) : null,
-      h(Commits, { key: 'commits', d, pal, eraNo, hl, setHl }),
+      (d.paths || []).length || (d.releases || []).length ? h('div', { key: 'g4', className: 'ag-grid2' }, h(Files, { d }), h(Releases, { d, multiYear, target: target && target.view === 'releases' ? target : null })) : null,
+      h(Commits, { key: 'commits', d, pal, eraNo, hl, setHl, target }),
       h(Provenance, { key: 'prov', d, when })
     ]
   }
