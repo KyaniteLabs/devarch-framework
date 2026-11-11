@@ -3,6 +3,7 @@ import json
 import os
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 import pytest
@@ -746,6 +747,109 @@ def test_lease_blocks_a_dig_from_another_process(tmp_path):
     ag._jobs[r["project"]].join(10)
     assert not ag._lease_path(s).exists()
     assert ag.read_status("elsewhere", s)["interrupted"] is True
+
+
+def test_foreign_host_lease_expires_after_max_age(tmp_path):
+    settings = {"repo_roots": str(tmp_path), "data_dir": str(tmp_path / "data")}
+    lease = ag._lease_path(settings)
+    lease.parent.mkdir(parents=True)
+    lease.write_text(
+        json.dumps(
+            {
+                "project": "orphaned",
+                "pid": 12345,
+                "host": "previous-host",
+                "since": 0,
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    assert ag.read_lease(settings) is None
+    ag._take_lease("new-dig", settings)
+    assert json.loads(lease.read_text(encoding="utf-8"))["project"] == "new-dig"
+
+    lease.write_text(
+        json.dumps(
+            {
+                "project": "active-remote",
+                "pid": 12345,
+                "host": "previous-host",
+                "since": time.time(),
+            }
+        ),
+        encoding="utf-8",
+    )
+    with pytest.raises(ag.DigError, match="another Hermes process"):
+        ag._take_lease("competing-dig", settings)
+
+
+def test_stale_lease_reclaim_does_not_remove_a_replacement(tmp_path):
+    settings = {"repo_roots": str(tmp_path), "data_dir": str(tmp_path / "data")}
+    lease = ag._lease_path(settings)
+    lease.parent.mkdir(parents=True)
+    lease.write_text(
+        json.dumps({"project": "stale", "host": ag._host(), "pid": -1}), encoding="utf-8"
+    )
+
+    b_observed = tmp_path / "b-observed"
+    a_installed = tmp_path / "a-installed"
+    b_result = tmp_path / "b-result"
+    a_result = tmp_path / "a-result"
+    common = [str(PKG), str(tmp_path), str(tmp_path / "data")]
+    b_script = """
+import importlib.util, sys, time
+from pathlib import Path
+pkg, root, data, observed, installed, result = sys.argv[1:]
+spec = importlib.util.spec_from_file_location('ag4te_child', Path(pkg) / '__init__.py')
+ag = importlib.util.module_from_spec(spec); spec.loader.exec_module(ag)
+original = ag.read_lease
+def read_lease(settings=None, *, _locked=False):
+    held = original(settings, _locked=_locked)
+    if held is None:
+        Path(observed).touch()
+        deadline = time.monotonic() + 2
+        while not Path(installed).exists() and time.monotonic() < deadline:
+            time.sleep(0.005)
+    return held
+ag.read_lease = read_lease
+try:
+    ag._take_lease('process-b', {'repo_roots': root, 'data_dir': data})
+    outcome = 'claimed'
+except ag.DigError:
+    outcome = 'rejected'
+Path(result).write_text(outcome)
+"""
+    a_script = """
+import importlib.util, sys
+from pathlib import Path
+pkg, root, data, installed, result = sys.argv[1:]
+spec = importlib.util.spec_from_file_location('ag4te_child', Path(pkg) / '__init__.py')
+ag = importlib.util.module_from_spec(spec); spec.loader.exec_module(ag)
+original = ag.os.link
+def link(source, target, *args, **kwargs):
+    original(source, target, *args, **kwargs)
+    Path(installed).touch()
+ag.os.link = link
+try:
+    ag._take_lease('process-a', {'repo_roots': root, 'data_dir': data})
+    outcome = 'claimed'
+except ag.DigError:
+    outcome = 'rejected'
+Path(result).write_text(outcome)
+"""
+    b = subprocess.Popen(
+        [sys.executable, "-c", b_script, *common, str(b_observed), str(a_installed), str(b_result)]
+    )
+    deadline = time.monotonic() + 2
+    while not b_observed.exists() and time.monotonic() < deadline:
+        time.sleep(0.005)
+    assert b_observed.exists()
+    a = subprocess.Popen([sys.executable, "-c", a_script, *common, str(a_installed), str(a_result)])
+    assert b.wait(timeout=5) == 0
+    assert a.wait(timeout=5) == 0
+
+    assert sorted((a_result.read_text(), b_result.read_text())) == ["claimed", "rejected"]
 
 
 def test_pid_probe_never_signals_on_windows(monkeypatch):

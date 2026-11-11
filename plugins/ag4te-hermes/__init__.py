@@ -31,9 +31,10 @@ import tempfile
 import threading
 import time
 from collections import Counter
+from contextlib import contextmanager
 from datetime import date, datetime, timedelta
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -54,6 +55,7 @@ DIG_FILE = "dig.json"
 STATUS_FILE = "ag4te-status.json"
 META_FILE = "ag4te-meta.json"
 LEASE_FILE = "dig.lease"  # workspace-wide: one dig at a time across Hermes processes
+MAX_LEASE_AGE_SECONDS = 24 * 60 * 60
 MAX_COMMITS = 4000
 MAX_SIGNALS = 400
 MAX_DAYS = 365 * 30
@@ -1887,13 +1889,43 @@ def _lease_path(settings: Optional[Dict[str, Any]] = None) -> Path:
     return workspace(settings) / LEASE_FILE
 
 
+@contextmanager
+def _lease_guard(path: Path) -> Iterator[None]:
+    """Serialize lease claims across processes without a crash-stale lock."""
+    lock_path = path.with_name(f".{path.name}.lock")
+    with lock_path.open("a+b") as fh:
+        if os.name == "nt":
+            import msvcrt
+
+            fh.seek(0)
+            if not fh.read(1):
+                fh.write(b"\0")
+                fh.flush()
+            fh.seek(0)
+            msvcrt.locking(fh.fileno(), msvcrt.LK_LOCK, 1)
+            try:
+                yield
+            finally:
+                fh.seek(0)
+                msvcrt.locking(fh.fileno(), msvcrt.LK_UNLCK, 1)
+        else:
+            import fcntl
+
+            fcntl.flock(fh.fileno(), fcntl.LOCK_EX)
+            try:
+                yield
+            finally:
+                fcntl.flock(fh.fileno(), fcntl.LOCK_UN)
+
+
 def read_lease(
     settings: Optional[Dict[str, Any]] = None, *, _locked: bool = False
 ) -> Optional[Dict[str, Any]]:
     """The dig lease when a live process holds it, else None.
 
     A lease whose owner died on this host is stale and does not count. A lease from
-    another host counts as held: its owner cannot be checked from here.
+    another host counts as held until its maximum age: its owner cannot be checked
+    from here.
     """
     data = _read_json(_lease_path(settings))
     if not isinstance(data, dict):
@@ -1910,6 +1942,13 @@ def read_lease(
                     t = _jobs.get(str(data.get("project")))
             if not (t and t.is_alive()):
                 return None
+    else:
+        try:
+            since = float(data["since"])
+        except (KeyError, TypeError, ValueError):
+            return None
+        if time.time() - since > MAX_LEASE_AGE_SECONDS:
+            return None
     return data
 
 
@@ -1918,32 +1957,33 @@ def _take_lease(project: str, settings: Optional[Dict[str, Any]] = None) -> None
     Call with ``_jobs_lock`` held."""
     path = _lease_path(settings)
     path.parent.mkdir(parents=True, exist_ok=True)
-    body = json.dumps(
-        {"project": project, "pid": os.getpid(), "host": _host(), "since": time.time()}
-    )
-    for _ in range(3):
-        fd, tmp = tempfile.mkstemp(dir=str(path.parent), prefix=".lease-")
-        try:
-            with os.fdopen(fd, "w", encoding="utf-8") as fh:
-                fh.write(body)
-            os.link(tmp, path)  # atomic: fails when a lease file already exists
-            return
-        except FileExistsError:
-            held = read_lease(settings, _locked=True)
-            if held:
-                raise DigError(
-                    f"a dig is already running ({held.get('project')}) in another Hermes "
-                    "process; one at a time keeps the host light"
-                ) from None
+    with _lease_guard(path):
+        body = json.dumps(
+            {"project": project, "pid": os.getpid(), "host": _host(), "since": time.time()}
+        )
+        for _ in range(3):
+            fd, tmp = tempfile.mkstemp(dir=str(path.parent), prefix=".lease-")
             try:
-                path.unlink()  # stale: its owner is gone
-            except FileNotFoundError:
-                pass
-        finally:
-            try:
-                os.unlink(tmp)
-            except OSError:
-                pass
+                with os.fdopen(fd, "w", encoding="utf-8") as fh:
+                    fh.write(body)
+                os.link(tmp, path)  # atomic: fails when a lease file already exists
+                return
+            except FileExistsError:
+                held = read_lease(settings, _locked=True)
+                if held:
+                    raise DigError(
+                        f"a dig is already running ({held.get('project')}) in another Hermes "
+                        "process; one at a time keeps the host light"
+                    ) from None
+                try:
+                    path.unlink()  # stale: its owner is gone
+                except FileNotFoundError:
+                    pass
+            finally:
+                try:
+                    os.unlink(tmp)
+                except OSError:
+                    pass
     raise DigError("could not claim the dig lease; try again")
 
 
