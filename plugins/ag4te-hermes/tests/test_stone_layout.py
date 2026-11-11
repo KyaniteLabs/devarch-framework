@@ -2,7 +2,8 @@
 
 P1 share: inside each era, each kind's band thickness equals its share of the era's commits.
 P2 time: commits are laid oldest at the rim side to newest at the core side (chunk order).
-P3 legibility: no time chunk is thinner than 3px unless it is a single commit.
+P3 legibility: no time chunk is thinner than 3px unless it is a single commit. When the stone
+   has more eras than fit at 3px each, every era still gets an equal floor share.
 """
 
 import json
@@ -123,7 +124,9 @@ def _check(d, layout):
             abs(e["runs"][0]["g0"] - e["f0"]) < 1e-9 and abs(e["runs"][-1]["g1"] - e["f1"]) < 1e-9
         )
         # P3: chunk thickness >= 3px unless chunks are single commits
-        if e["chunks"] < e["n"]:
+        floor_px = min(3, RAD * (1 - CORE) / len(layout))
+        assert span * RAD >= floor_px - 1e-9, (d["project"], span * RAD)
+        if e["chunks"] < e["n"] and floor_px >= 3:
             assert span * RAD / e["chunks"] >= 3 - 1e-9, (d["project"], span * RAD / e["chunks"])
 
 
@@ -158,15 +161,20 @@ def test_big_era_is_chronological_at_chunk_resolution():
     assert feat == 200
 
 
+FIXTURES = Path(__file__).resolve().parent / "fixtures" / "sanitized-digs.json"
+
+
 @needs_node
-def test_real_digs_hold_the_same_rules():
-    roots = [
-        Path.home() / ".hermes-org/plugin-data/ag4te/projects",
-        Path.home() / ".hermes/plugin-data/ag4te/projects",
-    ]
-    digs = [p for r in roots if r.is_dir() for p in sorted(r.glob("*/dig.json"))]
-    if not digs:
-        pytest.skip("no real digs on this machine")
-    cases = [json.loads(p.read_text()) for p in digs]
+def test_sanitized_digs_hold_the_same_rules():
+    # Era shapes taken from real digs, with names, paths and messages removed: a
+    # 2-commit era beside a 3,998-commit one, and a stone with 40 eras.
+    cases = json.loads(FIXTURES.read_text())
     for d, layout in zip(cases, _layout(cases)):
         _check(d, layout)
+
+
+@needs_node
+def test_thin_era_is_a_readable_band():
+    thin = json.loads(FIXTURES.read_text())[0]
+    second = _layout([thin])[0][1]
+    assert (second["f0"] - second["f1"]) * RAD >= 3 - 1e-9

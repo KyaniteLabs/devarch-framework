@@ -40,4 +40,4 @@ Framework side (`archaeology/`, commit c512180 on branch `ag4te-plugin`): all fi
 - Cognitive load is labelled honestly as a subject-length proxy. It excludes merges and uses the shared kind classifier.
 - Tests: 346 passed, 1 skipped. That includes 6 new data-model tests. The pipeline-contract golden test was already failing; it now passes, because its masks now cover dependency and package line numbers.
 
-The plugin pins DevArch from the public GitHub repo, KyaniteLabs/ag4te, so these fixes reach it and anyone can install it without credentials. The pin was 0f87d05 (the reconciled 0.4.1 main); it is now 6dd2299, which adds the plain-imperative verbs that cut "other" commits from 63% to 27% on UNBL0CK.
+The plugin pins DevArch from the public GitHub repo, KyaniteLabs/ag4te, so these fixes reach it and anyone can install it without credentials. The pin was 0f87d05 (the reconciled 0.4.1 main); it was then 6dd2299, which adds the plain-imperative verbs that cut "other" commits from 63% to 27% on UNBL0CK. It is now d884f9a, the commit the Hermes catalog reviewed.

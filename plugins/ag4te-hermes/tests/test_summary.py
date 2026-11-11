@@ -260,9 +260,9 @@ def test_author_aliases_merge_one_person():
     a = ag.author_aliases(
         Counter(
             {
-                "Simon": 5,
-                "simon": 2,
-                "Simon Gonzalez De Cruz": 3,
+                "Robin": 5,
+                "robin": 2,
+                "Robin Alvarez De Luna": 3,
                 "Ana": 1,
                 "Ana Ruiz": 1,
                 "Ana Lopez": 1,
@@ -270,7 +270,7 @@ def test_author_aliases_merge_one_person():
             }
         )
     )
-    assert a["Simon"] == a["simon"] == a["Simon Gonzalez De Cruz"] == "Simon Gonzalez De Cruz"
+    assert a["Robin"] == a["robin"] == a["Robin Alvarez De Luna"] == "Robin Alvarez De Luna"
     assert a["Ana"] == "Ana"  # two candidates: don't guess
     assert a["dependabot[bot]"] == "dependabot[bot]"
 
@@ -396,26 +396,26 @@ def test_identities_one_person_many_spellings_and_kinds():
 
     pairs = Counter(
         {
-            ("Simon", "s@k.tech"): 5,
-            ("simon", "s@k.tech"): 2,
-            ("Simon Gonzalez De Cruz", "simon@pw.com"): 3,
-            ("SimonG", "123+SimonG@users.noreply.github.com"): 1,
-            ("Simon Gonzalez De Cruz", "s@k.tech"): 1,
+            ("Robin", "r@k.example"): 5,
+            ("robin", "r@k.example"): 2,
+            ("Robin Alvarez De Luna", "robin@pw.example"): 3,
+            ("RobinA", "123+RobinA@users.noreply.github.com"): 1,
+            ("Robin Alvarez De Luna", "r@k.example"): 1,
             ("dependabot[bot]", "49699333+dependabot[bot]@users.noreply.github.com"): 4,
             ("Claude Opus 4.7", "noreply@anthropic.com"): 2,
             ("Claude Fable 5", "noreply@anthropic.com"): 1,
-            ("Kyanite Factory", "factory@k.tech"): 2,
+            ("Kyanite Factory", "factory@k.example"): 2,
         }
     )
     idx, people = ag.build_identities(pairs, "Kyanite Factory")
-    assert idx[("Simon", "s@k.tech")] == idx[("Simon Gonzalez De Cruz", "simon@pw.com")]
+    assert idx[("Robin", "r@k.example")] == idx[("Robin Alvarez De Luna", "robin@pw.example")]
 
     def who(k):
         return people[idx[k]]
 
     assert (
-        who(("simon", "s@k.tech"))["name"] == "Simon Gonzalez De Cruz"
-        and who(("simon", "s@k.tech"))["kind"] == "human"
+        who(("robin", "r@k.example"))["name"] == "Robin Alvarez De Luna"
+        and who(("robin", "r@k.example"))["kind"] == "human"
     )
     assert (
         who(("dependabot[bot]", "49699333+dependabot[bot]@users.noreply.github.com"))["kind"]
@@ -423,7 +423,7 @@ def test_identities_one_person_many_spellings_and_kinds():
     )
     assert who(("Claude Opus 4.7", "noreply@anthropic.com"))["kind"] == "agent"
     assert who(("Claude Opus 4.7", "noreply@anthropic.com"))["name"] == "Claude"
-    assert who(("Kyanite Factory", "factory@k.tech"))["kind"] == "bot"  # the bots setting
+    assert who(("Kyanite Factory", "factory@k.example"))["kind"] == "bot"  # the bots setting
 
 
 def test_fold_signals_onset_peak_end():
@@ -528,10 +528,12 @@ def test_reloaded_plugin_keeps_running_digs(tmp_path):
     assert fresh._jobs is ag._jobs and fresh._jobs_lock is ag._jobs_lock
     gate = threading.Event()
     t = threading.Thread(target=gate.wait, name="ag4te-dig-probe", daemon=True)
+    repo = tmp_path / "repos" / "r"
+    git_repo(repo)  # a catalog install has no .git of its own
     settings = {
         **ag.snapshot_settings(),
-        "data_dir": str(tmp_path),
-        "repo_roots": str(PKG.parents[1]),
+        "data_dir": str(tmp_path / "data"),
+        "repo_roots": str(tmp_path / "repos"),
     }
     ag._set_status(ag.project_dir("probe", settings), fresh=True, state="running", step=1)
     with ag._jobs_lock:
@@ -540,7 +542,7 @@ def test_reloaded_plugin_keeps_running_digs(tmp_path):
     try:
         assert fresh.read_status("probe", settings)["state"] == "running"
         with pytest.raises(fresh.DigError, match="already running"):
-            fresh.start_dig(str(PKG.parents[1]), "other", settings)
+            fresh.start_dig(str(repo), "other", settings)
         assert fresh.cancel_dig("probe", settings)["cancelling"] is True
     finally:
         gate.set()
@@ -585,8 +587,8 @@ def test_name_particles_fold_into_one_person():
     ident, people = ag.build_identities(
         Counter(
             {
-                ("Simon Gonzalez De Cruz", "a@x.dev"): 20,
-                ("Simon Gonzalez de la Cruz", "b@y.dev"): 21,
+                ("Robin Alvarez De Luna", "a@x.dev"): 20,
+                ("Robin Alvarez de la Luna", "b@y.dev"): 21,
                 ("Ana de la Rosa", "c@z.dev"): 3,
             }
         )
@@ -594,8 +596,8 @@ def test_name_particles_fold_into_one_person():
     humans = [p for p in people if p.get("kind", "human") == "human"]
     assert len(humans) == 2
     assert (
-        ident[("Simon Gonzalez De Cruz", "a@x.dev")]
-        == ident[("Simon Gonzalez de la Cruz", "b@y.dev")]
+        ident[("Robin Alvarez De Luna", "a@x.dev")]
+        == ident[("Robin Alvarez de la Luna", "b@y.dev")]
     )
 
 
@@ -657,3 +659,113 @@ def test_story_empty_truncated_and_backfilled(tmp_path, monkeypatch):
     monkeypatch.setattr(ag, "project_dir", lambda project, settings=None: tmp_path)
     (tmp_path / ag.DIG_FILE).write_text(json.dumps(d), encoding="utf-8")
     assert ag.load_dig("demo")["story"] == ag.story(d)
+
+
+def test_gateway_gate_fails_closed(monkeypatch):
+    for var in ("HERMES_PLATFORM", "HERMES_SESSION_PLATFORM", "HERMES_GATEWAY_SESSION"):
+        monkeypatch.delenv(var, raising=False)
+    monkeypatch.setattr(ag, "_ctx", None)
+    assert ag._on_gateway() is False  # older Hermes classic CLI: nothing set
+    monkeypatch.setenv("HERMES_GATEWAY_SESSION", "1")
+    assert ag._on_gateway() is True  # blank platform inside a gateway process
+    monkeypatch.delenv("HERMES_GATEWAY_SESSION")
+
+    class Ctx:
+        surface = ""
+
+        def session_surface(self):
+            return self.surface
+
+        def get_config(self, key, default=None):
+            return default
+
+    ctx = Ctx()
+    monkeypatch.setattr(ag, "_ctx", ctx)
+    assert ag._on_gateway() is True  # newer Hermes: blank means no local session
+    for plat, chat in (("cli", False), ("desktop", False), ("discord", True), ("weird", True)):
+        ctx.surface = plat
+        assert ag._on_gateway() is chat, plat
+
+
+def test_gateway_gets_summaries_and_cannot_stop(tmp_path, monkeypatch):
+    s = {"data_dir": str(tmp_path / "data")}
+    pdir = ag.project_dir("demo", s)
+    ag._set_status(pdir, fresh=True, state="running", step=1, steps=6, repo="/home/someone/demo")
+    ag._set_status(pdir, state="failed", error="Mining commits: /home/someone/demo: boom")
+    monkeypatch.setattr(ag, "snapshot_settings", lambda: s)
+    monkeypatch.setattr(ag, "_cfg", lambda k, settings=None: s.get(k, ag.DEFAULTS[k]))
+    monkeypatch.setenv("HERMES_PLATFORM", "telegram")
+    assert "off on chat platforms" in ag._slash("stop demo")
+    status = ag._slash("status demo")
+    assert "someone" not in status and json.loads(status)["state"] == "failed"
+    assert ag._slash("list") == "1 dig: 1 failed"
+    assert "someone" not in ag._tool({})
+    monkeypatch.setenv("HERMES_PLATFORM", "cli")
+    assert "boom" in ag._slash("status demo")
+    assert ag._slash("list").startswith("demo: failed")
+
+
+def test_same_folder_name_in_two_roots_gets_two_projects(tmp_path):
+    a, b = tmp_path / "alpha" / "same", tmp_path / "beta" / "same"
+    git_repo(a)
+    git_repo(b)
+    s = {"repo_roots": str(tmp_path), "data_dir": str(tmp_path / "data")}
+    first = ag.start_dig(str(a), None, s, runner=lambda *a, **k: {"ok": True})
+    ag._jobs[first["project"]].join(10)
+    second = ag.start_dig(str(b), None, s, runner=lambda *a, **k: {"ok": True})
+    ag._jobs[second["project"]].join(10)
+    assert first["project"] == "same"
+    assert second["project"].startswith("same-") and second["project"] != "same"
+    assert ag.project_repo("same", s) == str(a.resolve())
+    with pytest.raises(ag.DigError, match="another repository"):
+        ag.start_dig(str(b), "same", s, runner=lambda *a, **k: {"ok": True})
+
+
+def test_lease_blocks_a_dig_from_another_process(tmp_path):
+    root = tmp_path / "repos"
+    git_repo(root / "r")
+    s = {"repo_roots": str(root), "data_dir": str(tmp_path / "data")}
+    other = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(30)"])
+    try:
+        lease = ag._lease_path(s)
+        lease.parent.mkdir(parents=True, exist_ok=True)
+        lease.write_text(
+            json.dumps({"project": "elsewhere", "pid": other.pid, "host": ag._host(), "since": 0})
+        )
+        ag._set_status(ag.project_dir("elsewhere", s), fresh=True, state="running")
+        with pytest.raises(ag.DigError, match="another Hermes process"):
+            ag.start_dig(str(root / "r"), None, s, runner=lambda *a, **k: {"ok": True})
+        assert ag.read_status("elsewhere", s)["state"] == "running"  # not "interrupted"
+        with pytest.raises(ag.DigError, match="another Hermes process"):
+            ag.cancel_dig("elsewhere", s)
+    finally:
+        other.kill()
+        other.wait()
+    # its owner died: the stale lease no longer blocks, and the dig drops it when done
+    r = ag.start_dig(str(root / "r"), None, s, runner=lambda *a, **k: {"ok": True})
+    ag._jobs[r["project"]].join(10)
+    assert not ag._lease_path(s).exists()
+    assert ag.read_status("elsewhere", s)["interrupted"] is True
+
+
+def test_pid_probe_never_signals_on_windows(monkeypatch):
+    """os.kill(pid, 0) sends CTRL_C_EVENT to the console group on Windows."""
+
+    def boom(*a):
+        raise AssertionError("os.kill must not be called on Windows")
+
+    monkeypatch.setattr(ag.os, "name", "nt")
+    monkeypatch.setattr(ag.os, "kill", boom)
+    monkeypatch.setattr(ag, "_win_pid_alive", lambda pid: pid == 4242)
+    assert ag._pid_alive(4242) is True
+    assert ag._pid_alive("4243") is False
+    assert ag._pid_alive(None) is False and ag._pid_alive(0) is False
+
+
+def test_pid_probe_on_posix():
+    if os.name == "nt":
+        pytest.skip("posix branch")
+    assert ag._pid_alive(os.getpid()) is True
+    done = subprocess.Popen([sys.executable, "-c", "pass"])
+    done.wait()
+    assert ag._pid_alive(done.pid) is False

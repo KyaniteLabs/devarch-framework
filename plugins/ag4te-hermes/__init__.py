@@ -38,7 +38,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 logger = logging.getLogger(__name__)
 
 PLUGIN_NAME = "ag4te"
-DEVARCH_PIN = "6dd229902ebcf33aeeb7c03d8574ac32db4ad883"
+DEVARCH_PIN = "d884f9a5cdd3b6d03e95114e860cc134d5067b84"  # the catalog-reviewed pin
 DEFAULTS: Dict[str, Any] = {
     "devarch_command": f"uvx --from git+https://github.com/KyaniteLabs/ag4te@{DEVARCH_PIN} devarch",
     "repo_roots": "~/workspaces",
@@ -53,6 +53,7 @@ DEFAULTS: Dict[str, Any] = {
 DIG_FILE = "dig.json"
 STATUS_FILE = "ag4te-status.json"
 META_FILE = "ag4te-meta.json"
+LEASE_FILE = "dig.lease"  # workspace-wide: one dig at a time across Hermes processes
 MAX_COMMITS = 4000
 MAX_SIGNALS = 400
 MAX_DAYS = 365 * 30
@@ -227,9 +228,26 @@ def validate_project(name: Any) -> str:
     return name
 
 
-def project_from_repo(repo: Path) -> str:
+def project_from_repo(repo: Path, hashed: bool = False) -> str:
+    """The default project name: the repo folder's name, plus a short path hash when
+    ``hashed`` (used when another repository with the same folder name owns the plain one)."""
     slug = re.sub(r"[^a-z0-9_-]+", "-", repo.name.lower()).strip("-_") or "repo"
-    return slug[:63]
+    if not hashed:
+        return slug[:63]
+    import hashlib
+
+    tag = hashlib.sha256(str(repo).encode("utf-8", "surrogateescape")).hexdigest()[:8]
+    return f"{slug[:54].rstrip('-_') or 'repo'}-{tag}"
+
+
+def project_repo(project: str, settings: Optional[Dict[str, Any]] = None) -> Optional[str]:
+    """The repository an existing project was dug from, or None for a new project."""
+    pdir = project_dir(project, settings)
+    for name in (META_FILE, STATUS_FILE):
+        data = _read_json(pdir / name)
+        if isinstance(data, dict) and isinstance(data.get("repo"), str) and data["repo"]:
+            return data["repo"]
+    return None
 
 
 def resolve_repo(path: Any, settings: Optional[Dict[str, Any]] = None) -> Path:
@@ -711,7 +729,7 @@ def build_identities(
         m = _GH_NOREPLY.match(email)
         if m and _norm_name(m.group(1)) in by_name:
             union(by_name[_norm_name(m.group(1))], i)
-    by_core: Dict[str, int] = {}  # "Gonzalez De Cruz" and "Gonzalez de la Cruz" are one name
+    by_core: Dict[str, int] = {}  # "Alvarez De Luna" and "Alvarez de la Luna" are one name
     for n, i in by_name.items():
         core = " ".join(w for w in n.split() if w not in _NAME_PARTICLES)
         if " " in core:
@@ -720,7 +738,7 @@ def build_identities(
             else:
                 by_core[core] = i
     multi = [n for n in by_name if " " in n]
-    for n, i in by_name.items():  # "simon" joins the one "simon …" name
+    for n, i in by_name.items():  # "robin" joins the one "robin …" name
         if " " not in n:
             longer = [o for o in multi if o.split(" ", 1)[0] == n]
             if len(longer) == 1:
@@ -1686,6 +1704,9 @@ def read_status(project: str, settings: Optional[Dict[str, Any]] = None) -> Dict
     with _jobs_lock:
         alive = project in _jobs and _jobs[project].is_alive()
     if st.get("state") == "running" and not alive:
+        lease = read_lease(settings)
+        if lease and lease.get("project") == project:
+            return {**st, "elsewhere": True}  # another Hermes process is digging it
         st = {
             **st,
             "state": "failed",
@@ -1814,6 +1835,133 @@ def run_dig(
     )
 
 
+def _pid_alive(pid: Any) -> bool:
+    try:
+        pid = int(pid)
+    except (ValueError, TypeError, OverflowError):
+        return False
+    if pid <= 0:
+        return False
+    if os.name == "nt":
+        # On Windows os.kill(pid, 0) is not a probe: 0 is CTRL_C_EVENT, sent to the whole
+        # console group, so it would interrupt Hermes itself.
+        return _win_pid_alive(pid)
+    try:
+        os.kill(pid, 0)
+    except PermissionError:
+        return True  # alive, owned by someone else
+    except (OSError, OverflowError):
+        return False
+    return True
+
+
+def _win_pid_alive(pid: int) -> bool:
+    import ctypes
+    from ctypes import wintypes
+
+    k32 = ctypes.WinDLL("kernel32", use_last_error=True)  # type: ignore[attr-defined]
+    k32.OpenProcess.argtypes = (wintypes.DWORD, wintypes.BOOL, wintypes.DWORD)
+    k32.OpenProcess.restype = wintypes.HANDLE
+    k32.GetExitCodeProcess.argtypes = (wintypes.HANDLE, ctypes.POINTER(wintypes.DWORD))
+    k32.GetExitCodeProcess.restype = wintypes.BOOL
+    k32.CloseHandle.argtypes = (wintypes.HANDLE,)
+    handle = k32.OpenProcess(0x1000, False, pid)  # PROCESS_QUERY_LIMITED_INFORMATION
+    if not handle:
+        return ctypes.get_last_error() == 5  # ERROR_ACCESS_DENIED: alive, someone else's
+    try:
+        code = wintypes.DWORD()
+        if not k32.GetExitCodeProcess(handle, ctypes.byref(code)):
+            return True  # cannot tell: keep the lease rather than steal it
+        return code.value == 259  # STILL_ACTIVE
+    finally:
+        k32.CloseHandle(handle)
+
+
+def _host() -> str:
+    import socket
+
+    return socket.gethostname()
+
+
+def _lease_path(settings: Optional[Dict[str, Any]] = None) -> Path:
+    return workspace(settings) / LEASE_FILE
+
+
+def read_lease(
+    settings: Optional[Dict[str, Any]] = None, *, _locked: bool = False
+) -> Optional[Dict[str, Any]]:
+    """The dig lease when a live process holds it, else None.
+
+    A lease whose owner died on this host is stale and does not count. A lease from
+    another host counts as held: its owner cannot be checked from here.
+    """
+    data = _read_json(_lease_path(settings))
+    if not isinstance(data, dict):
+        return None
+    if data.get("host") == _host():
+        if not _pid_alive(data.get("pid")):
+            return None
+        if data.get("pid") == os.getpid():
+            # our own process: only a live dig thread keeps it
+            if _locked:
+                t = _jobs.get(str(data.get("project")))
+            else:
+                with _jobs_lock:
+                    t = _jobs.get(str(data.get("project")))
+            if not (t and t.is_alive()):
+                return None
+    return data
+
+
+def _take_lease(project: str, settings: Optional[Dict[str, Any]] = None) -> None:
+    """Claim the workspace dig lease for ``project`` or raise when another dig holds it.
+    Call with ``_jobs_lock`` held."""
+    path = _lease_path(settings)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    body = json.dumps(
+        {"project": project, "pid": os.getpid(), "host": _host(), "since": time.time()}
+    )
+    for _ in range(3):
+        fd, tmp = tempfile.mkstemp(dir=str(path.parent), prefix=".lease-")
+        try:
+            with os.fdopen(fd, "w", encoding="utf-8") as fh:
+                fh.write(body)
+            os.link(tmp, path)  # atomic: fails when a lease file already exists
+            return
+        except FileExistsError:
+            held = read_lease(settings, _locked=True)
+            if held:
+                raise DigError(
+                    f"a dig is already running ({held.get('project')}) in another Hermes "
+                    "process; one at a time keeps the host light"
+                ) from None
+            try:
+                path.unlink()  # stale: its owner is gone
+            except FileNotFoundError:
+                pass
+        finally:
+            try:
+                os.unlink(tmp)
+            except OSError:
+                pass
+    raise DigError("could not claim the dig lease; try again")
+
+
+def _drop_lease(project: str, settings: Optional[Dict[str, Any]] = None) -> None:
+    path = _lease_path(settings)
+    data = _read_json(path)
+    if (
+        isinstance(data, dict)
+        and data.get("pid") == os.getpid()
+        and data.get("host") == _host()
+        and data.get("project") == project
+    ):
+        try:
+            path.unlink()
+        except FileNotFoundError:
+            pass
+
+
 def start_dig(
     repo_path: Optional[str],
     project: Optional[str] = None,
@@ -1845,13 +1993,25 @@ def start_dig(
         )
         skip = [x for x in (st.get("completed") or []) if isinstance(x, str)]
     repo = resolve_repo(repo_path, settings)
+    named = bool(project)
     project = validate_project(project or project_from_repo(repo))
+    owner = project_repo(project, settings)
+    if owner and owner != str(repo):
+        if named or resume:
+            raise DigError(
+                f"project {project} already holds a dig of another repository; pick another name"
+            )
+        project = project_from_repo(repo, hashed=True)
+        owner = project_repo(project, settings)
+        if owner and owner != str(repo):
+            raise DigError(f"project {project} already holds a dig of another repository")
     with _jobs_lock:
         busy = [p for p, t in _jobs.items() if t.is_alive()]
         if busy:
             raise DigError(
                 f"a dig is already running ({busy[0]}); one at a time keeps the host light"
             )
+        _take_lease(project, settings)  # the same rule across Hermes processes
         cancel = threading.Event()
 
         def job() -> None:
@@ -1868,25 +2028,33 @@ def start_dig(
                     )
                 except Exception:  # noqa: BLE001
                     pass
+            finally:
+                _drop_lease(project, settings)
 
         t = threading.Thread(target=job, name=f"ag4te-dig-{project}", daemon=True)
-        _jobs[project] = t
-        _cancels[project] = cancel
-        # Mark running before the thread starts so a poll right after sees it.
-        _set_status(
-            project_dir(project, settings),
-            fresh=True,
-            state="running",
-            repo=str(repo),
-            step=0,
-            label="Resuming" if skip else "Starting",
-            started_at=time.time(),
-            error=None,
-            warnings=[],
-            completed=skip,
-            resumed=bool(skip),
-        )
-        t.start()
+        try:
+            # Mark running before the thread starts so a poll right after sees it.
+            _set_status(
+                project_dir(project, settings),
+                fresh=True,
+                state="running",
+                repo=str(repo),
+                step=0,
+                label="Resuming" if skip else "Starting",
+                started_at=time.time(),
+                error=None,
+                warnings=[],
+                completed=skip,
+                resumed=bool(skip),
+            )
+            _jobs[project] = t
+            _cancels[project] = cancel
+            t.start()
+        except BaseException:
+            _jobs.pop(project, None)
+            _cancels.pop(project, None)
+            _drop_lease(project, settings)
+            raise
     return {"project": project, "repo": str(repo), "state": "running", "resumed": bool(skip)}
 
 
@@ -1896,6 +2064,11 @@ def cancel_dig(project: str, settings: Optional[Dict[str, Any]] = None) -> Dict[
     with _jobs_lock:
         t, ev = _jobs.get(project), _cancels.get(project)
         if not (t and t.is_alive() and ev):
+            lease = read_lease(settings, _locked=True)
+            if lease and lease.get("project") == project:
+                raise DigError(
+                    f"the dig of {project} runs in another Hermes process; stop it there"
+                )
             raise DigError(f"no dig of {project} is running")
         ev.set()
     try:
@@ -1993,17 +2166,43 @@ def brief(d: Dict[str, Any]) -> str:
 
 # --------------------------------------------------------------------------- slash + tool
 
-_LOCAL_PLATFORMS = frozenset({"", "cli", "local", "tui", "desktop", "acp"})
+_LOCAL_PLATFORMS = frozenset({"cli", "local", "tui", "desktop", "acp"})
 
 
 def _session_platform() -> str:
+    env = (os.environ.get("HERMES_PLATFORM") or "").strip().lower()
+    if env:
+        return env
+    surface = getattr(_ctx, "session_surface", None)
+    if callable(surface):  # Hermes names the classic CLI "cli" here
+        try:
+            return str(surface() or "").strip().lower()
+        except Exception:  # noqa: BLE001
+            pass
     try:
         from gateway.session_context import get_session_env  # type: ignore
 
         plat = get_session_env("HERMES_SESSION_PLATFORM", "") or ""
     except Exception:  # noqa: BLE001
         plat = os.environ.get("HERMES_SESSION_PLATFORM") or ""
-    return str(os.environ.get("HERMES_PLATFORM") or plat or "").strip().lower()
+    return str(plat).strip().lower()
+
+
+def _on_gateway() -> bool:
+    """True unless the caller is a known local surface. Unknown platforms count as chat.
+
+    A blank platform is local only on an older Hermes that has no ``session_surface``
+    (its classic CLI sets nothing) and only outside a gateway process.
+    """
+    plat = _session_platform()
+    if plat in _LOCAL_PLATFORMS:
+        return False
+    if plat:
+        return True
+    if callable(getattr(_ctx, "session_surface", None)):
+        return True
+    flag = (os.environ.get("HERMES_GATEWAY_SESSION") or "").strip().lower()
+    return flag in ("1", "true", "yes", "on")
 
 
 USAGE = (
@@ -2020,11 +2219,17 @@ def _slash(raw_args: str) -> str:
     if not args or args[0] in ("help", "-h", "--help"):
         return USAGE
     cmd, rest = args[0], args[1:]
+    chat = _on_gateway()
     try:
         if cmd == "list":
             rows = list_projects()
             if not rows:
                 return "No digs yet. Start one with /ag4te dig <repo-path>."
+            if chat:  # chat platforms get counts, not project names
+                states = Counter(str(r.get("state")) for r in rows)
+                return f"{_plural(len(rows), 'dig')}: " + ", ".join(
+                    f"{n} {k}" for k, n in sorted(states.items())
+                )
             return "\n".join(
                 f"{r['project']}: {r.get('state')}"
                 + (f", {r['commit_count']} commits" if r.get("commit_count") else "")
@@ -2033,33 +2238,24 @@ def _slash(raw_args: str) -> str:
         if cmd in ("show", "status") and len(rest) == 1:
             if cmd == "status":
                 st = read_status(validate_project(rest[0]))
-                return json.dumps(
-                    {
-                        k: st.get(k)
-                        for k in (
-                            "state",
-                            "label",
-                            "step",
-                            "steps",
-                            "error",
-                            "warnings",
-                            "interrupted",
-                            "cancelling",
-                        )
-                    }
-                )
+                fields = ("state", "step", "steps", "interrupted", "cancelling")
+                if not chat:  # error text and warnings can carry host paths
+                    fields += ("label", "error", "warnings")
+                return json.dumps({k: st.get(k) for k in fields})
             d = load_dig(validate_project(rest[0]))
             return brief(d) if d else f"No finished dig named {rest[0]}."
         if cmd == "stop" and len(rest) == 1:
+            if chat and not _cfg("allow_dig_on_gateway"):
+                return "/ag4te stop is off on chat platforms; stop the dig from the Hermes CLI or Desktop."
             cancel_dig(rest[0])
             return f"Stopping the dig of {rest[0]}."
         if cmd == "resume" and len(rest) == 1:
-            if _session_platform() not in _LOCAL_PLATFORMS and not _cfg("allow_dig_on_gateway"):
+            if chat and not _cfg("allow_dig_on_gateway"):
                 return "/ag4te resume reads a local repository and is off on chat platforms."
             r = start_dig(None, rest[0], resume=True)
             return f"Resuming the dig of '{r['project']}'."
         if cmd == "dig" and 1 <= len(rest) <= 2:
-            if _session_platform() not in _LOCAL_PLATFORMS and not _cfg("allow_dig_on_gateway"):
+            if chat and not _cfg("allow_dig_on_gateway"):
                 return (
                     "/ag4te dig reads a local repository and is off on chat platforms. Run it from the "
                     "Hermes CLI or Desktop, or set allow_dig_on_gateway: true."
@@ -2085,12 +2281,17 @@ def _tool(args: Dict[str, Any], **_: Any) -> str:
     project = (args or {}).get("project")
     try:
         if not project:
-            return json.dumps({"digs": list_projects()})
+            rows = list_projects()
+            if _on_gateway():  # repo paths and error text stay on the host
+                rows = [{k: v for k, v in r.items() if k not in ("repo", "error")} for r in rows]
+            return json.dumps({"digs": rows})
         d = load_dig(validate_project(project))
     except DigError as exc:
         return json.dumps({"error": str(exc)})
     if not d:
         return json.dumps({"error": f"no finished dig named {project}"})
+    if _on_gateway():  # chat platforms: the summary, without names or paths
+        return json.dumps({"summary": brief(d)})
     keep = (
         "project",
         "commit_count",
