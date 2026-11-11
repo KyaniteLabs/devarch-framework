@@ -800,7 +800,7 @@ def test_stale_lease_reclaim_does_not_remove_a_replacement(tmp_path):
     b_script = """
 import importlib.util, sys, time
 from pathlib import Path
-pkg, root, data, observed, installed, result = sys.argv[1:]
+pkg, root, data, observed, installed, result, other = sys.argv[1:]
 spec = importlib.util.spec_from_file_location('ag4te_child', Path(pkg) / '__init__.py')
 ag = importlib.util.module_from_spec(spec); spec.loader.exec_module(ag)
 original = ag.read_lease
@@ -819,6 +819,11 @@ try:
 except ag.DigError:
     outcome = 'rejected'
 Path(result).write_text(outcome)
+# Stay alive until A has decided: a lease whose owner has exited is stale, and Windows
+# (unlike an unreaped zombie on POSIX) reports the exited owner as gone at once.
+deadline = time.monotonic() + 10
+while not Path(other).exists() and time.monotonic() < deadline:
+    time.sleep(0.005)
 """
     a_script = """
 import importlib.util, sys
@@ -839,7 +844,16 @@ except ag.DigError:
 Path(result).write_text(outcome)
 """
     b = subprocess.Popen(
-        [sys.executable, "-c", b_script, *common, str(b_observed), str(a_installed), str(b_result)]
+        [
+            sys.executable,
+            "-c",
+            b_script,
+            *common,
+            str(b_observed),
+            str(a_installed),
+            str(b_result),
+            str(a_result),
+        ]
     )
     deadline = time.monotonic() + 2
     while not b_observed.exists() and time.monotonic() < deadline:
