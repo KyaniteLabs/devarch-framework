@@ -21,6 +21,7 @@ time; DevArch's LLM, network and serve commands are never invoked.
 
 from __future__ import annotations
 
+import errno
 import json
 import logging
 import os
@@ -1897,12 +1898,16 @@ def _lease_guard(path: Path) -> Iterator[None]:
         if os.name == "nt":
             import msvcrt
 
+            # Windows locks are mandatory: reading a byte another process has locked raises
+            # PermissionError, so lock byte 0 without reading it. Locking past end-of-file is allowed.
             fh.seek(0)
-            if not fh.read(1):
-                fh.write(b"\0")
-                fh.flush()
-            fh.seek(0)
-            msvcrt.locking(fh.fileno(), msvcrt.LK_LOCK, 1)
+            while True:
+                try:
+                    msvcrt.locking(fh.fileno(), msvcrt.LK_LOCK, 1)  # retries for about 10 s
+                    break
+                except OSError as exc:  # EDEADLOCK: still held after the retries
+                    if exc.errno != getattr(errno, "EDEADLOCK", 36):
+                        raise
             try:
                 yield
             finally:
