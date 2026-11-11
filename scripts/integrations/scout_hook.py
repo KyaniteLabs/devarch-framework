@@ -194,7 +194,8 @@ def clone_repo(url: str, clone_dir: str) -> tuple[bool, str]:
     try:
         log_info(f"Cloning {url} to {clone_dir}")
         result = run_command(
-            ["git", "clone", "--depth", "1", url, clone_dir],
+            # Full history: ``devarch mine`` refuses a shallow clone.
+            ["git", "clone", url, clone_dir],
             check=False,
             timeout=600,
         )

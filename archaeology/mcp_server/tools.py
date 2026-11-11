@@ -113,13 +113,18 @@ def devarch_signals(project_name: str, min_gap_days: int | None = None) -> dict[
 
 def devarch_analyze(project_name: str, vectors: list[str] | None = None) -> dict[str, Any]:
     """Run analysis vectors on a project's data."""
-    result = pipeline.analyze(_ref(project_name), vectors).results
-    return {
-        "status": "complete",
+    analysis = pipeline.analyze(_ref(project_name), vectors)
+    result = analysis.results
+    # Some vectors failed: "partial", naming them, rather than "complete".
+    out: dict[str, Any] = {
+        "status": "partial" if analysis.failed else "complete",
         "project": project_name,
         "vectors_run": list(result.keys()) if result else [],
         "results": result,
     }
+    if analysis.failed:
+        out["failed_vectors"] = sorted(analysis.failed)
+    return out
 
 
 def devarch_run_pipeline(repo_path: str, project_name: str) -> dict[str, Any]:
