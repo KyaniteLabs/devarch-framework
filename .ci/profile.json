@@ -1,7 +1,8 @@
 {
   "version": 1,
   "test_globs": [
-    "tests/test_*.py"
+    "tests/test_*.py",
+    "plugins/ag4te-hermes/tests/test_*.py"
   ],
   "dependency_files": [
     "setup.py",
@@ -19,7 +20,19 @@
         "-euo",
         "pipefail",
         "-c",
-        "apt-get update -qq && apt-get install -y -qq python3-venv && python3 -m venv /tmp/uv-bootstrap && /tmp/uv-bootstrap/bin/pip install --quiet uv==0.10.2 && /tmp/uv-bootstrap/bin/uv venv --python 3.12.12 .venv && /tmp/uv-bootstrap/bin/uv pip install --python .venv '.[dev]' pytest==9.1.1 ruff==0.16.10"
+        "apt-get update -qq && apt-get install -y -qq git nodejs python3-venv && python3 -m venv /tmp/uv-bootstrap && /tmp/uv-bootstrap/bin/pip install --quiet uv==0.10.2 && /tmp/uv-bootstrap/bin/uv venv --python 3.12.12 .venv && /tmp/uv-bootstrap/bin/uv pip install --python .venv '.[dev]' pytest==9.1.1 ruff==0.16.10"
+      ],
+      "timeout_seconds": 900
+    },
+    {
+      "name": "Check out pinned Hermes and install its locked runtime",
+      "phase": "install",
+      "argv": [
+        "bash",
+        "-euo",
+        "pipefail",
+        "-c",
+        "git clone --filter=blob:none --no-checkout https://github.com/NousResearch/hermes-agent.git .hermes-runtime && git -C .hermes-runtime checkout --detach 2bd378ed1b8d6bf2192cb26e0a55ff3091e6bd19 && /tmp/uv-bootstrap/bin/uv sync --frozen --python 3.14 --directory .hermes-runtime && /tmp/uv-bootstrap/bin/uv pip install --python .hermes-runtime/.venv/bin/python pytest==9.1.1"
       ],
       "timeout_seconds": 900
     },
@@ -62,6 +75,18 @@
         "-p",
         "no:cacheprovider",
         "--junitxml=.ci-results/tests.xml"
+      ],
+      "timeout_seconds": 900
+    },
+    {
+      "name": "Run Hermes plugin tests and fail on skips",
+      "phase": "test",
+      "argv": [
+        "bash",
+        "-euo",
+        "pipefail",
+        "-c",
+        "test_log=$(mktemp); env -u HERMES_HOME HOME=\"$PWD/.ci-hermes-home\" AG4TE_HERMES_SOURCE=\"$PWD/.hermes-runtime\" .hermes-runtime/.venv/bin/python -m pytest plugins/ag4te-hermes/tests -q --tb=short -rs 2>&1 | tee \"$test_log\"; if grep -Eq '[0-9]+ skipped' \"$test_log\"; then echo 'plugin tests were skipped'; exit 1; fi"
       ],
       "timeout_seconds": 900
     },

@@ -16,7 +16,7 @@ PKG = Path(__file__).resolve().parents[1]
 HERMES_SOURCE = Path(
     os.environ.get(
         "AG4TE_HERMES_SOURCE",
-        "/tmp/claude-1001/-home-simon-factory-repos-KyaniteLabs-DialectOS/42f3cfa0-03b9-4d41-9bb3-d18bbbef4060/scratchpad/roast/r3-tmp/opus/hermes023",
+        "/nonexistent-hermes-source",
     )
 )
 
@@ -35,6 +35,7 @@ def pane(monkeypatch, tmp_path):
     events.broadcast_plugin_event = lambda *args: calls.append(args)
     monkeypatch.setitem(sys.modules, "hermes_cli", ModuleType("hermes_cli"))
     monkeypatch.setitem(sys.modules, "hermes_cli.plugin_events", events)
+    monkeypatch.setitem(sys.modules, "tui_gateway.server", ModuleType("tui_gateway.server"))
     ag = load_plugin()
     ag._ctx = SimpleNamespace(
         get_config=lambda key, _: str(tmp_path) if key == "data_dir" else None
@@ -177,14 +178,26 @@ def test_status_event_failure_isolated_with_real_hermes_bridge(monkeypatch, tmp_
     ag = load_plugin()
     valid = tmp_path / "projects" / "demo"
     ag._set_status(valid, fresh=True, state="running")
-    assert calls == [
-        ("plugin.ag4te.dig.updated", {"project": "demo", "state": "running"})
-    ]
+    assert calls == [("plugin.ag4te.dig.updated", {"project": "demo", "state": "running"})]
     invalid = tmp_path / "projects" / "invalid name"
     result = ag._set_status(invalid, fresh=True, state="running")
 
     assert result["state"] == "running"
     assert ag._read_json(invalid / ag.STATUS_FILE)["state"] == "running"
+
+
+@pytest.mark.skipif(not HERMES_SOURCE.is_dir(), reason="Hermes v0.23.0 source is not available")
+def test_broadcast_does_not_import_gateway_bridge_outside_tui_process(monkeypatch):
+    monkeypatch.syspath_prepend(str(HERMES_SOURCE))
+    for name in ("hermes_cli.plugin_events", "hermes_cli", "tui_gateway.server", "tui_gateway"):
+        monkeypatch.delitem(sys.modules, name, raising=False)
+    ag = load_plugin()
+    before = sys.stdout
+
+    ag._pane_event("projects.updated", {"count": 1})
+
+    assert "hermes_cli.plugin_events" not in sys.modules
+    assert sys.stdout is before
 
 
 def test_registration_exposes_show_and_skill(pane):

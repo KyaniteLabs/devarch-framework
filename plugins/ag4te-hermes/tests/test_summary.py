@@ -244,10 +244,12 @@ def test_slash_refuses_dig_on_gateway(monkeypatch):
     assert "names are" in ag._slash("show ../etc")
 
 
-SAMPLE = os.environ.get("AG4TE_SAMPLE")
+# A real DevArch project; defaults to the demo shipped in the repo so CI always runs it.
+SAMPLE = os.environ.get("AG4TE_SAMPLE") or str(
+    Path(__file__).resolve().parents[3] / "projects" / "demo-archaeology"
+)
 
 
-@pytest.mark.skipif(not SAMPLE, reason="set AG4TE_SAMPLE to a real DevArch project dir")
 def test_real_sample():
     d = ag.summarize(Path(SAMPLE))
     assert d["commit_count"] > 0 and len(d["days"]) == d["span_days"]

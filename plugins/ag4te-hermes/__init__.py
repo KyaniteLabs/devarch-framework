@@ -25,10 +25,12 @@ from __future__ import annotations
 import errno
 import json
 import logging
+import math
 import os
 import re
 import shlex
 import subprocess
+import sys
 import tempfile
 import threading
 import time
@@ -205,6 +207,8 @@ def _pane_event(event: str, payload: Dict[str, Any]) -> None:
         )
     if not valid:
         raise DigError("invalid Desktop event or payload")
+    if "tui_gateway.server" not in sys.modules:
+        return  # CLI, worker, and validation processes have no Desktop clients.
     try:
         from hermes_cli.plugin_events import broadcast_plugin_event
     except ImportError:
@@ -2006,9 +2010,8 @@ def read_lease(
     """The dig lease when a live process holds it, else None.
 
     A same-host lease is checked against its owner: the boot and the process start time
-    must match, so a PID reused after a crash or reboot does not keep it alive. When the
-    owner cannot be verified (another host, or no /proc), the lease expires at the maximum
-    age instead.
+    must match, so a PID reused after a crash or reboot does not keep it alive. A live
+    same-host process remains protected on hosts without process start-time data.
     """
     data = _read_json(_lease_path(settings))
     if not isinstance(data, dict):
@@ -2017,7 +2020,8 @@ def read_lease(
         since = float(data["since"])
     except (KeyError, TypeError, ValueError):
         return None
-    expired = time.time() - since > MAX_LEASE_AGE_SECONDS
+    now = time.time()
+    expired = not math.isfinite(since) or since > now or now - since > MAX_LEASE_AGE_SECONDS
     if data.get("host") != _host():
         return None if expired else data
     recorded_boot = data.get("boot_id")
@@ -2031,8 +2035,6 @@ def read_lease(
     if recorded_start and current_start:
         if recorded_start != current_start:
             return None  # the PID now belongs to a different process
-    elif expired:
-        return None
     if data.get("pid") == os.getpid():
         # our own process: only a live dig thread keeps it
         if _locked:
@@ -2092,15 +2094,16 @@ def unlock_lease(settings: Optional[Dict[str, Any]] = None) -> bool:
     path = _lease_path(settings)
     if not path.exists():
         return False
-    with _lease_guard(path):
-        if not path.exists():
-            return False
-        if read_lease(settings, _locked=True):
-            raise DigError("a dig is still running; its lease cannot be unlocked")
-        try:
-            path.unlink()
-        except FileNotFoundError:
-            return False
+    with _jobs_lock:
+        with _lease_guard(path):
+            if not path.exists():
+                return False
+            if read_lease(settings, _locked=True):
+                raise DigError("a dig is still running; its lease cannot be unlocked")
+            try:
+                path.unlink()
+            except FileNotFoundError:
+                return False
     return True
 
 
@@ -2457,7 +2460,9 @@ def _tool(args: Dict[str, Any], **_: Any) -> str:
     except DigError as exc:
         return json.dumps({"error": str(exc)})
     if not d:
-        message = "no finished dig available" if _on_gateway() else f"no finished dig named {project}"
+        message = (
+            "no finished dig available" if _on_gateway() else f"no finished dig named {project}"
+        )
         return json.dumps({"error": message})
     _pane_event("dig.selected", {"project": project})
     if _on_gateway():  # chat platforms: the summary, without names or paths
