@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.4.1] - Unreleased readiness candidate
 
+- AG4TE Hermes plugin 0.3.0: agent dig reads and progress refresh the open Desktop page through local events; `ag4te_show` points it at a section or item, with live events taking priority over pending REST responses (Forgejo #53).
 - Stop the AG4TE plugin's dig lease from sending Ctrl-C on Windows. It checked whether a lease owner was alive with `os.kill(pid, 0)`, which on Windows is `CTRL_C_EVENT` to the whole console group, so it interrupted Hermes itself. It now asks Windows with `OpenProcess`/`GetExitCodeProcess`.
 - Harden the AG4TE Hermes plugin after review: chat platforms (and any platform not known as local) can no longer stop a dig, and get summaries without paths, error text or author names; one dig at a time now holds across Hermes processes through a workspace lease; two repositories with the same folder name no longer share a project; a small era beside a large one keeps a 3px band in the stone; the layout regression runs on a sanitized fixture instead of host data; tests no longer name real people; the plugin pins DevArch to the catalog-reviewed commit (`d884f9a`).
 - Rename the repository to AG4TE (`KyaniteLabs/ag4te`). The `devarch` command and the `devarch-framework` package keep their names.

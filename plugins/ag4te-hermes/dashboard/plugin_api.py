@@ -6,6 +6,7 @@ import importlib.util
 import sys
 import threading
 from pathlib import Path
+from types import SimpleNamespace
 
 from fastapi import APIRouter, Body, HTTPException, Query
 
@@ -16,12 +17,24 @@ _load_lock = threading.Lock()
 
 
 def _plugin():
-    # The private copy is loaded once, under a lock; the running-dig registry is process-wide
-    # (see _job_registry), so even a second copy would see the same digs.
-    for name in ("ag4te", "hermes_plugins.ag4te", "plugins.ag4te"):
-        mod = sys.modules.get(name)
-        if mod is not None and hasattr(mod, "start_dig"):
+    # Hermes gives secondary profiles a __home_<digest> module suffix. Resolve
+    # by this plugin's source file so the dashboard shares the registered context.
+    target = (Path(__file__).resolve().parent.parent / "__init__.py").resolve()
+    fallback = None
+    for mod in list(sys.modules.values()):
+        filename = getattr(mod, "__file__", None)
+        if not filename or not hasattr(mod, "start_dig"):
+            continue
+        try:
+            if Path(filename).resolve() != target:
+                continue
+        except OSError:
+            continue
+        if getattr(mod, "_ctx", None) is not None:
             return mod
+        fallback = fallback or mod
+    if fallback is not None:
+        return fallback
     with _load_lock:
         mod = sys.modules.get("_ag4te_private")
         if mod is not None and hasattr(mod, "start_dig"):
@@ -36,6 +49,21 @@ def _load_private():
     sys.modules["_ag4te_private"] = mod
     try:
         spec.loader.exec_module(mod)
+        settings = dict(mod.DEFAULTS)
+        try:
+            from hermes_cli.config import load_config_readonly  # type: ignore
+
+            entry = ((load_config_readonly() or {}).get("plugins") or {}).get(
+                "entries", {}
+            ).get("ag4te") or {}
+            for key, value in (entry.get("settings") or {}).items():
+                if key in settings and value is not None:
+                    settings[key] = value
+        except Exception:  # noqa: BLE001 - standalone API inspection uses defaults
+            pass
+        mod._ctx = SimpleNamespace(
+            get_config=lambda key, default=None: settings.get(key, default)
+        )
     except BaseException:
         sys.modules.pop("_ag4te_private", None)
         raise

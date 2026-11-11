@@ -17,9 +17,9 @@ Digs run on your machine. They read only the repository you choose, keep their r
 ## What you get
 
 - **Desktop:** an AG4TE page. Pick a repository under your `repo_roots`, start a dig, watch its steps, and read the stone, a short Story of the repo in plain words, and the strata chart (Days, Weeks or Months), eras, gaps, signals, rhythm and authors. A running dig can be stopped and resumed.
-- **Slash command:** `/ag4te list | show <project> | status <project> | dig <repo-path> [project] | stop <project> | resume <project>`. On Telegram, Discord and any platform AG4TE doesn't know as local, `dig`, `resume` and `stop` are off unless you set `allow_dig_on_gateway: true`, because they act on local files. There, `list`, `status` and the `ag4te_dig` tool return summaries only, without project paths, error text or author names.
-- **One dig at a time:** `dig.lease` in the workspace holds the rule across Hermes processes that share it. A lease on this host is checked against its process; a lease from another host expires after 24 hours. Two repositories with the same folder name get separate projects; the second one's name ends in a short path hash.
-- **Agent tool:** `ag4te_dig` gives agents a read-only summary of a finished dig, or lists the digs.
+- **Slash command:** `/ag4te list | show <project> | status <project> | dig <repo-path> [project] | stop <project> | resume <project> | unlock`. On Telegram, Discord and any platform AG4TE doesn't know as local, `dig`, `resume`, `stop` and `unlock` are off because they act on local files. There, list results contain only counts and states, and show/tool summaries omit project names, paths, error text and author names.
+- **One dig at a time:** `dig.lease` in the workspace holds the rule across Hermes processes that share it. Same-host leases are checked against the process and boot when available; every lease expires after 24 hours. `/ag4te unlock` removes an expired lease if its file remains and refuses to remove an active lease. Two repositories with the same folder name get separate projects; the second one's name ends in a short path hash.
+- **Agent tools:** `ag4te_dig` gives agents a read-only summary of a finished dig, or lists the digs; `ag4te_show` points the page at a section and optional item id (see [the skill](skills/ag4te/SKILL.md)). The page reacts to agent tool calls and dig progress via local Desktop events containing only ids, states and counts; no Desktop client means no visual update.
 
 ## Install
 
@@ -32,6 +32,12 @@ hermes plugins enable ag4te
 ```
 
 You also need [`uv`](https://docs.astral.sh/uv/) on the gateway host, because AG4TE runs DevArch with `uvx`. Requires Hermes `>= 0.21.6`. If Hermes Desktop connects to a remote gateway, install AG4TE on the gateway host. Desktop loads the page from there.
+
+Check that AG4TE is on in Desktop **Capabilities -> Plugins**; enabling it there is the one step a person does, then open the AG4TE page.
+
+## Plugin development
+
+The Desktop file is plain ESM with no build step or separate source bundle. Run the full plugin suite with `python3 -m pytest plugins/ag4te-hermes/tests --tb=short -q`; it includes Node checks for stone layout and pane events, which can also run with `node plugins/ag4te-hermes/tests/pane-events.test.cjs`.
 
 ## Settings
 

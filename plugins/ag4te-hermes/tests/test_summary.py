@@ -731,7 +731,15 @@ def test_lease_blocks_a_dig_from_another_process(tmp_path):
         lease = ag._lease_path(s)
         lease.parent.mkdir(parents=True, exist_ok=True)
         lease.write_text(
-            json.dumps({"project": "elsewhere", "pid": other.pid, "host": ag._host(), "since": 0})
+            json.dumps(
+                {
+                    "project": "elsewhere",
+                    "pid": other.pid,
+                    "host": ag._host(),
+                    "boot_id": ag._boot_id(),
+                    "since": time.time(),
+                }
+            )
         )
         ag._set_status(ag.project_dir("elsewhere", s), fresh=True, state="running")
         with pytest.raises(ag.DigError, match="another Hermes process"):
