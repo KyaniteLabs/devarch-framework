@@ -302,6 +302,22 @@ def _job_key(project: str, settings: Optional[Dict[str, Any]] = None) -> Tuple[s
     return str(workspace(settings).resolve()), project
 
 
+def _registered_job(
+    project: str, settings: Optional[Dict[str, Any]] = None
+) -> Tuple[Optional[threading.Thread], Optional[threading.Event]]:
+    """Return a job, migrating its pre-workspace registry key when needed.
+
+    Call with ``_jobs_lock`` held. The old registry used the project name alone, so
+    the caller's workspace supplies the missing part of the new key.
+    """
+    key = _job_key(project, settings)
+    if key not in _jobs and project in _jobs:
+        _jobs[key] = _jobs.pop(project)
+    if key not in _cancels and project in _cancels:
+        _cancels[key] = _cancels.pop(project)
+    return _jobs.get(key), _cancels.get(key)
+
+
 def project_dir(project: str, settings: Optional[Dict[str, Any]] = None) -> Path:
     validate_project(project)
     return workspace(settings) / "projects" / project
@@ -1888,9 +1904,9 @@ def read_status(project: str, settings: Optional[Dict[str, Any]] = None) -> Dict
     pdir = project_dir(project, settings)
     st = _read_json(pdir / STATUS_FILE)
     st = st if isinstance(st, dict) else {"state": "none"}
-    key = _job_key(project, settings)
     with _jobs_lock:
-        alive = key in _jobs and _jobs[key].is_alive()
+        job, _ = _registered_job(project, settings)
+        alive = bool(job and job.is_alive())
     if st.get("state") == "running" and not alive:
         lease = read_lease(settings)
         if lease and lease.get("project") == project:
@@ -2149,13 +2165,12 @@ def read_lease(
     expired = since > now + LEASE_FUTURE_SKEW_SECONDS or now - since > MAX_LEASE_AGE_SECONDS
     if data.get("host") != _host():
         return None if expired else data
-    key = _job_key(str(data.get("project")), settings)
     if data.get("pid") == os.getpid():
         if _locked:
-            t = _jobs.get(key)
+            t, _ = _registered_job(str(data.get("project")), settings)
         else:
             with _jobs_lock:
-                t = _jobs.get(key)
+                t, _ = _registered_job(str(data.get("project")), settings)
         if t and t.is_alive():
             return data
     recorded_boot = data.get("boot_id")
@@ -2299,8 +2314,9 @@ def start_dig(
     with _jobs_lock:
         busy = [p for p, t in _jobs.items() if t.is_alive()]
         if busy:
+            busy_project = busy[0][1] if isinstance(busy[0], tuple) else busy[0]
             raise DigBusyError(
-                f"a dig is already running ({busy[0][1]}); one at a time keeps the host light"
+                f"a dig is already running ({busy_project}); one at a time keeps the host light"
             )
         _take_lease(project, settings)  # the same rule across Hermes processes
         cancel = threading.Event()
@@ -2354,8 +2370,7 @@ def cancel_dig(project: str, settings: Optional[Dict[str, Any]] = None) -> Dict[
     """Ask a running dig to stop. The job writes ``cancelled`` once the command dies."""
     project = validate_project(project)
     with _jobs_lock:
-        key = _job_key(project, settings)
-        t, ev = _jobs.get(key), _cancels.get(key)
+        t, ev = _registered_job(project, settings)
         if not (t and t.is_alive() and ev):
             lease = read_lease(settings, _locked=True)
             if lease and lease.get("project") == project:
