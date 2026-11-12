@@ -1,5 +1,7 @@
 """Tests for archaeology/utils.py _parse_date function used by era_detector."""
 
+import pytest
+
 from archaeology.utils import _parse_date
 
 
@@ -86,3 +88,18 @@ def test_parse_date_strips_whitespace():
     assert result is not None
     assert result.year == 2024
     assert result.month == 1
+
+
+@pytest.mark.skipif(not hasattr(__import__("time"), "tzset"), reason="time.tzset is Unix-only")
+def test_parse_date_without_offset_ignores_the_machine_time_zone(monkeypatch):
+    """A date with no UTC offset must come back as written, whatever the local zone is."""
+    import time
+
+    monkeypatch.setenv("TZ", "America/Los_Angeles")
+    time.tzset()
+    try:
+        assert _parse_date("2024-01-15T10:30:45").hour == 10
+        assert _parse_date("2024-01-15T10:30:45+02:00").hour == 8  # offsets are still honoured
+    finally:
+        monkeypatch.undo()
+        time.tzset()

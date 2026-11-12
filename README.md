@@ -7,7 +7,7 @@
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
 [![GitHub stars](https://img.shields.io/github/stars/KyaniteLabs/ag4te.svg?style=social)](https://github.com/KyaniteLabs/ag4te)
 
-**Git repository archaeology framework.** Mine commit history, detect development signals, run 6 analysis vectors, and generate engineering narrative reports — from any git repository, fully local, no external services.
+**Git repository archaeology framework.** Mine commit history, detect development signals, run 6 analysis vectors, and generate engineering narrative reports — from any git repository. Mining and analysis run locally on your machine; the generated HTML pages load Chart.js, d3 and Google Fonts from a CDN when you open them.
 
 ```bash
 git clone https://github.com/KyaniteLabs/ag4te.git && cd ag4te && pip install -e .
@@ -351,7 +351,7 @@ Yes. The framework is ICM-compliant — it ships with structured context layers 
 Tested on repositories from dozens to tens of thousands of commits. SQLite + FTS4 handles large git histories without any external infrastructure.
 
 **Is my data sent anywhere?**
-No. DevArch runs entirely locally. All mining, analysis, and report generation happens on your machine. No telemetry, no cloud API calls.
+No. Mining and analysis run locally on your machine, and DevArch sends no telemetry and calls no cloud API. One thing does use the network: the generated HTML pages load Chart.js, d3 and Google Fonts from a CDN when you open them, so the CDN sees that request. Open them offline and the charts and fonts will not load.
 
 ## Related Projects
 
@@ -374,7 +374,7 @@ More from [KyaniteLabs](https://kyanitelabs.tech). Related projects:
 
 ## What is DevArch Framework?
 
-**DevArch Framework** is a local **git repository archaeology framework**: it mines commit history into SQLite, runs heuristic signal detection (gaps, velocity shifts, author changes), executes analysis vectors, and generates HTML visualizations and Markdown reports — no external services.
+**DevArch Framework** is a local **git repository archaeology framework**: it mines commit history into SQLite, runs heuristic signal detection (gaps, velocity shifts, author changes), executes analysis vectors, and generates HTML visualizations and Markdown reports, with mining and analysis running locally (the HTML pages load Chart.js, d3 and fonts from a CDN).
 
 | | |
 | --- | --- |
@@ -388,14 +388,14 @@ More from [KyaniteLabs](https://kyanitelabs.tech). Related projects:
 ## Who it's for
 
 - Primary: engineers, researchers, and AI agents who need to understand how a codebase evolved
-- Use when you need to mine git history into a queryable SQLite database, detect development signals, and generate evidence-bound reports, fully locally
+- Use when you need to mine git history into a queryable SQLite database, detect development signals, and generate evidence-bound reports, with mining and analysis running locally
 - Skip if you need a productivity-scoring tool or a hosted analytics service
 
 ## FAQ
 
 ### What is DevArch Framework?
 
-**DevArch Framework** is a local **git repository archaeology framework**: it mines commit history into SQLite, runs heuristic signal detection (gaps, velocity shifts, author changes), executes analysis vectors, and generates HTML visualizations and Markdown reports — no external services.
+**DevArch Framework** is a local **git repository archaeology framework**: it mines commit history into SQLite, runs heuristic signal detection (gaps, velocity shifts, author changes), executes analysis vectors, and generates HTML visualizations and Markdown reports, with mining and analysis running locally (the HTML pages load Chart.js, d3 and fonts from a CDN).
 
 ### Who should use DevArch Framework?
 
