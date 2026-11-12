@@ -87,6 +87,7 @@ STATUS_FILE = "ag4te-status.json"
 META_FILE = "ag4te-meta.json"
 LEASE_FILE = "dig.lease"  # workspace-wide: one dig at a time across Hermes processes
 MAX_LEASE_AGE_SECONDS = 24 * 60 * 60
+LEASE_FUTURE_SKEW_SECONDS = 5 * 60
 MAX_COMMITS = 4000
 MAX_SIGNALS = 400
 MAX_DAYS = 365 * 30
@@ -198,8 +199,8 @@ def _job_registry():
 
 _reg = _job_registry()
 _jobs_lock = _reg.lock
-_jobs: Dict[str, threading.Thread] = _reg.jobs
-_cancels: Dict[str, threading.Event] = _reg.cancels
+_jobs: Dict[Tuple[str, str], threading.Thread] = _reg.jobs
+_cancels: Dict[Tuple[str, str], threading.Event] = _reg.cancels
 
 
 class DigError(ValueError):
@@ -295,6 +296,10 @@ def workspace(settings: Optional[Dict[str, Any]] = None) -> Path:
         if configured
         else _hermes_root() / "plugin-data" / PLUGIN_NAME
     )
+
+
+def _job_key(project: str, settings: Optional[Dict[str, Any]] = None) -> Tuple[str, str]:
+    return str(workspace(settings).resolve()), project
 
 
 def project_dir(project: str, settings: Optional[Dict[str, Any]] = None) -> Path:
@@ -1883,8 +1888,9 @@ def read_status(project: str, settings: Optional[Dict[str, Any]] = None) -> Dict
     pdir = project_dir(project, settings)
     st = _read_json(pdir / STATUS_FILE)
     st = st if isinstance(st, dict) else {"state": "none"}
+    key = _job_key(project, settings)
     with _jobs_lock:
-        alive = project in _jobs and _jobs[project].is_alive()
+        alive = key in _jobs and _jobs[key].is_alive()
     if st.get("state") == "running" and not alive:
         lease = read_lease(settings)
         if lease and lease.get("project") == project:
@@ -2126,8 +2132,9 @@ def read_lease(
     """The dig lease when a live process holds it, else None.
 
     A same-host lease with verifiable boot and process start data is checked against its
-    owner, so a PID reused after a crash or reboot does not keep it alive. Unverifiable
-    same-host leases expire when their timestamp is in the future or beyond the maximum age.
+    owner, so a PID reused after a crash or reboot does not keep it alive. A live local dig
+    thread keeps its lease even without that data; other unverifiable leases expire beyond
+    the maximum age or five minutes of future clock skew.
     """
     data = _read_json(_lease_path(settings))
     if not isinstance(data, dict):
@@ -2139,9 +2146,18 @@ def read_lease(
     now = time.time()
     if not math.isfinite(since):
         return None
-    expired = since > now or now - since > MAX_LEASE_AGE_SECONDS
+    expired = since > now + LEASE_FUTURE_SKEW_SECONDS or now - since > MAX_LEASE_AGE_SECONDS
     if data.get("host") != _host():
         return None if expired else data
+    key = _job_key(str(data.get("project")), settings)
+    if data.get("pid") == os.getpid():
+        if _locked:
+            t = _jobs.get(key)
+        else:
+            with _jobs_lock:
+                t = _jobs.get(key)
+        if t and t.is_alive():
+            return data
     recorded_boot = data.get("boot_id")
     current_boot = _boot_id()
     boot_verified = bool(recorded_boot and current_boot)
@@ -2153,17 +2169,10 @@ def read_lease(
     current_start = _proc_start(data.get("pid")) if recorded_start else None
     start_verified = bool(recorded_start and current_start)
     if recorded_start and current_start:
-        if recorded_start != current_start:
+        if str(recorded_start) != str(current_start):
             return None  # the PID now belongs to a different process
     if data.get("pid") == os.getpid():
-        # our own process: only a live dig thread keeps it
-        if _locked:
-            t = _jobs.get(str(data.get("project")))
-        else:
-            with _jobs_lock:
-                t = _jobs.get(str(data.get("project")))
-        if not (t and t.is_alive()):
-            return None
+        return None
     if expired and not (boot_verified and start_verified):
         return None
     return data
@@ -2291,10 +2300,11 @@ def start_dig(
         busy = [p for p, t in _jobs.items() if t.is_alive()]
         if busy:
             raise DigBusyError(
-                f"a dig is already running ({busy[0]}); one at a time keeps the host light"
+                f"a dig is already running ({busy[0][1]}); one at a time keeps the host light"
             )
         _take_lease(project, settings)  # the same rule across Hermes processes
         cancel = threading.Event()
+        key = _job_key(project, settings)
 
         def job() -> None:
             try:
@@ -2329,12 +2339,12 @@ def start_dig(
                 completed=skip,
                 resumed=bool(skip),
             )
-            _jobs[project] = t
-            _cancels[project] = cancel
+            _jobs[key] = t
+            _cancels[key] = cancel
             t.start()
         except BaseException:
-            _jobs.pop(project, None)
-            _cancels.pop(project, None)
+            _jobs.pop(key, None)
+            _cancels.pop(key, None)
             _drop_lease(project, settings)
             raise
     return {"project": project, "repo": str(repo), "state": "running", "resumed": bool(skip)}
@@ -2344,7 +2354,8 @@ def cancel_dig(project: str, settings: Optional[Dict[str, Any]] = None) -> Dict[
     """Ask a running dig to stop. The job writes ``cancelled`` once the command dies."""
     project = validate_project(project)
     with _jobs_lock:
-        t, ev = _jobs.get(project), _cancels.get(project)
+        key = _job_key(project, settings)
+        t, ev = _jobs.get(key), _cancels.get(key)
         if not (t and t.is_alive() and ev):
             lease = read_lease(settings, _locked=True)
             if lease and lease.get("project") == project:

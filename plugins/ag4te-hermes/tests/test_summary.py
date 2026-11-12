@@ -361,7 +361,7 @@ def _wait(project, s, timeout=20):
 
     end = _t.time() + timeout
     while _t.time() < end:
-        t = ag._jobs.get(project)
+        t = ag._jobs.get(ag._job_key(project, s))
         if t is None or not t.is_alive():
             return ag.read_status(project, s)
         _t.sleep(0.05)
@@ -559,12 +559,12 @@ def test_api_loads_the_plugin_once(monkeypatch):
     api = importlib.util.module_from_spec(api_spec)
     api_spec.loader.exec_module(api)
     first = api._plugin()
-    first._jobs["probe"] = "kept"
+    first._jobs[("test", "probe")] = "kept"
     try:
         assert api._plugin() is first
-        assert first._jobs.get("probe") == "kept"
+        assert first._jobs.get(("test", "probe")) == "kept"
     finally:
-        first._jobs.pop("probe", None)
+        first._jobs.pop(("test", "probe"), None)
         sys.modules.pop("_ag4te_private", None)
 
 
@@ -585,9 +585,10 @@ def test_reloaded_plugin_keeps_running_digs(tmp_path):
         "data_dir": str(tmp_path / "data"),
         "repo_roots": str(tmp_path / "repos"),
     }
+    key = ag._job_key("probe", settings)
     ag._set_status(ag.project_dir("probe", settings), fresh=True, state="running", step=1)
     with ag._jobs_lock:
-        ag._jobs["probe"], ag._cancels["probe"] = t, threading.Event()
+        ag._jobs[key], ag._cancels[key] = t, threading.Event()
     t.start()
     try:
         assert fresh.read_status("probe", settings)["state"] == "running"
@@ -598,8 +599,8 @@ def test_reloaded_plugin_keeps_running_digs(tmp_path):
         gate.set()
         t.join(2)
         with ag._jobs_lock:
-            ag._jobs.pop("probe", None)
-            ag._cancels.pop("probe", None)
+            ag._jobs.pop(key, None)
+            ag._cancels.pop(key, None)
 
 
 def test_host_zone_is_named_not_a_fixed_offset(monkeypatch):
@@ -761,9 +762,9 @@ def test_same_folder_name_in_two_roots_gets_two_projects(tmp_path):
     git_repo(b)
     s = {"repo_roots": str(tmp_path), "data_dir": str(tmp_path / "data")}
     first = ag.start_dig(str(a), None, s, runner=lambda *a, **k: {"ok": True})
-    ag._jobs[first["project"]].join(10)
+    ag._jobs[ag._job_key(first["project"], s)].join(10)
     second = ag.start_dig(str(b), None, s, runner=lambda *a, **k: {"ok": True})
-    ag._jobs[second["project"]].join(10)
+    ag._jobs[ag._job_key(second["project"], s)].join(10)
     assert first["project"] == "same"
     assert second["project"].startswith("same-") and second["project"] != "same"
     assert ag.project_repo("same", s) == str(a.resolve())
@@ -801,7 +802,7 @@ def test_lease_blocks_a_dig_from_another_process(tmp_path):
         other.wait()
     # its owner died: the stale lease no longer blocks, and the dig drops it when done
     r = ag.start_dig(str(root / "r"), None, s, runner=lambda *a, **k: {"ok": True})
-    ag._jobs[r["project"]].join(10)
+    ag._jobs[ag._job_key(r["project"], s)].join(10)
     assert not ag._lease_path(s).exists()
     assert ag.read_status("elsewhere", s)["interrupted"] is True
 
