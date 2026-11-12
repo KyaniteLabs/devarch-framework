@@ -17,7 +17,7 @@ setup(
     extras_require={
         "dev": [
             "pytest>=8.0",
-            "ruff==0.16.10",
+            "ruff==0.17.4",
             "hypothesis>=6.100",
             "fastapi>=0.110",
             "httpx>=0.27",
