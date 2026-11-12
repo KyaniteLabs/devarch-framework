@@ -4,6 +4,7 @@ import importlib
 import importlib.util
 import json
 import os
+import subprocess
 import sys
 import time
 from pathlib import Path
@@ -95,6 +96,37 @@ def test_same_host_lease_age_backstop_and_unlock(tmp_path):
     assert "unlock" in ag.USAGE
     assert "stale" in ag._slash("unlock")
     assert not lease.exists()
+
+
+@pytest.mark.parametrize("timestamp", ["future", "over-age"])
+def test_verified_live_same_host_lease_survives_clock_anomalies(tmp_path, monkeypatch, timestamp):
+    ag = load_plugin("ag4te_verified_lease")
+    settings = {"data_dir": str(tmp_path)}
+    lease = ag._lease_path(settings)
+    lease.parent.mkdir(parents=True, exist_ok=True)
+    owner = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(30)"])
+    monkeypatch.setattr(ag, "_boot_id", lambda: "current-boot")
+    monkeypatch.setattr(ag, "_proc_start", lambda pid: "matching-start")
+    since = time.time() + 5 if timestamp == "future" else time.time() - ag.MAX_LEASE_AGE_SECONDS - 1
+    body = {
+        "project": "active",
+        "pid": owner.pid,
+        "host": ag._host(),
+        "boot_id": "current-boot",
+        "pid_start": "matching-start",
+        "since": since,
+    }
+    lease.write_text(json.dumps(body), encoding="utf-8")
+
+    try:
+        assert ag._pid_alive(owner.pid)
+        assert ag.read_lease(settings) == body
+        with pytest.raises(ag.DigError, match="a dig is still running"):
+            ag.unlock_lease(settings)
+        assert lease.exists()
+    finally:
+        owner.kill()
+        owner.wait()
 
 
 def test_dashboard_reuses_profile_scoped_registered_core(monkeypatch):
