@@ -111,6 +111,48 @@ def test_summary_basic(tmp_path):
     assert sum(d["kind_totals"]) == 3
 
 
+def test_default_devarch_config_hash_ignores_install_path(tmp_path, monkeypatch):
+    pdir = make_project(tmp_path)
+    first_constraints = tmp_path / "install-a" / "devarch-constraints.txt"
+    second_constraints = tmp_path / "install-b" / "devarch-constraints.txt"
+    first_constraints.parent.mkdir()
+    second_constraints.parent.mkdir()
+    first_constraints.write_text("package==1.2.3\n", encoding="utf-8")
+    second_constraints.write_text("package==1.2.3\n", encoding="utf-8")
+    settings = {"time_zone": "UTC"}
+
+    monkeypatch.setattr(ag, "DEVARCH_CONSTRAINTS", first_constraints)
+    monkeypatch.setitem(
+        ag.DEFAULTS,
+        "devarch_command",
+        ag._default_devarch_command(str(first_constraints), windows=False),
+    )
+    first_hash = ag.summarize(pdir, settings=settings)["manifest"]["config_hash"]
+
+    monkeypatch.setattr(ag, "DEVARCH_CONSTRAINTS", second_constraints)
+    monkeypatch.setitem(
+        ag.DEFAULTS,
+        "devarch_command",
+        ag._default_devarch_command(str(second_constraints), windows=False),
+    )
+    second_hash = ag.summarize(pdir, settings=settings)["manifest"]["config_hash"]
+
+    assert first_hash == second_hash
+
+    second_constraints.write_text("package==4.5.6\n", encoding="utf-8")
+    changed_constraints_hash = ag.summarize(pdir, settings=settings)["manifest"]["config_hash"]
+    assert changed_constraints_hash != first_hash
+
+
+def test_custom_devarch_command_still_changes_config_hash(tmp_path):
+    pdir = make_project(tmp_path)
+    first = ag.summarize(pdir, settings={"time_zone": "UTC"})["manifest"]["config_hash"]
+    second = ag.summarize(
+        pdir, settings={"time_zone": "UTC", "devarch_command": "uvx --from custom devarch"}
+    )["manifest"]["config_hash"]
+    assert first != second
+
+
 def test_summary_signals_and_bad_json(tmp_path):
     sig = {
         "signals": [
