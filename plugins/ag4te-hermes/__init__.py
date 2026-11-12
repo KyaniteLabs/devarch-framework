@@ -23,6 +23,7 @@ time; DevArch's LLM, network and serve commands are never invoked.
 from __future__ import annotations
 
 import errno
+import hashlib
 import json
 import logging
 import math
@@ -1280,8 +1281,6 @@ def _restates_gap(sg: Dict[str, Any], gaps: List[Dict[str, Any]], slack: int = 2
 
 
 def _sha(v: Any) -> str:
-    import hashlib
-
     return hashlib.sha256(json.dumps(v, sort_keys=True, default=str).encode()).hexdigest()[:16]
 
 
@@ -1326,6 +1325,12 @@ def summarize(
         "max_commits_listed": MAX_COMMITS,
     }
     bots = _cfg("bots", settings)
+    devarch_config = _cfg("devarch_command", settings)
+    if devarch_config == DEFAULTS["devarch_command"]:
+        devarch_config = {
+            "pin": DEVARCH_PIN,
+            "constraints_sha256": hashlib.sha256(DEVARCH_CONSTRAINTS.read_bytes()).hexdigest(),
+        }
     manifest = {
         "schema_version": SCHEMA_VERSION,
         "source": source,
@@ -1343,7 +1348,7 @@ def summarize(
                 "bots": bots,
                 "history": _cfg("history", settings),
                 "thresholds": thresholds,
-                "devarch": _cfg("devarch_command", settings),
+                "devarch": devarch_config,
             }
         ),
     }
