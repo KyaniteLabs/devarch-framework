@@ -305,16 +305,24 @@ def _job_key(project: str, settings: Optional[Dict[str, Any]] = None) -> Tuple[s
 def _registered_job(
     project: str, settings: Optional[Dict[str, Any]] = None
 ) -> Tuple[Optional[threading.Thread], Optional[threading.Event]]:
-    """Return a job, migrating its pre-workspace registry key when needed.
+    """Return a job, migrating its pre-workspace registry key when owned.
 
-    Call with ``_jobs_lock`` held. The old registry used the project name alone, so
-    the caller's workspace supplies the missing part of the new key.
+    Call with ``_jobs_lock`` held. The caller must hold this project's live local lease
+    before its workspace can claim the old project-only key.
     """
     key = _job_key(project, settings)
-    if key not in _jobs and project in _jobs:
-        _jobs[key] = _jobs.pop(project)
-    if key not in _cancels and project in _cancels:
-        _cancels[key] = _cancels.pop(project)
+    if key not in _jobs and key not in _cancels and project in _jobs and project in _cancels:
+        job = _jobs[project]
+        lease = _read_json(_lease_path(settings))
+        if (
+            job.is_alive()
+            and isinstance(lease, dict)
+            and lease.get("project") == project
+            and lease.get("pid") == os.getpid()
+            and lease.get("host") == _host()
+        ):
+            _jobs[key] = _jobs.pop(project)
+            _cancels[key] = _cancels.pop(project)
     return _jobs.get(key), _cancels.get(key)
 
 
