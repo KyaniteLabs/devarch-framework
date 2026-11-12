@@ -320,6 +320,7 @@ def _registered_job(
             and lease.get("project") == project
             and lease.get("pid") == os.getpid()
             and lease.get("host") == _host()
+            and _lease_identity_matches(lease)
         ):
             _jobs[key] = _jobs.pop(project)
             _cancels[key] = _cancels.pop(project)
@@ -2111,6 +2112,16 @@ def _proc_start(pid: Any) -> Optional[str]:
         return stat.rsplit(")", 1)[1].split()[19]
     except (OSError, ValueError, IndexError, TypeError):
         return None
+
+
+def _lease_identity_matches(data: Dict[str, Any]) -> bool:
+    recorded_boot = data.get("boot_id")
+    current_boot = _boot_id()
+    if recorded_boot and current_boot and recorded_boot != current_boot:
+        return False
+    recorded_start = data.get("pid_start")
+    current_start = _proc_start(data.get("pid")) if recorded_start else None
+    return not (recorded_start and current_start and str(recorded_start) != str(current_start))
 
 
 def _lease_path(settings: Optional[Dict[str, Any]] = None) -> Path:

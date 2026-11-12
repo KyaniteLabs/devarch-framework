@@ -1,9 +1,11 @@
 """Focused regressions from the ninth audit round."""
 
 import importlib.util
+import os
 import subprocess
 import sys
 import threading
+import time
 import types
 from pathlib import Path
 
@@ -100,3 +102,62 @@ def test_legacy_job_migrates_only_for_its_lease_owner(tmp_path):
             ag._jobs.pop("demo", None)
             ag._cancels.pop(key_a, None)
             ag._cancels.pop("demo", None)
+
+
+@pytest.mark.parametrize(
+    ("boot_id", "pid_start"),
+    [
+        ("stale-boot", "current-start"),
+        ("current-boot", "stale-start"),
+        ("stale-boot", "stale-start"),
+    ],
+    ids=("boot-mismatch", "start-mismatch", "both-mismatch"),
+)
+def test_stale_lease_identity_cannot_migrate_legacy_job(tmp_path, monkeypatch, boot_id, pid_start):
+    settings_a = {"data_dir": str(tmp_path / "workspace-a")}
+    settings_b = {"data_dir": str(tmp_path / "workspace-b")}
+    release = threading.Event()
+    cancel = threading.Event()
+    job = threading.Thread(target=release.wait, daemon=True)
+    job.start()
+    monkeypatch.setattr(ag, "_boot_id", lambda: "current-boot")
+    monkeypatch.setattr(ag, "_proc_start", lambda _pid: "current-start")
+    lease = {
+        "project": "demo",
+        "pid": os.getpid(),
+        "host": ag._host(),
+        "boot_id": "current-boot",
+        "pid_start": "current-start",
+        "since": time.time(),
+    }
+    ag._write_json(ag._lease_path(settings_a), lease)
+    ag._write_json(
+        ag._lease_path(settings_b), {**lease, "boot_id": boot_id, "pid_start": pid_start}
+    )
+    ag._set_status(ag.project_dir("demo", settings_a), fresh=True, state="running")
+    ag._set_status(ag.project_dir("demo", settings_b), fresh=True, state="running")
+    with ag._jobs_lock:
+        ag._jobs["demo"] = job
+        ag._cancels["demo"] = cancel
+
+    try:
+        assert ag.read_lease(settings_b) is None
+        assert ag._jobs.get("demo") is job
+        assert ag._job_key("demo", settings_b) not in ag._jobs
+        status_b = ag.read_status("demo", settings_b)
+        assert status_b["state"] == "failed" and status_b["interrupted"]
+        with pytest.raises(ag.DigError, match="no dig of demo is running"):
+            ag.cancel_dig("demo", settings_b)
+        assert not cancel.is_set()
+        assert ag._jobs.get("demo") is job
+
+        assert ag.read_status("demo", settings_a)["state"] == "running"
+        assert ag._jobs.get(ag._job_key("demo", settings_a)) is job
+        assert ag.cancel_dig("demo", settings_a)["cancelling"]
+        assert cancel.is_set()
+    finally:
+        release.set()
+        job.join(10)
+        with ag._jobs_lock:
+            ag._jobs.clear()
+            ag._cancels.clear()
