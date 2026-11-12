@@ -22,7 +22,7 @@ setup(
             "fastapi>=0.110",
             "httpx>=0.27",
         ],
-        "mcp": ["mcp[cli]>=1.0,<2"],
+        "mcp": ["mcp[cli]>=1.0,<3"],
     },
     entry_points={
         "console_scripts": [
