@@ -103,6 +103,10 @@ Thumbs.db
 projects/*/output/
 !projects/*/output/.gitkeep
 .ci-results/
+.hermes-runtime/
+.ci-hermes-home/
+.ci-contract/
+.ci-results-main/
 .venv/
 
 # Mutation testing (mutmut)

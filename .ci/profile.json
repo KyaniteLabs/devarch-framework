@@ -37,18 +37,22 @@
       "timeout_seconds": 900
     },
     {
-      "name": "Lint for errors (syntax, undefined names, redefinitions)",
+      "name": "Lint the whole repo (same command as GitHub CI)",
       "phase": "verify",
       "argv": [
         ".venv/bin/ruff",
         "check",
-        "--isolated",
-        "--select",
-        "E9,F63,F7,F82,F811",
-        "archaeology",
-        "scripts",
-        "setup.py",
-        "tests"
+        "."
+      ]
+    },
+    {
+      "name": "Check formatting (same as GitHub CI)",
+      "phase": "verify",
+      "argv": [
+        ".venv/bin/ruff",
+        "format",
+        "--check",
+        "."
       ]
     },
     {
@@ -70,6 +74,7 @@
         "-m",
         "pytest",
         "tests",
+        "plugins/ag4te-hermes/tests",
         "-q",
         "--tb=short",
         "-p",

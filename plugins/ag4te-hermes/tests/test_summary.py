@@ -544,7 +544,7 @@ def test_reloaded_plugin_keeps_running_digs(tmp_path):
     t.start()
     try:
         assert fresh.read_status("probe", settings)["state"] == "running"
-        with pytest.raises(fresh.DigError, match="already running"):
+        with pytest.raises(fresh.DigBusyError, match="already running"):
             fresh.start_dig(str(repo), "other", settings)
         assert fresh.cancel_dig("probe", settings)["cancelling"] is True
     finally:

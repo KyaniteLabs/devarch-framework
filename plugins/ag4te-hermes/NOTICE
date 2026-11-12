@@ -1,0 +1,11 @@
+AG4TE for Hermes: third-party notices
+
+Embedded font: desktop/plugin.js carries two base64 WOFF2 subsets (weights 600 and
+700), declared in CSS as the family "AG Chakra". Reading the name tables inside the
+font files, both are the family Chakra Petch (ChakraPetch-SemiBold and
+ChakraPetch-Bold):
+
+  Copyright 2018 The Chakra Petch Project Authors (https://github.com/m4rc1e/Chakra-Petch.git)
+
+Chakra Petch is licensed under the SIL Open Font License, Version 1.1. The full text
+is in desktop/fonts/OFL.txt. The fonts are renamed "AG Chakra" in the CSS only.

@@ -46,7 +46,10 @@ def pane(monkeypatch, tmp_path):
 
 def test_read_tools_select_and_refresh_the_pane(pane):
     ag, calls = pane
-    assert json.loads(ag._tool({"project": "demo"}))["summary"] == "No commits found in that dig."
+    summary = json.loads(ag._tool({"project": "demo"}))["summary"]
+    assert (
+        summary == f"{ag.UNTRUSTED_OPEN}\nNo commits found in that dig.\n{ag.UNTRUSTED_CLOSE}"
+    )  # repo text stays marked
     assert calls == [("ag4te", "dig.selected", {"project": "demo"})]
     ag._tool({})
     assert calls[-1] == ("ag4te", "projects.updated", {"count": 1})
