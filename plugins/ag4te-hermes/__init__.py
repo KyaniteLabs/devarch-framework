@@ -324,7 +324,7 @@ def repo_roots(settings: Optional[Dict[str, Any]] = None) -> List[Path]:
 
 
 def validate_project(name: Any) -> str:
-    if not isinstance(name, str) or not _PROJECT_RE.match(name):
+    if not isinstance(name, str) or not _PROJECT_RE.fullmatch(name):
         raise DigError(
             "project names are 1-63 lowercase letters, digits, '-' or '_', starting with a letter or digit"
         )

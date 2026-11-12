@@ -987,6 +987,7 @@ const WEEKDAY = s => DAYS[(parseDay(s).getUTCDay() + 6) % 7]
 function Commits({ d, pal, eraNo, hl, setHl, target }) {
   const root = useRef(null)
   const focused = useRef(null)
+  const filterTarget = useRef(null)
   const [q, setQ] = useState('')
   const [kind, setKind] = useState('all')
   const [n, setN] = useState(PAGE)
@@ -999,9 +1000,12 @@ function Commits({ d, pal, eraNo, hl, setHl, target }) {
     return { ...c, ms: isNaN(ms) ? 0 : ms, day: c.day || String(c.t).slice(0, 10), hm: String(c.t).slice(11, 16) }
   }).sort((x, y) => y.ms - x.ms), [d.commits])
   useLayoutEffect(() => {
-    if (target && target.view === 'commits' && target.item_id) {
+    if (target && target !== filterTarget.current && target.view === 'commits' && target.item_id) {
       const i = all.findIndex(c => c.sha === target.item_id)
-      if (i >= 0) { setQ(''); setKind('all'); setEraRaw(null); setN(Math.max(PAGE, i + 1)) }
+      if (i >= 0) {
+        filterTarget.current = target
+        setQ(''); setKind('all'); setEraRaw(null); setN(Math.max(PAGE, i + 1))
+      }
     }
   }, [target, d])
   useLayoutEffect(() => {

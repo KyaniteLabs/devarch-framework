@@ -148,6 +148,30 @@ test('commit focus reveals a row beyond the first page', async () => {
   page.unmount()
 })
 
+test('commit refetch preserves a filter entered after navigation', async () => {
+  const data = {
+    d: { project: 'demo', commits: [{ sha: 'abc122', t: '2026-01-01T00:00:00Z', msg: 'test', author: 'A', kind: 'test' }], clusters: [] },
+    pal: {}, eraNo: [], target: { view: 'commits', item_id: 'abc123', revision: 1 },
+  }
+  const page = mount('Commits', data)
+  await page.flush()
+  const search = () => nodes(page.tree).find(n => n.props?.['aria-label'] === 'Search commits')
+  search().props.onChange({ target: { value: 'pre-navigation filter' } })
+  await page.flush()
+  data.d = { ...data.d, commits: [...data.d.commits, { sha: 'abc123', t: '2026-01-02T00:00:00Z', msg: 'requested commit', author: 'A', kind: 'test' }] }
+  await page.flush()
+  assert(nodes(page.tree).some(n => n.props?.['data-ag-item'] === 'abc123'))
+  assert.equal(search().props.value, '')
+  search().props.onChange({ target: { value: 'manual filter' } })
+  await page.flush()
+  assert.equal(search().props.value, 'manual filter')
+
+  data.d = { ...data.d, commits: data.d.commits.map(commit => ({ ...commit })) }
+  await page.flush()
+  assert.equal(search().props.value, 'manual filter')
+  page.unmount()
+})
+
 test('release focus renders a target older than the ten newest releases', () => {
   const sandbox = {
     jsx: (type, props) => ({ type, props }),
