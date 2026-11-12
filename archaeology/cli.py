@@ -567,7 +567,10 @@ def visualize(project_name):
 
 @main.command()
 @click.argument("project_name")
-@click.option("--logs-dir", help="Path to pipeline logs directory (default: auto-detect)")
+@click.option(
+    "--logs-dir",
+    help="Path to pipeline logs directory (default: <ARCHAEOLOGY_PIPELINE_ROOT>/.omc/logs/repo-pipeline)",
+)
 @click.option("--verbose", "-v", is_flag=True)
 def ingest_pipeline(project_name, logs_dir, verbose):
     """Ingest GITHUB_pipeline run logs into archaeology database.
@@ -584,21 +587,18 @@ def ingest_pipeline(project_name, logs_dir, verbose):
         click.echo(f"Database not found. Run 'devarch build-db {project_name}' first.", err=True)
         sys.exit(1)
 
-    # Auto-detect pipeline logs dir
+    # No guessing under the home folder: the logs come from --logs-dir or the pipeline root.
     if not logs_dir:
-        candidates = [
-            os.path.expanduser("~/workspaces/GITHUB_pipeline/.omc/logs/repo-pipeline"),
-            os.path.expanduser("~/dev/GITHUB_pipeline/.omc/logs/repo-pipeline"),
-            os.path.expanduser("~/Desktop/GITHUB_pipeline/.omc/logs/repo-pipeline"),
-            os.path.expanduser("~/Desktop/OMC/.omc/logs/repo-pipeline"),
-        ]
-        for c in candidates:
-            if os.path.isdir(c):
-                logs_dir = c
-                break
+        pipeline_root = os.environ.get("ARCHAEOLOGY_PIPELINE_ROOT", "")
+        if pipeline_root:
+            logs_dir = os.path.join(pipeline_root, ".omc", "logs", "repo-pipeline")
 
     if not logs_dir or not os.path.isdir(logs_dir):
-        click.echo("Pipeline logs directory not found. Use --logs-dir to specify path.", err=True)
+        click.echo(
+            "Pipeline logs directory not found. Pass --logs-dir, or set "
+            "ARCHAEOLOGY_PIPELINE_ROOT to your GITHUB_pipeline workspace.",
+            err=True,
+        )
         sys.exit(1)
 
     click.echo(f"Ingesting pipeline logs from {logs_dir}...")

@@ -23,7 +23,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Install build tools
-        run: pip install build twine
+        run: pip install build==1.6.1 twine==7.0.0
       - name: Build package
         run: python -m build
       - name: Check package

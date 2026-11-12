@@ -1,0 +1,47 @@
+# Version pins for DevArch's dependency closure (click, sqlite-utils, datasette and everything they pull in).
+# DevArch commit: d884f9a5cdd3b6d03e95114e860cc134d5067b84 (DEVARCH_PIN in __init__.py)
+# Generated with uv 0.11.13:
+#   echo "devarch-framework @ git+https://github.com/KyaniteLabs/ag4te@<DEVARCH_PIN>" > in.txt
+#   uv pip compile in.txt --universal --python-version 3.10 --no-header --no-annotate
+# (then delete the devarch-framework line). Python >= 3.10, all platforms (environment markers).
+# Used as: uvx --constraints <this file> --from git+...@<DEVARCH_PIN> devarch
+# Versions only: uvx has no --require-hashes, and hashes in a constraints file are not checked.
+aiofiles==25.1.0
+anyio==4.16.0
+asgi-csrf==0.11
+asgiref==3.12.1 ; python_full_version < '3.11'
+asgiref==3.13.0 ; python_full_version >= '3.11'
+certifi==2026.10.23
+click==8.5.1
+click-default-group==1.2.4
+datasette==0.65.5
+exceptiongroup==1.3.1 ; python_full_version < '3.11'
+flexcache==0.3
+flexparser==0.4
+h11==0.16.0
+httpcore==1.0.9
+httpx==0.28.1
+hupper==1.12.1
+idna==3.20
+itsdangerous==2.2.0
+janus==2.0.0
+jinja2==3.1.6
+markupsafe==3.0.4
+mergedeep==1.3.4
+pip==26.3
+platformdirs==4.12.4 ; python_full_version < '3.11'
+platformdirs==4.14.5 ; python_full_version >= '3.11'
+pluggy==1.7.0
+python-dateutil==3.0.0 ; python_full_version < '3.11'
+python-dateutil==4.0.0 ; python_full_version >= '3.11'
+python-multipart==0.0.32 ; python_full_version < '3.11'
+python-multipart==0.0.33 ; python_full_version >= '3.11'
+pyyaml==6.0.3
+setuptools==84.2.1
+six==1.17.0 ; python_full_version < '3.11'
+sqlite-fts4==1.0.3
+sqlite-utils==4.2.1
+tabulate==0.10.0
+typing-extensions==4.16.0
+tzdata==2026.6
+uvicorn==0.54.0

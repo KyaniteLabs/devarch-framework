@@ -48,7 +48,8 @@
         "archaeology",
         "scripts",
         "setup.py",
-        "tests"
+        "tests",
+        "plugins/ag4te-hermes"
       ]
     },
     {
@@ -70,6 +71,7 @@
         "-m",
         "pytest",
         "tests",
+        "plugins/ag4te-hermes/tests",
         "-q",
         "--tb=short",
         "-p",

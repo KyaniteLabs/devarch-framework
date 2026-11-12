@@ -258,7 +258,7 @@ def test_gateway_tool_and_slash_show_hide_project_names(monkeypatch):
         "people": {},
     }
 
-    assert json.loads(ag._tool({})) == {"count": 1, "states": {"done": 1}}
+    assert json.loads(ag._tool({})) == {"count": 1, "states": {"done": 1}, "notice": ag.UNTRUSTED_NOTICE}
     assert marker not in ag._slash(f"show {marker}")
 
 

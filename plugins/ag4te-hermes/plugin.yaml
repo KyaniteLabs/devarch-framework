@@ -2,12 +2,14 @@ name: ag4te
 version: 0.3.0
 manifest_version: 2
 requires_hermes: ">=0.21.6"
+author: "Kyanite Labs"
+license: Apache-2.0
 description: >-
   AG4TE digs a local git repository's history with DevArch and draws its strata in
   Hermes Desktop: commits per day by kind of work, eras, quiet gaps, signals, weekly
   rhythm and practice health. Authors are merged across spellings and split into people, agents and bots. Digs run locally, read only the repository you choose
   (under repo_roots), keep results in plugin-data/ag4te, and never call an LLM or the network
-  beyond fetching DevArch itself with uvx.
+  beyond fetching DevArch itself with uvx. DevArch runs with a scrubbed environment. uvx fetches and runs it in one process, so the package-manager and network variables the download needs (UV_CACHE_DIR, UV_PYTHON, UV_INDEX_URL, UV_EXTRA_INDEX_URL, PIP_INDEX_URL, HTTP_PROXY, HTTPS_PROXY, NO_PROXY, http_proxy, https_proxy, no_proxy, SSL_CERT_FILE, SSL_CERT_DIR, REQUESTS_CA_BUNDLE) reach it, so keep credentials out of registry and proxy URLs. PYTHONSTARTUP, PYTHONPATH, NODE_OPTIONS and other code-injection variables are never passed.
 provides_tools: [ag4te_dig, ag4te_show]
 config_schema:
   devarch_command:

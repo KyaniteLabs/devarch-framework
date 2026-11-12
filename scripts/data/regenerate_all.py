@@ -631,35 +631,43 @@ def validate(skip_screenshots: bool) -> None:
         run([sys.executable, "scripts/data/capture_playbook.py"])
 
 
-def mine_private_sessions(source_repo: Path) -> None:
-    """Optionally refresh private/local conversation-derived datasets."""
+def mine_private_sessions(
+    source_repo: Path,
+    claude_sessions: list[tuple[str, str]] | None = None,
+    chatgpt_export: str | None = None,
+) -> None:
+    """Optionally refresh private/local conversation-derived datasets.
+
+    Nothing is mined unless you name the inputs: ``claude_sessions`` is a list of
+    (sessions directory, output prefix) pairs and ``chatgpt_export`` is a conversations.json file.
+    """
     tasks = [
         [
             sys.executable,
             "scripts/data/mine_conversations.py",
             "claude",
             "--sessions-dir",
-            str(Path("~/.claude/projects/-Users-user-Desktop-OMC").expanduser()),
+            str(Path(sessions_dir).expanduser()),
             "--prefix",
-            "sessions",
-        ],
-        [
-            sys.executable,
-            "scripts/data/mine_conversations.py",
-            "claude",
-            "--sessions-dir",
-            str(Path("~/.claude/projects/-Users-user-workspaces-demo-project").expanduser()),
-            "--prefix",
-            "demo-project",
-        ],
-        [
-            sys.executable,
-            "scripts/data/mine_conversations.py",
-            "chatgpt",
-            "--input",
-            str(Path("~/Desktop/MyStuff/Documents/ToReview/conversations.json").expanduser()),
-        ],
+            prefix,
+        ]
+        for sessions_dir, prefix in (claude_sessions or [])
     ]
+    if chatgpt_export:
+        tasks.append(
+            [
+                sys.executable,
+                "scripts/data/mine_conversations.py",
+                "chatgpt",
+                "--input",
+                str(Path(chatgpt_export).expanduser()),
+            ]
+        )
+    if not tasks:
+        print(
+            "No private inputs given: pass --claude-sessions DIR=PREFIX and/or --chatgpt-export FILE.",
+            file=sys.stderr,
+        )
     for cmd in tasks:
         try:
             run(cmd)
@@ -678,7 +686,20 @@ def main() -> int:
     parser.add_argument(
         "--mine-private-sessions",
         action="store_true",
-        help="Refresh private Claude/ChatGPT-derived data before recomputing reports",
+        help="Refresh private Claude/ChatGPT-derived data before recomputing reports "
+        "(needs --claude-sessions and/or --chatgpt-export)",
+    )
+    parser.add_argument(
+        "--claude-sessions",
+        action="append",
+        default=[],
+        metavar="DIR=PREFIX",
+        help="A Claude sessions directory and the output prefix to mine it under (repeatable)",
+    )
+    parser.add_argument(
+        "--chatgpt-export",
+        metavar="FILE",
+        help="Path to a ChatGPT conversations.json export to mine",
     )
     parser.add_argument(
         "--legacy-refresh-first",
@@ -688,7 +709,13 @@ def main() -> int:
     args = parser.parse_args()
 
     if args.mine_private_sessions:
-        mine_private_sessions(args.source_repo)
+        pairs = []
+        for spec in args.claude_sessions:
+            sessions_dir, sep, prefix = spec.rpartition("=")
+            if not sep or not sessions_dir or not prefix:
+                parser.error(f"--claude-sessions expects DIR=PREFIX, got {spec!r}")
+            pairs.append((sessions_dir, prefix))
+        mine_private_sessions(args.source_repo, pairs, args.chatgpt_export)
 
     stats = compute(args.source_repo, fetch=not args.no_fetch)
     print(f"Canonical scope: {stats['scope']}")

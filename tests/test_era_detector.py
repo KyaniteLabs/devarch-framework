@@ -86,3 +86,16 @@ def test_parse_date_strips_whitespace():
     assert result is not None
     assert result.year == 2024
     assert result.month == 1
+
+
+def test_parse_date_without_offset_ignores_the_machine_time_zone(monkeypatch):
+    """A date with no UTC offset must come back as written, whatever the local zone is."""
+    import time
+    monkeypatch.setenv("TZ", "America/Los_Angeles")
+    time.tzset()
+    try:
+        assert _parse_date("2024-01-15T10:30:45").hour == 10
+        assert _parse_date("2024-01-15T10:30:45+02:00").hour == 8  # offsets are still honoured
+    finally:
+        monkeypatch.undo()
+        time.tzset()
