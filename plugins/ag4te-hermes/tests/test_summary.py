@@ -183,6 +183,11 @@ def test_bad_project_names(bad):
         ag.validate_project(bad)
 
 
+def test_project_name_rejects_trailing_newline():
+    with pytest.raises(ag.DigError):
+        ag.validate_project("demo\n")
+
+
 def test_resolve_repo(tmp_path):
     root = tmp_path / "ws"
     (root / "good" / ".git").mkdir(parents=True)
