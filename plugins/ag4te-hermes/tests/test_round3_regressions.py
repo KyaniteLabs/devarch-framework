@@ -151,37 +151,6 @@ def test_invalid_or_future_foreign_lease_since_is_expired(tmp_path, since):
     assert ag.unlock_lease(settings) is True
 
 
-def test_old_same_host_live_process_without_proc_start_keeps_lease(tmp_path, monkeypatch):
-    import subprocess
-
-    ag = load_plugin("ag4te_lease_no_proc")
-    settings = {"data_dir": str(tmp_path)}
-    process = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(30)"])
-    try:
-        monkeypatch.setattr(ag, "_proc_start", lambda pid: None)
-        monkeypatch.setattr(ag, "_boot_id", lambda: None)
-        lease = ag._lease_path(settings)
-        lease.parent.mkdir(parents=True, exist_ok=True)
-        lease.write_text(
-            json.dumps(
-                {
-                    "project": "live",
-                    "pid": process.pid,
-                    "host": ag._host(),
-                    "since": time.time() - ag.MAX_LEASE_AGE_SECONDS - 1,
-                }
-            ),
-            encoding="utf-8",
-        )
-
-        assert ag.read_lease(settings) is not None
-        with pytest.raises(ag.DigError, match="still running"):
-            ag.unlock_lease(settings)
-    finally:
-        process.kill()
-        process.wait()
-
-
 def test_unlock_holds_jobs_lock_while_reading_lease(tmp_path, monkeypatch):
     ag = load_plugin("ag4te_unlock_lock")
     settings = {"data_dir": str(tmp_path)}
@@ -322,8 +291,8 @@ def test_shipped_strata_images_have_no_caption_text():
             assert all(scan[x * 3 : x * 3 + 3] == expected for x in range(25, 1000))
 
 
-def test_lease_survives_its_age_while_the_same_process_still_holds_it(tmp_path):
-    """A long dig keeps its lease past the age backstop; a reused PID does not."""
+def test_expired_lease_with_live_pid_and_no_start_time_is_reclaimed(tmp_path, monkeypatch):
+    """A live but unverifiable PID cannot keep an expired lease held."""
     import subprocess
 
     ag = load_plugin("ag4te_round3_pid_start")
@@ -333,9 +302,7 @@ def test_lease_survives_its_age_while_the_same_process_still_holds_it(tmp_path):
     )
     other = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(30)"])
     try:
-        start = ag._proc_start(other.pid)
-        if start is None:
-            pytest.skip("this host exposes no process start time")
+        monkeypatch.setattr(ag, "_proc_start", lambda pid: None)
         lease = ag._lease_path(settings)
         lease.parent.mkdir(parents=True, exist_ok=True)
         body = {
@@ -343,16 +310,14 @@ def test_lease_survives_its_age_while_the_same_process_still_holds_it(tmp_path):
             "pid": other.pid,
             "host": ag._host(),
             "boot_id": ag._boot_id(),
-            "pid_start": start,
-            "since": time.time() - ag.MAX_LEASE_AGE_SECONDS - 60,
+            "pid_start": None,
+            "since": time.time() - 72 * 60 * 60,
         }
         lease.write_text(json.dumps(body), encoding="utf-8")
-        assert ag.read_lease(settings) is not None  # still running: not stale
-        lease.write_text(
-            json.dumps({**body, "pid_start": str(int(start) + 1), "since": time.time()}),
-            encoding="utf-8",
-        )
-        assert ag.read_lease(settings) is None  # same PID, different process
+        assert ag._pid_alive(other.pid)
+        assert ag.read_lease(settings) is None
+        assert ag.unlock_lease(settings)
+        assert not lease.exists()
     finally:
         other.kill()
         other.wait()

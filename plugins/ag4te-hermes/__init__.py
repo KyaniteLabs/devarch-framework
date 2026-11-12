@@ -59,11 +59,19 @@ PLUGIN_NAME = _manifest_name()
 DEVARCH_PIN = "d884f9a5cdd3b6d03e95114e860cc134d5067b84"  # the catalog-reviewed pin
 # Version pins for DevArch's dependency closure, made for DEVARCH_PIN (see the file header).
 DEVARCH_CONSTRAINTS = Path(__file__).resolve().parent / "devarch-constraints.txt"
-DEFAULTS: Dict[str, Any] = {
-    "devarch_command": (
-        f"uvx --constraints {shlex.quote(str(DEVARCH_CONSTRAINTS))} "
+
+
+def _default_devarch_command(constraints: str, windows: Optional[bool] = None) -> str:
+    windows = os.name == "nt" if windows is None else windows
+    quoted_constraints = f'"{constraints}"' if windows else shlex.quote(constraints)
+    return (
+        f"uvx --constraints {quoted_constraints} "
         f"--from git+https://github.com/KyaniteLabs/ag4te@{DEVARCH_PIN} devarch"
-    ),
+    )
+
+
+DEFAULTS: Dict[str, Any] = {
+    "devarch_command": _default_devarch_command(str(DEVARCH_CONSTRAINTS)),
     "repo_roots": "~/workspaces",
     "data_dir": "",
     "timeout_seconds": 600,
@@ -2113,8 +2121,8 @@ def read_lease(
     """The dig lease when a live process holds it, else None.
 
     A same-host lease is checked against its owner: the boot and the process start time
-    must match, so a PID reused after a crash or reboot does not keep it alive. A live
-    same-host process remains protected on hosts without process start-time data.
+    must match, so a PID reused after a crash or reboot does not keep it alive. Unverifiable
+    same-host leases expire at the maximum age.
     """
     data = _read_json(_lease_path(settings))
     if not isinstance(data, dict):
@@ -2125,8 +2133,10 @@ def read_lease(
         return None
     now = time.time()
     expired = not math.isfinite(since) or since > now or now - since > MAX_LEASE_AGE_SECONDS
+    if expired:
+        return None
     if data.get("host") != _host():
-        return None if expired else data
+        return data
     recorded_boot = data.get("boot_id")
     current_boot = _boot_id()
     if recorded_boot and current_boot and recorded_boot != current_boot:
@@ -2589,7 +2599,8 @@ def _untrusted(text: Any, cap: int = TOOL_TEXT_CAP, more: str = _MORE_BRIEF) -> 
     The marker counts toward *cap*.
     """
     s = re.sub(r"[\x00-\x08\x0b-\x1f\x7f]", " ", str(text))
-    s = s.replace(UNTRUSTED_OPEN, "").replace(UNTRUSTED_CLOSE, "")
+    while UNTRUSTED_OPEN in s or UNTRUSTED_CLOSE in s:
+        s = s.replace(UNTRUSTED_OPEN, "").replace(UNTRUSTED_CLOSE, "")
     if len(s) <= cap:
         return s
     keep = cap
