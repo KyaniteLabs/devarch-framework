@@ -2125,9 +2125,9 @@ def read_lease(
 ) -> Optional[Dict[str, Any]]:
     """The dig lease when a live process holds it, else None.
 
-    A same-host lease is checked against its owner: the boot and the process start time
-    must match, so a PID reused after a crash or reboot does not keep it alive. Unverifiable
-    same-host leases expire at the maximum age.
+    A same-host lease with verifiable boot and process start data is checked against its
+    owner, so a PID reused after a crash or reboot does not keep it alive. Unverifiable
+    same-host leases expire when their timestamp is in the future or beyond the maximum age.
     """
     data = _read_json(_lease_path(settings))
     if not isinstance(data, dict):
@@ -2137,19 +2137,21 @@ def read_lease(
     except (KeyError, TypeError, ValueError):
         return None
     now = time.time()
-    expired = not math.isfinite(since) or since > now or now - since > MAX_LEASE_AGE_SECONDS
-    if expired:
+    if not math.isfinite(since):
         return None
+    expired = since > now or now - since > MAX_LEASE_AGE_SECONDS
     if data.get("host") != _host():
-        return data
+        return None if expired else data
     recorded_boot = data.get("boot_id")
     current_boot = _boot_id()
+    boot_verified = bool(recorded_boot and current_boot)
     if recorded_boot and current_boot and recorded_boot != current_boot:
         return None
     if not _pid_alive(data.get("pid")):
         return None
     recorded_start = data.get("pid_start")
     current_start = _proc_start(data.get("pid")) if recorded_start else None
+    start_verified = bool(recorded_start and current_start)
     if recorded_start and current_start:
         if recorded_start != current_start:
             return None  # the PID now belongs to a different process
@@ -2162,6 +2164,8 @@ def read_lease(
                 t = _jobs.get(str(data.get("project")))
         if not (t and t.is_alive()):
             return None
+    if expired and not (boot_verified and start_verified):
+        return None
     return data
 
 
